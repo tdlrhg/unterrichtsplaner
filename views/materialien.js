@@ -150,12 +150,21 @@ function openMatDetail(mat, row) {
   editRow('Themen',               () => arrGet('themen'),             arrSet('themen'));
   editRow('Materialtyp',          () => mat.materialtyp || '',        v => { mat.materialtyp = v; });
   editRow('Beschreibung',         () => mat.beschreibung || '',       v => { mat.beschreibung = v; }, true);
-  editRow('Unterrichtsphase',     () => arrGet('unterrichtsphase'),   arrSet('unterrichtsphase'));
-  editRow('Sozialform geeignet',  () => arrGet('sozialformenGeeignet'), arrSet('sozialformenGeeignet'));
-  editRow('Methoden geeignet',    () => arrGet('methodenGeeignet'),   arrSet('methodenGeeignet'));
-  editRow('Kognit. Beanspruchung',() => mat.kognitiveBeanspruchung || '', v => { mat.kognitiveBeanspruchung = v; });
-  editRow('Differenzierung',      () => arrGet('differenzierungsformen'), arrSet('differenzierungsformen'));
-  editRow('Anmerkungen',          () => mat.persoenlicheAnmerkungen || '', v => { mat.persoenlicheAnmerkungen = v; }, true);
+  editRow('Unterrichtsphase',       () => arrGet('unterrichtsphase'),         arrSet('unterrichtsphase'));
+  editRow('Sozialform geeignet',    () => arrGet('sozialformenGeeignet'),      arrSet('sozialformenGeeignet'));
+  editRow('Sozialform weniger',     () => arrGet('sozialformenWenigerGeeignet'), arrSet('sozialformenWenigerGeeignet'));
+  editRow('Methoden geeignet',      () => arrGet('methodenGeeignet'),          arrSet('methodenGeeignet'));
+  editRow('Methoden weniger',       () => arrGet('methodenWenigerGeeignet'),   arrSet('methodenWenigerGeeignet'));
+  editRow('Schüleraktivitäten',     () => arrGet('schueleraktivitaeten'),      arrSet('schueleraktivitaeten'));
+  editRow('Art der Tätigkeit',      () => arrGet('artDerGeistigenTaetigkeit'), arrSet('artDerGeistigenTaetigkeit'));
+  editRow('Darstellungsformen',     () => arrGet('darstellungsformen'),        arrSet('darstellungsformen'));
+  editRow('Fachliche Voraussetzung',() => arrGet('voraussetzungenFachlich'),   arrSet('voraussetzungenFachlich'));
+  editRow('Method. Voraussetzung',  () => arrGet('voraussetzungenMethodisch'), arrSet('voraussetzungenMethodisch'));
+  editRow('Kognit. Beanspruchung',  () => mat.kognitiveBeanspruchung || '',    v => { mat.kognitiveBeanspruchung = v; });
+  editRow('Sprachl. Anforderungen', () => mat.sprachlicheAnforderungen || '',  v => { mat.sprachlicheAnforderungen = v; });
+  editRow('Lautstärke',             () => mat.lautstaerke || '',               v => { mat.lautstaerke = v; });
+  editRow('Differenzierung',        () => arrGet('differenzierungsformen'),    arrSet('differenzierungsformen'));
+  editRow('Anmerkungen',            () => mat.persoenlicheAnmerkungen || '',   v => { mat.persoenlicheAnmerkungen = v; }, true);
 
   row.appendChild(detail);
 }

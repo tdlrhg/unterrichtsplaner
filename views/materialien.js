@@ -186,15 +186,26 @@ function openMatDetail(mat, row) {
     }
     r.appendChild(lbl);
     const val = get();
+    function onSave(v) {
+      set(v);
+      if (reviewKey && mat.review?.[reviewKey]) {
+        mat.review[reviewKey].needsReview = false;
+        r.classList.remove('needs-review');
+        r.querySelector('.mat-review-inline')?.remove();
+        const stillAny = Object.values(mat.review).some(rv => rv.needsReview);
+        if (!stillAny) row.querySelector('.mat-review-badge')?.remove();
+      }
+      saveMatDB();
+    }
     if (isArea) {
       const ta = document.createElement('textarea');
       ta.className = 'mat-edit-inp'; ta.value = val;
-      ta.onblur = () => { set(ta.value); saveMatDB(); };
+      ta.onblur = () => onSave(ta.value);
       r.appendChild(ta);
     } else {
       const inp = document.createElement('input');
       inp.type = 'text'; inp.className = 'mat-edit-inp'; inp.value = val;
-      inp.onblur = () => { set(inp.value); saveMatDB(); };
+      inp.onblur = () => onSave(inp.value);
       r.appendChild(inp);
     }
     detail.appendChild(r);

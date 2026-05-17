@@ -7,6 +7,54 @@ function viewMaterialien() {
   left.appendChild(tx('div', 'c-title', 'Materialdatenbank'));
   left.appendChild(tx('div', 'c-sub', MATDB.length + ' Einträge'));
   hdr.appendChild(left);
+
+  const hdrBtns = mk('div', ''); hdrBtns.style.cssText = 'display:flex;gap:8px;';
+
+  const schemaBtn = btn('📋 Schema kopieren', 'btn btn-ghost btn-sm');
+  schemaBtn.onclick = async () => {
+    const schema = await sbDownload('schema.json');
+    await navigator.clipboard.writeText(JSON.stringify(schema, null, 2));
+    schemaBtn.textContent = '✓ Kopiert!';
+    setTimeout(() => { schemaBtn.textContent = '📋 Schema kopieren'; }, 2000);
+  };
+
+  const importBtn = btn('📥 Import', 'btn btn-pri btn-sm');
+  importBtn.onclick = () => {
+    const existing = div.querySelector('.mat-import-panel');
+    if (existing) { existing.remove(); return; }
+    const panel = mk('div', 'mat-import-panel');
+    panel.appendChild(tx('div', 'mat-import-hint',
+      'JSON-Eintrag oder Array einfügen (aus KI-generiertem Schema):'));
+    const ta = document.createElement('textarea');
+    ta.className = 'mat-import-ta'; ta.placeholder = '{ "id": "...", "titel": "...", ... }';
+    panel.appendChild(ta);
+    const actions = mk('div', ''); actions.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
+    const errMsg = tx('span', 'mat-import-err', '');
+    const addBtn = btn('Hinzufügen', 'btn btn-pri btn-sm');
+    addBtn.onclick = () => {
+      errMsg.textContent = '';
+      let parsed;
+      try { parsed = JSON.parse(ta.value.trim()); } catch { errMsg.textContent = 'Ungültiges JSON.'; return; }
+      const entries = Array.isArray(parsed) ? parsed : [parsed];
+      const invalid = entries.filter(e => !e.id || !e.titel);
+      if (invalid.length) { errMsg.textContent = 'Jeder Eintrag braucht mindestens "id" und "titel".'; return; }
+      entries.forEach(e => {
+        const existing = MATDB.findIndex(m => m.id === e.id);
+        if (existing >= 0) MATDB[existing] = e; else MATDB.push(e);
+      });
+      saveMatDB();
+      panel.remove();
+      S.view = 'materialien'; render();
+    };
+    const cancelBtn2 = btn('Abbrechen', 'btn btn-ghost btn-sm');
+    cancelBtn2.onclick = () => panel.remove();
+    actions.appendChild(addBtn); actions.appendChild(cancelBtn2); actions.appendChild(errMsg);
+    panel.appendChild(actions);
+    div.insertBefore(panel, div.children[1]);
+  };
+
+  hdrBtns.appendChild(schemaBtn); hdrBtns.appendChild(importBtn);
+  hdr.appendChild(hdrBtns);
   div.appendChild(hdr);
 
   // ── Suchzeile ────────────────────────────────────────────────

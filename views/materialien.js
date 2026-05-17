@@ -40,7 +40,7 @@ function viewMaterialien() {
       if (invalid.length) { errMsg.textContent = 'Jeder Eintrag braucht mindestens "id" und "titel".'; return; }
       entries.forEach(e => {
         const existing = MATDB.findIndex(m => m.id === e.id);
-        if (existing >= 0) MATDB[existing] = e; else MATDB.push(e);
+        if (existing >= 0) MATDB[existing] = e; else MATDB.unshift(e);
       });
       saveMatDB();
       panel.remove();
@@ -233,7 +233,7 @@ function klpRow(mat, detail, row) {
       const entry = KLPDB.find(e => e.id === id);
       const chip = mk('div', 'klp-chip');
       const label = entry
-        ? `[${entry.kompetenzcodes.join(', ')}] ${entry.beschreibung.slice(0, 60)}${entry.beschreibung.length > 60 ? '…' : ''}`
+        ? `[${entry.kompetenzcodes.join(', ')}] ${entry.beschreibung}`
         : id;
       chip.textContent = label;
       chip.title = entry ? entry.beschreibung : id;

@@ -1,3 +1,6 @@
+// ── Materialdatenbank ─────────────────────────────────────────────
+let MATDB = [];
+
 // ── State ────────────────────────────────────────────────────────
 const S = {
   data: null,        // { fachplanungen: [], kurse: [] }

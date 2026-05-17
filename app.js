@@ -61,7 +61,11 @@ function buildSetup() {
 (async () => {
   render();
   try {
-    const loaded = await sbDownload('data.json');
+    const [loaded, matdb] = await Promise.all([
+      sbDownload('data.json'),
+      sbDownload('materialien.json'),
+    ]);
+    MATDB = matdb || [];
     S.data = loaded || { fachplanungen: [], kurse: [] };
     if (S.data.kurse && S.data.planung && !S.data.fachplanungen) {
       S.data = { fachplanungen: [], kurse: [] };

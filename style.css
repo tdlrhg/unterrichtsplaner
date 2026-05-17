@@ -336,3 +336,44 @@ textarea.finp { resize: vertical; min-height: 80px; }
 
 .prio-btn:hover { border-color: var(--pri); color: var(--tx); }
 .prio-btn.active { border-color: var(--pri); background: #dbeafe; color: var(--pri); font-weight: 700; }
+
+/* ── Material-Chips & Suche ──────────────────────────────────────── */
+.mat-cell { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+
+.mat-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #dbeafe; color: var(--pri);
+  border-radius: 12px; padding: 2px 8px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+  cursor: default;
+}
+.mat-chip-x {
+  cursor: pointer; font-size: 10px; opacity: .6;
+  line-height: 1;
+}
+.mat-chip-x:hover { opacity: 1; }
+
+.mat-search-wrap { position: relative; }
+.mat-search-inp {
+  border: none; background: transparent;
+  font-size: 12px; font-family: inherit;
+  color: var(--tx2); width: 90px;
+  outline: none;
+}
+.mat-search-inp::placeholder { color: var(--tx3); }
+
+.mat-dd {
+  display: none;
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 200;
+  background: var(--surf); border: 1px solid var(--bord);
+  border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  min-width: 260px; max-height: 220px; overflow-y: auto;
+}
+.mat-dd-item {
+  padding: 8px 12px; cursor: pointer;
+  border-bottom: 1px solid var(--bord);
+  font-size: 12px;
+}
+.mat-dd-item:last-child { border-bottom: none; }
+.mat-dd-item:hover { background: var(--surf2); }
+.mat-dd-sub { font-size: 11px; color: var(--tx3); margin-top: 2px; }

@@ -4,6 +4,9 @@ let MATDB = [];
 // ── KLP-Datenbank ─────────────────────────────────────────────────
 let KLPDB = [];
 
+// ── Didaktik-Wissensmodell ────────────────────────────────────────
+let DIDAKTIKDB = {};
+
 // ── State ────────────────────────────────────────────────────────
 const S = {
   data: null,        // { fachplanungen: [], kurse: [] }

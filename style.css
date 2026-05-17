@@ -105,6 +105,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .card-hdr { padding: 13px 18px; border-bottom: 1px solid var(--bord); display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
 .phasen-vorlage-wrap { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .phasen-vorlage-sel { font-size: 12px; padding: 3px 6px; height: auto; width: auto; }
+.didaktik-ta { font-size: 12px; line-height: 1.5; resize: vertical; min-height: 120px; }
 .card-title { font-weight: 700; font-size: 14px; color: var(--pri); }
 .card-body { padding: 18px; }
 

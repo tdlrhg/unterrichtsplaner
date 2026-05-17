@@ -139,7 +139,11 @@ function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
     if (!antKey) { alert('Bitte zuerst Anthropic API-Key in den Einstellungen hinterlegen.'); return; }
     kiVorlageBtn.textContent = '…'; kiVorlageBtn.disabled = true;
     try {
-      const prompt = `Du bist Didaktik-Experte für NRW-Gymnasien. Wähle für diese Unterrichtsstunde das passende Phasierungsmodell aus und befülle die Phasen sinnvoll.
+      const wissenText = Object.keys(PHASEN_VORLAGEN).map(key =>
+        `## ${key}\n${DIDAKTIKDB[key] || '(kein Hintergrundwissen hinterlegt)'}`
+      ).join('\n\n');
+
+      const prompt = `Du bist Didaktik-Experte für NRW-Gymnasien. Wähle für diese Unterrichtsstunde das passende Phasierungsmodell aus und befülle die Phasen sinnvoll. Stütze deine Entscheidung auf das didaktische Wissensmodell unten.
 
 Stunde:
 - Titel: ${stunde.titel || '–'}
@@ -147,6 +151,9 @@ Stunde:
 - Intention: ${stunde.intention || '–'}
 - Fach: ${kurs.fach || '–'}
 - Dauer: ${stunde.dauer || 45} Minuten
+
+Didaktisches Wissensmodell:
+${wissenText}
 
 Verfügbare Modelle:
 - 3-Phasen: Einstieg / Erarbeitung / Sicherung

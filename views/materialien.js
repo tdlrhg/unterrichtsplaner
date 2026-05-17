@@ -125,7 +125,11 @@ function viewMaterialien() {
       if (fachIcon) titleWrap.appendChild(tx('span', 'mat-db-fach-icon', fachIcon));
       titleWrap.appendChild(tx('span', 'mat-db-title', mat.titel));
       if (needsReview) {
+        const reviewFields = Object.entries(mat.review || {})
+          .filter(([, v]) => v.needsReview)
+          .map(([k]) => k).join(', ');
         const badge = tx('span', 'mat-review-badge', '⚠ prüfen');
+        badge.title = 'Bitte prüfen: ' + reviewFields;
         titleWrap.appendChild(badge);
       }
       top.appendChild(titleWrap);
@@ -171,9 +175,16 @@ function openMatDetail(mat, row) {
   const detail = mk('div', 'mat-detail');
   detail.onclick = e => e.stopPropagation();
 
-  function editRow(label, get, set, isArea) {
-    const r = mk('div', 'mat-detail-row');
-    r.appendChild(tx('span', 'mat-detail-label', label));
+  function editRow(label, get, set, isArea, reviewKey) {
+    const needsCheck = reviewKey && mat.review?.[reviewKey]?.needsReview;
+    const r = mk('div', 'mat-detail-row' + (needsCheck ? ' needs-review' : ''));
+    const lbl = tx('span', 'mat-detail-label', label);
+    if (needsCheck) {
+      const hint = tx('span', 'mat-review-inline', '⚠');
+      hint.title = mat.review[reviewKey].reason || 'Bitte prüfen';
+      lbl.appendChild(hint);
+    }
+    r.appendChild(lbl);
     const val = get();
     if (isArea) {
       const ta = document.createElement('textarea');
@@ -192,26 +203,27 @@ function openMatDetail(mat, row) {
   function arrGet(key) { return (mat[key] || []).join(', '); }
   function arrSet(key) { return v => { mat[key] = v.split(',').map(s => s.trim()).filter(Boolean); }; }
 
-  editRow('Titel',                () => mat.titel || '',              v => { mat.titel = v; row.querySelector('.mat-db-title').textContent = v; });
-  editRow('Fach',                 () => arrGet('fach'),               arrSet('fach'));
-  editRow('Jahrgang',             () => arrGet('jahrgang'),           arrSet('jahrgang'));
+  editRow('Titel',                () => mat.titel || '',              v => { mat.titel = v; row.querySelector('.mat-db-title').textContent = v; }, false, 'titel');
+  editRow('Fach',                 () => arrGet('fach'),               arrSet('fach'),           false, 'fach');
+  editRow('Jahrgang',             () => arrGet('jahrgang'),           arrSet('jahrgang'),       false, 'jahrgang');
   editRow('Themen',               () => arrGet('themen'),             arrSet('themen'));
   editRow('Materialtyp',          () => mat.materialtyp || '',        v => { mat.materialtyp = v; });
   editRow('Beschreibung',         () => mat.beschreibung || '',       v => { mat.beschreibung = v; }, true);
-  editRow('Unterrichtsphase',       () => arrGet('unterrichtsphase'),         arrSet('unterrichtsphase'));
-  editRow('Sozialform geeignet',    () => arrGet('sozialformenGeeignet'),      arrSet('sozialformenGeeignet'));
+  editRow('Unterrichtsphase',       () => arrGet('unterrichtsphase'),           arrSet('unterrichtsphase'),           false, 'unterrichtsphase');
+  editRow('Sozialform geeignet',    () => arrGet('sozialformenGeeignet'),        arrSet('sozialformenGeeignet'));
   editRow('Sozialform weniger',     () => arrGet('sozialformenWenigerGeeignet'), arrSet('sozialformenWenigerGeeignet'));
-  editRow('Methoden geeignet',      () => arrGet('methodenGeeignet'),          arrSet('methodenGeeignet'));
-  editRow('Methoden weniger',       () => arrGet('methodenWenigerGeeignet'),   arrSet('methodenWenigerGeeignet'));
-  editRow('Schüleraktivitäten',     () => arrGet('schueleraktivitaeten'),      arrSet('schueleraktivitaeten'));
-  editRow('Art der Tätigkeit',      () => arrGet('artDerGeistigenTaetigkeit'), arrSet('artDerGeistigenTaetigkeit'));
-  editRow('Darstellungsformen',     () => arrGet('darstellungsformen'),        arrSet('darstellungsformen'));
-  editRow('Fachliche Voraussetzung',() => arrGet('voraussetzungenFachlich'),   arrSet('voraussetzungenFachlich'));
-  editRow('Method. Voraussetzung',  () => arrGet('voraussetzungenMethodisch'), arrSet('voraussetzungenMethodisch'));
-  editRow('Kognit. Beanspruchung',  () => mat.kognitiveBeanspruchung || '',    v => { mat.kognitiveBeanspruchung = v; });
-  editRow('Sprachl. Anforderungen', () => mat.sprachlicheAnforderungen || '',  v => { mat.sprachlicheAnforderungen = v; });
-  editRow('Lautstärke',             () => mat.lautstaerke || '',               v => { mat.lautstaerke = v; });
-  editRow('Differenzierung',        () => arrGet('differenzierungsformen'),    arrSet('differenzierungsformen'));
+  editRow('Methoden geeignet',      () => arrGet('methodenGeeignet'),            arrSet('methodenGeeignet'));
+  editRow('Methoden weniger',       () => arrGet('methodenWenigerGeeignet'),     arrSet('methodenWenigerGeeignet'));
+  editRow('Schüleraktivitäten',     () => arrGet('schueleraktivitaeten'),        arrSet('schueleraktivitaeten'));
+  editRow('Art der Tätigkeit',      () => arrGet('artDerGeistigenTaetigkeit'),   arrSet('artDerGeistigenTaetigkeit'));
+  editRow('Darstellungsformen',     () => arrGet('darstellungsformen'),          arrSet('darstellungsformen'));
+  editRow('Fachliche Voraussetzung',() => arrGet('voraussetzungenFachlich'),     arrSet('voraussetzungenFachlich'));
+  editRow('Method. Voraussetzung',  () => arrGet('voraussetzungenMethodisch'),   arrSet('voraussetzungenMethodisch'));
+  editRow('KLP-Kompetenzen',        () => arrGet('kompetenzenKLP'),              arrSet('kompetenzenKLP'),             false, 'kompetenzenKLP');
+  editRow('Kognit. Beanspruchung',  () => mat.kognitiveBeanspruchung || '',      v => { mat.kognitiveBeanspruchung = v; });
+  editRow('Sprachl. Anforderungen', () => mat.sprachlicheAnforderungen || '',    v => { mat.sprachlicheAnforderungen = v; });
+  editRow('Lautstärke',             () => mat.lautstaerke || '',                 v => { mat.lautstaerke = v; });
+  editRow('Differenzierung',        () => arrGet('differenzierungsformen'),      arrSet('differenzierungsformen'));
   editRow('Anmerkungen',            () => mat.persoenlicheAnmerkungen || '',   v => { mat.persoenlicheAnmerkungen = v; }, true);
 
   row.appendChild(detail);

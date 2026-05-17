@@ -394,6 +394,10 @@ textarea.finp { resize: vertical; min-height: 80px; }
   background: var(--surf2); border-radius: 10px; color: var(--tx2);
 }
 
+.mat-detail-row.needs-review { background: #fffbeb; }
+.mat-review-inline {
+  margin-left: 4px; font-size: 10px; color: #92400e; cursor: help;
+}
 .mat-review-badge {
   font-size: 10px; padding: 1px 6px;
   background: #fef3c7; color: #92400e;

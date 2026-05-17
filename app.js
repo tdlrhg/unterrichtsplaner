@@ -60,12 +60,12 @@ function buildSetup() {
 // ── Init ─────────────────────────────────────────────────────────
 (async () => {
   render();
+  const [loaded, matdb] = await Promise.all([
+    sbDownload('data.json').catch(() => null),
+    sbDownload('materialien.json').catch(() => []),
+  ]);
+  MATDB = Array.isArray(matdb) ? matdb : [];
   try {
-    const [loaded, matdb] = await Promise.all([
-      sbDownload('data.json'),
-      sbDownload('materialien.json'),
-    ]);
-    MATDB = matdb || [];
     S.data = loaded || { fachplanungen: [], kurse: [] };
     if (S.data.kurse && S.data.planung && !S.data.fachplanungen) {
       S.data = { fachplanungen: [], kurse: [] };

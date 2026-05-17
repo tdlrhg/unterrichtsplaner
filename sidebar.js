@@ -114,6 +114,11 @@ function buildSidebar() {
     S.view === 'methoden',
     () => { S.view = 'methoden'; S.sel = null; render(); }
   ));
+  sb.appendChild(sbRow(
+    '📚 Didaktik', null,
+    S.view === 'didaktik',
+    () => { S.view = 'didaktik'; S.sel = null; render(); }
+  ));
 
   // ── Einstellungen ─────────────────────────────────────────────
   sb.appendChild(mk('div', 'sb-sep'));

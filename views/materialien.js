@@ -168,6 +168,111 @@ function saveMatDB() {
   sbUpload('materialien.json', MATDB).catch(e => console.error('Speichern fehlgeschlagen:', e));
 }
 
+function klpRow(mat, detail, row) {
+  if (!mat.kompetenzenKLP) mat.kompetenzenKLP = [];
+
+  const r = mk('div', 'mat-detail-row');
+  r.appendChild(tx('span', 'mat-detail-label', 'KLP-Kompetenzen'));
+
+  const wrap = mk('div', 'klp-selector');
+
+  function rebuildChips() {
+    wrap.innerHTML = '';
+
+    // Chips für bereits verknüpfte Kompetenzen
+    const chipsDiv = mk('div', 'klp-chips');
+    (mat.kompetenzenKLP || []).forEach(id => {
+      const entry = KLPDB.find(e => e.id === id);
+      const chip = mk('div', 'klp-chip');
+      const label = entry
+        ? `[${entry.kompetenzcodes.join(', ')}] ${entry.beschreibung.slice(0, 60)}${entry.beschreibung.length > 60 ? '…' : ''}`
+        : id;
+      chip.textContent = label;
+      chip.title = entry ? entry.beschreibung : id;
+      const x = tx('span', 'klp-chip-x', '×');
+      x.onclick = () => {
+        mat.kompetenzenKLP = mat.kompetenzenKLP.filter(i => i !== id);
+        saveMatDB();
+        rebuildChips();
+      };
+      chip.appendChild(x);
+      chipsDiv.appendChild(chip);
+    });
+    wrap.appendChild(chipsDiv);
+
+    // Suchfeld
+    const searchWrap = mk('div', 'klp-search-wrap');
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.className = 'mat-edit-inp';
+    inp.placeholder = 'Kompetenz suchen…';
+    searchWrap.appendChild(inp);
+
+    const dd = mk('div', 'klp-dd');
+    dd.style.display = 'none';
+    searchWrap.appendChild(dd);
+
+    function showDropdown(q) {
+      dd.innerHTML = '';
+      const faecher = mat.fach || [];
+      const jahrgaenge = mat.jahrgang || [];
+
+      let hits = KLPDB.filter(e => {
+        if (mat.kompetenzenKLP.includes(e.id)) return false;
+        if (faecher.length && !faecher.includes(e.fach)) return false;
+        if (q.length > 1) {
+          const txt = (e.beschreibung + ' ' + e.inhaltsfeld + ' ' + e.kompetenzcodes.join(' ')).toLowerCase();
+          if (!txt.includes(q.toLowerCase())) return false;
+        }
+        return true;
+      }).slice(0, 20);
+
+      if (!hits.length) {
+        dd.style.display = 'none'; return;
+      }
+
+      // Group by inhaltsfeld
+      const grouped = {};
+      hits.forEach(e => {
+        if (!grouped[e.inhaltsfeld]) grouped[e.inhaltsfeld] = [];
+        grouped[e.inhaltsfeld].push(e);
+      });
+
+      Object.entries(grouped).forEach(([ifName, entries]) => {
+        const grpHdr = tx('div', 'klp-dd-group', ifName);
+        dd.appendChild(grpHdr);
+        entries.forEach(entry => {
+          const item = mk('div', 'klp-dd-item');
+          const codes = tx('span', 'klp-dd-codes', entry.kompetenzcodes.join(', '));
+          const desc = tx('span', 'klp-dd-desc', entry.beschreibung);
+          item.appendChild(codes);
+          item.appendChild(desc);
+          item.title = `Jg. ${entry.jahrgang} · ${entry.inhaltsfeld}`;
+          item.onmousedown = e => {
+            e.preventDefault();
+            mat.kompetenzenKLP.push(entry.id);
+            saveMatDB();
+            inp.value = '';
+            dd.style.display = 'none';
+            rebuildChips();
+          };
+          dd.appendChild(item);
+        });
+      });
+      dd.style.display = 'block';
+    }
+
+    inp.oninput = () => showDropdown(inp.value);
+    inp.onfocus = () => showDropdown(inp.value);
+    inp.onblur = () => setTimeout(() => { dd.style.display = 'none'; }, 150);
+
+    wrap.appendChild(searchWrap);
+    r.appendChild(wrap);
+  }
+
+  rebuildChips();
+  detail.appendChild(r);
+}
+
 function openMatDetail(mat, row) {
   const existing = row.querySelector('.mat-detail');
   if (existing) { existing.remove(); return; }
@@ -230,7 +335,8 @@ function openMatDetail(mat, row) {
   editRow('Darstellungsformen',     () => arrGet('darstellungsformen'),          arrSet('darstellungsformen'));
   editRow('Fachliche Voraussetzung',() => arrGet('voraussetzungenFachlich'),     arrSet('voraussetzungenFachlich'));
   editRow('Method. Voraussetzung',  () => arrGet('voraussetzungenMethodisch'),   arrSet('voraussetzungenMethodisch'));
-  editRow('KLP-Kompetenzen',        () => arrGet('kompetenzenKLP'),              arrSet('kompetenzenKLP'),             false, 'kompetenzenKLP');
+  // ── KLP-Kompetenzen (strukturierter Selector) ─────────────────
+  klpRow(mat, detail, row);
   editRow('Kognit. Beanspruchung',  () => mat.kognitiveBeanspruchung || '',      v => { mat.kognitiveBeanspruchung = v; });
   editRow('Sprachl. Anforderungen', () => mat.sprachlicheAnforderungen || '',    v => { mat.sprachlicheAnforderungen = v; });
   editRow('Lautstärke',             () => mat.lautstaerke || '',                 v => { mat.lautstaerke = v; });

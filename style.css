@@ -150,6 +150,18 @@ textarea.finp { resize: vertical; min-height: 80px; }
 .klp-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
 .klp-item:hover { background: var(--surf2); } .klp-item.sel { background: #dbeafe; }
 .klp-item input[type=checkbox] { width: auto; }
+/* KLP-Selector in Materialdetail */
+.klp-selector { width: 100%; }
+.klp-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.klp-chip { display: flex; align-items: center; gap: 4px; background: #dbeafe; color: #1e40af; font-size: 11px; border-radius: 4px; padding: 2px 6px; line-height: 1.4; }
+.klp-chip-x { cursor: pointer; font-size: 13px; line-height: 1; opacity: .7; } .klp-chip-x:hover { opacity: 1; }
+.klp-search-wrap { position: relative; }
+.klp-dd { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid var(--bord); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,.12); z-index: 200; max-height: 260px; overflow-y: auto; }
+.klp-dd-group { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--tx2); padding: 6px 10px 2px; background: var(--surf); }
+.klp-dd-item { padding: 6px 10px; cursor: pointer; font-size: 12px; display: flex; gap: 8px; align-items: baseline; }
+.klp-dd-item:hover { background: var(--surf2); }
+.klp-dd-codes { font-weight: 700; color: var(--pri); white-space: nowrap; flex-shrink: 0; }
+.klp-dd-desc { color: var(--tx1); }
 
 /* ── Coverage ── */
 .cov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }

@@ -1,0 +1,4452 @@
+[
+  {
+    "id": "BIO_SI_IF1_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "UF2",
+      "UF3",
+      "E1"
+    ],
+    "beschreibung": "Lebewesen von unbelebten Objekten anhand der Kennzeichen des Lebendigen unterscheiden"
+  },
+  {
+    "id": "BIO_SI_IF1_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "UF2",
+      "UF3"
+    ],
+    "beschreibung": "tierische und pflanzliche Zellen anhand von lichtmikroskopisch sichtbaren Strukturen unterscheiden"
+  },
+  {
+    "id": "BIO_SI_IF1_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "UF3"
+    ],
+    "beschreibung": "kriteriengeleitet ausgewählte Vertreter der Wirbeltierklassen vergleichen und einer Klasse zuordnen"
+  },
+  {
+    "id": "BIO_SI_IF1_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "UF1",
+      "UF4"
+    ],
+    "beschreibung": "die Angepasstheit ausgewählter Säugetiere und Vögel an ihren Lebensraum hinsichtlich exemplarischer Aspekte wie Skelettaufbau, Fortbewegung, Nahrungserwerb, Fortpflanzung oder Individualentwicklung erklären"
+  },
+  {
+    "id": "BIO_SI_IF1_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "UF2",
+      "UF4"
+    ],
+    "beschreibung": "Ähnlichkeiten und Unterschiede zwischen Wild- und Nutztieren durch gezielte Züchtung erklären und auf Vererbung zurückführen"
+  },
+  {
+    "id": "BIO_SI_IF1_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "das Zusammenwirken der verschiedenen Organe einer Samenpflanze an einem Beispiel erläutern"
+  },
+  {
+    "id": "BIO_SI_IF1_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "UF1",
+      "UF4",
+      "K3"
+    ],
+    "beschreibung": "den Prozess der Fotosynthese als Reaktionsschema in Worten darstellen"
+  },
+  {
+    "id": "BIO_SI_IF1_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "UF4"
+    ],
+    "beschreibung": "die Bedeutung der Fotosynthese für das Leben von Pflanzen und Tieren erklären"
+  },
+  {
+    "id": "BIO_SI_IF1_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "E4"
+    ],
+    "beschreibung": "einfache tierische und pflanzliche Präparate mikroskopisch untersuchen"
+  },
+  {
+    "id": "BIO_SI_IF1_010",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "E4",
+      "K1"
+    ],
+    "beschreibung": "Zellen nach Vorgaben in ihren Grundstrukturen zeichnen"
+  },
+  {
+    "id": "BIO_SI_IF1_011",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "E2",
+      "E5"
+    ],
+    "beschreibung": "durch den Vergleich verschiedener mikroskopischer Präparate die Zelle als strukturelle Grundeinheit aller Lebewesen bestätigen"
+  },
+  {
+    "id": "BIO_SI_IF1_012",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "E2",
+      "E4",
+      "E5",
+      "E7"
+    ],
+    "beschreibung": "einen Bestimmungsschlüssel (auch digital) zur Identifizierung einheimischer Samenpflanzen sachgerecht anwenden und seine algorithmische Struktur beschreiben"
+  },
+  {
+    "id": "BIO_SI_IF1_013",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "E2",
+      "E4",
+      "K1"
+    ],
+    "beschreibung": "Blüten nach Vorgaben präparieren und deren Aufbau darstellen"
+  },
+  {
+    "id": "BIO_SI_IF1_014",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E7",
+      "K1"
+    ],
+    "beschreibung": "ein Experiment nach dem Prinzip der Variablenkontrolle zum Einfluss verschiedener Faktoren auf Keimung und Wachstum planen, durchführen und protokollieren"
+  },
+  {
+    "id": "BIO_SI_IF1_015",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "E6",
+      "UF2",
+      "UF3"
+    ],
+    "beschreibung": "den Zusammenhang zwischen der Struktur von Früchten und Samen und deren Funktion für die Ausbreitung von Pflanzen anhand einfacher Funktionsmodelle erklären"
+  },
+  {
+    "id": "BIO_SI_IF1_016",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "E3",
+      "E4",
+      "E5"
+    ],
+    "beschreibung": "den Aufbau von Säugetier- und Vogelknochen vergleichend untersuchen und wesentliche Eigenschaften anhand der Ergebnisse funktional deuten"
+  },
+  {
+    "id": "BIO_SI_IF1_017",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Vielfalt und Angepasstheiten von Lebewesen",
+    "kompetenzcodes": [
+      "B1",
+      "B2"
+    ],
+    "beschreibung": "verschiedene Formen der Nutztierhaltung beschreiben und im Hinblick auf ausgewählte Kriterien erörtern"
+  },
+  {
+    "id": "BIO_SI_IF2_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1",
+      "UF4"
+    ],
+    "beschreibung": "Zusammenhänge zwischen Bau und Funktion jeweils am Beispiel der Verdauungsorgane, der Atmungsorgane, des Herz- und Kreislaufsystems und des Bewegungssystems erläutern"
+  },
+  {
+    "id": "BIO_SI_IF2_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "das Grundprinzip des Zusammenwirkens von Skelett und Muskulatur bei Bewegungen erklären"
+  },
+  {
+    "id": "BIO_SI_IF2_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "die Arbeitsteilung der Verdauungsorgane erläutern"
+  },
+  {
+    "id": "BIO_SI_IF2_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF4"
+    ],
+    "beschreibung": "am Beispiel des Dünndarms und der Lunge das Prinzip der Oberflächenvergrößerung und seine Bedeutung für den Stoffaustausch erläutern"
+  },
+  {
+    "id": "BIO_SI_IF2_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF4"
+    ],
+    "beschreibung": "einen Zusammenhang zwischen Nahrungsaufnahme, Energiebedarf und unterschiedlicher Belastung des Körpers herstellen"
+  },
+  {
+    "id": "BIO_SI_IF2_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1",
+      "UF2",
+      "UF4"
+    ],
+    "beschreibung": "Blut als Transportmittel für Nährstoffe, Sauerstoff und Kohlenstoffdioxid beschreiben und die Bedeutung des Transports für die damit zusammenhängenden Stoffwechselvorgänge erläutern"
+  },
+  {
+    "id": "BIO_SI_IF2_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1",
+      "UF2",
+      "K4"
+    ],
+    "beschreibung": "die Folgen des Tabakkonsums für den Organismus erläutern"
+  },
+  {
+    "id": "BIO_SI_IF2_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "K1"
+    ],
+    "beschreibung": "bei der Untersuchung von Nahrungsmitteln einfache Nährstoffnachweise nach Vorgaben planen, durchführen und dokumentieren"
+  },
+  {
+    "id": "BIO_SI_IF2_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "E6"
+    ],
+    "beschreibung": "die Wirkungsweise von Verdauungsenzymen mithilfe einfacher Modellvorstellungen beschreiben"
+  },
+  {
+    "id": "BIO_SI_IF2_010",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "K1"
+    ],
+    "beschreibung": "in einem quantitativen Experiment zur Abhängigkeit der Herzschlag- oder Atemfrequenz von der Intensität körperlicher Anstrengung Daten erheben, darstellen und auswerten"
+  },
+  {
+    "id": "BIO_SI_IF2_011",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "E6"
+    ],
+    "beschreibung": "die Funktion der Atemmuskulatur zum Aufbau von Druckunterschieden an einem Modell erklären"
+  },
+  {
+    "id": "BIO_SI_IF2_012",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "E6"
+    ],
+    "beschreibung": "die Funktionsweise des Herzens an einem einfachen Modell erklären und das Konzept des Blutkreislaufs an einem Schema erläutern"
+  },
+  {
+    "id": "BIO_SI_IF2_013",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "E4",
+      "E5",
+      "UF1"
+    ],
+    "beschreibung": "Blut (Fertigpräparate) mikroskopisch untersuchen und seine heterogene Zusammensetzung beschreiben"
+  },
+  {
+    "id": "BIO_SI_IF2_014",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "B1",
+      "B2"
+    ],
+    "beschreibung": "Lebensmittel anhand von ausgewählten Qualitätsmerkmalen beurteilen"
+  },
+  {
+    "id": "BIO_SI_IF2_015",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "B3",
+      "B4",
+      "K4"
+    ],
+    "beschreibung": "Empfehlungen zur Gesunderhaltung des Körpers und zur Suchtprophylaxe unter Verwendung von biologischem Wissen entwickeln"
+  },
+  {
+    "id": "BIO_SI_IF3_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Sexualerziehung",
+    "kompetenzcodes": [
+      "UF1",
+      "UF2"
+    ],
+    "beschreibung": "körperliche und psychische Veränderungen in der Pubertät erläutern"
+  },
+  {
+    "id": "BIO_SI_IF3_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Sexualerziehung",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "Bau und Funktion der menschlichen Geschlechtsorgane erläutern"
+  },
+  {
+    "id": "BIO_SI_IF3_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Sexualerziehung",
+    "kompetenzcodes": [
+      "UF1",
+      "UF4"
+    ],
+    "beschreibung": "den weiblichen Zyklus in Grundzügen erklären"
+  },
+  {
+    "id": "BIO_SI_IF3_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Sexualerziehung",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "Methoden der Empfängnisverhütung für eine verantwortungsvolle Lebensplanung beschreiben"
+  },
+  {
+    "id": "BIO_SI_IF3_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Sexualerziehung",
+    "kompetenzcodes": [
+      "UF1",
+      "UF2"
+    ],
+    "beschreibung": "Eizelle und Spermium vergleichen und den Vorgang der Befruchtung beschreiben"
+  },
+  {
+    "id": "BIO_SI_IF3_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Sexualerziehung",
+    "kompetenzcodes": [
+      "UF1",
+      "UF2",
+      "B3"
+    ],
+    "beschreibung": "Schwangerschaft und Geburt beschreiben und Maßnahmen zur Vermeidung von Gesundheitsrisiken für Embryo und Fötus begründen"
+  },
+  {
+    "id": "BIO_SI_IF3_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Sexualerziehung",
+    "kompetenzcodes": [
+      "E1",
+      "E2",
+      "E5",
+      "UF4"
+    ],
+    "beschreibung": "anhand geeigneten Bildmaterials die Entwicklung eines Embryos bzw. Fötus beschreiben und das Wachstum mit der Vermehrung von Zellen erklären"
+  },
+  {
+    "id": "BIO_SI_IF3_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Sexualerziehung",
+    "kompetenzcodes": [
+      "B2",
+      "B3"
+    ],
+    "beschreibung": "den Sprachgebrauch im Bereich der Sexualität kritisch reflektieren und sich situationsangemessen, respektvoll und geschlechtersensibel ausdrücken"
+  },
+  {
+    "id": "BIO_SI_IF4_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "UF1",
+      "UF3",
+      "K1"
+    ],
+    "beschreibung": "an einem heimischen Ökosystem Biotop und Biozönose beschreiben sowie die räumliche Gliederung und Veränderungen im Jahresverlauf erläutern"
+  },
+  {
+    "id": "BIO_SI_IF4_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "UF2",
+      "UF4"
+    ],
+    "beschreibung": "Angepasstheiten von ausgewählten Lebewesen an abiotische und biotische Umweltfaktoren erläutern"
+  },
+  {
+    "id": "BIO_SI_IF4_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "UF1",
+      "UF2"
+    ],
+    "beschreibung": "Parasitismus und Symbiose in ausgewählten Beispielen identifizieren und erläutern"
+  },
+  {
+    "id": "BIO_SI_IF4_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "UF2",
+      "UF4"
+    ],
+    "beschreibung": "die Koexistenz von verschiedenen Arten mit ihren unterschiedlichen Ansprüchen an die Umwelt erklären"
+  },
+  {
+    "id": "BIO_SI_IF4_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "UF3"
+    ],
+    "beschreibung": "wesentliche Merkmale im äußeren Körperbau ausgewählter Wirbellosen-Taxa nennen und diesen Tiergruppen konkrete Vertreter begründet zuordnen"
+  },
+  {
+    "id": "BIO_SI_IF4_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "UF2",
+      "UF3"
+    ],
+    "beschreibung": "Pilze von Tieren und Pflanzen unterscheiden und an ausgewählten Beispielen ihre Rolle im Ökosystem erklären"
+  },
+  {
+    "id": "BIO_SI_IF4_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "UF1",
+      "UF4"
+    ],
+    "beschreibung": "das Grundprinzip der Fotosynthese beschreiben und sie als Energiebereitstellungsprozess dem Grundprinzip der Zellatmung gegenüberstellen"
+  },
+  {
+    "id": "BIO_SI_IF4_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "UF3",
+      "UF4",
+      "E6",
+      "K1"
+    ],
+    "beschreibung": "ausgehend von einfachen Nahrungsnetzen die Stoff- und Energieflüsse zwischen Produzenten, Konsumenten, Destruenten und Umwelt in einem Ökosystem erläutern"
+  },
+  {
+    "id": "BIO_SI_IF4_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "UF1",
+      "UF4"
+    ],
+    "beschreibung": "die natürliche Sukzession eines Ökosystems beschreiben und anthropogene Einflüsse auf dessen Entwicklung erläutern"
+  },
+  {
+    "id": "BIO_SI_IF4_010",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "E2",
+      "E4"
+    ],
+    "beschreibung": "ein heimisches Ökosystem hinsichtlich seiner Struktur untersuchen und dort vorkommende Taxa bestimmen"
+  },
+  {
+    "id": "BIO_SI_IF4_011",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "E1",
+      "E4",
+      "E5"
+    ],
+    "beschreibung": "abiotische Faktoren in einem heimischen Ökosystem messen und mit dem Vorkommen von Arten in Beziehung setzen"
+  },
+  {
+    "id": "BIO_SI_IF4_012",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "E1",
+      "E3",
+      "E4",
+      "E5"
+    ],
+    "beschreibung": "die Bedeutung von abiotischen Faktoren für die Habitatpräferenz von Wirbellosen experimentell überprüfen"
+  },
+  {
+    "id": "BIO_SI_IF4_013",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "E3",
+      "E5",
+      "E7",
+      "UF3"
+    ],
+    "beschreibung": "historische Experimente zur Fotosynthese in Bezug auf zugrundeliegende Hypothesen erklären und hinsichtlich Stoff- und Energieflüssen auswerten"
+  },
+  {
+    "id": "BIO_SI_IF4_014",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "E2",
+      "E4"
+    ],
+    "beschreibung": "Angepasstheiten von Pflanzen an einen abiotischen Faktor anhand von mikroskopischen Präparaten beschreiben"
+  },
+  {
+    "id": "BIO_SI_IF4_015",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "B1",
+      "B2"
+    ],
+    "beschreibung": "am Beispiel der Insekten Eingriffe des Menschen in die Lebensräume Wirbelloser bewerten"
+  },
+  {
+    "id": "BIO_SI_IF4_016",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "B1",
+      "B4",
+      "K4"
+    ],
+    "beschreibung": "die Bedeutung des Biotopschutzes für den Artenschutz und den Erhalt der biologischen Vielfalt erläutern"
+  },
+  {
+    "id": "BIO_SI_IF4_017",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "B4"
+    ],
+    "beschreibung": "die Notwendigkeit von Naturschutz auch ethisch begründen"
+  },
+  {
+    "id": "BIO_SI_IF4_018",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie und Naturschutz",
+    "kompetenzcodes": [
+      "B2",
+      "B3",
+      "K4"
+    ],
+    "beschreibung": "Umgestaltungen der Landschaft durch menschliche Eingriffe unter ökonomischen und ökologischen Aspekten bewerten und Handlungsoptionen im Sinne des Naturschutzes und der Nachhaltigkeit entwickeln"
+  },
+  {
+    "id": "BIO_SI_IF5_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Evolution",
+    "kompetenzcodes": [
+      "UF3"
+    ],
+    "beschreibung": "die wesentlichen Gedanken der Darwin‘schen Evolutionstheorie zusammenfassend darstellen (UF1, UF2, UF3,), (cid:224) Angepasstheit vor dem Hintergrund der Selektionstheorie und der Vererbung von Merkmalen erklären (UF2, UF4) (cid:224) Artenwandel durch natürliche Selektion mit Artenwandel durch Züchtung vergleichen"
+  },
+  {
+    "id": "BIO_SI_IF5_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Evolution",
+    "kompetenzcodes": [
+      "UF2"
+    ],
+    "beschreibung": "den biologischen Artbegriff anwenden"
+  },
+  {
+    "id": "BIO_SI_IF5_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Evolution",
+    "kompetenzcodes": [
+      "UF3",
+      "UF4"
+    ],
+    "beschreibung": "den möglichen Zusammenhang zwischen abgestufter Ähnlichkeit von Lebewesen und ihrer Verwandtschaft erklären"
+  },
+  {
+    "id": "BIO_SI_IF5_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Evolution",
+    "kompetenzcodes": [
+      "E2",
+      "E5",
+      "UF2"
+    ],
+    "beschreibung": "Fossilfunde auswerten und ihre Bedeutung für die Evolutionsforschung erklären"
+  },
+  {
+    "id": "BIO_SI_IF5_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Evolution",
+    "kompetenzcodes": [
+      "E2",
+      "E5",
+      "K1"
+    ],
+    "beschreibung": "anhand von anatomischen Merkmalen Hypothesen zur stammesgeschichtlichen Verwandtschaft ausgewählter Wirbeltiere rekonstruieren und begründen"
+  },
+  {
+    "id": "BIO_SI_IF5_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Evolution",
+    "kompetenzcodes": [
+      "E2",
+      "E5",
+      "K1"
+    ],
+    "beschreibung": "eine Stammbaumhypothese zur Evolution des Menschen anhand ausgewählter Fossilfunde rekonstruieren und begründen"
+  },
+  {
+    "id": "BIO_SI_IF5_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Evolution",
+    "kompetenzcodes": [
+      "E1",
+      "E2",
+      "E5",
+      "UF2"
+    ],
+    "beschreibung": "den Zusammenhang zwischen der Angepasstheit von Lebewesen an einen Lebensraum und ihrem Fortpflanzungserfolg an einem gegenwärtig beobachtbaren Beispiel erklären"
+  },
+  {
+    "id": "BIO_SI_IF5_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Evolution",
+    "kompetenzcodes": [
+      "E6"
+    ],
+    "beschreibung": "die Eignung von Züchtung als Analogmodell für den Artenwandel durch natürliche Selektion beurteilen"
+  },
+  {
+    "id": "BIO_SI_IF5_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Evolution",
+    "kompetenzcodes": [
+      "B1",
+      "B2",
+      "B4",
+      "E7",
+      "K4"
+    ],
+    "beschreibung": "die naturwissenschaftliche Position der Evolutionstheorie von nichtnaturwissenschaftlichen Vorstellungen zur Entwicklung von Lebewesen abgrenzen"
+  },
+  {
+    "id": "BIO_SI_IF6_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Genetik",
+    "kompetenzcodes": [
+      "UF1",
+      "UF4"
+    ],
+    "beschreibung": "den Zellzyklus auf der Ebene der Chromosomen vereinfacht beschreiben und seine Bedeutung für den vielzelligen Organismus erläutern"
+  },
+  {
+    "id": "BIO_SI_IF6_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Genetik",
+    "kompetenzcodes": [
+      "UF1",
+      "UF4"
+    ],
+    "beschreibung": "das Prinzip der Meiose und die Bedeutung dieses Prozesses für die sexuelle Fortpflanzung und Variabilität erklären"
+  },
+  {
+    "id": "BIO_SI_IF6_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Genetik",
+    "kompetenzcodes": [
+      "UF1",
+      "UF2"
+    ],
+    "beschreibung": "Ursachen und Auswirkungen einer Genommutation am Beispiel der Trisomie 21 beschreiben"
+  },
+  {
+    "id": "BIO_SI_IF6_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Genetik",
+    "kompetenzcodes": [
+      "UF2"
+    ],
+    "beschreibung": "Gesetzmäßigkeiten der Vererbung auf einfache Beispiele anwenden"
+  },
+  {
+    "id": "BIO_SI_IF6_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Genetik",
+    "kompetenzcodes": [
+      "UF2",
+      "UF4",
+      "E5",
+      "K1"
+    ],
+    "beschreibung": "Familienstammbäume mit eindeutigem Erbgang analysieren"
+  },
+  {
+    "id": "BIO_SI_IF6_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Genetik",
+    "kompetenzcodes": [
+      "UF1",
+      "E6"
+    ],
+    "beschreibung": "das grundlegende Prinzip der Proteinbiosynthese beschreiben und die Bedeutung von Proteinen bei der Merkmalsausprägung anhand ihrer funktionellen Vielfalt darstellen"
+  },
+  {
+    "id": "BIO_SI_IF6_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Genetik",
+    "kompetenzcodes": [
+      "E3",
+      "E6"
+    ],
+    "beschreibung": "mithilfe von Chromosomenmodellen eine Vorhersage über den grundlegenden Ablauf der Mitose treffen"
+  },
+  {
+    "id": "BIO_SI_IF6_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Genetik",
+    "kompetenzcodes": [
+      "E6",
+      "K1"
+    ],
+    "beschreibung": "Karyogramme des Menschen sachgerecht analysieren sowie Abweichungen vom Chromosomensatz im Karyogramm ermitteln (E5, UF1, UF2) (cid:224) die Rekombinationswahrscheinlichkeiten von Allelen modellhaft darstellen"
+  },
+  {
+    "id": "BIO_SI_IF6_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Genetik",
+    "kompetenzcodes": [
+      "B1",
+      "B2",
+      "B3",
+      "B4"
+    ],
+    "beschreibung": "Möglichkeiten und Grenzen der Pränataldiagnostik für ausgewählte Methoden benennen und kritisch reflektieren"
+  },
+  {
+    "id": "BIO_SI_IF7_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1",
+      "UF4"
+    ],
+    "beschreibung": "die Bedeutung der Glucose für den Energiehaushalt der Zelle erläutern"
+  },
+  {
+    "id": "BIO_SI_IF7_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1",
+      "UF4",
+      "E6"
+    ],
+    "beschreibung": "am Beispiel des Blutzuckergehalts die Bedeutung der Regulation durch negatives Feedback und durch antagonistisch wirkende Hormone erläutern"
+  },
+  {
+    "id": "BIO_SI_IF7_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1",
+      "UF2",
+      "E5"
+    ],
+    "beschreibung": "Ursachen und Auswirkungen von Diabetes mellitus Typ I und II datenbasiert miteinander vergleichen sowie geeignete Therapieansätze ableiten"
+  },
+  {
+    "id": "BIO_SI_IF7_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "den Bau und die Vermehrung von Bakterien und Viren beschreiben"
+  },
+  {
+    "id": "BIO_SI_IF7_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF4"
+    ],
+    "beschreibung": "das Zusammenwirken des unspezifischen und spezifischen Immunsystems an einem Beispiel erklären"
+  },
+  {
+    "id": "BIO_SI_IF7_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF2"
+    ],
+    "beschreibung": "die Immunantwort auf körperfremde Gewebe und Organe erläutern"
+  },
+  {
+    "id": "BIO_SI_IF7_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF3"
+    ],
+    "beschreibung": "den Unterschied zwischen passiver und aktiver Immunisierung erklären"
+  },
+  {
+    "id": "BIO_SI_IF7_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF2",
+      "E2"
+    ],
+    "beschreibung": "die allergische Reaktion mit der Immunantwort bei Infektionen vergleichen"
+  },
+  {
+    "id": "BIO_SI_IF7_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "die Bedeutung hygienischer Maßnahmen zur Vermeidung von Infektionskrankheiten erläutern"
+  },
+  {
+    "id": "BIO_SI_IF7_010",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1",
+      "UF3"
+    ],
+    "beschreibung": "die Unterschiede zwischen Reiz und Erregung sowie zwischen bewusster Reaktion und Reflexen beschreiben"
+  },
+  {
+    "id": "BIO_SI_IF7_011",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1",
+      "E6"
+    ],
+    "beschreibung": "den Vorgang der Informationsübertragung an chemischen Synapsen anhand eines einfachen Modells beschreiben"
+  },
+  {
+    "id": "BIO_SI_IF7_012",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF2",
+      "UF4"
+    ],
+    "beschreibung": "die Informationsübertragung im Nervensystem mit der Informationsübertragung durch Hormone vergleichen (UF 3), (cid:224) körperliche Reaktionen auf Stresssituationen erklären"
+  },
+  {
+    "id": "BIO_SI_IF7_013",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "UF1",
+      "B1"
+    ],
+    "beschreibung": "von Suchtmitteln ausgehende physische und psychische Veränderungen beschreiben und Folgen des Konsums für die Gesundheit beurteilen"
+  },
+  {
+    "id": "BIO_SI_IF7_014",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "E6"
+    ],
+    "beschreibung": "das Schlüssel-Schloss-Modell zur Erklärung des Wirkmechanismus von Hormonen anwenden"
+  },
+  {
+    "id": "BIO_SI_IF7_015",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "E1",
+      "E3",
+      "E5",
+      "E7"
+    ],
+    "beschreibung": "das experimentelle Vorgehen bei historischen Versuchen zur Bekämpfung von Infektionskrankheiten erläutern und die Ergebnisse interpretieren"
+  },
+  {
+    "id": "BIO_SI_IF7_016",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "E1",
+      "E5"
+    ],
+    "beschreibung": "Experimente zur Wirkung von hygienischen Maßnahmen auf das Wachstum von Mikroorganismen auswerten"
+  },
+  {
+    "id": "BIO_SI_IF7_017",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "E4",
+      "E5"
+    ],
+    "beschreibung": "die Wahrnehmung eines Reizes experimentell erfassen"
+  },
+  {
+    "id": "BIO_SI_IF7_018",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "B2"
+    ],
+    "beschreibung": "Handlungsoptionen zur Vorbeugung von Diabetes Typ II entwickeln"
+  },
+  {
+    "id": "BIO_SI_IF7_019",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "B1",
+      "B2",
+      "B3",
+      "B4",
+      "K2",
+      "K4"
+    ],
+    "beschreibung": "Positionen zum Thema Impfung auch im Internet recherchieren, auswerten, Strategien und Absichten erkennen und unter Berücksichtigung der Empfehlungen der Ständigen Impfkommission kritisch reflektieren"
+  },
+  {
+    "id": "BIO_SI_IF7_020",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Mensch und Gesundheit",
+    "kompetenzcodes": [
+      "B1",
+      "B3",
+      "B4",
+      "K4"
+    ],
+    "beschreibung": "den Einsatz von Antibiotika im Hinblick auf die Entstehung von Resistenzen beurteilen"
+  },
+  {
+    "id": "CH_SI_IF1_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Stoffe und Stoffeigenschaften",
+    "kompetenzcodes": [
+      "UF1",
+      "UF2"
+    ],
+    "beschreibung": "Reinstoffe aufgrund charakteristischer Eigenschaften (Schmelztemperatur/Siedetemperatur, Dichte, Löslichkeit) identifizieren"
+  },
+  {
+    "id": "CH_SI_IF1_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Stoffe und Stoffeigenschaften",
+    "kompetenzcodes": [
+      "UF2",
+      "UF3"
+    ],
+    "beschreibung": "Stoffe aufgrund ihrer Eigenschaften klassifizieren"
+  },
+  {
+    "id": "CH_SI_IF1_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Stoffe und Stoffeigenschaften",
+    "kompetenzcodes": [
+      "E4",
+      "E5",
+      "K1"
+    ],
+    "beschreibung": "eine geeignete messbare Stoffeigenschaft experimentell ermitteln"
+  },
+  {
+    "id": "CH_SI_IF1_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Stoffe und Stoffeigenschaften",
+    "kompetenzcodes": [
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "K1"
+    ],
+    "beschreibung": "Experimente zur Trennung eines Stoffgemisches in Reinstoffe (Filtration, Destillation) unter Nutzung relevanter Stoffeigenschaften planen und sachgerecht durchführen"
+  },
+  {
+    "id": "CH_SI_IF1_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Stoffe und Stoffeigenschaften",
+    "kompetenzcodes": [
+      "E6",
+      "K3"
+    ],
+    "beschreibung": "Aggregatzustände und deren Änderungen auf der Grundlage eines einfachen Teilchenmodells erklären"
+  },
+  {
+    "id": "CH_SI_IF1_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Stoffe und Stoffeigenschaften",
+    "kompetenzcodes": [
+      "B1",
+      "K2"
+    ],
+    "beschreibung": "die Verwendung ausgewählter Stoffe im Alltag mithilfe ihrer Eigenschaften begründen"
+  },
+  {
+    "id": "CH_SI_IF2_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Chemische Reaktion",
+    "kompetenzcodes": [
+      "UF2",
+      "UF3"
+    ],
+    "beschreibung": "chemische Reaktionen an der Bildung von neuen Stoffen mit anderen Eigenschaften und in Abgrenzung zu physikalischen Vorgängen identifizieren"
+  },
+  {
+    "id": "CH_SI_IF2_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Chemische Reaktion",
+    "kompetenzcodes": [
+      "UF1",
+      "K1"
+    ],
+    "beschreibung": "chemische Reaktionen in Form von Reaktionsschemata in Worten darstellen"
+  },
+  {
+    "id": "CH_SI_IF2_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Chemische Reaktion",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "bei ausgewählten chemischen Reaktionen die Energieumwandlung der in den Stoffen gespeicherten Energie (chemische Energie) in andere Energieformen begründet angeben"
+  },
+  {
+    "id": "CH_SI_IF2_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Chemische Reaktion",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "bei ausgewählten chemischen Reaktionen die Bedeutung der Aktivierungsenergie zum Auslösen einer Reaktion beschreiben"
+  },
+  {
+    "id": "CH_SI_IF2_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Chemische Reaktion",
+    "kompetenzcodes": [
+      "E4",
+      "E5",
+      "K1"
+    ],
+    "beschreibung": "einfache chemische Reaktionen sachgerecht durchführen und auswerten"
+  },
+  {
+    "id": "CH_SI_IF2_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Chemische Reaktion",
+    "kompetenzcodes": [
+      "E2",
+      "UF4"
+    ],
+    "beschreibung": "chemische Reaktionen anhand von Stoff- und Energieumwandlungen auch im Alltag identifizieren"
+  },
+  {
+    "id": "CH_SI_IF2_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Chemische Reaktion",
+    "kompetenzcodes": [
+      "B1",
+      "K4"
+    ],
+    "beschreibung": "die Bedeutung chemischer Reaktionen in der Lebenswelt begründen"
+  },
+  {
+    "id": "CH_SI_IF3_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Verbrennung",
+    "kompetenzcodes": [
+      "UF2",
+      "UF3"
+    ],
+    "beschreibung": "anhand von Beispielen Reinstoffe in chemische Elemente und Verbindungen einteilen"
+  },
+  {
+    "id": "CH_SI_IF3_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Verbrennung",
+    "kompetenzcodes": [
+      "UF1",
+      "UF4"
+    ],
+    "beschreibung": "die wichtigsten Bestandteile des Gasgemisches Luft, ihre Eigenschaften und Anteile nennen"
+  },
+  {
+    "id": "CH_SI_IF3_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Verbrennung",
+    "kompetenzcodes": [
+      "UF3"
+    ],
+    "beschreibung": "die Verbrennung als eine chemische Reaktion mit Sauerstoff identifizieren und als Oxidbildung klassifizieren"
+  },
+  {
+    "id": "CH_SI_IF3_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Verbrennung",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "die Analyse und Synthese von Wasser als Beispiel für die Umkehrbarkeit chemischer Reaktionen beschreiben"
+  },
+  {
+    "id": "CH_SI_IF3_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Verbrennung",
+    "kompetenzcodes": [
+      "E5",
+      "E6"
+    ],
+    "beschreibung": "mit einem einfachen Atommodell Massenänderungen bei chemischen Reaktionen mit Sauerstoff erklären"
+  },
+  {
+    "id": "CH_SI_IF3_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Verbrennung",
+    "kompetenzcodes": [
+      "E4"
+    ],
+    "beschreibung": "Nachweisreaktionen von Gasen (Sauerstoff, Wasserstoff, Kohlenstoffdioxid) und Wasser durchführen"
+  },
+  {
+    "id": "CH_SI_IF3_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Verbrennung",
+    "kompetenzcodes": [
+      "E3",
+      "E6",
+      "E7",
+      "K3"
+    ],
+    "beschreibung": "den Verbleib von Verbrennungsprodukten (Kohlenstoffdioxid, Wasser) mit dem Gesetz von der Erhaltung der Masse begründen"
+  },
+  {
+    "id": "CH_SI_IF3_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Verbrennung",
+    "kompetenzcodes": [
+      "B2",
+      "B3",
+      "K4"
+    ],
+    "beschreibung": "in vorgegebenen Situationen Handlungsmöglichkeiten zum Umgang mit brennbaren Stoffen zur Brandvorsorge sowie mit offenem Feuer zur Brandbekämpfung bewerten und sich begründet für eine Handlung entscheiden"
+  },
+  {
+    "id": "CH_SI_IF3_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Verbrennung",
+    "kompetenzcodes": [
+      "B1"
+    ],
+    "beschreibung": "Vor- und Nachteile einer ressourcenschonenden Energieversorgung auf Grundlage der Umkehrbarkeit chemischer Reaktionen am Beispiel von Wasser beschreiben"
+  },
+  {
+    "id": "CH_SI_IF4_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Metalle und Metallgewinnung",
+    "kompetenzcodes": [
+      "UF3"
+    ],
+    "beschreibung": "chemische Reaktionen, bei denen Sauerstoff abgegeben wird, als Zerlegung von Oxiden klassifizieren"
+  },
+  {
+    "id": "CH_SI_IF4_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Metalle und Metallgewinnung",
+    "kompetenzcodes": [
+      "UF2",
+      "UF3"
+    ],
+    "beschreibung": "ausgewählte Metalle aufgrund ihrer Reaktionsfähigkeit mit Sauerstoff als edle und unedle Metalle ordnen"
+  },
+  {
+    "id": "CH_SI_IF4_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Metalle und Metallgewinnung",
+    "kompetenzcodes": [
+      "E3",
+      "E4"
+    ],
+    "beschreibung": "Experimente zur Zerlegung von ausgewählten Metalloxiden hypothesengeleitet planen und geeignete Reaktionspartner auswählen"
+  },
+  {
+    "id": "CH_SI_IF4_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Metalle und Metallgewinnung",
+    "kompetenzcodes": [
+      "E6"
+    ],
+    "beschreibung": "Sauerstoffübertragungsreaktionen im Sinne des Donator-Akzeptor-Konzeptes modellhaft erklären"
+  },
+  {
+    "id": "CH_SI_IF4_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Metalle und Metallgewinnung",
+    "kompetenzcodes": [
+      "E7"
+    ],
+    "beschreibung": "ausgewählte Verfahren zur Herstellung von Metallen erläutern und ihre Bedeutung für die gesellschaftliche Entwicklung beschreiben"
+  },
+  {
+    "id": "CH_SI_IF4_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Metalle und Metallgewinnung",
+    "kompetenzcodes": [
+      "B1",
+      "B4",
+      "K4"
+    ],
+    "beschreibung": "die Bedeutung des Metallrecyclings im Zusammenhang mit Ressourcenschonung und Energieeinsparung beschreiben und auf dieser Basis das eigene Konsum- und Entsorgungsverhalten bewerten"
+  },
+  {
+    "id": "CH_SI_IF4_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Metalle und Metallgewinnung",
+    "kompetenzcodes": [
+      "B3"
+    ],
+    "beschreibung": "Maßnahmen zum Löschen von Metallbränden auf der Grundlage der Sauerstoffübertragungsreaktion begründet auswählen"
+  },
+  {
+    "id": "CH_SI_IF5_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Elemente und ihre Ordnung",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "Vorkommen und Nutzen ausgewählter chemischer Elemente und ihrer Verbindungen in Alltag und Umwelt beschreiben"
+  },
+  {
+    "id": "CH_SI_IF5_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Elemente und ihre Ordnung",
+    "kompetenzcodes": [
+      "UF3"
+    ],
+    "beschreibung": "chemische Elemente anhand ihrer charakteristischen physikalischen und chemischen Eigenschaften den Elementfamilien zuordnen"
+  },
+  {
+    "id": "CH_SI_IF5_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Elemente und ihre Ordnung",
+    "kompetenzcodes": [
+      "UF3",
+      "UF4",
+      "K3"
+    ],
+    "beschreibung": "aus dem Periodensystem der Elemente wesentliche Informationen zum Atombau der Hauptgruppenelemente (Elektronenkonfiguration, Atommasse) herleiten"
+  },
+  {
+    "id": "CH_SI_IF5_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Elemente und ihre Ordnung",
+    "kompetenzcodes": [
+      "E3"
+    ],
+    "beschreibung": "physikalische und chemische Eigenschaften von Alkalimetallen, Halogenen und Edelgasen mithilfe ihrer Stellung im Periodensystem begründet vorhersagen"
+  },
+  {
+    "id": "CH_SI_IF5_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Elemente und ihre Ordnung",
+    "kompetenzcodes": [
+      "E2",
+      "E6",
+      "E7"
+    ],
+    "beschreibung": "die Entwicklung eines differenzierten Kern-Hülle-Modells auf der Grundlage von Experimenten, Beobachtungen und Schlussfolgerungen beschreiben"
+  },
+  {
+    "id": "CH_SI_IF5_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Elemente und ihre Ordnung",
+    "kompetenzcodes": [
+      "E6",
+      "E7"
+    ],
+    "beschreibung": "die Aussagekraft verschiedener Kern-Hülle-Modelle beschreiben"
+  },
+  {
+    "id": "CH_SI_IF5_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Elemente und ihre Ordnung",
+    "kompetenzcodes": [
+      "B3"
+    ],
+    "beschreibung": "vor dem Hintergrund der begrenzten Verfügbarkeit eines chemischen Elements bzw. seiner Verbindungen Handlungsoptionen für ein ressourcenschonendes Konsumverhalten entwickeln"
+  },
+  {
+    "id": "CH_SI_IF6_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Salze und Ionen",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "ausgewählte Eigenschaften von Salzen mit ihrem Aufbau aus Ionen und der Ionenbindung erläutern"
+  },
+  {
+    "id": "CH_SI_IF6_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Salze und Ionen",
+    "kompetenzcodes": [
+      "UF2"
+    ],
+    "beschreibung": "an einem Beispiel die Salzbildung unter Einbezug energetischer Betrachtungen auch mit Angabe einer Reaktionsgleichung in Ionenschreibweise erläutern"
+  },
+  {
+    "id": "CH_SI_IF6_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Salze und Ionen",
+    "kompetenzcodes": [
+      "E4"
+    ],
+    "beschreibung": "den Gehalt von Salzen in einer Lösung durch Eindampfen ermitteln"
+  },
+  {
+    "id": "CH_SI_IF6_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Salze und Ionen",
+    "kompetenzcodes": [
+      "E6",
+      "E7",
+      "K1"
+    ],
+    "beschreibung": "an einem Beispiel das Gesetz der konstanten Massenverhältnisse erklären und eine chemische Verhältnisformel herleiten"
+  },
+  {
+    "id": "CH_SI_IF6_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Salze und Ionen",
+    "kompetenzcodes": [
+      "B1"
+    ],
+    "beschreibung": "unter Umwelt- und Gesundheitsaspekten die Verwendung von Salzen im Alltag reflektieren"
+  },
+  {
+    "id": "CH_SI_IF7_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Chemische Reaktionen durch Elektronenübertragung",
+    "kompetenzcodes": [
+      "UF3"
+    ],
+    "beschreibung": "die Abgabe von Elektronen als Oxidation einordnen"
+  },
+  {
+    "id": "CH_SI_IF7_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Chemische Reaktionen durch Elektronenübertragung",
+    "kompetenzcodes": [
+      "UF3"
+    ],
+    "beschreibung": "die Aufnahme von Elektronen als Reduktion einordnen"
+  },
+  {
+    "id": "CH_SI_IF7_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Chemische Reaktionen durch Elektronenübertragung",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "Reaktionen zwischen Metallatomen und Metallionen als Elektronenübertragungsreaktionen deuten und diese auch mithilfe digitaler Animationen und Teilgleichungen erläutern"
+  },
+  {
+    "id": "CH_SI_IF7_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Chemische Reaktionen durch Elektronenübertragung",
+    "kompetenzcodes": [
+      "UF2",
+      "UF4"
+    ],
+    "beschreibung": "die chemischen Prozesse eines galvanischen Elements und einer Elektrolyse unter dem Aspekt der Umwandlung in Stoffen gespeicherter Energie in elektrische Energie und umgekehrt erläutern"
+  },
+  {
+    "id": "CH_SI_IF7_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Chemische Reaktionen durch Elektronenübertragung",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "den grundlegenden Aufbau und die Funktionsweise einer Batterie, eines Akkumulators und einer Brennstoffzelle beschreiben"
+  },
+  {
+    "id": "CH_SI_IF7_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Chemische Reaktionen durch Elektronenübertragung",
+    "kompetenzcodes": [
+      "E3",
+      "E4"
+    ],
+    "beschreibung": "Experimente planen, die eine Einordnung von Metallionen hinsichtlich ihrer Fähigkeit zur Elektronenaufnahme erlauben und diese sachgerecht durchführen"
+  },
+  {
+    "id": "CH_SI_IF7_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Chemische Reaktionen durch Elektronenübertragung",
+    "kompetenzcodes": [
+      "E6"
+    ],
+    "beschreibung": "Elektronenübertragungsreaktionen im Sinne des Donator-Akzeptor-Prinzips modellhaft erklären"
+  },
+  {
+    "id": "CH_SI_IF7_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 7,
+    "inhaltsfeld": "Chemische Reaktionen durch Elektronenübertragung",
+    "kompetenzcodes": [
+      "B2",
+      "B3",
+      "K2"
+    ],
+    "beschreibung": "Kriterien für den Gebrauch unterschiedlicher elektrochemischer Energiequellen im Alltag reflektieren"
+  },
+  {
+    "id": "CH_SI_IF8_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 8,
+    "inhaltsfeld": "Molekülverbindungen",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "an ausgewählten Beispielen die Elektronenpaarbindung erläutern"
+  },
+  {
+    "id": "CH_SI_IF8_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 8,
+    "inhaltsfeld": "Molekülverbindungen",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "mithilfe der Lewis-Schreibweise den Aufbau einfacher Moleküle beschreiben"
+  },
+  {
+    "id": "CH_SI_IF8_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 8,
+    "inhaltsfeld": "Molekülverbindungen",
+    "kompetenzcodes": [
+      "UF1",
+      "UF2"
+    ],
+    "beschreibung": "die Synthese eines Industrierohstoffs aus Synthesegas (z.B. Methan oder Ammoniak) auch mit Angabe von Reaktionsgleichungen erläutern"
+  },
+  {
+    "id": "CH_SI_IF8_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 8,
+    "inhaltsfeld": "Molekülverbindungen",
+    "kompetenzcodes": [
+      "E6",
+      "K1"
+    ],
+    "beschreibung": "die räumliche Struktur von Molekülen mit dem Elektronenpaarabstoßungsmodell veranschaulichen"
+  },
+  {
+    "id": "CH_SI_IF8_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 8,
+    "inhaltsfeld": "Molekülverbindungen",
+    "kompetenzcodes": [
+      "E1",
+      "E2",
+      "E6"
+    ],
+    "beschreibung": "die Temperaturänderung beim Lösen von Salzen in Wasser erläutern"
+  },
+  {
+    "id": "CH_SI_IF8_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 8,
+    "inhaltsfeld": "Molekülverbindungen",
+    "kompetenzcodes": [
+      "E2",
+      "E6"
+    ],
+    "beschreibung": "typische Eigenschaften von Wasser mithilfe des Dipol-Charakters der Wassermoleküle und der Ausbildung von Wasserstoffbrücken zwischen den Molekülen erläutern"
+  },
+  {
+    "id": "CH_SI_IF8_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 8,
+    "inhaltsfeld": "Molekülverbindungen",
+    "kompetenzcodes": [
+      "E6"
+    ],
+    "beschreibung": "die Wirkungsweise eines Katalysators modellhaft an der Synthese eines Industrierohstoffs erläutern"
+  },
+  {
+    "id": "CH_SI_IF8_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 8,
+    "inhaltsfeld": "Molekülverbindungen",
+    "kompetenzcodes": [
+      "B2",
+      "K2"
+    ],
+    "beschreibung": "Informationen für ein technisches Verfahren zur Industrierohstoffgewinnung aus Gasen mithilfe digitaler Medien beschaffen und Bewertungskriterien auch unter Berücksichtigung der Energiespeicherung festlegen"
+  },
+  {
+    "id": "CH_SI_IF8_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 8,
+    "inhaltsfeld": "Molekülverbindungen",
+    "kompetenzcodes": [
+      "B1",
+      "K1",
+      "K3"
+    ],
+    "beschreibung": "unterschiedliche Darstellungen von Modellen kleiner Moleküle auch mithilfe einer Software vergleichend gegenüberstellen"
+  },
+  {
+    "id": "CH_SI_IF9_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 9,
+    "inhaltsfeld": "Saure und alkalische Lösungen",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "die Eigenschaften von sauren und alkalischen Lösungen mit dem Vorhandensein charakteristischer hydratisierter Ionen erklären"
+  },
+  {
+    "id": "CH_SI_IF9_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 9,
+    "inhaltsfeld": "Saure und alkalische Lösungen",
+    "kompetenzcodes": [
+      "UF3"
+    ],
+    "beschreibung": "Protonendonatoren als Säuren und Protonenakzeptoren als Basen klassifizieren"
+  },
+  {
+    "id": "CH_SI_IF9_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 9,
+    "inhaltsfeld": "Saure und alkalische Lösungen",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "an einfachen Beispielen die Vorgänge der Protonenabgabe und -aufnahme beschreiben"
+  },
+  {
+    "id": "CH_SI_IF9_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 9,
+    "inhaltsfeld": "Saure und alkalische Lösungen",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "Neutralisationsreaktionen und Salzbildungen erläutern"
+  },
+  {
+    "id": "CH_SI_IF9_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 9,
+    "inhaltsfeld": "Saure und alkalische Lösungen",
+    "kompetenzcodes": [
+      "E4",
+      "E5",
+      "E6"
+    ],
+    "beschreibung": "charakteristische Eigenschaften von sauren Lösungen (elektrische Leitfähigkeit, Reaktionen mit Metallen, Reaktionen mit Kalk) und alkalischen Lösungen ermitteln und auch unter Angabe von Reaktionsgleichungen erläutern"
+  },
+  {
+    "id": "CH_SI_IF9_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 9,
+    "inhaltsfeld": "Saure und alkalische Lösungen",
+    "kompetenzcodes": [
+      "E4",
+      "E5",
+      "K1"
+    ],
+    "beschreibung": "den pH-Wert einer Lösung bestimmen und die pH-Wertskala mithilfe von Verdünnungen ableiten"
+  },
+  {
+    "id": "CH_SI_IF9_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 9,
+    "inhaltsfeld": "Saure und alkalische Lösungen",
+    "kompetenzcodes": [
+      "E3",
+      "E4"
+    ],
+    "beschreibung": "ausgehend von einfachen stöchiometrischen Berechnungen Hypothesen und Reaktionsgleichungen zur Neutralisation von sauren bzw. alkalischen Lösungen aufstellen und experimentell überprüfen"
+  },
+  {
+    "id": "CH_SI_IF9_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 9,
+    "inhaltsfeld": "Saure und alkalische Lösungen",
+    "kompetenzcodes": [
+      "E6",
+      "K3"
+    ],
+    "beschreibung": "eine ausgewählte Neutralisationsreaktion auf Teilchenebene als digitale Präsentation gestalten"
+  },
+  {
+    "id": "CH_SI_IF9_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 9,
+    "inhaltsfeld": "Saure und alkalische Lösungen",
+    "kompetenzcodes": [
+      "B3"
+    ],
+    "beschreibung": "beim Umgang mit sauren und alkalischen Lösungen Risiken und Nutzen abwägen und angemessene Sicherheitsmaßnahmen begründet auswählen"
+  },
+  {
+    "id": "CH_SI_IF9_010",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 9,
+    "inhaltsfeld": "Saure und alkalische Lösungen",
+    "kompetenzcodes": [
+      "B1",
+      "K2"
+    ],
+    "beschreibung": "Aussagen zu sauren, alkalischen und neutralen Lösungen in analogen und digitalen Medien kritisch hinterfragen"
+  },
+  {
+    "id": "CH_SI_IF10_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 10,
+    "inhaltsfeld": "Organische Chemie",
+    "kompetenzcodes": [
+      "UF3"
+    ],
+    "beschreibung": "organische Molekülverbindungen aufgrund ihrer Eigenschaften in Stoffklassen einordnen"
+  },
+  {
+    "id": "CH_SI_IF10_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 10,
+    "inhaltsfeld": "Organische Chemie",
+    "kompetenzcodes": [
+      "UF2"
+    ],
+    "beschreibung": "ausgewählte organische Verbindungen nach der systematischen Nomenklatur benennen"
+  },
+  {
+    "id": "CH_SI_IF10_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 10,
+    "inhaltsfeld": "Organische Chemie",
+    "kompetenzcodes": [
+      "UF1"
+    ],
+    "beschreibung": "Treibhausgase und ihre Ursprünge beschreiben"
+  },
+  {
+    "id": "CH_SI_IF10_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 10,
+    "inhaltsfeld": "Organische Chemie",
+    "kompetenzcodes": [
+      "UF4"
+    ],
+    "beschreibung": "die Abfolge verschiedener Reaktionen in einem Stoffkreislauf erklären"
+  },
+  {
+    "id": "CH_SI_IF10_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 10,
+    "inhaltsfeld": "Organische Chemie",
+    "kompetenzcodes": [
+      "UF2"
+    ],
+    "beschreibung": "die vielseitige Verwendung von Kunststoffen im Alltag mit ihren Eigenschaften begründen"
+  },
+  {
+    "id": "CH_SI_IF10_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 10,
+    "inhaltsfeld": "Organische Chemie",
+    "kompetenzcodes": [
+      "E6",
+      "K1"
+    ],
+    "beschreibung": "räumliche Strukturen von Kohlenwasserstoffmolekülen auch mithilfe von digitalen Modellen veranschaulichen"
+  },
+  {
+    "id": "CH_SI_IF10_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 10,
+    "inhaltsfeld": "Organische Chemie",
+    "kompetenzcodes": [
+      "E4",
+      "E5",
+      "E6"
+    ],
+    "beschreibung": "typische Stoffeigenschaften wie Löslichkeit und Siedetemperatur von ausgewählten Alkanen und Alkanolen ermitteln und mithilfe ihrer Molekülstrukturen und zwischenmolekularen Wechselwirkungen erklären"
+  },
+  {
+    "id": "CH_SI_IF10_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 10,
+    "inhaltsfeld": "Organische Chemie",
+    "kompetenzcodes": [
+      "E5",
+      "K2"
+    ],
+    "beschreibung": "Messdaten von Verbrennungsvorgängen fossiler und regenerativer Energierohstoffe digital beschaffen und vergleichen"
+  },
+  {
+    "id": "CH_SI_IF10_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 10,
+    "inhaltsfeld": "Organische Chemie",
+    "kompetenzcodes": [
+      "E6"
+    ],
+    "beschreibung": "ausgewählte Eigenschaften von Kunststoffen auf deren makromolekulare Struktur und räumliche Anordnung zurückführen"
+  },
+  {
+    "id": "CH_SI_IF10_010",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 10,
+    "inhaltsfeld": "Organische Chemie",
+    "kompetenzcodes": [
+      "B4",
+      "K4"
+    ],
+    "beschreibung": "Vor- und Nachteile der Nutzung von fossilen und regenerativen Energieträgern unter ökologischen, ökonomischen und ethischen Gesichtspunkten diskutieren"
+  },
+  {
+    "id": "CH_SI_IF10_011",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 10,
+    "inhaltsfeld": "Organische Chemie",
+    "kompetenzcodes": [
+      "B3",
+      "B4",
+      "K4"
+    ],
+    "beschreibung": "am Beispiel eines chemischen Produkts Kriterien hinsichtlich Verwendung, Ökonomie, Recyclingfähigkeit und Umweltverträglichkeit abwägen und im Hinblick auf die Verwendung einen eigenen sachlich fundierten Standpunkt beziehen"
+  },
+  {
+    "id": "M_SI_IF1_5_6_001",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-4",
+      "Arg-4"
+    ],
+    "beschreibung": "erläutern Eigenschaften von Primzahlen, zerlegen natürliche Zahlen in Primfaktoren und verwenden dabei die Potenzschreibweise"
+  },
+  {
+    "id": "M_SI_IF1_5_6_002",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Arg-5",
+      "Arg-6",
+      "Arg-7"
+    ],
+    "beschreibung": "bestimmen Teiler natürlicher Zahlen, wenden dabei die Teilbarkeitsregeln für 2, 3, 4, 5 und 10 an und kombinieren diese zu weiteren Teilbarkeitsregeln"
+  },
+  {
+    "id": "M_SI_IF1_5_6_003",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-4",
+      "Arg-5"
+    ],
+    "beschreibung": "begründen mithilfe von Rechengesetzen Strategien zum vorteilhaften Rechnen und nutzen diese"
+  },
+  {
+    "id": "M_SI_IF1_5_6_004",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-3",
+      "Mod-4",
+      "Kom-6"
+    ],
+    "beschreibung": "verbalisieren Rechenterme unter Verwendung von Fachbegriffen und übersetzen Rechenanweisungen und Sachsituationen in Rechenterme"
+  },
+  {
+    "id": "M_SI_IF1_5_6_005",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Pro-6",
+      "Pro-7"
+    ],
+    "beschreibung": "kehren Rechenanweisungen um"
+  },
+  {
+    "id": "M_SI_IF1_5_6_006",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-5",
+      "Mod-4",
+      "Mod-5"
+    ],
+    "beschreibung": "nutzen Variablen bei der Beschreibung von einfachen Sachzusammenhängen und bei der Formulierung von Rechengesetzen"
+  },
+  {
+    "id": "M_SI_IF1_5_6_007",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-5",
+      "Mod-6"
+    ],
+    "beschreibung": "setzen Zahlen in Terme mit Variablen ein und berechnen deren Wert"
+  },
+  {
+    "id": "M_SI_IF1_5_6_008",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-6",
+      "Kom-7"
+    ],
+    "beschreibung": "stellen Zahlen auf unterschiedlichen Weisen dar, vergleichen sie und wechseln situationsangemessen zwischen den verschiedenen Darstellungen"
+  },
+  {
+    "id": "M_SI_IF1_5_6_009",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-7",
+      "Mod-3",
+      "Pro-5"
+    ],
+    "beschreibung": "schätzen Größen, wählen Einheiten von Größen situationsgerecht aus und wandeln sie um"
+  },
+  {
+    "id": "M_SI_IF1_5_6_010",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-7",
+      "Mod-7",
+      "Mod-8"
+    ],
+    "beschreibung": "runden Zahlen im Kontext sinnvoll und wenden Überschlag und Probe als Kontrollstrategien an"
+  },
+  {
+    "id": "M_SI_IF1_5_6_011",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Pro-2",
+      "Arg-4",
+      "Kom-3"
+    ],
+    "beschreibung": "deuten Brüche als Anteile, Operatoren, Quotienten, Zahlen und Verhältnisse"
+  },
+  {
+    "id": "M_SI_IF1_5_6_012",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-4",
+      "Pro-2",
+      "Kom-5"
+    ],
+    "beschreibung": "kürzen und erweitern Brüche und deuten dies als Vergröbern bzw. Verfeinern der Einteilung"
+  },
+  {
+    "id": "M_SI_IF1_5_6_013",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Mod-4",
+      "Pro-4",
+      "Kom-3"
+    ],
+    "beschreibung": "berechnen und deuten Bruchteil, Anteil und Ganzes im Kontext"
+  },
+  {
+    "id": "M_SI_IF1_5_6_014",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-1",
+      "Kom-5",
+      "Kom-8"
+    ],
+    "beschreibung": "führen Grundrechenarten in unterschiedlichen Darstellungen sowohl im Kopf als auch schriftlich durch und stellen Rechenschritte nachvollziehbar dar"
+  },
+  {
+    "id": "M_SI_IF1_5_6_015",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Mod-1",
+      "Mod-4",
+      "Pro-5",
+      "Arg-2"
+    ],
+    "beschreibung": "nutzen ganze Zahlen zur Beschreibung von Zuständen und Veränderungen in Sachzusammenhängen und als Koordinaten"
+  },
+  {
+    "id": "M_SI_IF2_5_6_001",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Mod-1",
+      "Mod-4",
+      "Kom-1",
+      "Kom-7"
+    ],
+    "beschreibung": "beschreiben den Zusammenhang zwischen zwei Größen mithilfe von Worten, Diagrammen und Tabellen"
+  },
+  {
+    "id": "M_SI_IF2_5_6_002",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Ope-8",
+      "Mod-3",
+      "Mod-6",
+      "Mod-8"
+    ],
+    "beschreibung": "wenden das Dreisatzverfahren zur Lösung von Sachproblemen an"
+  },
+  {
+    "id": "M_SI_IF2_5_6_003",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Pro-1",
+      "Pro-3",
+      "Pro-5"
+    ],
+    "beschreibung": "erkunden Muster in Zahlenfolgen und beschreiben die Gesetzmäßigkeiten in Worten und mit Termen"
+  },
+  {
+    "id": "M_SI_IF2_5_6_004",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Ope-4",
+      "Ope-9"
+    ],
+    "beschreibung": "rechnen mit Maßstäben und fertigen Zeichnungen in geeigneten Maßstäben an"
+  },
+  {
+    "id": "M_SI_IF3_5_6_001",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-3",
+      "Kom-3"
+    ],
+    "beschreibung": "erläutern Grundbegriffe und verwenden diese zur Beschreibung von ebenen Figuren und Körpern sowie deren Lagebeziehungen zueinander"
+  },
+  {
+    "id": "M_SI_IF3_5_6_002",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Arg-4",
+      "Arg-6",
+      "Kom-6"
+    ],
+    "beschreibung": "charakterisieren und klassifizieren besondere Vierecke"
+  },
+  {
+    "id": "M_SI_IF3_5_6_003",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-2",
+      "Mod-3",
+      "Mod-4",
+      "Kom-3"
+    ],
+    "beschreibung": "identifizieren und charakterisieren Körper in bildlichen Darstellungen und in der Umwelt"
+  },
+  {
+    "id": "M_SI_IF3_5_6_004",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-9",
+      "Ope-11",
+      "Ope-12"
+    ],
+    "beschreibung": "zeichnen ebene Figuren unter Verwendung angemessener Hilfsmittel wie Zirkel, Lineal und Geodreieck sowie dynamische Geometriesoftware"
+  },
+  {
+    "id": "M_SI_IF3_5_6_005",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-8",
+      "Pro-3",
+      "Pro-9"
+    ],
+    "beschreibung": "erzeugen ebene symmetrische Figuren und Muster und ermitteln Symmetrieachsen bzw. Symmetriepunkte"
+  },
+  {
+    "id": "M_SI_IF3_5_6_006",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-9",
+      "Ope-11"
+    ],
+    "beschreibung": "stellen ebene Figuren im kartesischen Koordinatensystem dar"
+  },
+  {
+    "id": "M_SI_IF3_5_6_007",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-9",
+      "Ope-11",
+      "Pro-6"
+    ],
+    "beschreibung": "erzeugen Abbildungen ebener Figuren durch Verschieben und Spiegeln, auch im Koordinatensystem"
+  },
+  {
+    "id": "M_SI_IF3_5_6_008",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-11",
+      "Ope-13"
+    ],
+    "beschreibung": "nutzen dynamische Geometriesoftware zur Analyse von Verkettungen von Abbildungen ebener Figuren"
+  },
+  {
+    "id": "M_SI_IF3_5_6_009",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-9",
+      "Kom-3",
+      "Kom-6"
+    ],
+    "beschreibung": "schätzen und messen die Größe von Winkeln und klassifizieren Winkel mit Fachbegriffen"
+  },
+  {
+    "id": "M_SI_IF3_5_6_010",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Pro-5",
+      "Arg-7"
+    ],
+    "beschreibung": "schätzen die Länge von Strecken und bestimmen sie mithilfe von Maßstäben"
+  },
+  {
+    "id": "M_SI_IF3_5_6_011",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Pro-4",
+      "Arg-5"
+    ],
+    "beschreibung": "nutzen das Grundprinzip des Messens bei der Flächen- und Volumenbestimmung"
+  },
+  {
+    "id": "M_SI_IF3_5_6_012",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-4",
+      "Ope-8"
+    ],
+    "beschreibung": "berechnen den Umfang von Vierecken, den Flächeninhalt von Rechtecken und rechtwinkligen Dreiecken, sowie den Oberflächeninhalt und das Volumen von Quadern"
+  },
+  {
+    "id": "M_SI_IF3_5_6_013",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Arg-3",
+      "Arg-5"
+    ],
+    "beschreibung": "bestimmen den Flächeninhalt ebener Figuren durch Zerlegungs-und Ergänzungsstrategien"
+  },
+  {
+    "id": "M_SI_IF3_5_6_014",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-2",
+      "Kom-5"
+    ],
+    "beschreibung": "beschreiben das Ergebnis von Drehungen und Verschiebungen eines Quaders aus der Vorstellung heraus"
+  },
+  {
+    "id": "M_SI_IF3_5_6_015",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-2",
+      "Mod-1",
+      "Kom-3"
+    ],
+    "beschreibung": "stellen Quader und Würfel als Netz, Schrägbild und Modell dar und erkennen Körper aus ihren entsprechenden Darstellungen"
+  },
+  {
+    "id": "M_SI_IF4_5_6_001",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Mod-3",
+      "Kom-2"
+    ],
+    "beschreibung": "erheben Daten, fassen sie in Ur- und Strichlisten zusammen und bilden geeignete Klasseneinteilungen"
+  },
+  {
+    "id": "M_SI_IF4_5_6_002",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Ope-11"
+    ],
+    "beschreibung": "stellen Häufigkeiten in Tabellen und Diagrammen dar auch unter Verwendung digitaler Mathematikwerkzeuge (Tabellenkalkulation)"
+  },
+  {
+    "id": "M_SI_IF4_5_6_003",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Mod-7",
+      "Arg-1",
+      "Kom-1"
+    ],
+    "beschreibung": "bestimmen, vergleichen und deuten Häufigkeiten und Kenngrößen statistischer Daten"
+  },
+  {
+    "id": "M_SI_IF4_5_6_004",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Mod-2",
+      "Kom-1",
+      "Kom-2"
+    ],
+    "beschreibung": "lesen und interpretieren grafische Darstellungen statistischer Erhebungen"
+  },
+  {
+    "id": "M_SI_IF4_5_6_005",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Ope-4",
+      "Arg-2",
+      "Arg-3"
+    ],
+    "beschreibung": "führen Änderungen statistischer Kenngrößen auf den Einfluss einzelner Daten eines Datensatzes zurück"
+  },
+  {
+    "id": "M_SI_IF4_5_6_006",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "5/6",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Mod-8",
+      "Arg-9"
+    ],
+    "beschreibung": "diskutieren Vor- und Nachteile grafischer Darstellungen"
+  },
+  {
+    "id": "M_SI_IF1_7_8_001",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-6",
+      "Pro-3"
+    ],
+    "beschreibung": "stellen rationale Zahlen auf der Zahlengeraden dar und ordnen sie der Größe nach"
+  },
+  {
+    "id": "M_SI_IF1_7_8_002",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Mod-3",
+      "Arg-7"
+    ],
+    "beschreibung": "geben Gründe und Beispiele für Zahlbereichserweiterungen an"
+  },
+  {
+    "id": "M_SI_IF1_7_8_003",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-8",
+      "Arg-5"
+    ],
+    "beschreibung": "leiten Vorzeichenregeln zur Addition und Multiplikation anhand von Beispielen ab und nutzen Rechengesetze und Regeln"
+  },
+  {
+    "id": "M_SI_IF1_7_8_004",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Mod-4",
+      "Mod-5",
+      "Pro-4"
+    ],
+    "beschreibung": "deuten Variablen als Veränderliche zur Beschreibung von Zuordnungen, als Platzhalter in Termen und Rechengesetzen sowie als Unbekannte in Gleichungen und Gleichungssystemen"
+  },
+  {
+    "id": "M_SI_IF1_7_8_005",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Mod-4",
+      "Mod-6",
+      "Kom-1"
+    ],
+    "beschreibung": "stellen Terme als Rechenvorschrift von Zuordnungen und zur Berechnung von Flächeninhalten und Volumina auf"
+  },
+  {
+    "id": "M_SI_IF1_7_8_006",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Mod-3",
+      "Mod-9"
+    ],
+    "beschreibung": "stellen Gleichungen und Ungleichungen zur Formulierung von Bedingungen in Sachsituationen auf"
+  },
+  {
+    "id": "M_SI_IF1_7_8_007",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-5",
+      "Pro-9"
+    ],
+    "beschreibung": "formen Terme, auch Bruchterme, zielgerichtet um und korrigieren fehlerhafte Termumformungen"
+  },
+  {
+    "id": "M_SI_IF1_7_8_008",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Pro-4",
+      "Pro-5",
+      "Ope-11"
+    ],
+    "beschreibung": "ermitteln Exponenten im Rahmen der Zinsrechnung durch systematisches Probieren auch unter Verwendung von Tabellenkalkulationen"
+  },
+  {
+    "id": "M_SI_IF1_7_8_009",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-8",
+      "Mod-7",
+      "Pro-6"
+    ],
+    "beschreibung": "ermitteln Lösungsmengen linearer Gleichungen und linearer Gleichungssysteme sowie von Bruchgleichungen unter Verwendung geeigneter Verfahren und deuten sie im Sachkontext"
+  },
+  {
+    "id": "M_SI_IF1_7_8_010",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Pro-4",
+      "Pro-8",
+      "Pro-10"
+    ],
+    "beschreibung": "wählen algebraische Lösungsverfahren für lineare Gleichungssysteme zielgerichtet aus und vergleichen die Effizienz unterschiedlicher Lösungswege"
+  },
+  {
+    "id": "M_SI_IF2_7_8_001",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Arg-3",
+      "Arg-4",
+      "Kom-1"
+    ],
+    "beschreibung": "charakterisieren Zuordnungen und grenzen diese anhand ihrer Eigenschaften voneinander ab"
+  },
+  {
+    "id": "M_SI_IF2_7_8_002",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Mod-5",
+      "Kom-3"
+    ],
+    "beschreibung": "beschreiben zu gegebenen Zuordnungen passende Sachsituationen"
+  },
+  {
+    "id": "M_SI_IF2_7_8_003",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Arg-4",
+      "Kom-3"
+    ],
+    "beschreibung": "charakterisieren Funktionen als Klasse eindeutiger Zuordnungen"
+  },
+  {
+    "id": "M_SI_IF2_7_8_004",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Kom-4",
+      "Kom-6",
+      "Kom-7"
+    ],
+    "beschreibung": "stellen Funktionen mit eigenen Worten, in Wertetabellen, als Graphen und als Terme dar und nutzen die Darstellungen situationsangemessen"
+  },
+  {
+    "id": "M_SI_IF2_7_8_005",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Arg-1",
+      "Arg-3",
+      "Arg-7"
+    ],
+    "beschreibung": "beschreiben den Einfluss der Parameter auf den Graphen einer linearen Funktion mithilfe von Fachbegriffen"
+  },
+  {
+    "id": "M_SI_IF2_7_8_006",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Mod-8",
+      "Arg-5"
+    ],
+    "beschreibung": "interpretieren die Parameter eines linearen Funktionsterms unter Beachtung der Einheiten in Sachsituationen"
+  },
+  {
+    "id": "M_SI_IF2_7_8_007",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Ope-11",
+      "Mod-6",
+      "Pro-6"
+    ],
+    "beschreibung": "lösen innermathematische und alltagsnahe Probleme mithilfe von Zuordnungen und Funktionen auch mit digitalen Mathematikwerkzeugen (Taschenrechner, Tabellenkalkulation, Funktionenplotter und Multirepräsentationssysteme)"
+  },
+  {
+    "id": "M_SI_IF2_7_8_008",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Ope-11",
+      "Ope-13",
+      "Mod-2"
+    ],
+    "beschreibung": "wenden Prozent- und Zinsrechnung auf allgemeine Konsumsituationen an und erstellen dazu anwendungsbezogene Tabellenkalkulationen mit relativen und absoluten Zellbezügen"
+  },
+  {
+    "id": "M_SI_IF2_7_8_009",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Mod-4",
+      "Pro-3"
+    ],
+    "beschreibung": "beschreiben prozentuale Veränderungen mit Wachstumsfaktoren und kombinieren prozentuale Veränderungen"
+  },
+  {
+    "id": "M_SI_IF3_7_8_001",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Arg-7",
+      "Arg-9",
+      "Arg-10"
+    ],
+    "beschreibung": "nutzen geometrische Sätze zur Winkelbestimmung in ebenen Figuren"
+  },
+  {
+    "id": "M_SI_IF3_7_8_002",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Pro-10",
+      "Arg-8"
+    ],
+    "beschreibung": "begründen die Beweisführung zur Summe der Innenwinkel in einem Dreieck und zum Satz des Thales"
+  },
+  {
+    "id": "M_SI_IF3_7_8_003",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-9",
+      "Pro-6",
+      "Pro-7"
+    ],
+    "beschreibung": "führen Konstruktionen mit Zirkel und Lineal durch und nutzen Konstruktionen zur Beantwortung von Fragestellungen"
+  },
+  {
+    "id": "M_SI_IF3_7_8_004",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Arg-2",
+      "Arg-3",
+      "Arg-5",
+      "Arg-6",
+      "Arg-7"
+    ],
+    "beschreibung": "formulieren und begründen Aussagen zur Lösbarkeit und Eindeutigkeit von Konstruktionsaufgaben"
+  },
+  {
+    "id": "M_SI_IF3_7_8_005",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-12",
+      "Kom-4",
+      "Kom-9"
+    ],
+    "beschreibung": "zeichnen Dreiecke aus gegebenen Winkel- und Seitenmaßen und geben die Abfolge der Konstruktionsschritte mit Fachbegriffen an,"
+  },
+  {
+    "id": "M_SI_IF3_7_8_006",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-13",
+      "Pro-5",
+      "Pro-6"
+    ],
+    "beschreibung": "erkunden geometrische Zusammenhänge (Ortslinien von Schnittpunkten, Abhängigkeit des Flächeninhalts von Seitenlängen) mithilfe dynamischer Geometriesoftware"
+  },
+  {
+    "id": "M_SI_IF3_7_8_007",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-12",
+      "Pro-4",
+      "Pro-6",
+      "Kom-8"
+    ],
+    "beschreibung": "lösen geometrische Probleme mithilfe von geometrischen Sätzen,"
+  },
+  {
+    "id": "M_SI_IF3_7_8_008",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-5",
+      "Pro-5",
+      "Pro-8",
+      "Pro-10"
+    ],
+    "beschreibung": "berechnen Flächeninhalte und entwickeln Terme zur Berechnung von Flächeninhalten ebener Figuren"
+  },
+  {
+    "id": "M_SI_IF4_7_8_001",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Mod-8",
+      "Pro-3"
+    ],
+    "beschreibung": "schätzen Wahrscheinlichkeiten auf der Basis von Hypothesen sowie auf der Basis relativer Häufigkeiten langer Versuchsreihen ab"
+  },
+  {
+    "id": "M_SI_IF4_7_8_002",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Ope-6",
+      "Mod-5",
+      "Mod-7"
+    ],
+    "beschreibung": "stellen Zufallsexperimente mit Baumdiagrammen dar und entnehmen Wahrscheinlichkeiten aus Baumdiagrammen"
+  },
+  {
+    "id": "M_SI_IF4_7_8_003",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Ope-8",
+      "Pro-5",
+      "Arg-5"
+    ],
+    "beschreibung": "bestimmen Wahrscheinlichkeiten mithilfe stochastischer Regeln"
+  },
+  {
+    "id": "M_SI_IF4_7_8_004",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Arg-2",
+      "Arg-3",
+      "Mod-5",
+      "Kom-3"
+    ],
+    "beschreibung": "grenzen Laplace-Versuche anhand von Beispielen gegenüber anderen Zufallsversuchen ab"
+  },
+  {
+    "id": "M_SI_IF4_7_8_005",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "7/8",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Mod-4",
+      "Mod-6",
+      "Mod-9"
+    ],
+    "beschreibung": "simulieren Zufallserscheinungen in alltäglichen Situationen mit einem stochastischen Modell"
+  },
+  {
+    "id": "M_SI_IF1_9_10_001",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-1",
+      "Ope-6"
+    ],
+    "beschreibung": "stellen Zahlen in Zehnerpotenzschreibweise dar"
+  },
+  {
+    "id": "M_SI_IF1_9_10_002",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Arg-2",
+      "Kom-3"
+    ],
+    "beschreibung": "unterscheiden rationale und irrationale Zahlen und geben Beispiele für irrationale Zahlen an"
+  },
+  {
+    "id": "M_SI_IF1_9_10_003",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-5",
+      "Kom-7"
+    ],
+    "beschreibung": "vereinfachen Terme, bei denen die Potenzgesetze unmittelbar anzuwenden sind"
+  },
+  {
+    "id": "M_SI_IF1_9_10_004",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-1",
+      "Ope-6"
+    ],
+    "beschreibung": "wechseln zwischen Bruchdarstellung und Potenzschreibweise"
+  },
+  {
+    "id": "M_SI_IF1_9_10_005",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-1",
+      "Ope-6"
+    ],
+    "beschreibung": "wechseln zwischen Wurzel- und Potenzschreibweise"
+  },
+  {
+    "id": "M_SI_IF1_9_10_006",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-8",
+      "Pro-5",
+      "Kom-4"
+    ],
+    "beschreibung": "nutzen und beschreiben ein algorithmisches Verfahren, um Quadratwurzeln näherungsweise zu bestimmen"
+  },
+  {
+    "id": "M_SI_IF1_9_10_007",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-1",
+      "Ope-5"
+    ],
+    "beschreibung": "berechnen Quadratwurzeln mithilfe der Wurzelgesetze auch ohne digitale Werkzeuge"
+  },
+  {
+    "id": "M_SI_IF1_9_10_008",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Pro-4",
+      "Pro-8",
+      "Ope-7"
+    ],
+    "beschreibung": "wählen Verfahren zum Lösen quadratischer Gleichungen begründet aus, vergleichen deren Effizienz und bestimmen die Lösungsmenge einer quadratischen Gleichung auch ohne Hilfsmittel"
+  },
+  {
+    "id": "M_SI_IF1_9_10_009",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Ope-4"
+    ],
+    "beschreibung": "wenden das Radizieren als Umkehrung des Potenzierens an"
+  },
+  {
+    "id": "M_SI_IF1_9_10_010",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Pro-5",
+      "Ope-12"
+    ],
+    "beschreibung": "lösen Exponentialgleichungen bx =c näherungsweise durch Probieren, durch Logarithmieren sowie mit digitalen Mathematikwerkzeugen"
+  },
+  {
+    "id": "M_SI_IF1_9_10_011",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Arithmetik/Algebra",
+    "kompetenzcodes": [
+      "Mod-7",
+      "Mod-8",
+      "Mod-9",
+      "Pro-4"
+    ],
+    "beschreibung": "wenden ihre Kenntnisse über quadratische Gleichungen und Exponentialgleichungen zum Lösen inner- und außermathematischer Probleme an und deuten Ergebnisse in Kontexten"
+  },
+  {
+    "id": "M_SI_IF2_9_10_001",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Kom-4",
+      "Kom-6",
+      "Kom-7"
+    ],
+    "beschreibung": "stellen Funktionen mit eigenen Worten, in Wertetabellen, als Graphen und als Terme dar"
+  },
+  {
+    "id": "M_SI_IF2_9_10_002",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Pro-2",
+      "Pro-3",
+      "Arg-5"
+    ],
+    "beschreibung": "verwenden aus Graph, Wertetabelle und Term ablesbare Eigenschaften als Argumente beim Bearbeiten mathematischer Fragestellungen"
+  },
+  {
+    "id": "M_SI_IF2_9_10_003",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Arg-6",
+      "Arg-7",
+      "Kom-1"
+    ],
+    "beschreibung": "charakterisieren Funktionsklassen und grenzen diese anhand ihrer Eigenschaften ab"
+  },
+  {
+    "id": "M_SI_IF2_9_10_004",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Arg-5",
+      "Arg-6",
+      "Arg-7"
+    ],
+    "beschreibung": "bestimmen anhand des Graphen einer Funktion die Parameter eines Funktionsterms dieser Funktion"
+  },
+  {
+    "id": "M_SI_IF2_9_10_005",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Funktionen",
+    "kompetenzcodes": [
+      "Arg-3",
+      "Kom-9",
+      "Kom-10"
+    ],
+    "beschreibung": "erklären den Einfluss der Parameter eines Funktionsterms auf den Graphen der Funktion (Ausnahme bei quadratischen Funktionen in der Normalform: nur Streckfaktor und y-Achsenabschnitt)"
+  },
+  {
+    "id": "M_SI_IF3_9_10_001",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Mod-1",
+      "Mod-5",
+      "Mod-6",
+      "Mod-7",
+      "Mod-9"
+    ],
+    "beschreibung": "deuten Parameter und Eigenschaften einer Funktion in Anwendungssituationen"
+  },
+  {
+    "id": "M_SI_IF3_9_10_002",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-5",
+      "Pro-6",
+      "Kom-7"
+    ],
+    "beschreibung": "formen Funktionsterme quadratischer Funktionen um und nutzen verschiedene Formen der Termdarstellung situationsabhängig"
+  },
+  {
+    "id": "M_SI_IF3_9_10_003",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Pro-4",
+      "Pro-8",
+      "Ope-7"
+    ],
+    "beschreibung": "berechnen Nullstellen quadratischer Funktionen durch geeignete Verfahren"
+  },
+  {
+    "id": "M_SI_IF3_9_10_004",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Mod-4",
+      "Mod-7",
+      "Mod-8",
+      "Kom-11"
+    ],
+    "beschreibung": "wählen begründet mathematische Modelle zur Beschreibung von Wachstumsprozessen aus, treffen Vorhersagen zur langfristigen Entwicklung und überprüfen die Eignung des Modells"
+  },
+  {
+    "id": "M_SI_IF3_9_10_005",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Arg-1",
+      "Arg-4",
+      "Ope-11",
+      "Ope-13"
+    ],
+    "beschreibung": "identifizieren funktionale Zusammenhänge in Messreihen mit digitalen Hilfsmitteln"
+  },
+  {
+    "id": "M_SI_IF3_9_10_006",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Mod-4",
+      "Mod-7",
+      "Pro-5"
+    ],
+    "beschreibung": "wenden lineare, quadratische und exponentielle Funktionen zur Lösung inner- und außermathematischer Problemstellungen an"
+  },
+  {
+    "id": "M_SI_IF3_9_10_007",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Arg-6",
+      "Arg-8"
+    ],
+    "beschreibung": "erläutern die Sinus- und Kosinusfunktion als Verallgemeinerung der trigonometrischen Definitionen des Sinus und des Kosinus am Einheitskreis"
+  },
+  {
+    "id": "M_SI_IF3_9_10_008",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Mod-2",
+      "Mod-3",
+      "Mod-4",
+      "Mod-5"
+    ],
+    "beschreibung": "beschreiben zeitlich periodische Vorgänge mithilfe von Sinusfunktionen"
+  },
+  {
+    "id": "M_SI_IF3_9_10_009",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Arg-7",
+      "Arg-9",
+      "Arg-10"
+    ],
+    "beschreibung": "beweisen den Satz des Pythagoras"
+  },
+  {
+    "id": "M_SI_IF3_9_10_010",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-8",
+      "Ope-9"
+    ],
+    "beschreibung": "erzeugen ähnliche Figuren durch zentrische Streckungen und ermitteln aus gegebenen Abbildungen Streckzentrum und Streckfaktor"
+  },
+  {
+    "id": "M_SI_IF3_9_10_011",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-8",
+      "Ope-10"
+    ],
+    "beschreibung": "berechnen Längen und Flächeninhalte an Kreisen und Kreissektoren"
+  },
+  {
+    "id": "M_SI_IF3_9_10_012",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Arg-8",
+      "Kom-4"
+    ],
+    "beschreibung": "erläutern eine Idee zur Herleitung der Formeln für Flächeninhalt und Umfang eines Kreises durch Näherungsverfahren"
+  },
+  {
+    "id": "M_SI_IF3_9_10_013",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Ope-10",
+      "Pro-5",
+      "Pro-7"
+    ],
+    "beschreibung": "schätzen und berechnen Oberflächeninhalt und Volumen von Körpern, Teilkörpern sowie zusammengesetzten Körpern"
+  },
+  {
+    "id": "M_SI_IF3_9_10_014",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Arg-5",
+      "Arg-6",
+      "Arg-7"
+    ],
+    "beschreibung": "begründen Gleichheit von Volumina mit dem Prinzip von Cavalieri"
+  },
+  {
+    "id": "M_SI_IF3_9_10_015",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Pro-5",
+      "Arg-9",
+      "Kom-4"
+    ],
+    "beschreibung": "begründen die Definition von Sinus, Kosinus und Tangens durch invariante Seitenverhältnisse ähnlicher rechtwinkliger Dreiecke"
+  },
+  {
+    "id": "M_SI_IF3_9_10_016",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Arg-4",
+      "Arg-8"
+    ],
+    "beschreibung": "erläutern den Kosinussatz als Verallgemeinerung des Satzes des Pythagoras"
+  },
+  {
+    "id": "M_SI_IF3_9_10_017",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Pro-6",
+      "Pro-10",
+      "Ope-9"
+    ],
+    "beschreibung": "berechnen Größen mithilfe von Ähnlichkeitsbeziehungen, geometrischen Sätzen und trigonometrischen Beziehungen"
+  },
+  {
+    "id": "M_SI_IF3_9_10_018",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Geometrie",
+    "kompetenzcodes": [
+      "Mod-7",
+      "Mod-8",
+      "Ope-10"
+    ],
+    "beschreibung": "ermitteln Maßangaben in Sachsituationen, nutzen diese für geometrische Berechnungen und bewerten die Ergebnisse sowie die Vorgehensweise"
+  },
+  {
+    "id": "M_SI_IF4_9_10_001",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Ope-11",
+      "Kom-8"
+    ],
+    "beschreibung": "planen statistische Datenerhebungen und nutzen zur Erfassung und Auswertung digitale Werkzeuge"
+  },
+  {
+    "id": "M_SI_IF4_9_10_002",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Arg-9",
+      "Kom-10",
+      "Kom-11"
+    ],
+    "beschreibung": "analysieren grafische Darstellungen statistischer Erhebungen kritisch und erkennen Manipulationen"
+  },
+  {
+    "id": "M_SI_IF4_9_10_003",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Mod-4"
+    ],
+    "beschreibung": "verwenden zweistufige Zufallsversuche zur Darstellung zufälliger Erscheinungen in alltäglichen Situationen"
+  },
+  {
+    "id": "M_SI_IF4_9_10_004",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Pro-4",
+      "Pro-5",
+      "Pro-7"
+    ],
+    "beschreibung": "führen in konkreten Situationen kombinatorische Überlegungen durch, um die Anzahl der jeweiligen Möglichkeiten zu bestimmen"
+  },
+  {
+    "id": "M_SI_IF4_9_10_005",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Ope-8",
+      "Mod-7",
+      "Mod-8"
+    ],
+    "beschreibung": "berechnen Wahrscheinlichkeiten mithilfe von Baumdiagrammen und Vierfeldertafel und deuten diese im Sachzusammenhang"
+  },
+  {
+    "id": "M_SI_IF4_9_10_006",
+    "fach": "Mathematik",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe I",
+    "jahrgang": "9/10",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Stochastik",
+    "kompetenzcodes": [
+      "Mod-7",
+      "Mod-8",
+      "Arg-9",
+      "Kom-10",
+      "Kom-11"
+    ],
+    "beschreibung": "interpretieren und beurteilen Daten und statistische Aussagen in authentischen Texten"
+  },
+  {
+    "id": "CH_Q1_ORG_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q1",
+    "inhaltsfeld": "Organische Produkte – Werkstoffe und Farbstoffe",
+    "kompetenzcodes": [
+      "S1",
+      "S6",
+      "S11"
+    ],
+    "beschreibung": "ordnen organische Verbindungen aufgrund ihrer funktionellen Gruppen in Stoffklassen ein und benennen diese nach systematischer Nomenklatur"
+  },
+  {
+    "id": "CH_Q1_SB_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q1",
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S1",
+      "S6",
+      "S7",
+      "S16",
+      "K6"
+    ],
+    "beschreibung": "klassifizieren die auch in Alltagsprodukten identifizierten Säuren und Basen mithilfe des Säure-Base-Konzepts von Brønsted und erläutern ihr Reaktionsverhalten unter Berücksichtigung von Protolysegleichungen"
+  },
+  {
+    "id": "CH_Q2_EC_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q2",
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S7",
+      "S12",
+      "K7"
+    ],
+    "beschreibung": "erläutern Redoxreaktionen als dynamische Gleichgewichtsreaktionen unter Berücksichtigung des Donator-Akzeptor-Konzepts"
+  }
+]

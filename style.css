@@ -162,6 +162,7 @@ textarea.finp { resize: vertical; min-height: 80px; }
 .klp-dd-item:hover { background: var(--surf2); }
 .klp-dd-codes { font-weight: 700; color: var(--pri); white-space: nowrap; flex-shrink: 0; }
 .klp-dd-desc { color: var(--tx1); }
+.klp-dd-hint { padding: 8px 10px; font-size: 12px; color: var(--tx3); font-style: italic; }
 
 /* ── Coverage ── */
 .cov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }

@@ -213,21 +213,37 @@ function klpRow(mat, detail, row) {
 
     function showDropdown(q) {
       dd.innerHTML = '';
-      const faecher = mat.fach || [];
-      const jahrgaenge = mat.jahrgang || [];
+      const faecher = (mat.fach || []).map(f => f.toLowerCase());
+
+      if (q.length < 2 && !faecher.length) {
+        const hint = tx('div', 'klp-dd-hint', 'Mind. 2 Zeichen eingeben…');
+        dd.appendChild(hint);
+        dd.style.display = 'block';
+        return;
+      }
 
       let hits = KLPDB.filter(e => {
         if (mat.kompetenzenKLP.includes(e.id)) return false;
-        if (faecher.length && !faecher.includes(e.fach)) return false;
-        if (q.length > 1) {
+        if (faecher.length && !faecher.includes(e.fach.toLowerCase())) return false;
+        if (q.length >= 2) {
           const txt = (e.beschreibung + ' ' + e.inhaltsfeld + ' ' + e.kompetenzcodes.join(' ')).toLowerCase();
           if (!txt.includes(q.toLowerCase())) return false;
         }
         return true;
-      }).slice(0, 20);
+      });
 
       if (!hits.length) {
-        dd.style.display = 'none'; return;
+        const none = tx('div', 'klp-dd-hint', 'Keine Treffer.');
+        dd.appendChild(none);
+        dd.style.display = 'block';
+        return;
+      }
+
+      if (q.length < 2) {
+        const info = tx('div', 'klp-dd-hint', hits.length + ' Kompetenzen – tippe zum Eingrenzen');
+        dd.appendChild(info);
+        dd.style.display = 'block';
+        return;
       }
 
       // Group by inhaltsfeld

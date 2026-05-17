@@ -36,10 +36,14 @@ function buildSidebar() {
   // ── Fachplanungen (gruppiert nach Fach) ───────────────────────
   sb.appendChild(sbSection('Fachplanungen', () => { S.modal = { type: 'newFachplanung' }; render(); }));
 
+  const FACH_BASIS = { 'Ch_GK': 'Ch', 'Ch_LK': 'Ch', 'Bio_GK': 'Bio', 'Bio_LK': 'Bio' };
+  const FACH_ZUSATZ = { 'Ch_GK': 'GK', 'Ch_LK': 'LK', 'Bio_GK': 'GK', 'Bio_LK': 'LK' };
+
   const byFach = {};
   (S.data.fachplanungen || []).forEach(lp => {
-    if (!byFach[lp.fach]) byFach[lp.fach] = [];
-    byFach[lp.fach].push(lp);
+    const gruppe = FACH_BASIS[lp.fach] || lp.fach;
+    if (!byFach[gruppe]) byFach[gruppe] = [];
+    byFach[gruppe].push(lp);
   });
 
   Object.entries(byFach).forEach(([fach, planungen]) => {
@@ -59,9 +63,10 @@ function buildSidebar() {
 
     if (isOpen) {
       planungen.forEach(lp => {
+        const zusatz = FACH_ZUSATZ[lp.fach] ? ' · ' + FACH_ZUSATZ[lp.fach] : '';
         const row = mk('div', 'sb-item sb-item-indent' + (S.aktFpId === lp.id && S.view === 'fachplanung' ? ' active' : ''));
         const info = mk('div', ''); info.style.flex = '1';
-        info.appendChild(tx('div', 'sb-item-label', 'Jahrgang ' + lp.jahrgang));
+        info.appendChild(tx('div', 'sb-item-label', 'Jg. ' + lp.jahrgang + zusatz));
         row.appendChild(info);
         const del = mk('button', 'sb-item-del'); del.textContent = '✕';
         del.onclick = e => {
@@ -96,13 +101,18 @@ function buildSidebar() {
     ));
   });
 
-  // ── Materialien ───────────────────────────────────────────────
+  // ── Datenbanken ───────────────────────────────────────────────
   sb.appendChild(mk('div', 'sb-sep'));
-  sb.appendChild(sbSection('Materialien'));
+  sb.appendChild(sbSection('Datenbanken'));
   sb.appendChild(sbRow(
-    '📂 Datenbank', null,
+    '📂 Material', null,
     S.view === 'materialien',
     () => { S.view = 'materialien'; S.sel = null; render(); }
+  ));
+  sb.appendChild(sbRow(
+    '📂 Methoden', null,
+    S.view === 'methoden',
+    () => { S.view = 'methoden'; S.sel = null; render(); }
   ));
 
   // ── Einstellungen ─────────────────────────────────────────────

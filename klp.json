@@ -4403,13 +4403,1811 @@
     "beschreibung": "interpretieren und beurteilen Daten und statistische Aussagen in authentischen Texten"
   },
   {
-    "id": "CH_Q1_ORG_001",
+    "id": "BIO_SII_IF1_EF_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "S1",
+      "S2",
+      "K1",
+      "K2",
+      "K9"
+    ],
+    "beschreibung": "vergleichen den Aufbau von prokaryotischen und eukaryotischen Zellen"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "S2",
+      "S5",
+      "K5",
+      "K10"
+    ],
+    "beschreibung": "erklären Bau und Zusammenwirken der Zellbestandteile eukaryotischer Zellen und erläutern die Bedeutung der Kompartimentierung"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "S3",
+      "S6",
+      "E9",
+      "K7",
+      "K8"
+    ],
+    "beschreibung": "vergleichen einzellige und vielzellige Lebewesen und erläutern die jeweiligen Vorteile ihrer Organisationsform"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "S1",
+      "S4",
+      "S6",
+      "E11",
+      "K8",
+      "K14"
+    ],
+    "beschreibung": "erläutern Ursachen und Auswirkungen von Chromosomen- und Genommutationen"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "S2",
+      "S5–7",
+      "K6"
+    ],
+    "beschreibung": "erläutern die Funktionen von Biomembranen anhand ihrer stofflichen Zusammensetzung und räumlichen Organisation"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "S5",
+      "S6"
+    ],
+    "beschreibung": "beschreiben die Bedeutung des ATP-ADP-Systems bei auf- und abbauenden Stoffwechselprozessen"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "S4",
+      "S6",
+      "S7",
+      "K6",
+      "K10"
+    ],
+    "beschreibung": "erklären die Bedeutung der Homöostase des osmotischen Werts für zelluläre Funktionen und leiten mögliche Auswirkungen auf den Organismus ab"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "S2",
+      "E2",
+      "E9",
+      "E16",
+      "K6"
+    ],
+    "beschreibung": "begründen den Einsatz unterschiedlicher mikroskopischer Techniken für verschiedene Anwendungsgebiete"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "S5",
+      "E7",
+      "E8",
+      "E13",
+      "K10"
+    ],
+    "beschreibung": "analysieren differenzierte Zelltypen mithilfe mikroskopischer Verfahren"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_010",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "E9",
+      "K7"
+    ],
+    "beschreibung": "erläutern theoriegeleitet den prokaryotischen Ursprung von Mitochondrien und Chloroplasten"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_011",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "S1",
+      "S6",
+      "E2",
+      "K3"
+    ],
+    "beschreibung": "erklären die Bedeutung der Regulation des Zellzyklus für Wachstum und Entwicklung"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_012",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "S6",
+      "E1–3",
+      "E11",
+      "K9",
+      "K13"
+    ],
+    "beschreibung": "wenden Gesetzmäßigkeiten der Vererbung auf Basis der Meiose bei der Analyse von Familienstammbäumen an"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_013",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "E12",
+      "E15–17"
+    ],
+    "beschreibung": "stellen den Erkenntniszuwachs zum Aufbau von Biomembranen durch technischen Fortschritt und Modellierungen an Beispielen dar"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_014",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "E4",
+      "E8",
+      "E10–14"
+    ],
+    "beschreibung": "erklären experimentelle Befunde zu Diffusion und Osmose mithilfe von Modellvorstellungen"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_015",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "E2",
+      "E3",
+      "E6",
+      "E9",
+      "E11",
+      "E14"
+    ],
+    "beschreibung": "entwickeln Hypothesen zur Abhängigkeit der Enzymaktivität von verschiedenen Faktoren und überprüfen diese mit experimentellen Daten"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_016",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "E9",
+      "K6",
+      "K8",
+      "K11"
+    ],
+    "beschreibung": "beschreiben und interpretieren Diagramme zu enzymatischen Reaktionen"
+  },
+  {
+    "id": "BIO_SII_IF1_EF_017",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Zellbiologie",
+    "kompetenzcodes": [
+      "E5",
+      "E12",
+      "K8",
+      "K9"
+    ],
+    "beschreibung": "erklären die Regulation der Enzymaktivität mithilfe von Modellen"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_GK_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S3",
+      "E12"
+    ],
+    "beschreibung": "erläutern am Beispiel von Neuronen den Zusammenhang zwischen Struktur und Funktion"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_GK_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S1",
+      "S6",
+      "E12",
+      "K9",
+      "B1",
+      "B6"
+    ],
+    "beschreibung": "erklären die Erregungsübertragung an einer Synapse und erläutern die Auswirkungen exogener Substanzen"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_GK_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S4",
+      "E3"
+    ],
+    "beschreibung": "entwickeln theoriegeleitet Hypothesen zur Aufrechterhaltung und Beeinflussung des Ruhepotenzials"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_GK_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S3",
+      "E14"
+    ],
+    "beschreibung": "erklären Messwerte von Potenzialänderungen an Axon und Synapse mithilfe der zugrundeliegenden molekularen Vorgänge"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_GK_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S6",
+      "E1–3"
+    ],
+    "beschreibung": "vergleichen kriteriengeleitet kontinuierliche und saltatorische Erregungsleitung und wenden die ermittelten Unterschiede auf neurobiologische Fragestellungen an"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_GK_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "B5–9"
+    ],
+    "beschreibung": "nehmen zum Einsatz von exogenen Substanzen zur Schmerzlinderung Stellung"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_GK_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S4–6",
+      "E3",
+      "K6–8"
+    ],
+    "beschreibung": "erklären funktionale Angepasstheiten an die fotoautotrophe Lebensweise auf verschiedenen Systemebenen"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_GK_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S2",
+      "S7",
+      "E2",
+      "K9"
+    ],
+    "beschreibung": "erläutern den Zusammenhang zwischen Primär- und Sekundärreaktionen der Fotosynthese aus stofflicher und energetischer Sicht"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_GK_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S1",
+      "S7",
+      "K9"
+    ],
+    "beschreibung": "stellen die wesentlichen Schritte des abbauenden Glucosestoffwechsels unter aeroben Bedingungen dar und erläutern diese hinsichtlich der Stoff- und Energieumwandlung"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_GK_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S3",
+      "E1",
+      "E4",
+      "E8",
+      "E13"
+    ],
+    "beschreibung": "erklären das Wirkungsspektrum der Fotosynthese mit den durch Chromatografie identifizierten Pigmenten"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_GK_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "E4–11"
+    ],
+    "beschreibung": "analysieren anhand von Daten die Beeinflussung der Fotosyntheserate durch abiotische Faktoren"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_GK_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S7",
+      "E1-4",
+      "E11",
+      "E12"
+    ],
+    "beschreibung": "erklären die regulatorische Wirkung von Enzymen in mehrstufigen Reaktionswegen des Stoffwechsels"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_GK_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S6",
+      "K1–4",
+      "B5",
+      "B7",
+      "B9"
+    ],
+    "beschreibung": "nehmen zum Konsum eines ausgewählten Nahrungsergänzungsmittels unter stoffwechselphysiologischen Aspekten Stellung"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_GK_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S5–7",
+      "K8"
+    ],
+    "beschreibung": "erläutern das Zusammenwirken von abiotischen und biotischen Faktoren in einem Ökosystem"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_GK_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S4",
+      "S7",
+      "E17",
+      "K7",
+      "K8"
+    ],
+    "beschreibung": "erläutern die ökologische Nische als Wirkungsgefüge"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_GK_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S7",
+      "S8",
+      "K11–14"
+    ],
+    "beschreibung": "analysieren die Folgen anthropogener Einwirkung auf ein ausgewähltes Ökosystem und begründen Erhaltungs- oder Renaturierungsmaßnahmen"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_GK_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S7",
+      "E1–3",
+      "E9",
+      "E13"
+    ],
+    "beschreibung": "untersuchen auf der Grundlage von Daten die physiologische und ökologische Potenz von Lebewesen"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_GK_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S4",
+      "S7",
+      "E9",
+      "K6–8"
+    ],
+    "beschreibung": "analysieren Wechselwirkungen zwischen Lebewesen hinsichtlich intra- oder interspezifischer Beziehungen"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_GK_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "E3",
+      "E4",
+      "E7–9",
+      "E15",
+      "K8"
+    ],
+    "beschreibung": "bestimmen Arten in einem ausgewählten Areal und begründen ihr Vorkommen mit dort erfassten ökologischen Faktoren"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_GK_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S7",
+      "E12",
+      "E14",
+      "K2",
+      "K5"
+    ],
+    "beschreibung": "analysieren die Zusammenhänge von Nahrungsbeziehungen, Stoffkreisläufen und Energiefluss in einem Ökosystem"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_GK_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S8",
+      "K12",
+      "K14",
+      "B2",
+      "B5",
+      "B10"
+    ],
+    "beschreibung": "erläutern Konflikte zwischen Biodiversitätsschutz und Umweltnutzung und bewerten Handlungsoptionen unter den Aspekten der Nachhaltigkeit"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_GK_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S3",
+      "E16",
+      "K14",
+      "B4",
+      "B7",
+      "B10",
+      "B12"
+    ],
+    "beschreibung": "erläutern geografische, zeitliche und soziale Auswirkungen des anthropogen bedingten Treibhauseffektes und entwickeln Kriterien für die Bewertung von Maßnahmen"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_GK_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S2",
+      "S5",
+      "E12",
+      "K5",
+      "K6"
+    ],
+    "beschreibung": "erläutern vergleichend die Realisierung der genetischen Information bei Prokaryoten und Eukaryoten"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_GK_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S2",
+      "S6",
+      "E9",
+      "K2",
+      "K11"
+    ],
+    "beschreibung": "erklären die Regulation der Genaktivität bei Eukaryoten durch den Einfluss von Transkriptionsfaktoren und DNA-Methylierung"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_GK_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S4",
+      "S6",
+      "S7",
+      "E1",
+      "K8"
+    ],
+    "beschreibung": "erklären die Auswirkungen von Genmutationen auf Genprodukte und Phänotyp"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_GK_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S2",
+      "S5",
+      "S6",
+      "K7"
+    ],
+    "beschreibung": "begründen die Veränderungen im Genpool einer Population mit der Wirkung der Evolutionsfaktoren"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_GK_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S3",
+      "S5–7",
+      "K7",
+      "K8"
+    ],
+    "beschreibung": "erläutern die Angepasstheit von Lebewesen auf Basis der reproduktiven Fitness auch unter dem Aspekt einer Kosten-Nutzen-Analyse"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_GK_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S4",
+      "S6",
+      "S7",
+      "E12",
+      "K6",
+      "K7"
+    ],
+    "beschreibung": "erklären Prozesse des Artwandels und der Artbildung mithilfe der Synthetischen Evolutionstheorie"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_GK_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S1",
+      "E1",
+      "E9",
+      "E11",
+      "K10"
+    ],
+    "beschreibung": "leiten ausgehend vom Bau der DNA das Grundprinzip der semikonservativen Replikation aus experimentellen Befunden ab"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_GK_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S4",
+      "E3",
+      "E11",
+      "E15",
+      "K14",
+      "B8"
+    ],
+    "beschreibung": "analysieren Familienstammbäume und leiten daraus mögliche Konsequenzen für Gentest und Beratung ab"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_GK_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S1",
+      "S3",
+      "E1",
+      "E9",
+      "E12",
+      "K8"
+    ],
+    "beschreibung": "deuten molekularbiologische Homologien im Hinblick auf phylogenetische Verwandtschaft und vergleichen diese mit konvergenten Entwicklungen"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_GK_010",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S4",
+      "E2",
+      "E10",
+      "E12",
+      "K9",
+      "K11"
+    ],
+    "beschreibung": "analysieren phylogenetische Stammbäume im Hinblick auf die Verwandtschaft von Lebewesen und die Evolution von Genen"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_GK_011",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S1",
+      "K14",
+      "B3",
+      "B7–9",
+      "B11"
+    ],
+    "beschreibung": "bewerten Nutzen und Risiken einer Gentherapie beim Menschen"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_GK_012",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "E15–17",
+      "K4",
+      "K13",
+      "B1",
+      "B2",
+      "B5"
+    ],
+    "beschreibung": "begründen die Abgrenzung der Synthetischen Evolutionstheorie gegen nichtnaturwissenschaftliche Positionen und nehmen zu diesen Stellung"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_LK_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S3",
+      "E12"
+    ],
+    "beschreibung": "erläutern am Beispiel von Neuronen den Zusammenhang zwischen Struktur und Funktion"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_LK_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S1",
+      "S6",
+      "E12",
+      "K9",
+      "B1",
+      "B6"
+    ],
+    "beschreibung": "erklären die Erregungsübertragung an einer Synapse und erläutern die Auswirkungen exogener Substanzen"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_LK_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S2",
+      "K11"
+    ],
+    "beschreibung": "erläutern die Bedeutung der Verrechnung von Potenzialen für die Erregungsleitung"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_LK_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S2",
+      "K6",
+      "K10"
+    ],
+    "beschreibung": "erläutern das Prinzip der Signaltransduktion bei primären und sekundären Sinneszellen"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_LK_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S2",
+      "S6",
+      "E12",
+      "K1"
+    ],
+    "beschreibung": "erläutern synaptische Plastizität auf der zellulären Ebene und leiten ihre Bedeutung für den Prozess des Lernens ab"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_LK_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S2",
+      "S6"
+    ],
+    "beschreibung": "beschreiben die Verschränkung von hormoneller und neuronaler Steuerung am Beispiel der Stressreaktion"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_LK_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S4",
+      "E3"
+    ],
+    "beschreibung": "entwickeln theoriegeleitet Hypothesen zur Aufrechterhaltung und Beeinflussung des Ruhepotenzials"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_LK_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S3",
+      "E14"
+    ],
+    "beschreibung": "erklären Messwerte von Potenzialänderungen an Axon und Synapse mithilfe der zugrundeliegenden molekularen Vorgänge und stellen die Anwendung eines zugehörigen neurophysiologischen Verfahrens dar"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_LK_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S6",
+      "E1–3"
+    ],
+    "beschreibung": "vergleichen kriteriengeleitet kontinuierliche und saltatorische Erregungsleitung und wenden die ermittelten Unterschiede auf neurobiologische Fragestellungen an"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_LK_010",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "B5–9"
+    ],
+    "beschreibung": "nehmen zum Einsatz von exogenen Substanzen zur Schmerzlinderung Stellung"
+  },
+  {
+    "id": "BIO_SII_IF2_Q_LK_011",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Neurobiologie",
+    "kompetenzcodes": [
+      "S3",
+      "K1–4",
+      "B2",
+      "B6"
+    ],
+    "beschreibung": "analysieren die Folgen einer neuronalen Störung aus individueller und gesellschaftlicher Perspektive"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_LK_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S4–6",
+      "E3",
+      "K6–8"
+    ],
+    "beschreibung": "erklären funktionale Angepasstheiten an die fotoautotrophe Lebensweise auf verschiedenen Systemebenen"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_LK_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S2",
+      "S7",
+      "E2",
+      "K9"
+    ],
+    "beschreibung": "erläutern den Zusammenhang zwischen Primär- und Sekundärreaktionen der Fotosynthese aus stofflicher und energetischer Sicht"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_LK_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S1",
+      "S5",
+      "S7",
+      "K7"
+    ],
+    "beschreibung": "vergleichen die Sekundärvorgänge bei C - und C - Pflanzen und erklären sie 3 4 mit der Angepasstheit an unterschiedliche Standortfaktoren"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_LK_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S1",
+      "S7",
+      "K9"
+    ],
+    "beschreibung": "stellen die wesentlichen Schritte des abbauenden Glucosestoffwechsels unter aeroben und anaeroben Bedingungen dar und erläutern diese hinsichtlich der Stoff- und Energieumwandlung"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_LK_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S4",
+      "S7",
+      "E12",
+      "K9",
+      "K11"
+    ],
+    "beschreibung": "vergleichen den membranbasierten Mechanismus der Energieumwandlung in Mitochondrien und Chloroplasten auch auf Basis von energetischen Modellen"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_LK_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S3",
+      "E1",
+      "E4",
+      "E8",
+      "E13"
+    ],
+    "beschreibung": "erklären das Wirkungsspektrum der Fotosynthese mit den durch Chromatografie identifizierten Pigmenten"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_LK_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "E4–11"
+    ],
+    "beschreibung": "analysieren anhand von Daten die Beeinflussung der Fotosyntheserate durch abiotische Faktoren"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_LK_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S7",
+      "E1–4",
+      "E11",
+      "E12"
+    ],
+    "beschreibung": "erklären die regulatorische Wirkung von Enzymen in mehrstufigen Reaktionswegen des Stoffwechsels"
+  },
+  {
+    "id": "BIO_SII_IF3_Q_LK_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Stoffwechselphysiologie",
+    "kompetenzcodes": [
+      "S2",
+      "E9",
+      "E10",
+      "E15"
+    ],
+    "beschreibung": "werten durch die Anwendung von Tracermethoden erhaltene Befunde zum Ablauf mehrstufiger Reaktionswege aus"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_LK_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S5–7",
+      "K8"
+    ],
+    "beschreibung": "erläutern das Zusammenwirken von abiotischen und biotischen Faktoren in einem Ökosystem"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_LK_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S4",
+      "S7",
+      "E17",
+      "K7",
+      "K8"
+    ],
+    "beschreibung": "erläutern die ökologische Nische als Wirkungsgefüge"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_LK_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S7",
+      "S8",
+      "K11–14"
+    ],
+    "beschreibung": "analysieren die Folgen anthropogener Einwirkung auf ein ausgewähltes Ökosystem und begründen Erhaltungs- oder Renaturierungsmaßnahmen"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_LK_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S7",
+      "E1–3",
+      "E9",
+      "E13"
+    ],
+    "beschreibung": "untersuchen auf der Grundlage von Daten die physiologische und ökologische Potenz von Lebewesen"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_LK_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S5",
+      "E9",
+      "E10",
+      "E12",
+      "K9"
+    ],
+    "beschreibung": "interpretieren grafische Darstellungen der Populationsdynamik unter idealisierten und realen Bedingungen auch unter Berücksichtigung von Fortpflanzungsstrategien"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_LK_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S4",
+      "S7",
+      "E9",
+      "K6–8"
+    ],
+    "beschreibung": "analysieren Wechselwirkungen zwischen Lebewesen hinsichtlich intra- oder interspezifischer Beziehungen"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_LK_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "E3",
+      "E4",
+      "E7–9",
+      "E15",
+      "K8"
+    ],
+    "beschreibung": "bestimmen Arten in einem ausgewählten Areal und begründen ihr Vorkommen mit dort erfassten ökologischen Faktoren"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_LK_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S7",
+      "E12",
+      "E14",
+      "K2",
+      "K5"
+    ],
+    "beschreibung": "analysieren die Zusammenhänge von Nahrungsbeziehungen, Stoffkreisläufen und Energiefluss in einem Ökosystem"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_LK_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S8",
+      "K12",
+      "K14",
+      "B2",
+      "B5",
+      "B10"
+    ],
+    "beschreibung": "erläutern Konflikte zwischen Biodiversitätsschutz und Umweltnutzung und bewerten Handlungsoptionen unter den Aspekten der Nachhaltigkeit"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_LK_010",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "E15",
+      "K10",
+      "K14",
+      "B1",
+      "B2",
+      "B5"
+    ],
+    "beschreibung": "analysieren Schwierigkeiten der Risikobewertung für hormonartig wirkende Substanzen in der Umwelt unter Berücksichtigung verschiedener Interessenslagen"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_LK_011",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "K13",
+      "K14",
+      "B8",
+      "B10",
+      "B12"
+    ],
+    "beschreibung": "beurteilen anhand des ökologischen Fußabdrucks den Verbrauch endlicher Ressourcen aus verschiedenen Perspektiven"
+  },
+  {
+    "id": "BIO_SII_IF4_Q_LK_012",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Ökologie",
+    "kompetenzcodes": [
+      "S3",
+      "E16",
+      "K14",
+      "B4",
+      "B7",
+      "B10",
+      "B12"
+    ],
+    "beschreibung": "erläutern geografische, zeitliche und soziale Auswirkungen des anthropogen bedingten Treibhauseffektes und entwickeln Kriterien für die Bewertung von Maßnahmen"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_001",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S2",
+      "S5",
+      "E12",
+      "K5",
+      "K6"
+    ],
+    "beschreibung": "erläutern vergleichend die Realisierung der genetischen Information bei Prokaryoten und Eukaryoten"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_002",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S2",
+      "S6",
+      "E9",
+      "K2",
+      "K11"
+    ],
+    "beschreibung": "erklären die Regulation der Genaktivität bei Eukaryoten durch den Einfluss von Transkriptionsfaktoren und DNA-Methylierung"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_003",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S4",
+      "S6",
+      "S7",
+      "E1",
+      "K8"
+    ],
+    "beschreibung": "erklären die Auswirkungen von Genmutationen auf Genprodukte und Phänotyp"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_004",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S3",
+      "S5",
+      "S6",
+      "E12"
+    ],
+    "beschreibung": "begründen Eigenschaften von Krebszellen mit Veränderungen in Proto-Onkogenen und Anti-Onkogenen (Tumor-Suppressor-Genen)"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_005",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S4",
+      "S6",
+      "E14",
+      "K13"
+    ],
+    "beschreibung": "begründen den Einsatz der personalisierten Medizin in der Krebstherapie"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_006",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S2",
+      "S5",
+      "S6",
+      "K7"
+    ],
+    "beschreibung": "begründen die Veränderungen im Genpool einer Population mit der Wirkung der Evolutionsfaktoren"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_007",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S3",
+      "S5–7",
+      "K7",
+      "K8"
+    ],
+    "beschreibung": "erläutern die Angepasstheit von Lebewesen auf Basis der reproduktiven Fitness auch unter dem Aspekt einer Kosten-Nutzen-Analyse"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_008",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S4",
+      "S6",
+      "S7",
+      "E12",
+      "K6",
+      "K7"
+    ],
+    "beschreibung": "erklären Prozesse des Artwandels und der Artbildung mithilfe der Synthetischen Evolutionstheorie"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_009",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S1",
+      "E1",
+      "E9",
+      "E11",
+      "K10"
+    ],
+    "beschreibung": "leiten ausgehend vom Bau der DNA das Grundprinzip der semikonservativen Replikation aus experimentellen Befunden ab"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_010",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S4",
+      "E9",
+      "E12",
+      "K2",
+      "K9"
+    ],
+    "beschreibung": "deuten Ergebnisse von Experimenten zum Ablauf der Proteinbiosynthese (u. a. zur Entschlüsselung des genetischen Codes)"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_011",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S5",
+      "S6",
+      "E4",
+      "E5",
+      "K1",
+      "K10"
+    ],
+    "beschreibung": "erläutern die Genregulation bei Eukaryoten durch RNA-Interferenz und HistonModifikation anhand von Modellen"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_012",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S4",
+      "S6",
+      "E8–10",
+      "K11"
+    ],
+    "beschreibung": "erläutern PCR und Gelelektrophorese unter anderem als Verfahren zur Feststellung von Genmutationen"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_013",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S4",
+      "E3",
+      "E11",
+      "E15",
+      "K14",
+      "B8"
+    ],
+    "beschreibung": "analysieren Familienstammbäume und leiten daraus mögliche Konsequenzen für Gentest und Beratung ab"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_014",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S1",
+      "S3",
+      "E1",
+      "E9",
+      "E12",
+      "K8"
+    ],
+    "beschreibung": "deuten molekularbiologische Homologien im Hinblick auf phylogenetische Verwandtschaft und vergleichen diese mit konvergenten Entwicklungen"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_015",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S4",
+      "E2",
+      "E10",
+      "E12",
+      "K9",
+      "K11"
+    ],
+    "beschreibung": "analysieren phylogenetische Stammbäume im Hinblick auf die Verwandtschaft von Lebewesen und die Evolution von Genen"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_016",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S3",
+      "S5",
+      "E3",
+      "E9",
+      "K7"
+    ],
+    "beschreibung": "erläutern datenbasiert das Fortpflanzungsverhalten von Primaten auch unter dem Aspekt der Fitnessmaximierung"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_017",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S4",
+      "E9",
+      "E12",
+      "E15",
+      "K7",
+      "K8"
+    ],
+    "beschreibung": "diskutieren wissenschaftliche Befunde und Hypothesen zur Humanevolution auch unter dem Aspekt ihrer Vorläufigkeit"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_018",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "E9",
+      "E14",
+      "K7",
+      "K8",
+      "B2",
+      "B9"
+    ],
+    "beschreibung": "analysieren die Bedeutung der kulturellen Evolution für soziale Lebewesen"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_019",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S1",
+      "K14",
+      "B3",
+      "B7–9",
+      "B11"
+    ],
+    "beschreibung": "bewerten Nutzen und Risiken einer Gentherapie beim Menschen und nehmen zum Einsatz gentherapeutischer Verfahren Stellung"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_020",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "S1",
+      "S8",
+      "K4",
+      "K13",
+      "B2",
+      "B3",
+      "B9",
+      "B12"
+    ],
+    "beschreibung": "erklären die Herstellung rekombinanter DNA und nehmen zur Nutzung gentechnisch veränderter Organismen Stellung"
+  },
+  {
+    "id": "BIO_SII_IF5_Q_LK_021",
+    "fach": "Biologie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Genetik und Evolution",
+    "kompetenzcodes": [
+      "E15–17",
+      "K4",
+      "K13",
+      "B1",
+      "B2",
+      "B5"
+    ],
+    "beschreibung": "begründen die Abgrenzung der Synthetischen Evolutionstheorie gegen nichtnaturwissenschaftliche Positionen und nehmen zu diesen Stellung"
+  },
+  {
+    "id": "CH_SII_IF1_EF_001",
     "fach": "Chemie",
     "bundesland": "NRW",
     "schulform": "Gymnasium",
     "stufe": "Sekundarstufe II",
-    "jahrgang": "Q1",
-    "inhaltsfeld": "Organische Produkte – Werkstoffe und Farbstoffe",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Organische Stoffklassen",
     "kompetenzcodes": [
       "S1",
       "S6",
@@ -4418,12 +6216,368 @@
     "beschreibung": "ordnen organische Verbindungen aufgrund ihrer funktionellen Gruppen in Stoffklassen ein und benennen diese nach systematischer Nomenklatur"
   },
   {
-    "id": "CH_Q1_SB_001",
+    "id": "CH_SII_IF1_EF_002",
     "fach": "Chemie",
     "bundesland": "NRW",
     "schulform": "Gymnasium",
     "stufe": "Sekundarstufe II",
-    "jahrgang": "Q1",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Organische Stoffklassen",
+    "kompetenzcodes": [
+      "S2",
+      "S13",
+      "E7"
+    ],
+    "beschreibung": "erläutern intermolekulare Wechselwirkungen organischer Verbindungen und erklären ausgewählte Eigenschaften sowie die Verwendung organischer Stoffe auf dieser Grundlage"
+  },
+  {
+    "id": "CH_SII_IF1_EF_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Organische Stoffklassen",
+    "kompetenzcodes": [
+      "S4",
+      "S12",
+      "S14",
+      "S16"
+    ],
+    "beschreibung": "erläutern das Donator-Akzeptor-Prinzip unter Verwendung der Oxidationszahlen am Beispiel der Oxidationsreihe der Alkanole"
+  },
+  {
+    "id": "CH_SII_IF1_EF_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Organische Stoffklassen",
+    "kompetenzcodes": [
+      "S11",
+      "E7"
+    ],
+    "beschreibung": "stellen Isomere von Alkanolen dar und erklären die Konstitutionsisomerie"
+  },
+  {
+    "id": "CH_SII_IF1_EF_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Organische Stoffklassen",
+    "kompetenzcodes": [
+      "E7",
+      "S13"
+    ],
+    "beschreibung": "stellen auch unter Nutzung digitaler Werkzeuge die Molekülgeometrie von Kohlenstoffverbindungen dar und erklären die Molekülgeometrie mithilfe des EPA-Modells"
+  },
+  {
+    "id": "CH_SII_IF1_EF_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Organische Stoffklassen",
+    "kompetenzcodes": [
+      "E2",
+      "E5",
+      "S14"
+    ],
+    "beschreibung": "deuten die Beobachtungen von Experimenten zur Oxidationsreihe der Alkanole und weisen die jeweiligen Produkte nach"
+  },
+  {
+    "id": "CH_SII_IF1_EF_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Organische Stoffklassen",
+    "kompetenzcodes": [
+      "E3",
+      "E5"
+    ],
+    "beschreibung": "führen Estersynthesen durch und leiten aus Stoffeigenschaften der erhaltenen Produkte Hypothesen zum strukturellen Aufbau der Estergruppe ab"
+  },
+  {
+    "id": "CH_SII_IF1_EF_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Organische Stoffklassen",
+    "kompetenzcodes": [
+      "E3",
+      "E4"
+    ],
+    "beschreibung": "stellen Hypothesen zu Struktureigenschaftsbeziehungen einer ausgewählten Stoffklasse auf und untersuchen diese experimentell"
+  },
+  {
+    "id": "CH_SII_IF1_EF_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Organische Stoffklassen",
+    "kompetenzcodes": [
+      "B6",
+      "B7",
+      "E1",
+      "E11",
+      "K6"
+    ],
+    "beschreibung": "beurteilen die Auswirkungen der Aufnahme von Ethanol hinsichtlich oxidativer Abbauprozesse im menschlichen Körper unter Aspekten der Gesunderhaltung"
+  },
+  {
+    "id": "CH_SII_IF1_EF_010",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Organische Stoffklassen",
+    "kompetenzcodes": [
+      "B5",
+      "B9",
+      "B10",
+      "K5",
+      "K8",
+      "K13"
+    ],
+    "beschreibung": "diskutieren den Einsatz von Konservierungs- und Aromastoffen in der Lebensmittelindustrie aus gesundheitlicher und ökonomischer Perspektive und leiten entsprechende Handlungsoptionen zu deren Konsum ab"
+  },
+  {
+    "id": "CH_SII_IF1_EF_011",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 1,
+    "inhaltsfeld": "Organische Stoffklassen",
+    "kompetenzcodes": [
+      "B1",
+      "B7",
+      "B8",
+      "B11",
+      "B14",
+      "S2",
+      "S10",
+      "E11"
+    ],
+    "beschreibung": "beurteilen die Verwendung von Lösemitteln in Produkten des Alltags auch im Hinblick auf die Entsorgung aus chemischer und ökologischer Perspektive"
+  },
+  {
+    "id": "CH_SII_IF2_EF_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Reaktionsgeschwindigkeit und chemisches Gleichgewicht",
+    "kompetenzcodes": [
+      "S3",
+      "S8",
+      "S9"
+    ],
+    "beschreibung": "erklären den Einfluss eines Katalysators auf die Reaktionsgeschwindigkeit auch anhand grafischer Darstellungen"
+  },
+  {
+    "id": "CH_SII_IF2_EF_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Reaktionsgeschwindigkeit und chemisches Gleichgewicht",
+    "kompetenzcodes": [
+      "S7",
+      "S15",
+      "K10"
+    ],
+    "beschreibung": "beschreiben die Merkmale eines chemischen Gleichgewichtes anhand ausgewählter Reaktionen"
+  },
+  {
+    "id": "CH_SII_IF2_EF_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Reaktionsgeschwindigkeit und chemisches Gleichgewicht",
+    "kompetenzcodes": [
+      "S8",
+      "S15",
+      "K10"
+    ],
+    "beschreibung": "erklären anhand ausgewählter Reaktionen die Beeinflussung des chemischen Gleichgewichts nach dem Prinzip von Le Chatelier auch im Zusammenhang mit einem technischen Verfahren"
+  },
+  {
+    "id": "CH_SII_IF2_EF_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Reaktionsgeschwindigkeit und chemisches Gleichgewicht",
+    "kompetenzcodes": [
+      "S7",
+      "S8",
+      "S17"
+    ],
+    "beschreibung": "bestimmen rechnerisch Gleichgewichtslagen ausgewählter Reaktionen mithilfe des Massenwirkungsgesetzes und interpretieren die Ergebnisse"
+  },
+  {
+    "id": "CH_SII_IF2_EF_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Reaktionsgeschwindigkeit und chemisches Gleichgewicht",
+    "kompetenzcodes": [
+      "E5",
+      "K7",
+      "K9"
+    ],
+    "beschreibung": "definieren die Durchschnittsgeschwindigkeit chemischer Reaktionen und ermitteln diese grafisch aus experimentellen Daten"
+  },
+  {
+    "id": "CH_SII_IF2_EF_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Reaktionsgeschwindigkeit und chemisches Gleichgewicht",
+    "kompetenzcodes": [
+      "E3",
+      "E4",
+      "E10",
+      "S9"
+    ],
+    "beschreibung": "überprüfen aufgestellte Hypothesen zum Einfluss verschiedener Faktoren auf die Reaktionsgeschwindigkeit durch Untersuchungen des zeitlichen Ablaufs einer chemischen Reaktion"
+  },
+  {
+    "id": "CH_SII_IF2_EF_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Reaktionsgeschwindigkeit und chemisches Gleichgewicht",
+    "kompetenzcodes": [
+      "E6",
+      "E7",
+      "E8",
+      "K11"
+    ],
+    "beschreibung": "stellen den zeitlichen Ablauf chemischer Reaktionen auf molekularer Ebene mithilfe der Stoßtheorie auch unter Nutzung digitaler Werkzeuge dar und deuten die Ergebnisse"
+  },
+  {
+    "id": "CH_SII_IF2_EF_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Reaktionsgeschwindigkeit und chemisches Gleichgewicht",
+    "kompetenzcodes": [
+      "E6",
+      "E9",
+      "S15",
+      "K10"
+    ],
+    "beschreibung": "simulieren den chemischen Gleichgewichtszustand als dynamisches Gleichgewicht auch unter Nutzung digitaler Werkzeuge"
+  },
+  {
+    "id": "CH_SII_IF2_EF_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Reaktionsgeschwindigkeit und chemisches Gleichgewicht",
+    "kompetenzcodes": [
+      "B3",
+      "B10",
+      "B12",
+      "E12"
+    ],
+    "beschreibung": "beurteilen den ökologischen wie ökonomischen Nutzen und die Grenzen der Beeinflussbarkeit chemischer Gleichgewichtslagen in einem technischen Verfahren"
+  },
+  {
+    "id": "CH_SII_IF2_EF_010",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Reaktionsgeschwindigkeit und chemisches Gleichgewicht",
+    "kompetenzcodes": [
+      "B2",
+      "B4",
+      "S5",
+      "K1",
+      "K2",
+      "K3",
+      "K4",
+      "K12"
+    ],
+    "beschreibung": "analysieren und beurteilen im Zusammenhang mit der jeweiligen Intention der Urheberschaft verschiedene Quellen und Darstellungsformen zu den Folgen anthropogener Einflüsse in einen natürlichen Stoffkreislauf"
+  },
+  {
+    "id": "CH_SII_IF2_EF_011",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "EF",
+    "inhaltsfeldNummer": 2,
+    "inhaltsfeld": "Reaktionsgeschwindigkeit und chemisches Gleichgewicht",
+    "kompetenzcodes": [
+      "B12",
+      "B13",
+      "B14",
+      "S5",
+      "E12",
+      "K13"
+    ],
+    "beschreibung": "bewerten die Folgen eines Eingriffs in einen Stoffkreislauf mit Blick auf Gleichgewichtsprozesse in aktuell-gesellschaftlichen Zusammenhängen"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
     "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
     "kompetenzcodes": [
       "S1",
@@ -4435,12 +6589,211 @@
     "beschreibung": "klassifizieren die auch in Alltagsprodukten identifizierten Säuren und Basen mithilfe des Säure-Base-Konzepts von Brønsted und erläutern ihr Reaktionsverhalten unter Berücksichtigung von Protolysegleichungen"
   },
   {
-    "id": "CH_Q2_EC_001",
+    "id": "CH_SII_IF3_Q_GK_002",
     "fach": "Chemie",
     "bundesland": "NRW",
     "schulform": "Gymnasium",
     "stufe": "Sekundarstufe II",
-    "jahrgang": "Q2",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S3",
+      "S7",
+      "S16"
+    ],
+    "beschreibung": "erklären die unterschiedlichen Reaktionsgeschwindigkeiten von starken und schwachen Säuren mit unedlen Metallen oder Salzen anhand der Protolysereaktionen"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S2",
+      "S7"
+    ],
+    "beschreibung": "interpretieren die Gleichgewichtslage von Protolysereaktionen mithilfe des 38 Kompetenzbereiche, Inhaltsfelder und Kompetenzerwartungen Massenwirkungsgesetzes und die daraus resultierenden Säure-/Base-Konstanten"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S17"
+    ],
+    "beschreibung": "berechnen pH-Werte wässriger Lösungen von Säuren und Basen bei vollständiger Protolyse"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S3"
+    ],
+    "beschreibung": "definieren den Begriff der Reaktionsenthalpie und grenzen diesen von der inneren Energie ab"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S3",
+      "S10"
+    ],
+    "beschreibung": "erklären im Zusammenhang mit der Neutralisationsreaktion den ersten Hauptsatz der Thermodynamik (Prinzip der Energieerhaltung)"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S3",
+      "S12"
+    ],
+    "beschreibung": "erläutern die Neutralisationsreaktion unter Berücksichtigung der Neutralisationsenthalpie"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S12",
+      "K8"
+    ],
+    "beschreibung": "deuten endotherme und exotherme Lösungsvorgänge bei Salzen unter Berücksichtigung der Gitter- und Solvatationsenergie"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "E5"
+    ],
+    "beschreibung": "weisen ausgewählte Ionensorten (Halogenid-Ionen, Ammonium-Ionen, Carbonat-Ionen) salzartiger Verbindungen qualitativ nach"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_010",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "E1",
+      "E2",
+      "E3",
+      "E4"
+    ],
+    "beschreibung": "planen hypothesengeleitet Experimente zur Konzentrationsbestimmung von Säuren und Basen auch in Alltagsprodukten"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_011",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "E5",
+      "E10",
+      "K10"
+    ],
+    "beschreibung": "führen das Verfahren einer Säure-Base-Titration mit Endpunktbestimmung mittels Indikator am Beispiel starker Säuren und Basen durch und werten die Ergebnisse auch unter Berücksichtigung einer Fehleranalyse aus"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_012",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "E5",
+      "K1"
+    ],
+    "beschreibung": "bestimmen die Reaktionsenthalpie der Neutralisationsreaktion von starken Säuren mit starken Basen kalorimetrisch und vergleichen das Ergebnis mit Literaturdaten"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_013",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "B8",
+      "B11",
+      "K8"
+    ],
+    "beschreibung": "beurteilen den Einsatz, die Wirksamkeit und das Gefahrenpotenzial von Säuren, Basen und Salzen als Inhaltsstoffe in Alltagsprodukten und leiten daraus begründet Handlungsoptionen ab"
+  },
+  {
+    "id": "CH_SII_IF3_Q_GK_014",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "B3",
+      "B8",
+      "K8"
+    ],
+    "beschreibung": "bewerten die Qualität von Produkten des Alltags oder Umweltparameter auf der Grundlage von qualitativen und quantitativen Analyseergebnissen und beurteilen die Daten hinsichtlich ihrer Aussagekraft"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
     "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
     "kompetenzcodes": [
       "S7",
@@ -4448,5 +6801,1886 @@
       "K7"
     ],
     "beschreibung": "erläutern Redoxreaktionen als dynamische Gleichgewichtsreaktionen unter Berücksichtigung des Donator-Akzeptor-Konzepts"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S12",
+      "S15",
+      "K10"
+    ],
+    "beschreibung": "nennen die metallische Bindung und die Beweglichkeit hydratisierter Ionen als Voraussetzungen für einen geschlossenen Stromkreislauf der galvanischen Zelle und der Elektrolyse"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S3",
+      "S17",
+      "E6",
+      "K11"
+    ],
+    "beschreibung": "erläutern den Aufbau und die Funktionsweise einer galvanischen Zelle hinsichtlich der chemischen Prozesse auch mit digitalen Werkzeugen und berechnen die jeweilige Zellspannung"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S10",
+      "S12",
+      "K9"
+    ],
+    "beschreibung": "erläutern den Aufbau und die Funktion ausgewählter elektrochemischer Spannungsquellen aus Alltag und Technik (Batterie, Akkumulator, Brennstoffzelle) unter Berücksichtigung der Teilreaktionen und möglicher Zellspannungen"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S8",
+      "S12",
+      "K11"
+    ],
+    "beschreibung": "erklären am Beispiel einer Brennstoffzelle die Funktion der heterogenen Katalyse unter Verwendung geeigneter Medien"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S7",
+      "S12",
+      "K8"
+    ],
+    "beschreibung": "erläutern die Reaktionen einer Elektrolyse auf stofflicher und energetischer Ebene als Umkehr der Reaktionen eines galvanischen Elements"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S3",
+      "S16",
+      "E1"
+    ],
+    "beschreibung": "erläutern die Bildung eines Lokalelements bei Korrosionsvorgängen auch mithilfe von Reaktionsgleichungen"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S3",
+      "E11"
+    ],
+    "beschreibung": "interpretieren energetische Erscheinungen bei Redoxreaktionen auf die Umwandlung eines Teils der in Stoffen gespeicherten Energie in Wärme und Arbeit"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E3",
+      "E4",
+      "E5",
+      "E10"
+    ],
+    "beschreibung": "entwickeln Hypothesen zum Auftreten von Redoxreaktionen zwischen Metallatomen und -ionen und überprüfen diese experimentell"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_010",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E1",
+      "E4",
+      "E5"
+    ],
+    "beschreibung": "entwickeln eigenständig ausgewählte Experimente zum Korrosionsschutz (Galvanik, Opferanode) und führen sie durch"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_011",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E6",
+      "E8"
+    ],
+    "beschreibung": "ermitteln Messdaten ausgewählter galvanischer Zellen zur Einordnung in die elektrochemische Spannungsreihe"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_012",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E4",
+      "E7",
+      "S17",
+      "K2"
+    ],
+    "beschreibung": "ermitteln auch rechnerisch die Standardreaktionsenthalpien ausgewählter Redoxreaktionen unter Anwendung des Satzes von Hess"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_013",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "B2",
+      "B4",
+      "E8",
+      "K3",
+      "K12"
+    ],
+    "beschreibung": "bewerten die Verbrennung fossiler Energieträger und elektrochemische Energiewandler hinsichtlich Effizienz und Nachhaltigkeit auch mithilfe von recherchierten thermodynamischen Daten"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_014",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "B3",
+      "B10",
+      "B13",
+      "E12",
+      "K8"
+    ],
+    "beschreibung": "diskutieren Möglichkeiten und Grenzen bei der Umwandlung, Speicherung und Nutzung elektrischer Energie auf Grundlage der relevanten chemischen und thermodynamischen Aspekte im Hinblick auf nachhaltiges Handeln"
+  },
+  {
+    "id": "CH_SII_IF4_Q_GK_015",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "B12",
+      "B14",
+      "E1"
+    ],
+    "beschreibung": "beurteilen Folgen von Korrosionsvorgängen und adäquate Korrosionsschutzmaßnahmen unter ökologischen und ökonomischen Aspekten"
+  },
+  {
+    "id": "CH_SII_IF5_Q_GK_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S1",
+      "E7",
+      "K11"
+    ],
+    "beschreibung": "stellen den Aufbau von Vertretern der Stoffklassen der Alkane, Halogenalkane, Alkene, Alkine, Alkanole, Alkanale, Alkanone, Carbonsäuren, Ester und Amine auch mit digitalen Werkzeugen dar und berücksichtigen dabei auch ausgewählte Isomere"
+  },
+  {
+    "id": "CH_SII_IF5_Q_GK_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S1",
+      "S11",
+      "S13"
+    ],
+    "beschreibung": "erläutern den Aufbau und die Eigenschaften von gesättigten und ungesättigten Fetten"
+  },
+  {
+    "id": "CH_SII_IF5_Q_GK_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S2",
+      "S13"
+    ],
+    "beschreibung": "erklären Stoffeigenschaften und Reaktionsverhalten mit dem Einfluss der jeweiligen funktionellen Gruppen unter Berücksichtigung von inter- und intramolekularen Wechselwirkungen"
+  },
+  {
+    "id": "CH_SII_IF5_Q_GK_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S3",
+      "S11",
+      "S16"
+    ],
+    "beschreibung": "erklären Redoxreaktionen in organischen Synthesewegen unter Berücksichtigung der Oxidationszahlen"
+  },
+  {
+    "id": "CH_SII_IF5_Q_GK_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S4",
+      "S8",
+      "S9",
+      "K7"
+    ],
+    "beschreibung": "erklären die Estersynthese aus Alkanolen und Carbonsäuren unter Berücksichtigung der Katalyse"
+  },
+  {
+    "id": "CH_SII_IF5_Q_GK_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S8",
+      "S9",
+      "S14",
+      "E9",
+      "K11"
+    ],
+    "beschreibung": "erläutern die Reaktionsmechanismen der radikalischen Substitutions- und elektrophilen Additionsreaktion unter Berücksichtigung der spezifischen Reaktionsbedingungen auch mit digitalen Werkzeugen"
+  },
+  {
+    "id": "CH_SII_IF5_Q_GK_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "E5",
+      "E7",
+      "S4",
+      "K10"
+    ],
+    "beschreibung": "schließen mithilfe von spezifischen Nachweisen der Reaktionsprodukte (Doppelbindung zwischen Kohlenstoff-Atomen, Carbonyl- und Carboxy-Gruppe) auf den Reaktionsverlauf und bestimmen den Reaktionstyp"
+  },
+  {
+    "id": "CH_SII_IF5_Q_GK_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "E4",
+      "E5",
+      "K13"
+    ],
+    "beschreibung": "erläutern die Planung und Durchführung einer Estersynthese in Bezug auf die Optimierung der Ausbeute auf der Grundlage des Prinzips von Le Chatelier"
+  },
+  {
+    "id": "CH_SII_IF5_Q_GK_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "E5",
+      "E11"
+    ],
+    "beschreibung": "unterscheiden experimentell zwischen gesättigten und ungesättigten Fettsäuren"
+  },
+  {
+    "id": "CH_SII_IF5_Q_GK_010",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "B1",
+      "B11",
+      "K2",
+      "K4"
+    ],
+    "beschreibung": "recherchieren und bewerten Nutzen und Risiken ausgewählter Produkte der organischen Chemie unter vorgegebenen Fragestellungen"
+  },
+  {
+    "id": "CH_SII_IF5_Q_GK_011",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "B7",
+      "B8",
+      "K8"
+    ],
+    "beschreibung": "beurteilen die Qualität von Fetten hinsichtlich ihrer Zusammensetzung und Verarbeitung im Bereich der Lebensmitteltechnik und der eigenen Ernährung"
+  },
+  {
+    "id": "CH_SII_IF6_Q_GK_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "S11",
+      "S13"
+    ],
+    "beschreibung": "erklären die Eigenschaften von Kunststoffen aufgrund ihrer molekularen Strukturen (Kettenlänge, Vernetzungsgrad)"
+  },
+  {
+    "id": "CH_SII_IF6_Q_GK_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "S1",
+      "S2"
+    ],
+    "beschreibung": "klassifizieren Kunststoffe anhand ihrer Eigenschaften begründet nach Thermoplasten, Duroplasten und Elastomeren"
+  },
+  {
+    "id": "CH_SII_IF6_Q_GK_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "S4",
+      "S12",
+      "S16"
+    ],
+    "beschreibung": "erläutern die Verknüpfung von Monomermolekülen zu Makromolekülen mithilfe von Reaktionsgleichungen an einem Beispiel"
+  },
+  {
+    "id": "CH_SII_IF6_Q_GK_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "S5",
+      "S10",
+      "K1",
+      "K2"
+    ],
+    "beschreibung": "beschreiben den Weg eines Anwendungsproduktes von der Rohstoffgewinnung über die Produktion bis zur Verwertung"
+  },
+  {
+    "id": "CH_SII_IF6_Q_GK_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "E4",
+      "E5"
+    ],
+    "beschreibung": "führen eigenständig geplante Experimente zur Untersuchung von Eigenschaften organischer Werkstoffe durch und werten diese aus"
+  },
+  {
+    "id": "CH_SII_IF6_Q_GK_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "E4",
+      "S2"
+    ],
+    "beschreibung": "planen zielgerichtet anhand der Eigenschaften verschiedener Kunststoffe Experimente zur Trennung und Verwertung von Verpackungsabfällen"
+  },
+  {
+    "id": "CH_SII_IF6_Q_GK_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "E1",
+      "E5",
+      "E7",
+      "S2"
+    ],
+    "beschreibung": "erklären ermittelte Stoffeigenschaften am Beispiel eines Funktionspolymers mit geeigneten Modellen"
+  },
+  {
+    "id": "CH_SII_IF6_Q_GK_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "B9",
+      "B12",
+      "B13"
+    ],
+    "beschreibung": "bewerten den Einsatz von Erdöl und nachwachsenden Rohstoffen für die Herstellung und die Verwendung von Produkten aus Kunststoffen im Sinne einer nachhaltigen Entwicklung aus ökologischer, ökonomischer und sozialer Perspektive"
+  },
+  {
+    "id": "CH_SII_IF6_Q_GK_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "B5",
+      "B14",
+      "K2",
+      "K8",
+      "K13"
+    ],
+    "beschreibung": "vergleichen anhand von Bewertungskriterien Produkte aus unterschiedlichen 45 Kompetenzbereiche, Inhaltsfelder und Kompetenzerwartungen Kunststoffen und leiten daraus Handlungsoptionen für die alltägliche Nutzung ab"
+  },
+  {
+    "id": "CH_SII_IF6_Q_GK_010",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (GK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "B6",
+      "B13",
+      "S3",
+      "K5",
+      "K8"
+    ],
+    "beschreibung": "bewerten stoffliche und energetische Verfahren der Kunststoffverwertung unter Berücksichtigung ausgewählter Nachhaltigkeitsziele"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S1",
+      "S6",
+      "S7",
+      "S16",
+      "K6"
+    ],
+    "beschreibung": "klassifizieren die auch in Produkten des Alltags identifizierten Säuren und Basen mithilfe des Säure-Base-Konzepts von Brønsted und erläutern ihr Reaktionsverhalten unter Berücksichtigung von Protolysegleichungen"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S3",
+      "S7",
+      "S16"
+    ],
+    "beschreibung": "erläutern die unterschiedlichen Reaktionsgeschwindigkeiten von starken und schwachen Säuren mit unedlen Metallen oder Salzen anhand der unterschiedlichen Gleichgewichtslage der Protolysereaktionen"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S7",
+      "S17"
+    ],
+    "beschreibung": "leiten die Säure-/Base-Konstante und den pK /pK -Wert von Säuren und BaS B sen mithilfe des Massenwirkungsgesetzes ab und berechnen diese"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S2",
+      "S7"
+    ],
+    "beschreibung": "interpretieren die Gleichgewichtslage von Protolysereaktionen mithilfe des Massenwirkungsgesetzes und die daraus resultierenden Säure-/Base-Konstanten"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S17"
+    ],
+    "beschreibung": "berechnen pH-Werte wässriger Lösungen von Säuren und Basen auch bei nicht vollständiger Protolyse"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S10",
+      "S17"
+    ],
+    "beschreibung": "sagen den Verlauf von Titrationskurven von starken und schwachen Säuren und Basen anhand der Berechnung der charakteristischen Punkte (AnfangspH-Wert, Halbäquivalenzpunkt, Äquivalenzpunkt) voraus"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S2",
+      "S7",
+      "S16"
+    ],
+    "beschreibung": "erläutern die Wirkung eines Puffersystems auf Grundlage seiner Zusammensetzung"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S17"
+    ],
+    "beschreibung": "berechnen den pH-Wert von Puffersystemen anhand der Henderson-Hasselbalch-Gleichung"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S3"
+    ],
+    "beschreibung": "definieren den Begriff der Reaktionsenthalpie und grenzen diesen von der inneren Energie ab"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_010",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S3",
+      "S10"
+    ],
+    "beschreibung": "erklären im Zusammenhang mit der Neutralisationsreaktion den ersten Hauptsatz der Thermodynamik (Prinzip der Energieerhaltung)"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_011",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S3",
+      "S12"
+    ],
+    "beschreibung": "erläutern die Neutralisationsreaktion unter Berücksichtigung der Neutralisationsenthalpie"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_012",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S12",
+      "K8"
+    ],
+    "beschreibung": "erklären endotherme und exotherme Lösungsvorgänge bei Salzen unter Einbeziehung der Gitter- und Solvatationsenergie und führen den spontanen Ablauf eines endothermen Lösungsvorgangs auf die Entropieänderung zurück"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_013",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S2",
+      "S7"
+    ],
+    "beschreibung": "erklären Fällungsreaktionen auf der Grundlage von Löslichkeitsgleichgewichten"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_014",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "E5"
+    ],
+    "beschreibung": "weisen ausgewählte Ionensorten (Halogenid-Ionen, Ammonium-Ionen, Carbonat-Ionen) salzartiger Verbindungen qualitativ nach"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_015",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "E1",
+      "E2",
+      "E3",
+      "E4"
+    ],
+    "beschreibung": "planen hypothesengeleitet Experimente zur Konzentrationsbestimmung von Säuren und Basen auch in Alltagsprodukten"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_016",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "E5",
+      "E10",
+      "K10"
+    ],
+    "beschreibung": "führen das Verfahren einer Säure-Base-Titration mit Endpunktbestimmung mittels Indikator durch und werten die Ergebnisse auch unter Berücksichtigung einer Fehleranalyse aus"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_017",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S9",
+      "E8",
+      "E10",
+      "K7"
+    ],
+    "beschreibung": "werten pH-metrische Titrationen von ein- und mehrprotonigen Säuren aus und erläutern den Verlauf der Titrationskurven auch bei unvollständiger Protolyse"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_018",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "E5",
+      "K1"
+    ],
+    "beschreibung": "bestimmen die Reaktionsenthalpie der Neutralisationsreaktion von starken Säuren mit starken Basen kalorimetrisch und vergleichen das Ergebnis mit Literaturdaten"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_019",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "S12",
+      "E8"
+    ],
+    "beschreibung": "interpretieren die Messdaten von Lösungsenthalpien verschiedener Salze unter Berücksichtigung der Entropie"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_020",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "B8",
+      "B11",
+      "K8"
+    ],
+    "beschreibung": "beurteilen den Einsatz, die Wirksamkeit und das Gefahrenpotenzial von Säuren, Basen und Salzen als Inhaltsstoffe in Alltagsprodukten und leiten daraus begründet Handlungsoptionen ab"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_021",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "B3",
+      "B8",
+      "K8"
+    ],
+    "beschreibung": "bewerten die Qualität von Produkten des Alltags oder Umweltparameter auf der Grundlage von qualitativen und quantitativen Analyseergebnissen und beurteilen die Daten hinsichtlich ihrer Aussagekraft"
+  },
+  {
+    "id": "CH_SII_IF3_Q_LK_022",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 3,
+    "inhaltsfeld": "Säuren, Basen und analytische Verfahren",
+    "kompetenzcodes": [
+      "B3",
+      "K8",
+      "K9"
+    ],
+    "beschreibung": "beurteilen verschiedene Säure-Base-Titrationsverfahren hinsichtlich ihrer Angemessenheit und Grenzen"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S7",
+      "S12",
+      "K7"
+    ],
+    "beschreibung": "erläutern Redoxreaktionen als dynamische Gleichgewichtsreaktionen unter Berücksichtigung des Donator-Akzeptor-Konzepts"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S12",
+      "S15",
+      "K10"
+    ],
+    "beschreibung": "nennen die metallische Bindung und die Beweglichkeit hydratisierter Ionen als Voraussetzungen für einen geschlossenen Stromkreislauf der galvanischen Zelle und der Elektrolyse"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S3",
+      "S17",
+      "E6",
+      "K11"
+    ],
+    "beschreibung": "erläutern den Aufbau und die Funktionsweise galvanischer Zellen hinsichtlich der chemischen Prozesse auch mithilfe digitaler Werkzeuge und berechnen auch unter Berücksichtigung der Nernst-Gleichung die jeweilige Zellspannung"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S10",
+      "S12",
+      "S16",
+      "K9"
+    ],
+    "beschreibung": "erläutern und vergleichen den Aufbau und die Funktion ausgewählter elektrochemischer Spannungsquellen aus Alltag und Technik (Batterie, Akkumulator, Brennstoffzelle) unter Berücksichtigung der Teilreaktionen sowie möglicher Zellspannungen"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S8",
+      "S12",
+      "K11"
+    ],
+    "beschreibung": "erklären am Beispiel einer Brennstoffzelle die Funktion der heterogenen Katalyse unter Verwendung geeigneter Medien"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S7",
+      "S16",
+      "K10"
+    ],
+    "beschreibung": "erläutern die Reaktionen einer Elektrolyse auf stofflicher und energetischer Ebene als Umkehr der Reaktionen eines galvanischen Elements"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S12",
+      "K8"
+    ],
+    "beschreibung": "erklären die für die Elektrolyse benötigte Zersetzungsspannung unter Berücksichtigung des Phänomens der Überspannung"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S3",
+      "S17"
+    ],
+    "beschreibung": "berechnen Stoffumsätze unter Anwendung der Faraday-Gesetze"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S3",
+      "S12",
+      "K10"
+    ],
+    "beschreibung": "interpretieren energetische Erscheinungen bei Redoxreaktionen auf die Umwandlung eines Teils der in Stoffen gespeicherten Energie in Wärme und Arbeit unter Berücksichtigung der Einschränkung durch den zweiten Hauptsatz der Thermodynamik"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_010",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "S3",
+      "S17",
+      "K8"
+    ],
+    "beschreibung": "berechnen die freie Enthalpie bei Redoxreaktionen"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_011",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E3",
+      "E4",
+      "E5",
+      "E10"
+    ],
+    "beschreibung": "entwickeln Hypothesen zum Auftreten von Redoxreaktionen zwischen Metallund Nichtmetallatomen sowie Ionen und überprüfen diese experimentell"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_012",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E5",
+      "S3",
+      "K10"
+    ],
+    "beschreibung": "wenden das Verfahren der Redoxtitration zur Ermittlung der Konzentration eines Stoffes begründet an"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_013",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E6",
+      "E8"
+    ],
+    "beschreibung": "ermitteln Messdaten ausgewählter galvanischer Zellen zur Einordnung in die elektrochemische Spannungsreihe"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_014",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E6",
+      "E8",
+      "S17",
+      "K5"
+    ],
+    "beschreibung": "ermitteln die Ionenkonzentration von ausgewählten Metall- und Nichtmetallionen mithilfe der Nernst-Gleichung aus Messdaten galvanischer Zellen"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_015",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E8",
+      "S17",
+      "K8"
+    ],
+    "beschreibung": "erklären die Herleitung elektrochemischer und thermodynamischer Gesetzmäßigkeiten (Faraday, Nernst, Gibbs-Helmholtz) aus experimentellen Daten"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_016",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E5",
+      "E10",
+      "S17"
+    ],
+    "beschreibung": "ermitteln die Leistung einer elektrochemischen Spannungsquelle an einem Beispiel"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_017",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E1",
+      "E3",
+      "E5",
+      "S15"
+    ],
+    "beschreibung": "entwickeln Hypothesen zur Bildung von Lokalelementen als Grundlage von Korrosionsvorgängen und überprüfen diese experimentell"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_018",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E1",
+      "E4",
+      "E5",
+      "K13"
+    ],
+    "beschreibung": "entwickeln ausgewählte Verfahren zum Korrosionsschutz (Galvanik, Opferanode) und führen diese durch"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_019",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "E2",
+      "E4",
+      "E7",
+      "S16",
+      "S17",
+      "K2"
+    ],
+    "beschreibung": "ermitteln die Standardreaktionsenthalpien ausgewählter Redoxreaktionen unter Anwendung des Satzes von Hess auch rechnerisch"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_020",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "B2",
+      "B4",
+      "K3",
+      "K12"
+    ],
+    "beschreibung": "bewerten auch unter Berücksichtigung des energetischen Wirkungsgrads fossile und elektrochemische Energiequellen"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_021",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "B3",
+      "B10",
+      "B13",
+      "E12",
+      "K8"
+    ],
+    "beschreibung": "diskutieren Möglichkeiten und Grenzen bei der Umwandlung, Speicherung und Nutzung elektrischer Energie auch unter Berücksichtigung thermodynamischer Gesetzmäßigkeiten im Hinblick auf nachhaltiges Handeln"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_022",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "B10",
+      "B13",
+      "E8",
+      "K13"
+    ],
+    "beschreibung": "diskutieren ökologische und ökonomische Aspekte der elektrolytischen Gewinnung eines Stoffes unter Berücksichtigung der Faraday-Gesetze"
+  },
+  {
+    "id": "CH_SII_IF4_Q_LK_023",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 4,
+    "inhaltsfeld": "Elektrochemische Prozesse und Energetik",
+    "kompetenzcodes": [
+      "B12",
+      "B14",
+      "E1"
+    ],
+    "beschreibung": "beurteilen Folgen von Korrosionsvorgängen und adäquate Korrosionsschutzmaßnahmen unter ökologischen und ökonomischen Aspekten"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S1",
+      "E7",
+      "K11"
+    ],
+    "beschreibung": "stellen den Aufbau der Moleküle (Konstitutionsisomerie, Stereoisomerie, Molekülgeometrie, Chiralität am asymmetrischen C-Atom) von Vertretern der Stoffklassen der Alkane, Halogenalkane, Alkene, Alkine Alkanole, Alkanale, Alkanone, Carbonsäuren, Ester und Amine auch mit digitalen Werkzeugen dar"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S1",
+      "S11",
+      "S13"
+    ],
+    "beschreibung": "erläutern den Aufbau und die Eigenschaften von gesättigten und ungesättigten Fetten"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S2",
+      "S13",
+      "K11"
+    ],
+    "beschreibung": "erklären Stoffeigenschaften und Reaktionsverhalten mit dem Einfluss der jeweiligen funktionellen Gruppen unter der Berücksichtigung von inter- und intramolekularen Wechselwirkungen"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S3",
+      "S11",
+      "S16"
+    ],
+    "beschreibung": "erklären Redoxreaktionen in organischen Synthesewegen unter Berücksichtigung der Oxidationszahlen"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S4",
+      "S8",
+      "S9",
+      "K7"
+    ],
+    "beschreibung": "erklären die Estersynthese aus Alkanolen und Carbonsäuren unter Berücksichtigung der Katalyse"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S8",
+      "S9",
+      "S14",
+      "E9",
+      "K11"
+    ],
+    "beschreibung": "erläutern auch mit digitalen Werkzeugen die Reaktionsmechanismen unter Berücksichtigung der spezifischen Reaktionsbedingungen"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S13",
+      "S15"
+    ],
+    "beschreibung": "beschreiben den Aufbau und die Wirkungsweise eines Katalysators unter Berücksichtigung des Konzepts der koordinativen Bindung als Wechselwirkung von Metallkationen mit freien Elektronenpaaren"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S9",
+      "S13",
+      "E9",
+      "E12"
+    ],
+    "beschreibung": "erklären die Reaktivität eines aromatischen Systems anhand der Struktur und erläutern in diesem Zusammenhang die Mesomerie"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S10",
+      "S11",
+      "K8"
+    ],
+    "beschreibung": "klassifizieren Farbstoffe sowohl auf Grundlage struktureller Merkmale als auch nach ihrer Verwendung"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_010",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "S2",
+      "E7",
+      "K10"
+    ],
+    "beschreibung": "erläutern die Farbigkeit ausgewählter Stoffe durch Lichtabsorption auch unter Berücksichtigung der Molekülstruktur mithilfe des Mesomeriemodells (mesomere Grenzstrukturen, Delokalisation von Elektronen, Donator-Akzeptor-Gruppen)"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_011",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "E5",
+      "E7",
+      "S4",
+      "K10"
+    ],
+    "beschreibung": "schließen mithilfe von spezifischen Nachweisen der Reaktionsprodukte (Doppelbindung zwischen Kohlenstoff-Atomen, Chlorid- und Bromid-Ionen, Carbonyl- und Carboxy-Gruppe) auf den Reaktionsverlauf und bestimmen den Reaktionstyp"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_012",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "E3",
+      "E12",
+      "K2"
+    ],
+    "beschreibung": "entwickeln Hypothesen zum Reaktionsverhalten aus der Molekülstruktur"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_013",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "E4",
+      "E5",
+      "K13"
+    ],
+    "beschreibung": "erläutern die Planung und Durchführung einer Estersynthese in Bezug auf die Optimierung der Ausbeute auf der Grundlage des Prinzips von Le Chatelier"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_014",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "E5",
+      "E11"
+    ],
+    "beschreibung": "unterscheiden experimentell zwischen gesättigten und ungesättigten Fettsäuren"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_015",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "E4",
+      "E5"
+    ],
+    "beschreibung": "trennen mithilfe eines chromatografischen Verfahrens Stoffgemische und analysieren ihre Bestandteile durch Interpretation der Retentionsfaktoren"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_016",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "E8",
+      "K2",
+      "B1"
+    ],
+    "beschreibung": "interpretieren Absorptionsspektren ausgewählter Farbstofflösungen"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_017",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "B1",
+      "B11",
+      "K2",
+      "K4"
+    ],
+    "beschreibung": "recherchieren und bewerten Nutzen und Risiken ausgewählter Produkte der organischen Chemie unter selbst entwickelten Fragestellungen"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_018",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "B1",
+      "B2",
+      "K10"
+    ],
+    "beschreibung": "beurteilen die Möglichkeiten und Grenzen von Modellvorstellungen bezüglich der Struktur organischer Verbindungen und die Reaktionsschritte von Synthesen für die Vorhersage der Bildung von Reaktionsprodukten"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_019",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "B7",
+      "B8",
+      "K8"
+    ],
+    "beschreibung": "beurteilen die Qualität von Fetten hinsichtlich ihrer Zusammensetzung und Verarbeitung im Bereich der Lebensmitteltechnik und der eigenen Ernährung 54 Kompetenzbereiche, Inhaltsfelder und Kompetenzerwartungen"
+  },
+  {
+    "id": "CH_SII_IF5_Q_LK_020",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 5,
+    "inhaltsfeld": "Reaktionswege in der organischen Chemie",
+    "kompetenzcodes": [
+      "B9",
+      "B13",
+      "S13"
+    ],
+    "beschreibung": "bewerten den Einsatz verschiedener Farbstoffe in Alltagsprodukten aus chemischer, ökologischer und ökonomischer Sicht"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_001",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "S11",
+      "S13"
+    ],
+    "beschreibung": "erklären die Eigenschaften von Kunststoffen aufgrund der molekularen Strukturen (Kettenlänge, Vernetzungsgrad, Anzahl und Wechselwirkung verschiedenartiger Monomere)"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_002",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "S1",
+      "S2"
+    ],
+    "beschreibung": "klassifizieren Kunststoffe anhand ihrer Eigenschaften begründet nach Thermoplasten, Duroplasten und Elastomeren"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_003",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "S4",
+      "S12",
+      "S16"
+    ],
+    "beschreibung": "erläutern die Verknüpfung von Monomermolekülen zu Makromolekülen mithilfe von Reaktionsgleichungen an einem Beispiel"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_004",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "S4",
+      "S14",
+      "S16"
+    ],
+    "beschreibung": "erläutern die Reaktionsschritte einer radikalischen Polymerisation"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_005",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "S5",
+      "S10",
+      "K1",
+      "K2"
+    ],
+    "beschreibung": "beschreiben den Weg eines Anwendungsproduktes von der Rohstoffgewinnung über die Produktion bis zur Verwertung"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_006",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "S8",
+      "S9"
+    ],
+    "beschreibung": "erläutern ein technisches Syntheseverfahren auch unter Berücksichtigung der eingesetzten Katalysatoren"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_007",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "S1",
+      "S9"
+    ],
+    "beschreibung": "beschreiben Merkmale von Nanomaterialien am Beispiel von Alltagsprodukten"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_008",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "E4",
+      "E5"
+    ],
+    "beschreibung": "führen eigenständig geplante Experimente zur Untersuchung von Eigenschaften organischer Werkstoffe durch und werten diese aus"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_009",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "E4",
+      "S2"
+    ],
+    "beschreibung": "planen zielgerichtet anhand der Eigenschaften verschiedener Kunststoffe Experimente zur Trennung und Verwertung von Verpackungsabfällen"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_010",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "E1",
+      "E5",
+      "E7",
+      "S13"
+    ],
+    "beschreibung": "erläutern ermittelte Stoffeigenschaften am Beispiel eines Funktionspolymers mit geeigneten Modellen"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_011",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "E7",
+      "E8"
+    ],
+    "beschreibung": "veranschaulichen die Größenordnung und Reaktivität von Nanopartikeln"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_012",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "E5",
+      "S11"
+    ],
+    "beschreibung": "erklären eine experimentell ermittelte Oberflächeneigenschaft eines ausgewählten Nanoprodukts anhand der Nanostruktur"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_013",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "B9",
+      "B12",
+      "B13"
+    ],
+    "beschreibung": "bewerten den Einsatz von Erdöl und nachwachsenden Rohstoffen für die Herstellung und die Verwendung von Produkten aus Kunststoffen im Sinne einer nachhaltigen Entwicklung aus ökologischer, ökonomischer und sozialer Perspektive"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_014",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "B5",
+      "B14",
+      "K2",
+      "K8",
+      "K13"
+    ],
+    "beschreibung": "vergleichen anhand von Bewertungskriterien Produkte aus unterschiedlichen 56 Kompetenzbereiche, Inhaltsfelder und Kompetenzerwartungen Kunststoffen und leiten daraus Handlungsoptionen für die alltägliche Nutzung ab"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_015",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "B6",
+      "B13",
+      "S3",
+      "K5",
+      "K8"
+    ],
+    "beschreibung": "bewerten stoffliche und energetische Verfahren der Kunststoffverwertung unter Berücksichtigung ausgewählter Nachhaltigkeitsziele"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_016",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "B1",
+      "B10"
+    ],
+    "beschreibung": "beurteilen die Bedeutung der Reaktionsbedingungen für die Synthese eines Kunststoffs im Hinblick auf Atom- und Energieeffizienz, Abfall- und Risikovermeidung sowie erneuerbare Ressourcen"
+  },
+  {
+    "id": "CH_SII_IF6_Q_LK_017",
+    "fach": "Chemie",
+    "bundesland": "NRW",
+    "schulform": "Gymnasium",
+    "stufe": "Sekundarstufe II",
+    "jahrgang": "Q (LK)",
+    "inhaltsfeldNummer": 6,
+    "inhaltsfeld": "Moderne Werkstoffe",
+    "kompetenzcodes": [
+      "B2",
+      "B4",
+      "B13",
+      "K2",
+      "K4"
+    ],
+    "beschreibung": "recherchieren in verschiedenen Quellen die Chancen und Risiken von Nanomaterialien am Beispiel eines Alltagsproduktes und bewerten diese unter Berücksichtigung der Intention der Autoren"
   }
 ]

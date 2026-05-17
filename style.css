@@ -164,6 +164,11 @@ textarea.finp { resize: vertical; min-height: 80px; }
 .klp-dd-desc { color: var(--tx1); }
 .klp-dd-hint { padding: 8px 10px; font-size: 12px; color: var(--tx3); font-style: italic; }
 .mat-review-bar { display: flex; align-items: center; justify-content: space-between; background: #fef9c3; border: 1px solid #fde047; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; font-size: 13px; color: #854d0e; }
+.klp-ki-btn { margin-top: 8px; }
+.klp-suggestions { margin-top: 10px; padding: 10px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; }
+.klp-suggest-hint { font-size: 12px; color: #166534; margin-bottom: 6px; font-weight: 600; }
+.klp-chip-suggest { background: #dcfce7; color: #166534; cursor: pointer; border: 1px dashed #86efac; }
+.klp-chip-suggest:hover { background: #bbf7d0; }
 
 /* ── Coverage ── */
 .cov-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }

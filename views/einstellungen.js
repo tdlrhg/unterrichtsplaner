@@ -10,6 +10,27 @@ function viewEinstellungen() {
   aiCard.appendChild(cardHdr('KI-Einstellungen'));
   const aib = mk('div', 'card-body');
 
+  // Anthropic Key
+  const antFg = mk('div', 'fg');
+  antFg.appendChild(tx('label', 'fl', 'Anthropic API-Key (Claude)'));
+  const antWrap = mk('div', ''); antWrap.style.cssText = 'display:flex;gap:8px;align-items:center;';
+  const antInp = document.createElement('input');
+  antInp.type = 'password'; antInp.className = 'finp'; antInp.placeholder = 'sk-ant-...';
+  antInp.value = localStorage.getItem('ant_key') || '';
+  antInp.style.flex = '1';
+  const antSave = btn('Speichern', 'btn btn-pri btn-sm');
+  antSave.onclick = () => {
+    const val = antInp.value.trim();
+    if (val) { localStorage.setItem('ant_key', val); antSave.textContent = '✓ Gespeichert'; setTimeout(() => { antSave.textContent = 'Speichern'; }, 2000); }
+    else { localStorage.removeItem('ant_key'); antSave.textContent = '✓ Gelöscht'; setTimeout(() => { antSave.textContent = 'Speichern'; }, 2000); }
+  };
+  antWrap.appendChild(antInp); antWrap.appendChild(antSave);
+  antFg.appendChild(antWrap);
+  const antHint = tx('div', '', 'Für KI-Vorschläge im KLP-Selector. Wird nur lokal gespeichert – verlässt dieses Gerät nicht.');
+  antHint.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:4px;';
+  antFg.appendChild(antHint);
+  aib.appendChild(antFg);
+
   // OpenAI Key
   const oaiFg = mk('div', 'fg');
   oaiFg.appendChild(tx('label', 'fl', 'OpenAI API-Key'));

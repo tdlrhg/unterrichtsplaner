@@ -168,9 +168,57 @@ function saveMatDB() {
   sbUpload('materialien.json', MATDB).catch(e => console.error('Speichern fehlgeschlagen:', e));
 }
 
+async function klpKiVorschlag(mat, onResult) {
+  const key = localStorage.getItem('ant_key');
+  if (!key) {
+    alert('Bitte zuerst den Anthropic API-Key in den Einstellungen speichern.');
+    return;
+  }
+  const faecher = (mat.fach || []).map(f => f.toLowerCase());
+  const kandidaten = KLPDB.filter(e => !faecher.length || faecher.includes(e.fach.toLowerCase()));
+  const klpText = kandidaten.map(e =>
+    `ID: ${e.id}\nJg: ${e.jahrgang} | IF: ${e.inhaltsfeld} | Codes: ${e.kompetenzcodes.join(', ')}\n${e.beschreibung}`
+  ).join('\n\n');
+
+  const prompt = `Du bist Assistent für NRW-Lehrkräfte. Analysiere das folgende Unterrichtsmaterial und wähle die am besten passenden KLP-Kompetenzen aus.
+
+Material:
+- Titel: ${mat.titel || '–'}
+- Fach: ${(mat.fach || []).join(', ') || '–'}
+- Jahrgang: ${(mat.jahrgang || []).join(', ') || '–'}
+- Themen: ${(mat.themen || []).join(', ') || '–'}
+- Beschreibung: ${mat.beschreibung || '–'}
+
+Wähle 3–8 passende KLP-Einträge aus. Antworte NUR mit einem JSON-Array der IDs, z.B.: ["BIO_SI_IF1_001","BIO_SI_IF2_003"]
+
+KLP-Einträge:
+${klpText}`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 256,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
+  const data = await res.json();
+  const text = data.content?.[0]?.text || '[]';
+  const ids = JSON.parse(text.match(/\[.*\]/s)?.[0] || '[]');
+  onResult(ids.filter(id => KLPDB.some(e => e.id === id) && !mat.kompetenzenKLP.includes(id)));
+}
+
 function klpRow(mat, detail, row) {
   if (!mat.kompetenzenKLP) mat.kompetenzenKLP = [];
 
+  const labelRow = mk('div', ''); labelRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;';
   const r = mk('div', 'mat-detail-row');
   r.appendChild(tx('span', 'mat-detail-label', 'KLP-Kompetenzen'));
 
@@ -283,6 +331,58 @@ function klpRow(mat, detail, row) {
     inp.onblur = () => setTimeout(() => { dd.style.display = 'none'; }, 150);
 
     wrap.appendChild(searchWrap);
+
+    // KI-Vorschlag-Button
+    const kiBtn = btn('✨ KI-Vorschlag', 'btn btn-ghost btn-xs klp-ki-btn');
+    kiBtn.onclick = async () => {
+      kiBtn.textContent = '…';
+      kiBtn.disabled = true;
+      try {
+        await klpKiVorschlag(mat, ids => {
+          if (!ids.length) { kiBtn.textContent = 'Keine Vorschläge'; setTimeout(() => rebuildChips(), 1500); return; }
+          // Vorschläge als separate Chips anzeigen
+          const suggestDiv = mk('div', 'klp-suggestions');
+          const hint = tx('div', 'klp-suggest-hint', `✨ ${ids.length} Vorschlag${ids.length !== 1 ? 'schläge' : ''} – klicke zum Übernehmen:`);
+          suggestDiv.appendChild(hint);
+          ids.forEach(id => {
+            const entry = KLPDB.find(e => e.id === id);
+            if (!entry) return;
+            const chip = mk('div', 'klp-chip klp-chip-suggest');
+            chip.textContent = `[${entry.kompetenzcodes.join(', ')}] ${entry.beschreibung.slice(0, 70)}${entry.beschreibung.length > 70 ? '…' : ''}`;
+            chip.title = entry.beschreibung;
+            chip.onclick = () => {
+              mat.kompetenzenKLP.push(id);
+              if (mat.review?.kompetenzenKLP) mat.review.kompetenzenKLP.needsReview = false;
+              saveMatDB();
+              chip.remove();
+              if (!suggestDiv.querySelectorAll('.klp-chip-suggest').length) suggestDiv.remove();
+              rebuildChips();
+            };
+            suggestDiv.appendChild(chip);
+          });
+          const addAll = btn('Alle übernehmen', 'btn btn-pri btn-xs');
+          addAll.style.marginTop = '6px';
+          addAll.onclick = () => {
+            ids.forEach(id => { if (!mat.kompetenzenKLP.includes(id)) mat.kompetenzenKLP.push(id); });
+            if (mat.review?.kompetenzenKLP) mat.review.kompetenzenKLP.needsReview = false;
+            saveMatDB();
+            suggestDiv.remove();
+            rebuildChips();
+          };
+          suggestDiv.appendChild(addAll);
+          wrap.appendChild(suggestDiv);
+        });
+      } catch (e) {
+        kiBtn.textContent = '⚠ Fehler';
+        console.error(e);
+        setTimeout(() => rebuildChips(), 2000);
+        return;
+      }
+      kiBtn.textContent = '✨ KI-Vorschlag';
+      kiBtn.disabled = false;
+    };
+    wrap.appendChild(kiBtn);
+
     r.appendChild(wrap);
   }
 

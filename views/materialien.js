@@ -91,7 +91,7 @@ function viewMaterialien() {
       (mat.themen || []).forEach(t => tags.appendChild(tx('span', 'mat-tag', t)));
       if (tags.children.length) row.appendChild(tags);
 
-      row.onclick = () => openMatDetail(mat, row);
+      row.onclick = e => { if (!e.target.closest('.mat-detail')) openMatDetail(mat, row); };
       listBody.appendChild(row);
     });
   }

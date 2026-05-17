@@ -80,9 +80,125 @@ function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
   // ── Phasen ───────────────────────────────────────────────────
   const pc = mk('div', 'card');
   const phdr = cardHdr('Unterrichtsphasen');
+
+  const PHASEN_VORLAGEN = {
+    '3-Phasen': [
+      { titel: 'Einstieg', minuten: 10 },
+      { titel: 'Erarbeitung', minuten: 25 },
+      { titel: 'Sicherung', minuten: 10 },
+    ],
+    'AVIVA': [
+      { titel: 'Ankommen & Einstimmen', minuten: 5 },
+      { titel: 'Vorwissen aktivieren', minuten: 8 },
+      { titel: 'Informieren', minuten: 15 },
+      { titel: 'Verarbeiten', minuten: 12 },
+      { titel: 'Auswerten', minuten: 5 },
+    ],
+    'Direkte Instruktion': [
+      { titel: 'I do (Modellieren)', minuten: 15 },
+      { titel: 'We do (Gemeinsam üben)', minuten: 15 },
+      { titel: 'You do (Selbstständig üben)', minuten: 15 },
+    ],
+    'Forschend-entdeckend': [
+      { titel: 'Phänomen / Einstieg', minuten: 8 },
+      { titel: 'Hypothesenbildung', minuten: 7 },
+      { titel: 'Experiment / Erarbeitung', minuten: 20 },
+      { titel: 'Auswertung & Schlussfolgerung', minuten: 10 },
+    ],
+  };
+
+  function applyVorlage(key) {
+    if (stunde.phasen.length > 0 && !confirm('Vorhandene Phasen ersetzen?')) return;
+    stunde.phasen = PHASEN_VORLAGEN[key].map(p => ({
+      id: uid(), titel: p.titel, inhalt: '', methode: '', sozialform: '', minuten: p.minuten, materialIds: []
+    }));
+    scheduleSave(); render();
+  }
+
+  // Vorlagen-Dropdown
+  const vorlagenWrap = mk('div', 'phasen-vorlage-wrap');
+  const vorlagenSel = document.createElement('select');
+  vorlagenSel.className = 'finp phasen-vorlage-sel';
+  const emptyOpt = document.createElement('option');
+  emptyOpt.value = ''; emptyOpt.textContent = '📋 Vorlage wählen…';
+  vorlagenSel.appendChild(emptyOpt);
+  Object.keys(PHASEN_VORLAGEN).forEach(key => {
+    const o = document.createElement('option'); o.value = key; o.textContent = key;
+    vorlagenSel.appendChild(o);
+  });
+  vorlagenSel.onchange = () => {
+    if (vorlagenSel.value) { applyVorlage(vorlagenSel.value); vorlagenSel.value = ''; }
+  };
+  vorlagenWrap.appendChild(vorlagenSel);
+
+  // KI-Vorlage-Button
+  const kiVorlageBtn = btn('✨ KI', 'btn btn-ghost btn-xs');
+  kiVorlageBtn.title = 'KI wählt passendes Modell anhand von Titel und Lernziel';
+  kiVorlageBtn.onclick = async () => {
+    const antKey = localStorage.getItem('ant_key');
+    if (!antKey) { alert('Bitte zuerst Anthropic API-Key in den Einstellungen hinterlegen.'); return; }
+    kiVorlageBtn.textContent = '…'; kiVorlageBtn.disabled = true;
+    try {
+      const prompt = `Du bist Didaktik-Experte für NRW-Gymnasien. Wähle für diese Unterrichtsstunde das passende Phasierungsmodell aus und befülle die Phasen sinnvoll.
+
+Stunde:
+- Titel: ${stunde.titel || '–'}
+- Lernziel: ${stunde.lernziel || '–'}
+- Intention: ${stunde.intention || '–'}
+- Fach: ${kurs.fach || '–'}
+- Dauer: ${stunde.dauer || 45} Minuten
+
+Verfügbare Modelle:
+- 3-Phasen: Einstieg / Erarbeitung / Sicherung
+- AVIVA: Ankommen / Vorwissen / Informieren / Verarbeiten / Auswerten
+- Direkte Instruktion: I do / We do / You do
+- Forschend-entdeckend: Phänomen / Hypothese / Experiment / Auswertung
+
+Antworte NUR als JSON-Objekt:
+{
+  "modell": "3-Phasen",
+  "begruendung": "kurze Begründung (1 Satz)",
+  "phasen": [
+    { "titel": "Einstieg", "inhalt": "konkrete Beschreibung der Aktivität", "methode": "z.B. Lehrervortrag", "sozialform": "z.B. Plenum", "minuten": 10 }
+  ]
+}`;
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': antKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1200,
+          messages: [{ role: 'user', content: prompt }] }),
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || '';
+      const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      if (!parsed.phasen?.length) throw new Error('Keine Phasen erhalten');
+
+      if (stunde.phasen.length > 0 && !confirm(`KI wählt: ${parsed.modell}\n„${parsed.begruendung}"\n\nVorhandene Phasen ersetzen?`)) {
+        kiVorlageBtn.textContent = '✨ KI'; kiVorlageBtn.disabled = false; return;
+      }
+      stunde.phasen = parsed.phasen.map(p => ({
+        id: uid(), titel: p.titel || '', inhalt: p.inhalt || '',
+        methode: p.methode || '', sozialform: p.sozialform || '',
+        minuten: parseInt(p.minuten) || 0, materialIds: []
+      }));
+      scheduleSave(); render();
+    } catch(e) {
+      alert('Fehler: ' + e.message);
+      kiVorlageBtn.textContent = '✨ KI'; kiVorlageBtn.disabled = false;
+    }
+  };
+  vorlagenWrap.appendChild(kiVorlageBtn);
+  phdr.appendChild(vorlagenWrap);
+
   const apb = btn('+ Phase', 'btn btn-pri btn-xs');
   apb.onclick = () => {
-    stunde.phasen.push({ id: uid(), titel: '', inhalt: '', methode: '', sozialform: '', minuten: 0, material: '' });
+    stunde.phasen.push({ id: uid(), titel: '', inhalt: '', methode: '', sozialform: '', minuten: 0, materialIds: [] });
     scheduleSave(); render();
   };
   phdr.appendChild(apb);

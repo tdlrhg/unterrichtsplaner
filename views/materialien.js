@@ -266,6 +266,7 @@ function klpRow(mat, detail, row) {
           item.onmousedown = e => {
             e.preventDefault();
             mat.kompetenzenKLP.push(entry.id);
+            if (mat.review?.kompetenzenKLP) mat.review.kompetenzenKLP.needsReview = false;
             saveMatDB();
             inp.value = '';
             dd.style.display = 'none';
@@ -295,6 +296,23 @@ function openMatDetail(mat, row) {
 
   const detail = mk('div', 'mat-detail');
   detail.onclick = e => e.stopPropagation();
+
+  const needsAny = mat.review && Object.values(mat.review).some(rv => rv?.needsReview);
+  if (needsAny) {
+    const reviewBar = mk('div', 'mat-review-bar');
+    reviewBar.appendChild(tx('span', '', '⚠ Einige Felder wurden zur Prüfung markiert.'));
+    const clearBtn = btn('✓ Alles geprüft', 'btn btn-pri btn-xs');
+    clearBtn.onclick = () => {
+      Object.values(mat.review).forEach(rv => { if (rv) rv.needsReview = false; });
+      saveMatDB();
+      reviewBar.remove();
+      row.querySelector('.mat-review-badge')?.remove();
+      detail.querySelectorAll('.needs-review').forEach(el => el.classList.remove('needs-review'));
+      detail.querySelectorAll('.mat-review-inline').forEach(el => el.remove());
+    };
+    reviewBar.appendChild(clearBtn);
+    detail.appendChild(reviewBar);
+  }
 
   function editRow(label, get, set, isArea, reviewKey) {
     const needsCheck = reviewKey && mat.review?.[reviewKey]?.needsReview;

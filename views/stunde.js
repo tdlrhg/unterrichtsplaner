@@ -77,14 +77,6 @@ function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
   gc.appendChild(gb);
   div.appendChild(gc);
 
-  // ── KLP ──────────────────────────────────────────────────────
-  const kc = mk('div', 'card');
-  kc.appendChild(cardHdr('KLP-Kompetenzen'));
-  const kb = mk('div', 'card-body');
-  kb.appendChild(klpSelector(stunde, kurs.fach));
-  kc.appendChild(kb);
-  div.appendChild(kc);
-
   // ── Phasen ───────────────────────────────────────────────────
   const pc = mk('div', 'card');
   const phdr = cardHdr('Unterrichtsphasen');

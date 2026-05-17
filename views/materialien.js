@@ -70,6 +70,11 @@ function viewMaterialien() {
 
       const top = mk('div', 'mat-db-top');
       const titleWrap = mk('div', ''); titleWrap.style.display = 'flex'; titleWrap.style.alignItems = 'center'; titleWrap.style.gap = '6px';
+      const fachIcon = (mat.fach || []).map(f => {
+        const key = Object.keys(FACH_ICONS).find(k => fachLabel(k) === f || k === f);
+        return key ? FACH_ICONS[key] : '';
+      }).filter(Boolean).join('');
+      if (fachIcon) titleWrap.appendChild(tx('span', 'mat-db-fach-icon', fachIcon));
       titleWrap.appendChild(tx('span', 'mat-db-title', mat.titel));
       if (needsReview) {
         const badge = tx('span', 'mat-review-badge', '⚠ prüfen');

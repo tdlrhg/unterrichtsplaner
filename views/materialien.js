@@ -107,34 +107,49 @@ function viewMaterialien() {
   return div;
 }
 
+function saveMatDB() {
+  sbUpload('materialien.json', MATDB).catch(e => console.error('Speichern fehlgeschlagen:', e));
+}
+
 function openMatDetail(mat, row) {
   const existing = row.querySelector('.mat-detail');
   if (existing) { existing.remove(); return; }
 
   const detail = mk('div', 'mat-detail');
 
-  function infoRow(label, val) {
-    if (!val || (Array.isArray(val) && !val.length)) return;
+  function editRow(label, get, set, isArea) {
     const r = mk('div', 'mat-detail-row');
     r.appendChild(tx('span', 'mat-detail-label', label));
-    r.appendChild(tx('span', '', Array.isArray(val) ? val.join(', ') : val));
+    const val = get();
+    if (isArea) {
+      const ta = document.createElement('textarea');
+      ta.className = 'mat-edit-inp'; ta.value = val;
+      ta.onblur = () => { set(ta.value); saveMatDB(); };
+      r.appendChild(ta);
+    } else {
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.className = 'mat-edit-inp'; inp.value = val;
+      inp.onblur = () => { set(inp.value); saveMatDB(); };
+      r.appendChild(inp);
+    }
     detail.appendChild(r);
   }
 
-  infoRow('Unterrichtsphase', mat.unterrichtsphase);
-  infoRow('Sozialform geeignet', mat.sozialformenGeeignet);
-  infoRow('Methoden geeignet', mat.methodenGeeignet);
-  infoRow('Kognitive Beanspruchung', mat.kognitiveBeanspruchung);
-  infoRow('Geist. Tätigkeit', mat.artDerGeistigenTaetigkeit);
-  infoRow('Differenzierung', mat.differenzierungsformen);
-  infoRow('Sprachl. Anforderungen', mat.sprachlicheAnforderungen);
-  infoRow('Lautstärke', mat.lautstaerke);
-  if (mat.quelle) {
-    infoRow('Quelle', [mat.quelle.autor, mat.quelle.werk, mat.quelle.verlag, mat.quelle.seite ? 'S. ' + mat.quelle.seite : ''].filter(Boolean).join(', '));
-  }
-  if (mat.persoenlicheAnmerkungen) {
-    infoRow('Anmerkungen', mat.persoenlicheAnmerkungen);
-  }
+  function arrGet(key) { return (mat[key] || []).join(', '); }
+  function arrSet(key) { return v => { mat[key] = v.split(',').map(s => s.trim()).filter(Boolean); }; }
+
+  editRow('Titel',                () => mat.titel || '',              v => { mat.titel = v; row.querySelector('.mat-db-title').textContent = v; });
+  editRow('Fach',                 () => arrGet('fach'),               arrSet('fach'));
+  editRow('Jahrgang',             () => arrGet('jahrgang'),           arrSet('jahrgang'));
+  editRow('Themen',               () => arrGet('themen'),             arrSet('themen'));
+  editRow('Materialtyp',          () => mat.materialtyp || '',        v => { mat.materialtyp = v; });
+  editRow('Beschreibung',         () => mat.beschreibung || '',       v => { mat.beschreibung = v; }, true);
+  editRow('Unterrichtsphase',     () => arrGet('unterrichtsphase'),   arrSet('unterrichtsphase'));
+  editRow('Sozialform geeignet',  () => arrGet('sozialformenGeeignet'), arrSet('sozialformenGeeignet'));
+  editRow('Methoden geeignet',    () => arrGet('methodenGeeignet'),   arrSet('methodenGeeignet'));
+  editRow('Kognit. Beanspruchung',() => mat.kognitiveBeanspruchung || '', v => { mat.kognitiveBeanspruchung = v; });
+  editRow('Differenzierung',      () => arrGet('differenzierungsformen'), arrSet('differenzierungsformen'));
+  editRow('Anmerkungen',          () => mat.persoenlicheAnmerkungen || '', v => { mat.persoenlicheAnmerkungen = v; }, true);
 
   row.appendChild(detail);
 }

@@ -398,6 +398,14 @@ textarea.finp { resize: vertical; min-height: 80px; }
 }
 .mat-detail-row:last-child { border-bottom: none; }
 .mat-detail-label { width: 160px; flex-shrink: 0; color: var(--tx3); font-weight: 600; }
+.mat-edit-inp {
+  flex: 1; border: none; border-bottom: 1px solid transparent;
+  background: transparent; font-size: 12px; font-family: inherit;
+  color: var(--tx); padding: 1px 2px; resize: vertical;
+  min-width: 0; outline: none;
+}
+.mat-edit-inp:hover { border-bottom-color: var(--bord); }
+.mat-edit-inp:focus { border-bottom-color: var(--pri); background: #f8faff; }
 
 /* ── Material-Chips & Suche ──────────────────────────────────────── */
 .mat-cell { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }

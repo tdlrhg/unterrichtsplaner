@@ -116,6 +116,7 @@ function openMatDetail(mat, row) {
   if (existing) { existing.remove(); return; }
 
   const detail = mk('div', 'mat-detail');
+  detail.onclick = e => e.stopPropagation();
 
   function editRow(label, get, set, isArea) {
     const r = mk('div', 'mat-detail-row');

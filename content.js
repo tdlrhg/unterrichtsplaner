@@ -3,6 +3,7 @@ function buildContent() {
   const c = mk('div', 'content');
   if (S.view === 'kalender') { c.appendChild(viewKalender()); return c; }
   if (S.view === 'einstellungen') { c.appendChild(viewEinstellungen()); return c; }
+  if (S.view === 'materialien') { c.appendChild(viewMaterialien()); return c; }
   if (S.view === 'kursDetail' && S.aktKursDetailId) { c.appendChild(viewKursDetail(S.aktKursDetailId)); return c; }
   if (!S.aktFpId) { c.appendChild(viewFachplanung()); return c; }
   const type = S.sel ? S.sel.type : 'fachplanung';

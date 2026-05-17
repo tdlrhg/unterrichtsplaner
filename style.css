@@ -337,6 +337,109 @@ textarea.finp { resize: vertical; min-height: 80px; }
 .prio-btn:hover { border-color: var(--pri); color: var(--tx); }
 .prio-btn.active { border-color: var(--pri); background: #dbeafe; color: var(--pri); font-weight: 700; }
 
+/* ── Sidebar: Abschnitts-Header ──────────────────────────────────── */
+.sb-section-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px 4px;
+}
+.sb-section-hdr > span:first-child {
+  font-size: 10px; font-weight: 700; color: var(--tx3);
+  text-transform: uppercase; letter-spacing: .8px;
+}
+
+/* ── Sidebar: Fach-Gruppen ───────────────────────────────────────── */
+.sb-fach {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px; cursor: pointer;
+  border-radius: 6px; margin: 1px 6px;
+  transition: background .12s;
+}
+.sb-fach:hover { background: var(--surf2); }
+.sb-fach.active { background: #dbeafe; }
+.sb-fach-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+.sb-fach-label { flex: 1; font-size: 13px; font-weight: 600; color: var(--tx); }
+.sb-fach-arrow { font-size: 11px; color: var(--tx3); }
+
+.sb-item-indent { padding-left: 42px; }
+
+/* ── Materialdatenbank-View ──────────────────────────────────────── */
+.mat-db-row {
+  padding: 12px 16px; cursor: pointer;
+  border-bottom: 1px solid var(--bord);
+  transition: background .12s;
+}
+.mat-db-row:last-child { border-bottom: none; }
+.mat-db-row:hover { background: var(--surf2); }
+
+.mat-db-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.mat-db-title { font-size: 14px; font-weight: 600; color: var(--tx); }
+.mat-db-meta { font-size: 11px; color: var(--tx3); white-space: nowrap; }
+.mat-db-desc { font-size: 12px; color: var(--tx2); margin-top: 3px; }
+
+.mat-db-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.mat-tag {
+  font-size: 11px; padding: 1px 7px;
+  background: var(--surf2); border-radius: 10px; color: var(--tx2);
+}
+
+.mat-review-badge {
+  font-size: 10px; padding: 1px 6px;
+  background: #fef3c7; color: #92400e;
+  border-radius: 10px; font-weight: 600;
+}
+
+.mat-detail {
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--bord);
+}
+.mat-detail-row {
+  display: flex; gap: 8px; font-size: 12px;
+  padding: 3px 0; border-bottom: 1px solid var(--bord);
+}
+.mat-detail-row:last-child { border-bottom: none; }
+.mat-detail-label { width: 160px; flex-shrink: 0; color: var(--tx3); font-weight: 600; }
+
+/* ── Material-Chips & Suche ──────────────────────────────────────── */
+.mat-cell { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+
+.mat-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #dbeafe; color: var(--pri);
+  border-radius: 12px; padding: 2px 8px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+  cursor: default;
+}
+.mat-chip-x {
+  cursor: pointer; font-size: 10px; opacity: .6;
+  line-height: 1;
+}
+.mat-chip-x:hover { opacity: 1; }
+
+.mat-search-wrap { position: relative; }
+.mat-search-inp {
+  border: none; background: transparent;
+  font-size: 12px; font-family: inherit;
+  color: var(--tx2); width: 90px;
+  outline: none;
+}
+.mat-search-inp::placeholder { color: var(--tx3); }
+
+.mat-dd {
+  display: none;
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 200;
+  background: var(--surf); border: 1px solid var(--bord);
+  border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  min-width: 260px; max-height: 220px; overflow-y: auto;
+}
+.mat-dd-item {
+  padding: 8px 12px; cursor: pointer;
+  border-bottom: 1px solid var(--bord);
+  font-size: 12px;
+}
+.mat-dd-item:last-child { border-bottom: none; }
+.mat-dd-item:hover { background: var(--surf2); }
+.mat-dd-sub { font-size: 11px; color: var(--tx3); margin-top: 2px; }
+
 /* ── Material-Chips & Suche ──────────────────────────────────────── */
 .mat-cell { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 

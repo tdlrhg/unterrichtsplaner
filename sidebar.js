@@ -1,16 +1,15 @@
 // ── Sidebar ──────────────────────────────────────────────────────
+const FACH_ICONS = { 'M': '∑', 'Ch': '⚗', 'Bio': '🌿', 'Ch_GK': '⚗', 'Ch_LK': '⚗', 'Bio_GK': '🌿', 'Bio_LK': '🌿' };
+
 function buildSidebar() {
   const sb = mk('div', 'sidebar');
 
   function sbSection(label, onAdd) {
-    const hdr = mk('div', '');
-    hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px 4px;';
+    const hdr = mk('div', 'sb-section-hdr');
     const lbl = tx('span', '', label);
-    lbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.8px;';
     hdr.appendChild(lbl);
     if (onAdd) {
       const b = btn('+ Neu', 'btn btn-xs btn-ghost');
-      b.style.cssText = 'padding:2px 8px;font-size:11px;';
       b.onclick = onAdd;
       hdr.appendChild(b);
     }
@@ -34,19 +33,50 @@ function buildSidebar() {
     return row;
   }
 
-  // ── Fachplanungen ─────────────────────────────────────────────
+  // ── Fachplanungen (gruppiert nach Fach) ───────────────────────
   sb.appendChild(sbSection('Fachplanungen', () => { S.modal = { type: 'newFachplanung' }; render(); }));
+
+  const byFach = {};
   (S.data.fachplanungen || []).forEach(lp => {
-    sb.appendChild(sbRow(
-      fachLabel(lp.fach), 'Jahrgang ' + lp.jahrgang,
-      S.aktFpId === lp.id && S.view === 'fachplanung',
-      () => { S.aktFpId = lp.id; S.view = 'fachplanung'; S.sel = null; render(); },
-      () => { if (confirm('Fachplanung löschen? Alle Inhalte gehen verloren.')) {
-        S.data.fachplanungen = S.data.fachplanungen.filter(l => l.id !== lp.id);
-        if (S.aktFpId === lp.id) S.aktFpId = S.data.fachplanungen[0]?.id || null;
-        scheduleSave(); render();
-      }}
-    ));
+    if (!byFach[lp.fach]) byFach[lp.fach] = [];
+    byFach[lp.fach].push(lp);
+  });
+
+  Object.entries(byFach).forEach(([fach, planungen]) => {
+    const openKey = 'fach_' + fach;
+    const isOpen = S.open[openKey];
+    const isActiveFach = planungen.some(lp => lp.id === S.aktFpId && S.view === 'fachplanung');
+
+    const fachRow = mk('div', 'sb-fach' + (isActiveFach && !isOpen ? ' active' : ''));
+    const icon = tx('span', 'sb-fach-icon', FACH_ICONS[fach] || '📚');
+    const label = tx('span', 'sb-fach-label', fachLabel(fach));
+    const arrow = tx('span', 'sb-fach-arrow', isOpen ? '▾' : '›');
+    fachRow.appendChild(icon);
+    fachRow.appendChild(label);
+    fachRow.appendChild(arrow);
+    fachRow.onclick = () => { S.open[openKey] = !S.open[openKey]; render(); };
+    sb.appendChild(fachRow);
+
+    if (isOpen) {
+      planungen.forEach(lp => {
+        const row = mk('div', 'sb-item sb-item-indent' + (S.aktFpId === lp.id && S.view === 'fachplanung' ? ' active' : ''));
+        const info = mk('div', ''); info.style.flex = '1';
+        info.appendChild(tx('div', 'sb-item-label', 'Jahrgang ' + lp.jahrgang));
+        row.appendChild(info);
+        const del = mk('button', 'sb-item-del'); del.textContent = '✕';
+        del.onclick = e => {
+          e.stopPropagation();
+          if (confirm('Fachplanung löschen? Alle Inhalte gehen verloren.')) {
+            S.data.fachplanungen = S.data.fachplanungen.filter(l => l.id !== lp.id);
+            if (S.aktFpId === lp.id) S.aktFpId = S.data.fachplanungen[0]?.id || null;
+            scheduleSave(); render();
+          }
+        };
+        row.appendChild(del);
+        row.onclick = () => { S.aktFpId = lp.id; S.view = 'fachplanung'; S.sel = null; render(); };
+        sb.appendChild(row);
+      });
+    }
   });
 
   // ── Kurse ─────────────────────────────────────────────────────
@@ -65,6 +95,15 @@ function buildSidebar() {
       }}
     ));
   });
+
+  // ── Materialien ───────────────────────────────────────────────
+  sb.appendChild(mk('div', 'sb-sep'));
+  sb.appendChild(sbSection('Materialien'));
+  sb.appendChild(sbRow(
+    '📂 Datenbank', null,
+    S.view === 'materialien',
+    () => { S.view = 'materialien'; S.sel = null; render(); }
+  ));
 
   // ── Einstellungen ─────────────────────────────────────────────
   sb.appendChild(mk('div', 'sb-sep'));

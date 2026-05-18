@@ -464,7 +464,11 @@ async function kiPlanung(lp, obj, typ, nta, resultDiv, { selBlock, selReihe, sel
   // Aufgabe und Ausgabeformat je nach Ebene
   const AUFGABEN = {
     block: {
-      aufgabe: `Schlage eine Gliederung des Blocks in Unterrichtsreihen vor. Jede Reihe ist ein zusammenhängender thematischer Bogen. Berücksichtige alle Stichworte, besondere Elemente (Referate, Experimente…) und ordne jeder Reihe passende KLP-Kompetenzen zu.`,
+      aufgabe: `Schlage eine Gliederung des Blocks in Unterrichtsreihen vor.
+
+Eine UNTERRICHTSREIHE ist ein großer thematischer Bogen, der mehrere Wochen umfasst und mehrere Unterrichtseinheiten enthält. Ein Block hat typischerweise 2–4 Reihen. Beispiel für den Block "Thermodynamik": Reihe 1 "Reaktionsenthalpie und Hess'scher Satz", Reihe 2 "Entropie und Gibbs-Energie". NICHT einzelne Unterrichtsstunden oder kleine Lernsequenzen vorschlagen.
+
+Berücksichtige alle Stichworte, besondere Elemente (Referate, Klassenarbeiten…) und ordne jeder Reihe passende KLP-Kompetenzen zu.`,
       childKey: 'items',
       childLabel: 'Reihe',
       anlegen: (parsed, parentObj) => {
@@ -475,7 +479,11 @@ async function kiPlanung(lp, obj, typ, nta, resultDiv, { selBlock, selReihe, sel
       },
     },
     reihe: {
-      aufgabe: `Schlage eine Gliederung der Reihe in Unterrichtseinheiten vor. Eine Einheit ist ein didaktisch zusammengehöriger Abschnitt (meist 1–4 Stunden). Berücksichtige alle Stichworte und ordne jeder Einheit passende KLP-Kompetenzen zu.`,
+      aufgabe: `Schlage eine Gliederung der Reihe in Unterrichtseinheiten vor.
+
+Eine UNTERRICHTSEINHEIT ist ein didaktisch zusammengehöriger Abschnitt innerhalb der Reihe, typischerweise 1–4 Stunden. Eine Reihe hat meist 2–5 Einheiten. Beispiel für die Reihe "Reaktionsenthalpie": Einheit 1 "Energieumsatz bei chemischen Reaktionen", Einheit 2 "Kalorimetrie", Einheit 3 "Hess'scher Satz". NICHT einzelne Stunden als Einheiten vorschlagen.
+
+Berücksichtige alle Stichworte und ordne jeder Einheit passende KLP-Kompetenzen zu.`,
       childKey: 'items',
       childLabel: 'Einheit',
       anlegen: (parsed, parentObj) => {

@@ -167,5 +167,34 @@ function buildSidebar() {
     () => { S.view = 'einstellungen'; S.aktKursDetailId = null; S.sel = null; render(); }
   ));
 
+  // ── Resize-Anfasser ───────────────────────────────────────────
+  const handle = mk('div', 'sb-resize-handle');
+  sb.appendChild(handle);
+
+  // Gespeicherte Breite wiederherstellen
+  const savedWidth = localStorage.getItem('up_sb_width');
+  if (savedWidth) sb.style.width = savedWidth + 'px';
+
+  handle.addEventListener('mousedown', e => {
+    e.preventDefault();
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMove = e => {
+      const rect = sb.getBoundingClientRect();
+      const newWidth = Math.min(400, Math.max(160, e.clientX - rect.left));
+      sb.style.width = newWidth + 'px';
+    };
+    const onUp = () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      localStorage.setItem('up_sb_width', parseInt(sb.style.width));
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
   return sb;
 }

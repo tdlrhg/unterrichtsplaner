@@ -453,12 +453,45 @@ function openMatDetail(mat, row) {
   function arrGet(key) { return (mat[key] || []).join(', '); }
   function arrSet(key) { return v => { mat[key] = v.split(',').map(s => s.trim()).filter(Boolean); }; }
 
+  // ── Teil von (Unterrichtseinheit) ────────────────────────────
+  if (mat.einheitId) {
+    const einheit = MATDB.find(m => m.id === mat.einheitId);
+    if (einheit) {
+      const r = mk('div', 'mat-detail-row mat-einheit-ref');
+      r.appendChild(tx('span', 'mat-detail-label', 'Teil von'));
+      const link = tx('span', 'mat-einheit-link', '📦 ' + einheit.titel);
+      link.onclick = () => {
+        const einheitRow = [...document.querySelectorAll('.mat-db-row')].find(el =>
+          el.querySelector('.mat-db-title')?.textContent === einheit.titel
+        );
+        if (einheitRow) {
+          einheitRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          openMatDetail(einheit, einheitRow);
+        }
+      };
+      r.appendChild(link);
+      detail.appendChild(r);
+    }
+  }
+
   editRow('Titel',                () => mat.titel || '',              v => { mat.titel = v; row.querySelector('.mat-db-title').textContent = v; }, false, 'titel');
   editRow('Fach',                 () => arrGet('fach'),               arrSet('fach'),           false, 'fach');
   editRow('Jahrgang',             () => arrGet('jahrgang'),           arrSet('jahrgang'),       false, 'jahrgang');
   editRow('Themen',               () => arrGet('themen'),             arrSet('themen'));
   editRow('Materialtyp',          () => mat.materialtyp || '',        v => { mat.materialtyp = v; });
   editRow('Beschreibung',         () => mat.beschreibung || '',       v => { mat.beschreibung = v; }, true);
+  editRow('Materialnummer',       () => mat.materialnummer || '',     v => { mat.materialnummer = v; });
+  editRow('Rolle im Kontext',     () => mat.rolleImKontext || '',     v => { mat.rolleImKontext = v; });
+
+  // Optional-Toggle
+  const optR = mk('div', 'mat-detail-row');
+  optR.appendChild(tx('span', 'mat-detail-label', 'Optional'));
+  const optChk = document.createElement('input');
+  optChk.type = 'checkbox'; optChk.checked = !!mat.optional; optChk.style.marginTop = '3px';
+  optChk.onchange = () => { mat.optional = optChk.checked; saveMatDB(); };
+  optR.appendChild(optChk);
+  detail.appendChild(optR);
+
   editRow('Unterrichtsphase',       () => arrGet('unterrichtsphase'),           arrSet('unterrichtsphase'),           false, 'unterrichtsphase');
   editRow('Sozialform geeignet',    () => arrGet('sozialformenGeeignet'),        arrSet('sozialformenGeeignet'));
   editRow('Sozialform weniger',     () => arrGet('sozialformenWenigerGeeignet'), arrSet('sozialformenWenigerGeeignet'));
@@ -476,6 +509,44 @@ function openMatDetail(mat, row) {
   editRow('Lautstärke',             () => mat.lautstaerke || '',                 v => { mat.lautstaerke = v; });
   editRow('Differenzierung',        () => arrGet('differenzierungsformen'),      arrSet('differenzierungsformen'));
   editRow('Anmerkungen',            () => mat.persoenlicheAnmerkungen || '',   v => { mat.persoenlicheAnmerkungen = v; }, true);
+
+  // ── Enthaltene Materialien (nur bei Unterrichtseinheit) ───────
+  if (mat.materialtyp === 'Unterrichtseinheit') {
+    const members = MATDB
+      .filter(m => m.einheitId === mat.id)
+      .sort((a, b) => (a.materialnummer || '').localeCompare(b.materialnummer || '', undefined, { numeric: true }));
+
+    const secHdr = mk('div', 'mat-einheit-sec-hdr');
+    secHdr.appendChild(tx('span', '', '📋 Enthaltene Materialien'));
+    secHdr.appendChild(tx('span', 'mat-einheit-count', members.length + ' Einträge'));
+    detail.appendChild(secHdr);
+
+    if (!members.length) {
+      const hint = tx('div', '', 'Noch keine Materialien mit dieser Einheit verknüpft (einheitId setzen).');
+      hint.style.cssText = 'font-size:12px;color:var(--tx3);padding:6px 0;';
+      detail.appendChild(hint);
+    } else {
+      const tbl = mk('div', 'mat-einheit-tbl');
+      members.forEach(m => {
+        const mRow = mk('div', 'mat-einheit-member');
+        const nr = tx('span', 'mat-einheit-nr', m.materialnummer || '–');
+        const titel = tx('span', 'mat-einheit-titel', m.titel);
+        const rolle = tx('span', 'mat-einheit-rolle', m.rolleImKontext || '');
+        const badges = mk('span', '');
+        if (m.optional) badges.appendChild(tx('span', 'mat-einheit-badge opt', 'optional'));
+        if (m.materialtyp === 'Lehrerhandreichung') badges.appendChild(tx('span', 'mat-einheit-badge lh', 'LH'));
+        mRow.appendChild(nr); mRow.appendChild(titel); mRow.appendChild(rolle); mRow.appendChild(badges);
+        mRow.onclick = () => {
+          const mDomRow = [...document.querySelectorAll('.mat-db-row')].find(el =>
+            el.querySelector('.mat-db-title')?.textContent === m.titel
+          );
+          if (mDomRow) { mDomRow.scrollIntoView({ behavior: 'smooth', block: 'center' }); openMatDetail(m, mDomRow); }
+        };
+        tbl.appendChild(mRow);
+      });
+      detail.appendChild(tbl);
+    }
+  }
 
   row.appendChild(detail);
 }

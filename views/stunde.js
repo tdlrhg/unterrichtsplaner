@@ -4,6 +4,7 @@ function initStunde(stunde) {
   if (!stunde.klpProzess) stunde.klpProzess = [];
   if (!stunde.phasen) stunde.phasen = [];
   if (!stunde.material) stunde.material = [];
+  if (!stunde.lernziele) stunde.lernziele = [];
 }
 
 function renderStundenBody(div, stunde, fp) {
@@ -35,7 +36,7 @@ function renderStundenBody(div, stunde, fp) {
   prioFg.appendChild(prioWrap);
   gb.appendChild(prioFg);
 
-  gb.appendChild(fieldArea('Lernziel', stunde.lernziel || '', v => { stunde.lernziel = v; scheduleSave(); }));
+  gb.appendChild(fieldArea('Stundenbeschreibung', stunde.lernziel || '', v => { stunde.lernziel = v; scheduleSave(); }, '', 'Inhaltliche Zusammenfassung – was passiert in dieser Stunde?'));
   const dfg = mk('div', 'fg');
   dfg.appendChild(tx('label', 'fl', 'Dauer (Minuten)'));
   const di = document.createElement('input');
@@ -46,6 +47,109 @@ function renderStundenBody(div, stunde, fp) {
   gb.appendChild(dfg);
   gc.appendChild(gb);
   div.appendChild(gc);
+
+  // ── Lernziele ──────────────────────────────────────────────────
+  const lzCard = mk('div', 'card');
+  const lzHdr = cardHdr('Lernziele');
+
+  const lzKiBtn = btn('✨ KI → Lernziele ableiten', 'btn btn-ghost btn-xs');
+  lzKiBtn.onclick = async () => {
+    const antKey = localStorage.getItem('ant_key');
+    if (!antKey) { alert('Bitte zuerst Anthropic API-Key in den Einstellungen hinterlegen.'); return; }
+    if (!stunde.intention) { alert('Bitte zuerst die Intention ausfüllen.'); return; }
+    lzKiBtn.textContent = '…'; lzKiBtn.disabled = true;
+    try {
+      const prompt = `Du bist erfahrene Lehrerin an einem NRW-Gymnasium (${fp.fach || 'Naturwissenschaft'}, ${fp.jahrgang || ''}).
+
+Aus der folgenden Intention einer Unterrichtsstunde leitest du 2–3 operationalisierte Lernziele ab.
+
+Format: Jedes Lernziel besteht aus:
+- "text": "Die SuS können/wissen …" (präzise, fachlich korrekt)
+- "indikator": "Das ist erkennbar, wenn …" (konkret beobachtbares Schülerverhalten oder Produkt)
+
+Intention der Stunde:
+${stunde.intention}
+
+${stunde.lernziel ? 'Stundenbeschreibung (Kontext):\n' + stunde.lernziel : ''}
+
+Antworte NUR als JSON-Array:
+[
+  { "text": "Die SuS können …", "indikator": "Das ist erkennbar, wenn …" }
+]`;
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': antKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 800,
+          messages: [{ role: 'user', content: prompt }] }),
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || '';
+      const parsed = JSON.parse(text.match(/\[[\s\S]*\]/)?.[0] || '[]');
+      if (!parsed.length) throw new Error('Keine Lernziele erhalten');
+      const neu = parsed.map(z => ({ id: uid(), text: z.text || '', indikator: z.indikator || '' }));
+      if (stunde.lernziele.length > 0 && !confirm('Vorhandene Lernziele ersetzen?')) {
+        lzKiBtn.textContent = '✨ KI → Lernziele ableiten'; lzKiBtn.disabled = false; return;
+      }
+      stunde.lernziele = neu;
+      scheduleSave(); render();
+    } catch(e) {
+      alert('Fehler: ' + e.message);
+      lzKiBtn.textContent = '✨ KI → Lernziele ableiten'; lzKiBtn.disabled = false;
+    }
+  };
+  lzHdr.appendChild(lzKiBtn);
+
+  const lzAddBtn = btn('+ Manuell', 'btn btn-pri btn-xs');
+  lzAddBtn.onclick = () => {
+    stunde.lernziele.push({ id: uid(), text: '', indikator: '' });
+    scheduleSave(); render();
+  };
+  lzHdr.appendChild(lzAddBtn);
+  lzCard.appendChild(lzHdr);
+
+  const lzBody = mk('div', 'card-body');
+  if (stunde.lernziele.length === 0) {
+    lzBody.appendChild(tx('div', 'empty-hint', 'Noch keine Lernziele – KI ableiten oder manuell hinzufügen.'));
+  } else {
+    stunde.lernziele.forEach((lz, i) => {
+      const row = mk('div', 'lz-row');
+      const nr = tx('div', 'lz-nr', (i + 1) + '.');
+      const fields = mk('div', 'lz-fields');
+
+      const ta1 = document.createElement('textarea');
+      ta1.className = 'lz-text finp';
+      ta1.placeholder = 'Die SuS können/wissen …';
+      ta1.value = lz.text;
+      ta1.oninput = e => { lz.text = e.target.value; scheduleSave(); };
+      fields.appendChild(ta1);
+
+      const ta2 = document.createElement('textarea');
+      ta2.className = 'lz-indikator finp';
+      ta2.placeholder = 'Das ist erkennbar, wenn …';
+      ta2.value = lz.indikator;
+      ta2.oninput = e => { lz.indikator = e.target.value; scheduleSave(); };
+      fields.appendChild(ta2);
+
+      const delBtn = btn('🗑', 'btn btn-danger btn-xs lz-del');
+      delBtn.onclick = () => {
+        stunde.lernziele = stunde.lernziele.filter(z => z.id !== lz.id);
+        scheduleSave(); render();
+      };
+
+      row.appendChild(nr);
+      row.appendChild(fields);
+      row.appendChild(delBtn);
+      lzBody.appendChild(row);
+    });
+  }
+  lzCard.appendChild(lzBody);
+  div.appendChild(lzCard);
 
   // ── Phasen ─────────────────────────────────────────────────────
   const pc = mk('div', 'card');

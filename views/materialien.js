@@ -162,8 +162,8 @@ ${schemaStr}
 REGELN – ALLGEMEIN:
 - Gib ein JSON-Array aus, direkt importierbar, kein Text davor/danach
 - Jeder Eintrag braucht eine eindeutige id (Format: mat_${idBase}_1, mat_${idBase}_2 usw.)
-- Gruppe 2 enthält genau ${matFiles.length} Schülermaterial${matFiles.length !== 1 ? 'ien' : ''} → erstelle genau ${matFiles.length} Einträge (einen pro Bild), nicht mehr, nicht weniger
-- Wenn ein Material mehrere Seiten auf einem Bild hat, fasst du diese zu EINEM Eintrag zusammen – aber jedes Bild ist ein eigenes Material
+- Erkenne selbst, welche Bilder zusammengehören (z.B. „M1 Seite 1" und „M1 Seite 2" → ein Eintrag). Erstelle einen Eintrag pro eigenständigem Material, nicht pro Bild
+- Gruppe 2 enthält ${matFiles.length} Bild${matFiles.length !== 1 ? 'er' : ''} – daraus können mehr oder weniger Einträge entstehen, je nachdem wie viele eigenständige Materialien erkennbar sind
 - Erstelle KEINEN Unterrichtseinheit-Eintrag (materialtyp "Unterrichtseinheit"), nur Einzelmaterialien und ggf. Lehrerhandreichungen
 
 REGELN – TITEL:
@@ -221,7 +221,7 @@ REGELN – INHALTE (niemals kürzen oder zusammenfassen):
         if (!match) throw new Error('Kein JSON-Array in der Antwort gefunden.');
         const entries = JSON.parse(match[0]);
         if (!entries.length) throw new Error('Keine Einträge generiert.');
-        const truncated = choice?.finish_reason === 'length' || entries.length < matFiles.length;
+        const truncated = choice?.finish_reason === 'length';
 
         const now = new Date().toISOString();
         entries.forEach(e => {

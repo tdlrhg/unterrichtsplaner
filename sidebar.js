@@ -62,9 +62,15 @@ function buildSidebar() {
     sb.appendChild(fachRow);
 
     if (isOpen) {
+      let dragSrcId = null;
       planungen.forEach(lp => {
         const zusatz = FACH_ZUSATZ[lp.fach] ? ' · ' + FACH_ZUSATZ[lp.fach] : '';
         const row = mk('div', 'sb-item sb-item-indent' + (S.aktFpId === lp.id && S.view === 'fachplanung' ? ' active' : ''));
+        row.draggable = true;
+
+        const grip = tx('span', 'sb-drag-grip', '⠿');
+        row.appendChild(grip);
+
         const info = mk('div', ''); info.style.flex = '1';
         info.appendChild(tx('div', 'sb-item-label', 'Jg. ' + lp.jahrgang + zusatz));
         row.appendChild(info);
@@ -79,6 +85,23 @@ function buildSidebar() {
         };
         row.appendChild(del);
         row.onclick = () => { S.aktFpId = lp.id; S.view = 'fachplanung'; S.sel = null; render(); };
+
+        row.addEventListener('dragstart', e => { dragSrcId = lp.id; e.dataTransfer.effectAllowed = 'move'; row.classList.add('sb-drag-src'); });
+        row.addEventListener('dragend', () => { dragSrcId = null; row.classList.remove('sb-drag-src'); document.querySelectorAll('.sb-drag-over').forEach(el => el.classList.remove('sb-drag-over')); });
+        row.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; row.classList.add('sb-drag-over'); });
+        row.addEventListener('dragleave', () => row.classList.remove('sb-drag-over'));
+        row.addEventListener('drop', e => {
+          e.preventDefault(); row.classList.remove('sb-drag-over');
+          if (!dragSrcId || dragSrcId === lp.id) return;
+          const fps = S.data.fachplanungen;
+          const srcIdx = fps.findIndex(f => f.id === dragSrcId);
+          const tgtIdx = fps.findIndex(f => f.id === lp.id);
+          if (srcIdx < 0 || tgtIdx < 0) return;
+          const [moved] = fps.splice(srcIdx, 1);
+          fps.splice(tgtIdx, 0, moved);
+          scheduleSave(); render();
+        });
+
         sb.appendChild(row);
 
         // Freie Stunden unter aktiver Fachplanung

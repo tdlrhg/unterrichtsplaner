@@ -627,3 +627,8 @@ textarea::placeholder { color: #c4cdd6; }
 .stunden-grid .card { margin: 0; }
 .stunden-grid .card.card-half { grid-column: span 1; }
 .stunden-grid .card:not(.card-half) { grid-column: 1 / -1; }
+
+/* ── Sidebar Drag & Drop ── */
+.sb-drag-grip { color: var(--tx3); font-size: 13px; cursor: grab; padding-right: 6px; flex-shrink: 0; }
+.sb-drag-src { opacity: .4; }
+.sb-drag-over { border-top: 2px solid var(--pri) !important; }

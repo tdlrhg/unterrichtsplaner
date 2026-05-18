@@ -173,31 +173,47 @@ Antworte NUR als JSON-Array von Strings:
     ],
   };
 
-  function applyVorlage(key) {
-    if (stunde.phasen.length > 0 && !confirm('Vorhandene Phasen ersetzen?')) return;
+  const MODELL_META = {
+    '3-Phasen':             { icon: '📐', phasen: 'Einstieg · Erarbeitung · Sicherung',                         hinweis: 'Klassisch, vielseitig' },
+    'AVIVA':                { icon: '🔄', phasen: 'Ankommen · Vorwissen · Informieren · Verarbeiten · Auswerten', hinweis: 'Lernprozessorientiert' },
+    'Direkte Instruktion':  { icon: '🎯', phasen: 'I do · We do · You do',                                       hinweis: 'Schrittweise Übergabe' },
+    'Forschend-entdeckend': { icon: '🔬', phasen: 'Phänomen · Hypothese · Experiment · Auswertung',              hinweis: 'Entdeckendes Lernen' },
+  };
+
+  function applyVorlage(key, skipConfirm) {
+    if (!skipConfirm && stunde.phasen.length > 0 && !confirm('Vorhandene Phasen ersetzen?')) return false;
+    stunde.phasenModell = key;
     stunde.phasen = PHASEN_VORLAGEN[key].map(p => ({
       id: uid(), titel: p.titel, inhalt: '', methode: '', sozialform: '', minuten: p.minuten, materialIds: []
     }));
     scheduleSave(); render();
+    return true;
   }
 
-  const vorlagenWrap = mk('div', 'phasen-vorlage-wrap');
-  const vorlagenSel = document.createElement('select');
-  vorlagenSel.className = 'finp phasen-vorlage-sel';
-  const emptyOpt = document.createElement('option');
-  emptyOpt.value = ''; emptyOpt.textContent = '📋 Vorlage wählen…';
-  vorlagenSel.appendChild(emptyOpt);
-  Object.keys(PHASEN_VORLAGEN).forEach(key => {
-    const o = document.createElement('option'); o.value = key; o.textContent = key;
-    vorlagenSel.appendChild(o);
+  // Modell-Kacheln
+  const modellGrid = mk('div', 'modell-grid');
+  Object.keys(MODELL_META).forEach(key => {
+    const meta = MODELL_META[key];
+    const kachel = mk('div', 'modell-kachel' + (stunde.phasenModell === key ? ' active' : ''));
+    kachel.appendChild(tx('div', 'modell-icon', meta.icon));
+    kachel.appendChild(tx('div', 'modell-name', key));
+    kachel.appendChild(tx('div', 'modell-phasen', meta.phasen));
+    kachel.appendChild(tx('div', 'modell-hinweis', meta.hinweis));
+    kachel.onclick = () => applyVorlage(key);
+    modellGrid.appendChild(kachel);
   });
-  vorlagenSel.onchange = () => {
-    if (vorlagenSel.value) { applyVorlage(vorlagenSel.value); vorlagenSel.value = ''; }
-  };
-  vorlagenWrap.appendChild(vorlagenSel);
 
-  const kiVorlageBtn = btn('✨ KI', 'btn btn-ghost btn-xs');
-  kiVorlageBtn.title = 'KI wählt passendes Modell anhand von Titel und Lernziel';
+  // KI-Begruendung anzeigen falls vorhanden
+  if (stunde.phasenModellBegruendung) {
+    const begr = mk('div', 'modell-ki-begr');
+    begr.appendChild(tx('span', 'modell-ki-begr-icon', '✨'));
+    begr.appendChild(tx('span', '', stunde.phasenModellBegruendung));
+    modellGrid.appendChild(begr);
+  }
+
+  pc.appendChild(modellGrid);
+
+  const kiVorlageBtn = btn('✨ KI entscheidet', 'btn btn-ghost btn-xs');
   kiVorlageBtn.onclick = async () => {
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) { alert('Bitte zuerst Anthropic API-Key in den Einstellungen hinterlegen.'); return; }
@@ -207,19 +223,24 @@ Antworte NUR als JSON-Array von Strings:
         `## ${key}\n${DIDAKTIKDB[key] || '(kein Hintergrundwissen hinterlegt)'}`
       ).join('\n\n');
 
-      const prompt = `Du bist Didaktik-Experte für NRW-Gymnasien. Wähle für diese Unterrichtsstunde das passende Phasierungsmodell aus und befülle die Phasen sinnvoll. Stütze deine Entscheidung auf das didaktische Wissensmodell unten.
+      const lernzieleText = stunde.lernziele?.length
+        ? stunde.lernziele.map((z, i) => `${i+1}. ${z.text}`).join('\n')
+        : '–';
+
+      const prompt = `Du bist Didaktik-Experte für NRW-Gymnasien. Wähle für diese Unterrichtsstunde das passende Phasierungsmodell und befülle die Phasen konkret und sinnvoll.
 
 Stunde:
+- Fach: ${fp.fach || '–'}, Jahrgang: ${fp.jahrgang || '–'}
 - Titel: ${stunde.titel || '–'}
-- Lernziel: ${stunde.lernziel || '–'}
-- Intention: ${stunde.intention || '–'}
-- Fach: ${fp.fach || '–'}
 - Dauer: ${stunde.dauer || 45} Minuten
+- Intention: ${stunde.intention || '–'}
+- Lernziele:
+${lernzieleText}
 
-Didaktisches Wissensmodell:
+Didaktisches Hintergrundwissen:
 ${wissenText}
 
-Verfügbare Modelle:
+Verfügbare Modelle (nur eines wählen):
 - 3-Phasen: Einstieg / Erarbeitung / Sicherung
 - AVIVA: Ankommen / Vorwissen / Informieren / Verarbeiten / Auswerten
 - Direkte Instruktion: I do / We do / You do
@@ -228,9 +249,9 @@ Verfügbare Modelle:
 Antworte NUR als JSON-Objekt:
 {
   "modell": "3-Phasen",
-  "begruendung": "kurze Begründung (1 Satz)",
+  "begruendung": "Ein Satz, warum dieses Modell passt.",
   "phasen": [
-    { "titel": "Einstieg", "inhalt": "konkrete Beschreibung der Aktivität", "methode": "z.B. Lehrervortrag", "sozialform": "z.B. Plenum", "minuten": 10 }
+    { "titel": "Einstieg", "inhalt": "Konkrete Beschreibung der Lehreraktivität und Schüleraktivität", "methode": "z.B. Unterrichtsgespräch", "sozialform": "z.B. Plenum", "minuten": 10 }
   ]
 }`;
 
@@ -242,17 +263,18 @@ Antworte NUR als JSON-Objekt:
           'anthropic-dangerous-direct-browser-access': 'true',
           'content-type': 'application/json',
         },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1200,
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1400,
           messages: [{ role: 'user', content: prompt }] }),
       });
       const data = await res.json();
       const text = data.content?.[0]?.text || '';
       const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
       if (!parsed.phasen?.length) throw new Error('Keine Phasen erhalten');
-
       if (stunde.phasen.length > 0 && !confirm(`KI wählt: ${parsed.modell}\n„${parsed.begruendung}"\n\nVorhandene Phasen ersetzen?`)) {
-        kiVorlageBtn.textContent = '✨ KI'; kiVorlageBtn.disabled = false; return;
+        kiVorlageBtn.textContent = '✨ KI entscheidet'; kiVorlageBtn.disabled = false; return;
       }
+      stunde.phasenModell = parsed.modell;
+      stunde.phasenModellBegruendung = parsed.begruendung || '';
       stunde.phasen = parsed.phasen.map(p => ({
         id: uid(), titel: p.titel || '', inhalt: p.inhalt || '',
         methode: p.methode || '', sozialform: p.sozialform || '',
@@ -261,11 +283,10 @@ Antworte NUR als JSON-Objekt:
       scheduleSave(); render();
     } catch(e) {
       alert('Fehler: ' + e.message);
-      kiVorlageBtn.textContent = '✨ KI'; kiVorlageBtn.disabled = false;
+      kiVorlageBtn.textContent = '✨ KI entscheidet'; kiVorlageBtn.disabled = false;
     }
   };
-  vorlagenWrap.appendChild(kiVorlageBtn);
-  phdr.appendChild(vorlagenWrap);
+  phdr.appendChild(kiVorlageBtn);
 
   const apb = btn('+ Phase', 'btn btn-pri btn-xs');
   apb.onclick = () => {

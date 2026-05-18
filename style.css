@@ -608,3 +608,16 @@ textarea::placeholder { color: #c4cdd6; }
 .lz-indikator { min-height: 40px; resize: vertical; font-size: 12px; color: var(--tx2); font-style: italic; }
 .lz-del { align-self: flex-start; margin-top: 6px; opacity: 0; transition: opacity .15s; }
 .lz-row:hover .lz-del { opacity: 1; }
+
+/* ── Phasierungsmodell-Kacheln ── */
+.modell-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 16px 4px; }
+.modell-kachel { border: 2px solid var(--bord); border-radius: 8px; padding: 10px 12px; cursor: pointer; transition: border-color .15s, background .15s; background: var(--surf2); }
+.modell-kachel:hover { border-color: var(--pri2); background: #f0f5ff; }
+.modell-kachel.active { border-color: var(--pri); background: #e8f0fb; }
+.modell-icon { font-size: 18px; margin-bottom: 4px; }
+.modell-name { font-size: 12px; font-weight: 700; color: var(--tx); margin-bottom: 3px; }
+.modell-phasen { font-size: 10px; color: var(--tx2); margin-bottom: 3px; line-height: 1.4; }
+.modell-hinweis { font-size: 10px; color: var(--tx3); font-style: italic; }
+.modell-kachel.active .modell-name { color: var(--pri); }
+.modell-ki-begr { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 6px; font-size: 12px; color: var(--tx2); padding: 6px 2px 2px; }
+.modell-ki-begr-icon { flex-shrink: 0; }

@@ -425,6 +425,13 @@ textarea::placeholder { color: #c4cdd6; }
   border-radius: 10px; padding: 14px 16px; margin-bottom: 12px;
 }
 .mat-import-hint { font-size: 12px; color: var(--tx2); margin-bottom: 8px; }
+.mat-scan-panel { background: var(--surf2); border: 1px solid var(--bord); border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+.mat-scan-drop { border: 2px dashed var(--bord); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; font-size: 13px; color: var(--tx3); margin-bottom: 10px; transition: background .15s; }
+.mat-scan-drop:hover, .mat-scan-drop.drag-over { background: #eff6ff; border-color: var(--pri); color: var(--pri); }
+.mat-scan-preview { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.mat-scan-thumb { position: relative; }
+.mat-scan-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid var(--bord); display: block; }
+.mat-scan-rm { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: #dc2626; color: #fff; border: none; cursor: pointer; font-size: 10px; line-height: 18px; text-align: center; padding: 0; }
 .mat-import-ta {
   width: 100%; min-height: 120px; font-family: monospace;
   font-size: 12px; border: 1px solid var(--bord); border-radius: 6px;

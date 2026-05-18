@@ -53,7 +53,136 @@ function viewMaterialien() {
     div.insertBefore(panel, div.children[1]);
   };
 
-  hdrBtns.appendChild(schemaBtn); hdrBtns.appendChild(importBtn);
+  const scanBtn = btn('📸 Aus Bild', 'btn btn-pri btn-sm');
+  scanBtn.onclick = () => {
+    const existing = div.querySelector('.mat-scan-panel');
+    if (existing) { existing.remove(); return; }
+
+    const oaiKey = localStorage.getItem('oai_key');
+    if (!oaiKey) { alert('Bitte zuerst den OpenAI API-Key in den Einstellungen hinterlegen.'); return; }
+
+    const panel = mk('div', 'mat-scan-panel');
+
+    const hint = tx('div', 'mat-import-hint', 'Bilder der Materialien auswählen (PNG, JPG) – GPT-4o füllt das Schema automatisch aus und importiert direkt.');
+    panel.appendChild(hint);
+
+    // Dropzone
+    const dropzone = mk('div', 'mat-scan-drop');
+    dropzone.textContent = '📂 Bilder hierher ziehen oder klicken';
+    const fileInp = document.createElement('input');
+    fileInp.type = 'file'; fileInp.accept = 'image/*'; fileInp.multiple = true;
+    fileInp.style.display = 'none';
+    dropzone.onclick = () => fileInp.click();
+    dropzone.ondragover = e => { e.preventDefault(); dropzone.classList.add('drag-over'); };
+    dropzone.ondragleave = () => dropzone.classList.remove('drag-over');
+    dropzone.ondrop = e => { e.preventDefault(); dropzone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); };
+    panel.appendChild(dropzone);
+    panel.appendChild(fileInp);
+
+    const preview = mk('div', 'mat-scan-preview');
+    panel.appendChild(preview);
+
+    const statusRow = mk('div', ''); statusRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:8px;';
+    const analyzeBtn = btn('✨ Analysieren & Importieren', 'btn btn-pri btn-sm');
+    analyzeBtn.disabled = true;
+    const statusMsg = tx('span', 'mat-import-err', '');
+    statusRow.appendChild(analyzeBtn); statusRow.appendChild(btn('Abbrechen', 'btn btn-ghost btn-sm')).onclick = () => panel.remove();
+    statusRow.appendChild(statusMsg);
+    panel.appendChild(statusRow);
+
+    let selectedFiles = [];
+
+    function handleFiles(files) {
+      selectedFiles = [...selectedFiles, ...Array.from(files)];
+      renderPreview();
+    }
+
+    function renderPreview() {
+      preview.innerHTML = '';
+      selectedFiles.forEach((f, i) => {
+        const wrap = mk('div', 'mat-scan-thumb');
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(f);
+        img.className = 'mat-scan-img';
+        const rm = mk('button', 'mat-scan-rm'); rm.textContent = '✕';
+        rm.onclick = () => { selectedFiles.splice(i, 1); renderPreview(); };
+        wrap.appendChild(img); wrap.appendChild(rm);
+        preview.appendChild(wrap);
+      });
+      analyzeBtn.disabled = selectedFiles.length === 0;
+    }
+
+    fileInp.onchange = () => handleFiles(fileInp.files);
+
+    analyzeBtn.onclick = async () => {
+      if (!selectedFiles.length) return;
+      analyzeBtn.disabled = true; statusMsg.style.color = 'var(--tx3)'; statusMsg.textContent = '⏳ Analysiere ' + selectedFiles.length + ' Bild(er)…';
+
+      try {
+        const schema = await sbDownload('schema.json');
+        const schemaStr = JSON.stringify(schema, null, 2);
+
+        // Bilder als base64
+        const imageContents = await Promise.all(selectedFiles.map(f => new Promise((res, rej) => {
+          const reader = new FileReader();
+          reader.onload = e => res({ type: 'image_url', image_url: { url: e.target.result, detail: 'high' } });
+          reader.onerror = rej;
+          reader.readAsDataURL(f);
+        })));
+
+        const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Analysiere die folgenden Bilder von Unterrichtsmaterialien und erstelle für jedes eigenständige Material einen vollständigen Datenbankeintrag.
+
+SCHEMA (halte dich exakt daran):
+${schemaStr}
+
+REGELN:
+- Gib ein JSON-Array aus, direkt importierbar, kein Text davor/danach
+- Jeder Eintrag braucht eine eindeutige id (Format: mat_[timestamp]_[nr], z.B. mat_${Date.now()}_1)
+- Titelkonvention: wenn Materialien zu einer Einheit gehören → "Einheitstitel – M1", "Einheitstitel – M2" usw.; andernfalls beschreibender Titel
+- rolleImKontext: kurze inhaltliche Beschreibung was das Material zeigt/verlangt
+- Fach, Jahrgang, Themen, Methoden, Sozialformen aus dem Bildinhalt ableiten
+- loesung: wenn Lösungen/Erwartungshorizonte sichtbar sind, hier eintragen; sonst leer
+- erlaeuterung: wenn Lehrerhinweise sichtbar sind, hier eintragen; sonst leer
+- Erstelle KEINEN Unterrichtseinheit-Eintrag, nur die Einzelmaterialien`;
+
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + oaiKey, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'gpt-4o',
+            max_tokens: 4000,
+            messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }]
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || 'OpenAI-Fehler');
+        const text = data.choices?.[0]?.message?.content || '';
+        const match = text.match(/\[[\s\S]*\]/);
+        if (!match) throw new Error('Kein JSON-Array in der Antwort gefunden.');
+        const entries = JSON.parse(match[0]);
+        if (!entries.length) throw new Error('Keine Einträge generiert.');
+
+        entries.forEach(e => {
+          if (!e.id) e.id = 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
+          const idx = MATDB.findIndex(m => m.id === e.id);
+          if (idx >= 0) MATDB[idx] = e; else MATDB.unshift(e);
+        });
+        saveMatDB();
+        panel.remove();
+        statusMsg.textContent = '';
+        S.view = 'materialien'; render();
+
+      } catch(e) {
+        statusMsg.style.color = '#dc2626'; statusMsg.textContent = 'Fehler: ' + e.message;
+        analyzeBtn.disabled = false;
+      }
+    };
+
+    div.insertBefore(panel, div.children[1]);
+  };
+
+  hdrBtns.appendChild(schemaBtn); hdrBtns.appendChild(scanBtn); hdrBtns.appendChild(importBtn);
   hdr.appendChild(hdrBtns);
   div.appendChild(hdr);
 

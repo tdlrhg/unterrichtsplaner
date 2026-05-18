@@ -181,7 +181,16 @@ function viewFachplanung() {
                    : null;
   if (notizObj && notizLabel) {
     const nc = mk('div', 'card');
-    nc.appendChild(cardHdr(notizLabel));
+    const nhdr = cardHdr(notizLabel);
+
+    // KI-Planung nur auf Reihen-Ebene
+    if (selReihe && !selEinheit) {
+      const kiBtn = btn('✨ KI-Planung', 'btn btn-ghost btn-xs');
+      kiBtn.onclick = () => kiPlanungReihe(lp, selBlock, selReihe, nta, kiResultDiv);
+      nhdr.appendChild(kiBtn);
+    }
+    nc.appendChild(nhdr);
+
     const nb = mk('div', 'card-body');
     const nta = document.createElement('textarea');
     nta.className = 'finp fp-notizen';
@@ -190,6 +199,9 @@ function viewFachplanung() {
     nta.onblur = () => { notizObj.notizen = nta.value; scheduleSave(); };
     nb.appendChild(nta);
     nc.appendChild(nb);
+
+    const kiResultDiv = mk('div', '');
+    nc.appendChild(kiResultDiv);
     div.appendChild(nc);
   }
 
@@ -406,4 +418,142 @@ function exportFachplanung(fpId) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// ── KI-Reihenplanung ──────────────────────────────────────────────
+async function kiPlanungReihe(lp, block, reihe, nta, resultDiv) {
+  const antKey = localStorage.getItem('ant_key');
+  if (!antKey) { alert('Bitte zuerst Anthropic API-Key in den Einstellungen hinterlegen.'); return; }
+
+  const notizen = nta.value.trim();
+  if (!notizen) { alert('Bitte zuerst Stichworte und Ideen in das Notizfeld schreiben.'); return; }
+
+  // Speichern falls noch nicht
+  reihe.notizen = notizen; scheduleSave();
+
+  // Status anzeigen
+  resultDiv.innerHTML = '';
+  const statusEl = tx('div', 'ki-plan-status', '✨ Plane Reihe…');
+  resultDiv.appendChild(statusEl);
+
+  // Passende KLP-Einträge
+  const fachNameMap = { 'M': 'Mathematik', 'Ch': 'Chemie', 'Bio': 'Biologie', 'Ch_GK': 'Chemie', 'Ch_LK': 'Chemie', 'Bio_GK': 'Biologie', 'Bio_LK': 'Biologie' };
+  const fachName = fachNameMap[lp.fach] || lp.fach;
+  const isSII = ['EF', 'Q1', 'Q2'].includes(lp.jahrgang);
+  const isGK = lp.fach.includes('GK');
+  const isLK = lp.fach.includes('LK');
+  const klpHits = KLPDB.filter(e => {
+    if (e.fach !== fachName) return false;
+    const entryIsSII = e.stufe === 'SII' || (e.id && e.id.toUpperCase().includes('SII'));
+    if (isSII !== entryIsSII) return false;
+    if (isSII && isGK && e.id.toUpperCase().includes('LK')) return false;
+    if (isSII && isLK && e.id.toUpperCase().includes('GK')) return false;
+    return true;
+  });
+  const klpText = klpHits.map(e =>
+    `[${e.id}] ${e.kompetenzcodes.join(', ')} | ${e.inhaltsfeld}: ${e.beschreibung}`
+  ).join('\n');
+
+  const prompt = `Du bist Didaktik-Expertin für NRW-Gymnasien und hilfst einer Chemie-Lehrerin dabei, eine Unterrichtsreihe zu strukturieren.
+
+KONTEXT:
+- Fach: ${fachName} (${lp.fach.includes('GK') ? 'Grundkurs' : lp.fach.includes('LK') ? 'Leistungskurs' : 'Kurs'})
+- Jahrgang: ${lp.jahrgang}
+- Block: ${block.titel}
+- Reihe: ${reihe.titel}
+
+NOTIZEN DER LEHRERIN (Stichworte, Ideen, Reihenfolge, offene Fragen):
+${notizen}
+
+VERFÜGBARE KLP-KOMPETENZEN (${fachName}, ${isSII ? 'SII' : 'SI'}):
+${klpText || '(keine geladen)'}
+
+AUFGABE:
+Schlage eine sinnvolle Gliederung der Reihe in Unterrichtseinheiten vor.
+- Berücksichtige alle genannten Stichworte und ihre Reihenfolge
+- Platziere besondere Elemente (Referat, Experiment, Klassenarbeit…) an didaktisch sinnvoller Stelle
+- Ordne jeder Einheit passende KLP-Kompetenzen zu (nur IDs aus der Liste oben)
+- Gib eine realistische Stundenanzahl pro Einheit an (45 Min.)
+- Begründe kurz die Gesamtstruktur
+
+Antworte mit einem JSON-Objekt:
+{
+  "begruendung": "1-2 Sätze zur Gesamtstruktur",
+  "einheiten": [
+    {
+      "titel": "Einheitstitel",
+      "beschreibung": "Was wird gemacht, wie, warum hier",
+      "stunden": 2,
+      "klpIds": ["ID1", "ID2"]
+    }
+  ]
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': antKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+    const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    if (!parsed.einheiten?.length) throw new Error('Keine Einheiten erhalten.');
+
+    // Ergebnis anzeigen
+    resultDiv.innerHTML = '';
+    const rb = mk('div', 'ki-plan-result');
+
+    if (parsed.begruendung) {
+      const begr = tx('div', 'ki-plan-begr', '💡 ' + parsed.begruendung);
+      rb.appendChild(begr);
+    }
+
+    parsed.einheiten.forEach((e, i) => {
+      const row = mk('div', 'ki-plan-row');
+      const nr = tx('span', 'ki-plan-nr', (i + 1) + '.');
+      const info = mk('div', 'ki-plan-info');
+      info.appendChild(tx('div', 'ki-plan-titel', e.titel));
+      if (e.beschreibung) info.appendChild(tx('div', 'ki-plan-desc', e.beschreibung));
+      const meta = [];
+      if (e.stunden) meta.push(e.stunden + ' Std.');
+      if (e.klpIds?.length) meta.push(e.klpIds.join(', '));
+      if (meta.length) info.appendChild(tx('div', 'ki-plan-meta', meta.join(' · ')));
+      row.appendChild(nr);
+      row.appendChild(info);
+      rb.appendChild(row);
+    });
+
+    const actRow = mk('div', 'ki-plan-actions');
+    const applyBtn = btn('✓ Alle als Einheiten anlegen', 'btn btn-pri btn-sm');
+    applyBtn.onclick = () => {
+      if (reihe.einheiten?.length && !confirm('Vorhandene Einheiten bleiben erhalten – neue werden hinzugefügt. Fortfahren?')) return;
+      if (!reihe.einheiten) reihe.einheiten = [];
+      parsed.einheiten.forEach(e => {
+        reihe.einheiten.push({ id: uid(), titel: e.titel, notizen: e.beschreibung || '', stunden: [] });
+      });
+      scheduleSave(); render();
+    };
+    const discardBtn = btn('Verwerfen', 'btn btn-ghost btn-sm');
+    discardBtn.onclick = () => { resultDiv.innerHTML = ''; };
+    actRow.appendChild(applyBtn); actRow.appendChild(discardBtn);
+    rb.appendChild(actRow);
+    resultDiv.appendChild(rb);
+
+  } catch(e) {
+    resultDiv.innerHTML = '';
+    const err = tx('div', 'ki-plan-status', '⚠ Fehler: ' + e.message);
+    err.style.color = '#dc2626';
+    resultDiv.appendChild(err);
+  }
 }

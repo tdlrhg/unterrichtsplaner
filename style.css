@@ -495,6 +495,7 @@ textarea::placeholder { color: #c4cdd6; }
 .mat-einheit-badge.opt { background: #fef9c3; color: #854d0e; }
 .mat-einheit-badge.lh  { background: #ede9fe; color: #5b21b6; }
 .mat-loe-sec-hdr { padding: 8px 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--tx2); border-top: 2px solid var(--bord); margin-top: 6px; }
+.mat-detail-ts { font-size: 11px; color: var(--tx3); text-align: right; padding-top: 6px; margin-top: 4px; border-top: 1px solid var(--bord); }
 
 /* ── Material-Chips & Suche ──────────────────────────────────────── */
 .mat-cell { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }

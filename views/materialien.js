@@ -38,7 +38,9 @@ function viewMaterialien() {
       const entries = Array.isArray(parsed) ? parsed : [parsed];
       const invalid = entries.filter(e => !e.id || !e.titel);
       if (invalid.length) { errMsg.textContent = 'Jeder Eintrag braucht mindestens "id" und "titel".'; return; }
+      const now = new Date().toISOString();
       entries.forEach(e => {
+        if (!e.importiertAm) e.importiertAm = now;
         const existing = MATDB.findIndex(m => m.id === e.id);
         if (existing >= 0) MATDB[existing] = e; else MATDB.unshift(e);
       });
@@ -166,8 +168,10 @@ REGELN:
         const entries = JSON.parse(match[0]);
         if (!entries.length) throw new Error('Keine Einträge generiert.');
 
+        const now = new Date().toISOString();
         entries.forEach(e => {
           if (!e.id) e.id = 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
+          if (!e.importiertAm) e.importiertAm = now;
           const idx = MATDB.findIndex(m => m.id === e.id);
           if (idx >= 0) MATDB[idx] = e; else MATDB.unshift(e);
         });
@@ -716,6 +720,13 @@ function openMatDetail(mat, row) {
       });
       detail.appendChild(tbl);
     }
+  }
+
+  if (mat.importiertAm) {
+    const ts = new Date(mat.importiertAm);
+    const label = ts.toLocaleDateString('de-DE') + ', ' + ts.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const tsRow = tx('div', 'mat-detail-ts', 'Importiert am ' + label);
+    detail.appendChild(tsRow);
   }
 
   row.appendChild(detail);

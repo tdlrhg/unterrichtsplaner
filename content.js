@@ -7,6 +7,7 @@ function buildContent() {
   if (S.view === 'methoden') { c.appendChild(viewMethoden()); return c; }
   if (S.view === 'didaktik') { c.appendChild(viewDidaktik()); return c; }
   if (S.view === 'kursDetail' && S.aktKursDetailId) { c.appendChild(viewKursDetail(S.aktKursDetailId)); return c; }
+  if (S.view === 'kursEinstellungen' && S.aktKursDetailId) { c.appendChild(viewKursEinstellungen(S.aktKursDetailId)); return c; }
   if (!S.aktFpId) { c.appendChild(viewFachplanung()); return c; }
   if (S.view === 'freieStunden' && !S.sel) { c.appendChild(viewFreieStunden(S.aktFpId)); return c; }
   const type = S.sel ? S.sel.type : 'fachplanung';

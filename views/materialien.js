@@ -65,84 +65,103 @@ function viewMaterialien() {
 
     const panel = mk('div', 'mat-scan-panel');
 
-    const hint = tx('div', 'mat-import-hint', 'Bilder der Materialien auswählen (PNG, JPG) – GPT-4o füllt das Schema automatisch aus und importiert direkt. Tipp: Titelseite des Buchs oder der Einheit mit hochladen, damit Verlag, Reihe und Kontext erkannt werden.');
-    panel.appendChild(hint);
+    function makeDropzone(label, hint) {
+      const wrap = mk('div', 'mat-scan-group');
+      wrap.appendChild(tx('div', 'mat-scan-group-label', label));
+      wrap.appendChild(tx('div', 'mat-scan-group-hint', hint));
+      const zone = mk('div', 'mat-scan-drop');
+      zone.textContent = '📂 Bilder hierher ziehen oder klicken';
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true; inp.style.display = 'none';
+      zone.onclick = () => inp.click();
+      zone.ondragover = e => { e.preventDefault(); zone.classList.add('drag-over'); };
+      zone.ondragleave = () => zone.classList.remove('drag-over');
+      const preview = mk('div', 'mat-scan-preview');
+      let files = [];
+      function addFiles(newFiles) {
+        files = [...files, ...Array.from(newFiles)];
+        renderPreview();
+        updateBtn();
+      }
+      function renderPreview() {
+        preview.innerHTML = '';
+        files.forEach((f, i) => {
+          const thumb = mk('div', 'mat-scan-thumb');
+          const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className = 'mat-scan-img';
+          const rm = mk('button', 'mat-scan-rm'); rm.textContent = '✕';
+          rm.onclick = () => { files.splice(i, 1); renderPreview(); updateBtn(); };
+          thumb.appendChild(img); thumb.appendChild(rm); preview.appendChild(thumb);
+        });
+        zone.textContent = files.length ? '' : '📂 Bilder hierher ziehen oder klicken';
+      }
+      zone.ondrop = e => { e.preventDefault(); zone.classList.remove('drag-over'); addFiles(e.dataTransfer.files); };
+      inp.onchange = () => addFiles(inp.files);
+      wrap.appendChild(zone); wrap.appendChild(inp); wrap.appendChild(preview);
+      return { wrap, getFiles: () => files };
+    }
 
-    // Dropzone
-    const dropzone = mk('div', 'mat-scan-drop');
-    dropzone.textContent = '📂 Bilder hierher ziehen oder klicken';
-    const fileInp = document.createElement('input');
-    fileInp.type = 'file'; fileInp.accept = 'image/*'; fileInp.multiple = true;
-    fileInp.style.display = 'none';
-    dropzone.onclick = () => fileInp.click();
-    dropzone.ondragover = e => { e.preventDefault(); dropzone.classList.add('drag-over'); };
-    dropzone.ondragleave = () => dropzone.classList.remove('drag-over');
-    dropzone.ondrop = e => { e.preventDefault(); dropzone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); };
-    panel.appendChild(dropzone);
-    panel.appendChild(fileInp);
+    const { wrap: w1, getFiles: getKontext } = makeDropzone(
+      '📋 Kontext',
+      'Titelseite, Lehrerhandreichung, Erläuterungen & Lösungsseiten – GPT-4o liest daraus Lösungen und Hinweise für die Schülermaterialien'
+    );
+    const { wrap: w2, getFiles: getSchuelermaterial } = makeDropzone(
+      '📚 Schülermaterialien',
+      'M1, M2, M3 … – die eigentlichen Arbeitsblätter und Versuchsanleitungen'
+    );
 
-    const preview = mk('div', 'mat-scan-preview');
-    panel.appendChild(preview);
+    const groupsWrap = mk('div', 'mat-scan-groups');
+    groupsWrap.appendChild(w1); groupsWrap.appendChild(w2);
+    panel.appendChild(groupsWrap);
 
-    const statusRow = mk('div', ''); statusRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:8px;';
+    const statusRow = mk('div', ''); statusRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:12px;';
     const analyzeBtn = btn('✨ Analysieren & Importieren', 'btn btn-pri btn-sm');
     analyzeBtn.disabled = true;
     const statusMsg = tx('span', 'mat-import-err', '');
-    statusRow.appendChild(analyzeBtn); statusRow.appendChild(btn('Abbrechen', 'btn btn-ghost btn-sm')).onclick = () => panel.remove();
-    statusRow.appendChild(statusMsg);
+    const cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelBtn.onclick = () => panel.remove();
+    statusRow.appendChild(analyzeBtn); statusRow.appendChild(cancelBtn); statusRow.appendChild(statusMsg);
     panel.appendChild(statusRow);
 
-    let selectedFiles = [];
-
-    function handleFiles(files) {
-      selectedFiles = [...selectedFiles, ...Array.from(files)];
-      renderPreview();
+    function updateBtn() {
+      analyzeBtn.disabled = getSchuelermaterial().length === 0;
     }
-
-    function renderPreview() {
-      preview.innerHTML = '';
-      selectedFiles.forEach((f, i) => {
-        const wrap = mk('div', 'mat-scan-thumb');
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(f);
-        img.className = 'mat-scan-img';
-        const rm = mk('button', 'mat-scan-rm'); rm.textContent = '✕';
-        rm.onclick = () => { selectedFiles.splice(i, 1); renderPreview(); };
-        wrap.appendChild(img); wrap.appendChild(rm);
-        preview.appendChild(wrap);
-      });
-      analyzeBtn.disabled = selectedFiles.length === 0;
-    }
-
-    fileInp.onchange = () => handleFiles(fileInp.files);
 
     analyzeBtn.onclick = async () => {
-      if (!selectedFiles.length) return;
+      const kontextFiles = getKontext();
+      const matFiles = getSchuelermaterial();
+      if (!matFiles.length) return;
+      const totalFiles = kontextFiles.length + matFiles.length;
       analyzeBtn.disabled = true; statusMsg.style.color = 'var(--tx3)';
       let elapsed = 0;
-      const timer = setInterval(() => { elapsed++; statusMsg.textContent = '⏳ Analysiere ' + selectedFiles.length + ' Bild(er)… ' + elapsed + ' Sek.'; }, 1000);
-      statusMsg.textContent = '⏳ Analysiere ' + selectedFiles.length + ' Bild(er)… 0 Sek.';
+      const timer = setInterval(() => { elapsed++; statusMsg.textContent = '⏳ Analysiere ' + totalFiles + ' Bild(er)… ' + elapsed + ' Sek.'; }, 1000);
+      statusMsg.textContent = '⏳ Analysiere ' + totalFiles + ' Bild(er)… 0 Sek.';
 
       try {
         const schema = await sbDownload('schema.json');
         const schemaStr = JSON.stringify(schema, null, 2);
 
-        // Bilder als base64
-        const imageContents = await Promise.all(selectedFiles.map(f => new Promise((res, rej) => {
+        // Bilder als base64 – erst Kontext, dann Schülermaterialien
+        const toImgContent = f => new Promise((res, rej) => {
           const reader = new FileReader();
           reader.onload = e => res({ type: 'image_url', image_url: { url: e.target.result, detail: 'high' } });
           reader.onerror = rej;
           reader.readAsDataURL(f);
-        })));
+        });
+        const kontextImgs = await Promise.all(kontextFiles.map(toImgContent));
+        const matImgs     = await Promise.all(matFiles.map(toImgContent));
 
-        const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Analysiere die folgenden Bilder von Unterrichtsmaterialien und erstelle für jedes eigenständige Material einen vollständigen Datenbankeintrag.
+        const now = Date.now();
+        const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Du erhältst zwei Gruppen von Bildern.
+
+GRUPPE 1 – KONTEXT (${kontextFiles.length} Bild${kontextFiles.length !== 1 ? 'er' : ''}): Titelseite, Lehrerhandreichung, Erläuterungen und Lösungsseiten. Lese daraus: Lösungen, Erwartungshorizonte, methodische Hinweise, Zeitplanung, didaktische Tipps. Verwende diese Informationen, um die Felder loesung, loesungHinweis und erlaeuterung in den Einträgen der Schülermaterialien zu füllen.
+
+GRUPPE 2 – SCHÜLERMATERIALIEN (${matFiles.length} Bild${matFiles.length !== 1 ? 'er' : ''}): M1, M2, M3 usw. – die eigentlichen Arbeitsblätter. Erstelle für jedes eigenständige Material einen vollständigen Datenbankeintrag.
 
 SCHEMA (halte dich exakt daran):
 ${schemaStr}
 
 REGELN – ALLGEMEIN:
 - Gib ein JSON-Array aus, direkt importierbar, kein Text davor/danach
-- Jeder Eintrag braucht eine eindeutige id (Format: mat_${Date.now()}_1, mat_${Date.now()}_2 usw.)
+- Jeder Eintrag braucht eine eindeutige id (Format: mat_${now}_1, mat_${now}_2 usw.)
 - Erstelle KEINEN Unterrichtseinheit-Eintrag (materialtyp "Unterrichtseinheit"), nur Einzelmaterialien und ggf. Lehrerhandreichungen
 
 REGELN – TITEL:
@@ -152,11 +171,16 @@ REGELN – TITEL:
 
 REGELN – JAHRGANG (sehr wichtig, lies genau):
 - Lies Jahrgangsstufe aus dem Material, der Titelseite oder dem Kopf der Seiten – niemals raten
-- "Sekundarstufe I" oder "SI" ohne weitere Angabe → ["5","6","7","8","9","10"] NICHT verwenden; stattdessen die konkret genannte Klasse suchen (z.B. "Klasse 9/10" → ["9","10"])
+- "Sekundarstufe I" oder "SI" ohne weitere Angabe → stattdessen die konkret genannte Klasse suchen (z.B. "Klasse 9/10" → ["9","10"])
 - "Sekundarstufe II" oder "SII" ohne weitere Spezifikation → ["EF","Q1","Q2"]
 - Konkrete SII-Angabe: "EF" → ["EF"], "Q1" → ["Q1"], "Q2" → ["Q2"], "Q1/Q2" → ["Q1","Q2"]
 - Konkrete SI-Angabe: "Klasse 9/10" → ["9","10"], "Jahrgang 8" → ["8"]
 - Im Zweifel lieber die ganze Stufe angeben als falsch raten
+
+REGELN – LÖSUNGEN (aus Gruppe 1 übernehmen):
+- loesung: Erwartungshorizont und Lösungstabellen VOLLSTÄNDIG übertragen – Tabelleninhalt Zeile für Zeile, nichts weglassen
+- loesungHinweis: Seitenangabe aus der Lehrerhandreichung, z.B. "LH S. 15–16"
+- erlaeuterung: Methodische Lehrerhinweise VOLLSTÄNDIG – Methodik, Zeitplanung, didaktische Empfehlungen, typische Schülerfehler
 
 REGELN – INHALTE (niemals kürzen oder zusammenfassen):
 - schueleraktivitaeten: alle konkreten Tätigkeiten aus dem Material aufführen, so spezifisch wie möglich
@@ -165,10 +189,17 @@ REGELN – INHALTE (niemals kürzen oder zusammenfassen):
 - voraussetzungenFachlich: alle fachlichen Voraussetzungen konkret benennen, nicht weglassen
 - voraussetzungenMethodisch: alle methodischen Voraussetzungen konkret benennen, nicht weglassen
 - themen: alle inhaltlichen Themen und Unterthemen des Materials aufführen
-- loesung: Erwartungshorizonte und Lösungstabellen VOLLSTÄNDIG übertragen – Tabelleninhalt Zeile für Zeile, nichts weglassen
-- erlaeuterung: Methodische Lehrerhinweise VOLLSTÄNDIG übertragen – Methodik, Zeitplanung, didaktische Empfehlungen, typische Schülerfehler
 - Fach, Methoden, Sozialformen sorgfältig aus dem Bildinhalt ableiten – nicht raten
 - Bei Lehrerhandreichungen: materialtyp "Lehrerhandreichung", materialnummer "LH"`;
+
+        // Kontext zuerst senden, dann Schülermaterialien
+        const contentParts = [{ type: 'text', text: prompt }];
+        if (kontextImgs.length) {
+          contentParts.push({ type: 'text', text: '=== GRUPPE 1: KONTEXT ===' });
+          contentParts.push(...kontextImgs);
+        }
+        contentParts.push({ type: 'text', text: '=== GRUPPE 2: SCHÜLERMATERIALIEN ===' });
+        contentParts.push(...matImgs);
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -176,7 +207,7 @@ REGELN – INHALTE (niemals kürzen oder zusammenfassen):
           body: JSON.stringify({
             model: 'gpt-4o',
             max_tokens: 16000,
-            messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }]
+            messages: [{ role: 'user', content: contentParts }]
           })
         });
 

@@ -1,3 +1,23 @@
+// ── Nav-State persistieren ────────────────────────────────────────
+const NAV_KEY = 'up_nav';
+function saveNav() {
+  try {
+    localStorage.setItem(NAV_KEY, JSON.stringify({
+      view: S.view, aktFpId: S.aktFpId, sel: S.sel, open: S.open
+    }));
+  } catch(e) {}
+}
+function restoreNav() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(NAV_KEY) || 'null');
+    if (!saved) return;
+    if (saved.view)    S.view    = saved.view;
+    if (saved.aktFpId) S.aktFpId = saved.aktFpId;
+    if (saved.sel)     S.sel     = saved.sel;
+    if (saved.open)    S.open    = saved.open;
+  } catch(e) {}
+}
+
 // ── Render ───────────────────────────────────────────────────────
 function render() {
   const prevContent = document.querySelector('.content');
@@ -18,6 +38,7 @@ function render() {
 
   const newContent = document.querySelector('.content');
   if (newContent && scrollTop) newContent.scrollTop = scrollTop;
+  saveNav();
 }
 
 function refreshTopbar() {
@@ -80,9 +101,12 @@ function buildSetup() {
     S.data = { fachplanungen: [], kurse: [] };
   }
   S.loaded = true;
-  if (S.data.fachplanungen.length > 0) {
+  restoreNav();
+  // Fallback falls gespeicherte IDs nicht mehr existieren
+  if (!getFachplanung(S.aktFpId) && S.data.fachplanungen.length > 0) {
     S.aktFpId = S.data.fachplanungen[0].id;
     S.view = 'fachplanung';
+    S.sel = null;
   }
   render();
 })();

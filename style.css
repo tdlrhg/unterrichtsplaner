@@ -623,7 +623,7 @@ textarea::placeholder { color: #c4cdd6; }
 .modell-ki-begr-icon { flex-shrink: 0; }
 
 /* ── Stunden 2-Spalten-Grid ── */
-.stunden-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px; align-items: start; }
+.stunden-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px; align-items: stretch; }
 .stunden-grid .card { margin: 0; }
 .stunden-grid .card.card-half { grid-column: span 1; }
 .stunden-grid .card:not(.card-half) { grid-column: 1 / -1; }

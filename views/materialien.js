@@ -510,6 +510,16 @@ function openMatDetail(mat, row) {
   editRow('Differenzierung',        () => arrGet('differenzierungsformen'),      arrSet('differenzierungsformen'));
   editRow('Anmerkungen',            () => mat.persoenlicheAnmerkungen || '',   v => { mat.persoenlicheAnmerkungen = v; }, true);
 
+  // ── Lösung & Erläuterung ──────────────────────────────────────
+  if (mat.materialtyp !== 'Unterrichtseinheit') {
+    const loeSecHdr = mk('div', 'mat-loe-sec-hdr');
+    loeSecHdr.textContent = 'Lösung & Erläuterung';
+    detail.appendChild(loeSecHdr);
+    editRow('Lösung (Text)',     () => mat.loesung || '',        v => { mat.loesung = v; },        true);
+    editRow('Lösung (Verweis)', () => mat.loesungHinweis || '', v => { mat.loesungHinweis = v; }, false);
+    editRow('Erläuterung',      () => mat.erlaeuterung || '',   v => { mat.erlaeuterung = v; },   true);
+  }
+
   // ── Enthaltene Materialien (nur bei Unterrichtseinheit) ───────
   if (mat.materialtyp === 'Unterrichtseinheit') {
     const members = MATDB

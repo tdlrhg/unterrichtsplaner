@@ -155,6 +155,24 @@ textarea::placeholder { color: #c4cdd6; }
 .klp-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
 .klp-item:hover { background: var(--surf2); } .klp-item.sel { background: #dbeafe; }
 .klp-item input[type=checkbox] { width: auto; }
+/* ── KLP-Referenz in Fachplanung ─────────────────────────────────── */
+.klp-ref-card { margin-top: 16px; }
+.klp-ref-hdr-inner { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--tx2); }
+.klp-ref-arrow { font-size: 11px; color: var(--tx3); width: 12px; }
+.klp-ref-empty-hint { font-size: 11px; color: var(--tx3); font-weight: 400; }
+.klp-ref-search-wrap { padding: 8px 16px 0; }
+.klp-ref-search { max-width: 360px; font-size: 12px; padding: 5px 8px; }
+.klp-ref-body { padding: 8px 0 4px; }
+.klp-ref-group-hdr { display: flex; align-items: center; gap: 8px; padding: 6px 16px; cursor: pointer; user-select: none; }
+.klp-ref-group-hdr:hover { background: var(--surf2); }
+.klp-ref-group-label { font-size: 12px; font-weight: 700; color: var(--tx); flex: 1; }
+.klp-ref-group-count { font-size: 11px; background: var(--surf2); border: 1px solid var(--bord); border-radius: 10px; padding: 0 6px; color: var(--tx3); }
+.klp-ref-entry { display: flex; gap: 10px; padding: 5px 16px 5px 32px; border-bottom: 1px solid var(--bord); font-size: 12px; line-height: 1.5; }
+.klp-ref-entry:last-child { border-bottom: none; }
+.klp-ref-codes { font-weight: 700; color: var(--pri); white-space: nowrap; flex-shrink: 0; min-width: 70px; }
+.klp-ref-desc { color: var(--tx); }
+.klp-ref-empty { padding: 12px 16px; color: var(--tx3); font-size: 12px; font-style: italic; }
+
 /* KLP-Selector in Materialdetail */
 .klp-selector { width: 100%; }
 .klp-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }

@@ -416,6 +416,8 @@ textarea::placeholder { color: #c4cdd6; }
 }
 .mat-db-row:nth-child(even) { border-right: none; }
 .mat-db-row:hover { background: var(--surf2); }
+.mat-row-del { opacity: 0; transition: opacity .15s; flex-shrink: 0; }
+.mat-db-row:hover .mat-row-del { opacity: 1; }
 .mat-db-row.expanded { grid-column: 1 / -1; border-right: none; }
 
 .mat-db-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }

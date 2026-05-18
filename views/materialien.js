@@ -358,6 +358,17 @@ REGELN – INHALTE (niemals kürzen oder zusammenfassen):
       top.appendChild(meta);
       row.appendChild(top);
 
+      const rowDelBtn = btn('🗑', 'btn btn-danger btn-xs mat-row-del');
+      rowDelBtn.title = 'Eintrag löschen';
+      rowDelBtn.onclick = e => {
+        e.stopPropagation();
+        if (!confirm('„' + mat.titel + '" löschen?')) return;
+        MATDB = MATDB.filter(m => m.id !== mat.id);
+        saveMatDB();
+        row.remove();
+      };
+      top.appendChild(rowDelBtn);
+
       row.onclick = e => { if (!e.target.closest('.mat-detail')) openMatDetail(mat, row); };
       listBody.appendChild(row);
     });

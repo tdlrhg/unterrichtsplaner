@@ -80,6 +80,16 @@ function buildSidebar() {
         row.appendChild(del);
         row.onclick = () => { S.aktFpId = lp.id; S.view = 'fachplanung'; S.sel = null; render(); };
         sb.appendChild(row);
+
+        // Freie Stunden unter aktiver Fachplanung
+        if (S.aktFpId === lp.id && (S.view === 'fachplanung' || S.view === 'freieStunden' || S.sel?.type === 'freieStunde')) {
+          const freieCount = (lp.freieStunden || []).length;
+          const isFreieActive = S.view === 'freieStunden' || S.sel?.type === 'freieStunde';
+          const fsRow = mk('div', 'sb-item sb-item-indent sb-item-indent2' + (isFreieActive ? ' active' : ''));
+          fsRow.appendChild(tx('div', 'sb-item-label', '📝 Freie Stunden' + (freieCount ? ' (' + freieCount + ')' : '')));
+          fsRow.onclick = () => { S.aktFpId = lp.id; S.view = 'freieStunden'; S.sel = null; render(); };
+          sb.appendChild(fsRow);
+        }
       });
     }
   });

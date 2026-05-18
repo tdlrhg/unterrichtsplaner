@@ -1,42 +1,13 @@
 // ── Stunden-Ansicht ──────────────────────────────────────────────
-function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
-  const kurs = getFachplanung(fpId);
-  const block = findBlock(fpId, blockId);
-  const reihe = findReihe(fpId, blockId, reiheId);
-  const einheit = findEinheit(fpId, blockId, reiheId, einheitId);
-  const stunde = findStunde(fpId, blockId, reiheId, einheitId, stundeId);
-
+function initStunde(stunde) {
   if (!stunde.klpInhalt) stunde.klpInhalt = [];
   if (!stunde.klpProzess) stunde.klpProzess = [];
   if (!stunde.phasen) stunde.phasen = [];
   if (!stunde.material) stunde.material = [];
+}
 
-  const div = mk('div', '');
-
-  div.appendChild(breadcrumb([
-    { label: fachLabel(kurs.fach) + ' ' + kurs.jahrgang, action: () => { S.sel = null; render(); } },
-    { label: block.titel, action: () => { S.sel = { type: 'block', ids: [fpId, blockId] }; render(); } },
-    { label: reihe.titel, action: () => { S.sel = { type: 'reihe', ids: [fpId, blockId, reiheId] }; render(); } },
-    { label: einheit.titel, action: () => { S.sel = { type: 'einheit', ids: [fpId, blockId, reiheId, einheitId] }; render(); } },
-  ]));
-
-  const hdr = mk('div', 'c-hdr');
-  const left = mk('div', '');
-  left.appendChild(tx('div', 'c-title', stunde.titel || 'Stunde'));
-  left.appendChild(tx('div', 'c-sub', 'Unterrichtsstunde · ' + einheit.titel));
-  hdr.appendChild(left);
-  const db = btn('🗑 Löschen', 'btn btn-danger btn-sm');
-  db.onclick = () => {
-    if (confirm('Stunde löschen?')) {
-      einheit.stunden = einheit.stunden.filter(s => s.id !== stundeId);
-      S.sel = { type: 'einheit', ids: [fpId, blockId, reiheId, einheitId] };
-      scheduleSave(); render();
-    }
-  };
-  hdr.appendChild(db);
-  div.appendChild(hdr);
-
-  // ── Grunddaten ───────────────────────────────────────────────
+function renderStundenBody(div, stunde, fp) {
+  // ── Grunddaten ─────────────────────────────────────────────────
   const gc = mk('div', 'card');
   gc.appendChild(cardHdr('Grunddaten'));
   const gb = mk('div', 'card-body');
@@ -44,7 +15,6 @@ function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
   gb.appendChild(fieldInput('Langtitel', stunde.langtitel || '', v => { stunde.langtitel = v; scheduleSave(); }));
   gb.appendChild(fieldArea('Intention', stunde.intention || '', v => { stunde.intention = v; scheduleSave(); }, '', 'Worum geht es in dieser Stunde? Worauf soll sie hinauslaufen?'));
 
-  // Priorität
   const prioFg = mk('div', 'fg');
   prioFg.appendChild(tx('label', 'fl', 'Typ / Priorität'));
   const prioWrap = mk('div', 'prio-wrap');
@@ -77,7 +47,7 @@ function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
   gc.appendChild(gb);
   div.appendChild(gc);
 
-  // ── Phasen ───────────────────────────────────────────────────
+  // ── Phasen ─────────────────────────────────────────────────────
   const pc = mk('div', 'card');
   const phdr = cardHdr('Unterrichtsphasen');
 
@@ -115,7 +85,6 @@ function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
     scheduleSave(); render();
   }
 
-  // Vorlagen-Dropdown
   const vorlagenWrap = mk('div', 'phasen-vorlage-wrap');
   const vorlagenSel = document.createElement('select');
   vorlagenSel.className = 'finp phasen-vorlage-sel';
@@ -131,7 +100,6 @@ function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
   };
   vorlagenWrap.appendChild(vorlagenSel);
 
-  // KI-Vorlage-Button
   const kiVorlageBtn = btn('✨ KI', 'btn btn-ghost btn-xs');
   kiVorlageBtn.title = 'KI wählt passendes Modell anhand von Titel und Lernziel';
   kiVorlageBtn.onclick = async () => {
@@ -149,7 +117,7 @@ Stunde:
 - Titel: ${stunde.titel || '–'}
 - Lernziel: ${stunde.lernziel || '–'}
 - Intention: ${stunde.intention || '–'}
-- Fach: ${kurs.fach || '–'}
+- Fach: ${fp.fach || '–'}
 - Dauer: ${stunde.dauer || 45} Minuten
 
 Didaktisches Wissensmodell:
@@ -215,7 +183,7 @@ Antworte NUR als JSON-Objekt:
   pc.appendChild(pb);
   div.appendChild(pc);
 
-  // ── Tafelbild ────────────────────────────────────────────────
+  // ── Tafelbild ──────────────────────────────────────────────────
   const tc = mk('div', 'card');
   tc.appendChild(cardHdr('Tafelbild'));
   const tb = mk('div', 'card-body');
@@ -229,7 +197,7 @@ Antworte NUR als JSON-Objekt:
   tc.appendChild(tb);
   div.appendChild(tc);
 
-  // ── Material ─────────────────────────────────────────────────
+  // ── Material ───────────────────────────────────────────────────
   const mc = mk('div', 'card');
   const mhdr = cardHdr('Material & Links');
   const amb = btn('+ Material', 'btn btn-pri btn-xs');
@@ -241,7 +209,7 @@ Antworte NUR als JSON-Objekt:
   mc.appendChild(mbd);
   div.appendChild(mc);
 
-  // ── Lehrerkommentar ──────────────────────────────────────────
+  // ── Lehrerkommentar ────────────────────────────────────────────
   const lc = mk('div', 'card');
   lc.appendChild(cardHdr('Erläuterungen für die Lehrkraft'));
   const lb = mk('div', 'card-body');
@@ -249,6 +217,73 @@ Antworte NUR als JSON-Objekt:
     v => { stunde.lehrerkommentar = v; scheduleSave(); }, 'min-height:120px;'));
   lc.appendChild(lb);
   div.appendChild(lc);
+}
 
+function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
+  const fp = getFachplanung(fpId);
+  const block = findBlock(fpId, blockId);
+  const reihe = findReihe(fpId, blockId, reiheId);
+  const einheit = findEinheit(fpId, blockId, reiheId, einheitId);
+  const stunde = findStunde(fpId, blockId, reiheId, einheitId, stundeId);
+  initStunde(stunde);
+
+  const div = mk('div', '');
+  div.appendChild(breadcrumb([
+    { label: fachLabel(fp.fach) + ' ' + fp.jahrgang, action: () => { S.sel = null; render(); } },
+    { label: block.titel, action: () => { S.sel = { type: 'block', ids: [fpId, blockId] }; render(); } },
+    { label: reihe.titel, action: () => { S.sel = { type: 'reihe', ids: [fpId, blockId, reiheId] }; render(); } },
+    { label: einheit.titel, action: () => { S.sel = { type: 'einheit', ids: [fpId, blockId, reiheId, einheitId] }; render(); } },
+  ]));
+
+  const hdr = mk('div', 'c-hdr');
+  const left = mk('div', '');
+  left.appendChild(tx('div', 'c-title', stunde.titel || 'Stunde'));
+  left.appendChild(tx('div', 'c-sub', 'Unterrichtsstunde · ' + einheit.titel));
+  hdr.appendChild(left);
+  const db = btn('🗑 Löschen', 'btn btn-danger btn-sm');
+  db.onclick = () => {
+    if (confirm('Stunde löschen?')) {
+      einheit.stunden = einheit.stunden.filter(s => s.id !== stundeId);
+      S.sel = { type: 'einheit', ids: [fpId, blockId, reiheId, einheitId] };
+      scheduleSave(); render();
+    }
+  };
+  hdr.appendChild(db);
+  div.appendChild(hdr);
+
+  renderStundenBody(div, stunde, fp);
+  return div;
+}
+
+function viewFreieStunde(fpId, stundeId) {
+  const fp = getFachplanung(fpId);
+  if (!fp.freieStunden) fp.freieStunden = [];
+  const stunde = fp.freieStunden.find(s => s.id === stundeId);
+  if (!stunde) return tx('div', 'c-hdr', 'Stunde nicht gefunden.');
+  initStunde(stunde);
+
+  const div = mk('div', '');
+  div.appendChild(breadcrumb([
+    { label: fachLabel(fp.fach) + ' ' + fp.jahrgang, action: () => { S.aktFpId = fpId; S.view = 'fachplanung'; S.sel = null; render(); } },
+    { label: 'Freie Stunden', action: () => { S.aktFpId = fpId; S.view = 'freieStunden'; S.sel = null; render(); } },
+  ]));
+
+  const hdr = mk('div', 'c-hdr');
+  const left = mk('div', '');
+  left.appendChild(tx('div', 'c-title', stunde.titel || 'Neue Stunde'));
+  left.appendChild(tx('div', 'c-sub', 'Freie Stunde · ' + fachLabel(fp.fach) + ' ' + fp.jahrgang));
+  hdr.appendChild(left);
+  const db = btn('🗑 Löschen', 'btn btn-danger btn-sm');
+  db.onclick = () => {
+    if (confirm('Stunde löschen?')) {
+      fp.freieStunden = fp.freieStunden.filter(s => s.id !== stundeId);
+      S.view = 'freieStunden'; S.aktFpId = fpId; S.sel = null;
+      scheduleSave(); render();
+    }
+  };
+  hdr.appendChild(db);
+  div.appendChild(hdr);
+
+  renderStundenBody(div, stunde, fp);
   return div;
 }

@@ -403,6 +403,7 @@ textarea::placeholder { color: #c4cdd6; }
 .sb-fach-arrow { font-size: 11px; color: var(--tx3); }
 
 .sb-item-indent { padding-left: 42px; }
+.sb-item-indent2 { padding-left: 56px; font-size: 13px; }
 
 /* ── Materialdatenbank-View ──────────────────────────────────────── */
 .mat-list-grid {

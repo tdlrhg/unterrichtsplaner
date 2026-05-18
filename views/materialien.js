@@ -116,7 +116,10 @@ function viewMaterialien() {
 
     analyzeBtn.onclick = async () => {
       if (!selectedFiles.length) return;
-      analyzeBtn.disabled = true; statusMsg.style.color = 'var(--tx3)'; statusMsg.textContent = '⏳ Analysiere ' + selectedFiles.length + ' Bild(er)…';
+      analyzeBtn.disabled = true; statusMsg.style.color = 'var(--tx3)';
+      let elapsed = 0;
+      const timer = setInterval(() => { elapsed++; statusMsg.textContent = '⏳ Analysiere ' + selectedFiles.length + ' Bild(er)… ' + elapsed + ' Sek.'; }, 1000);
+      statusMsg.textContent = '⏳ Analysiere ' + selectedFiles.length + ' Bild(er)… 0 Sek.';
 
       try {
         const schema = await sbDownload('schema.json');
@@ -168,12 +171,13 @@ REGELN:
           const idx = MATDB.findIndex(m => m.id === e.id);
           if (idx >= 0) MATDB[idx] = e; else MATDB.unshift(e);
         });
+        clearInterval(timer);
         saveMatDB();
         panel.remove();
-        statusMsg.textContent = '';
         S.view = 'materialien'; render();
 
       } catch(e) {
+        clearInterval(timer);
         statusMsg.style.color = '#dc2626'; statusMsg.textContent = 'Fehler: ' + e.message;
         analyzeBtn.disabled = false;
       }

@@ -63,7 +63,7 @@ function viewMaterialien() {
 
     const panel = mk('div', 'mat-scan-panel');
 
-    const hint = tx('div', 'mat-import-hint', 'Bilder der Materialien auswählen (PNG, JPG) – GPT-4o füllt das Schema automatisch aus und importiert direkt.');
+    const hint = tx('div', 'mat-import-hint', 'Bilder der Materialien auswählen (PNG, JPG) – GPT-4o füllt das Schema automatisch aus und importiert direkt. Tipp: Titelseite des Buchs oder der Einheit mit hochladen, damit Verlag, Reihe und Kontext erkannt werden.');
     panel.appendChild(hint);
 
     // Dropzone

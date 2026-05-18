@@ -8,6 +8,9 @@ function initStunde(stunde) {
 }
 
 function renderStundenBody(div, stunde, fp) {
+  const grid = mk('div', 'stunden-grid');
+  div.appendChild(grid);
+
   // ── Grunddaten ─────────────────────────────────────────────────
   const gc = mk('div', 'card');
   gc.appendChild(cardHdr('Grunddaten'));
@@ -46,7 +49,8 @@ function renderStundenBody(div, stunde, fp) {
   dfg.appendChild(di);
   gb.appendChild(dfg);
   gc.appendChild(gb);
-  div.appendChild(gc);
+  gc.classList.add('card-half');
+  grid.appendChild(gc);
 
   // ── Lernziele ──────────────────────────────────────────────────
   const lzCard = mk('div', 'card');
@@ -141,7 +145,8 @@ Antworte NUR als JSON-Array von Strings:
     });
   }
   lzCard.appendChild(lzBody);
-  div.appendChild(lzCard);
+  lzCard.classList.add('card-half');
+  grid.appendChild(lzCard);
 
   // ── Phasen ─────────────────────────────────────────────────────
   const pc = mk('div', 'card');
@@ -300,10 +305,10 @@ Antworte NUR als JSON-Objekt. WICHTIG: Keine Zeilenumbrüche innerhalb von Strin
   const pb = mk('div', 'card-body');
   pb.appendChild(phasenTable(stunde));
   pc.appendChild(pb);
-  div.appendChild(pc);
+  grid.appendChild(pc);
 
   // ── Tafelbild ──────────────────────────────────────────────────
-  const tc = mk('div', 'card');
+  const tc = mk('div', 'card card-half');
   tc.appendChild(cardHdr('Tafelbild'));
   const tb = mk('div', 'card-body');
   const tafel = mk('div', 'tafel');
@@ -314,10 +319,10 @@ Antworte NUR als JSON-Objekt. WICHTIG: Keine Zeilenumbrüche innerhalb von Strin
   tafel.appendChild(ta);
   tb.appendChild(tafel);
   tc.appendChild(tb);
-  div.appendChild(tc);
+  grid.appendChild(tc);
 
   // ── Material ───────────────────────────────────────────────────
-  const mc = mk('div', 'card');
+  const mc = mk('div', 'card card-half');
   const mhdr = cardHdr('Material & Links');
   const amb = btn('+ Material', 'btn btn-pri btn-xs');
   amb.onclick = () => { S.modal = { type: 'addMat', data: { stunde } }; render(); };
@@ -326,7 +331,7 @@ Antworte NUR als JSON-Objekt. WICHTIG: Keine Zeilenumbrüche innerhalb von Strin
   const mbd = mk('div', 'card-body');
   mbd.appendChild(materialList(stunde));
   mc.appendChild(mbd);
-  div.appendChild(mc);
+  grid.appendChild(mc);
 
   // ── Lehrerkommentar ────────────────────────────────────────────
   const lc = mk('div', 'card');
@@ -335,7 +340,7 @@ Antworte NUR als JSON-Objekt. WICHTIG: Keine Zeilenumbrüche innerhalb von Strin
   lb.appendChild(fieldArea('', stunde.lehrerkommentar || '',
     v => { stunde.lehrerkommentar = v; scheduleSave(); }, 'min-height:120px;'));
   lc.appendChild(lb);
-  div.appendChild(lc);
+  grid.appendChild(lc);
 }
 
 function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {

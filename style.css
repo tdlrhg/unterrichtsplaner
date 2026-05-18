@@ -621,3 +621,9 @@ textarea::placeholder { color: #c4cdd6; }
 .modell-kachel.active .modell-name { color: var(--pri); }
 .modell-ki-begr { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 6px; font-size: 12px; color: var(--tx2); padding: 6px 2px 2px; }
 .modell-ki-begr-icon { flex-shrink: 0; }
+
+/* ── Stunden 2-Spalten-Grid ── */
+.stunden-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px; align-items: start; }
+.stunden-grid .card { margin: 0; }
+.stunden-grid .card.card-half { grid-column: span 1; }
+.stunden-grid .card:not(.card-half) { grid-column: 1 / -1; }

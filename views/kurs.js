@@ -174,21 +174,25 @@ function viewFachplanung() {
   div.appendChild(cols);
 
   // ── Notizen zur ausgewählten Ebene ────────────────────────────
+  const KI_EBENEN = {
+    block:   { label: 'Reihen',   childKey: 'reihen',   childLabel: 'Reihe' },
+    reihe:   { label: 'Einheiten',childKey: 'einheiten',childLabel: 'Einheit' },
+    einheit: { label: 'Stunden',  childKey: 'stunden',  childLabel: 'Stunde' },
+  };
   const notizObj = selEinheit || selReihe || selBlock;
-  const notizLabel = selEinheit ? 'Notizen · ' + selEinheit.titel
-                   : selReihe  ? 'Notizen · ' + selReihe.titel
-                   : selBlock  ? 'Notizen · ' + selBlock.titel
-                   : null;
-  if (notizObj && notizLabel) {
+  const notizTyp = selEinheit ? 'einheit' : selReihe ? 'reihe' : selBlock ? 'block' : null;
+  const notizLabel = notizObj ? 'Notizen · ' + notizObj.titel : null;
+
+  if (notizObj && notizTyp) {
     const nc = mk('div', 'card');
     const nhdr = cardHdr(notizLabel);
 
-    // KI-Planung auf Reihen-Ebene
-    if (sel.type === 'reihe' && selReihe) {
-      const kiBtn = btn('✨ KI-Planung', 'btn btn-ghost btn-xs');
-      kiBtn.onclick = () => kiPlanungReihe(lp, selBlock, selReihe, nta, kiResultDiv);
-      nhdr.appendChild(kiBtn);
-    }
+    const ebene = KI_EBENEN[notizTyp];
+    const kiBtn = btn('✨ KI → ' + ebene.label + ' vorschlagen', 'btn btn-ghost btn-xs');
+    kiBtn.onclick = () => kiPlanung(lp, notizObj, notizTyp, nta, kiResultDiv, {
+      selBlock, selReihe, selEinheit
+    });
+    nhdr.appendChild(kiBtn);
     nc.appendChild(nhdr);
 
     const nb = mk('div', 'card-body');
@@ -420,69 +424,102 @@ function exportFachplanung(fpId) {
   URL.revokeObjectURL(url);
 }
 
-// ── KI-Reihenplanung ──────────────────────────────────────────────
-async function kiPlanungReihe(lp, block, reihe, nta, resultDiv) {
+// ── KI-Planung (generisch für Block → Reihen, Reihe → Einheiten, Einheit → Stunden) ──
+async function kiPlanung(lp, obj, typ, nta, resultDiv, { selBlock, selReihe, selEinheit }) {
   const antKey = localStorage.getItem('ant_key');
   if (!antKey) { alert('Bitte zuerst Anthropic API-Key in den Einstellungen hinterlegen.'); return; }
 
   const notizen = nta.value.trim();
   if (!notizen) { alert('Bitte zuerst Stichworte und Ideen in das Notizfeld schreiben.'); return; }
+  obj.notizen = notizen; scheduleSave();
 
-  // Speichern falls noch nicht
-  reihe.notizen = notizen; scheduleSave();
-
-  // Status anzeigen
   resultDiv.innerHTML = '';
-  const statusEl = tx('div', 'ki-plan-status', '✨ Plane Reihe…');
+  const CHILD = { block: 'Reihen', reihe: 'Einheiten', einheit: 'Stunden' };
+  const statusEl = tx('div', 'ki-plan-status', '✨ Schlage ' + CHILD[typ] + ' vor…');
   resultDiv.appendChild(statusEl);
 
-  // Passende KLP-Einträge
+  // KLP-Kontext
   const fachNameMap = { 'M': 'Mathematik', 'Ch': 'Chemie', 'Bio': 'Biologie', 'Ch_GK': 'Chemie', 'Ch_LK': 'Chemie', 'Bio_GK': 'Biologie', 'Bio_LK': 'Biologie' };
   const fachName = fachNameMap[lp.fach] || lp.fach;
   const isSII = ['EF', 'Q1', 'Q2'].includes(lp.jahrgang);
-  const isGK = lp.fach.includes('GK');
-  const isLK = lp.fach.includes('LK');
+  const isGK = lp.fach.includes('GK'), isLK = lp.fach.includes('LK');
   const klpHits = KLPDB.filter(e => {
     if (e.fach !== fachName) return false;
-    const entryIsSII = e.stufe === 'SII' || (e.id && e.id.toUpperCase().includes('SII'));
-    if (isSII !== entryIsSII) return false;
-    if (isSII && isGK && e.id.toUpperCase().includes('LK')) return false;
-    if (isSII && isLK && e.id.toUpperCase().includes('GK')) return false;
+    const eIsSII = e.stufe === 'SII' || e.id?.toUpperCase().includes('SII');
+    if (isSII !== eIsSII) return false;
+    if (isSII && isGK && e.id?.toUpperCase().includes('LK')) return false;
+    if (isSII && isLK && e.id?.toUpperCase().includes('GK')) return false;
     return true;
   });
   const klpText = klpHits.map(e =>
     `[${e.id}] ${e.kompetenzcodes.join(', ')} | ${e.inhaltsfeld}: ${e.beschreibung}`
   ).join('\n');
 
-  const prompt = `Du bist Didaktik-Expertin für NRW-Gymnasien und hilfst einer Chemie-Lehrerin dabei, eine Unterrichtsreihe zu strukturieren.
+  // Kontext-Hierarchie
+  const pfad = [fachName + ' ' + lp.jahrgang];
+  if (selBlock)   pfad.push('Block: ' + selBlock.titel);
+  if (selReihe)   pfad.push('Reihe: ' + selReihe.titel);
+  if (selEinheit) pfad.push('Einheit: ' + selEinheit.titel);
 
-KONTEXT:
-- Fach: ${fachName} (${lp.fach.includes('GK') ? 'Grundkurs' : lp.fach.includes('LK') ? 'Leistungskurs' : 'Kurs'})
-- Jahrgang: ${lp.jahrgang}
-- Block: ${block.titel}
-- Reihe: ${reihe.titel}
+  // Aufgabe und Ausgabeformat je nach Ebene
+  const AUFGABEN = {
+    block: {
+      aufgabe: `Schlage eine Gliederung des Blocks in Unterrichtsreihen vor. Jede Reihe ist ein zusammenhängender thematischer Bogen. Berücksichtige alle Stichworte, besondere Elemente (Referate, Experimente…) und ordne jeder Reihe passende KLP-Kompetenzen zu.`,
+      childKey: 'items',
+      childLabel: 'Reihe',
+      anlegen: (parsed, parentObj) => {
+        if (!parentObj.reihen) parentObj.reihen = [];
+        parsed.items.forEach(e => parentObj.reihen.push({
+          id: uid(), titel: e.titel, notizen: e.beschreibung || '', einheiten: []
+        }));
+      },
+    },
+    reihe: {
+      aufgabe: `Schlage eine Gliederung der Reihe in Unterrichtseinheiten vor. Eine Einheit ist ein didaktisch zusammengehöriger Abschnitt (meist 1–4 Stunden). Berücksichtige alle Stichworte und ordne jeder Einheit passende KLP-Kompetenzen zu.`,
+      childKey: 'items',
+      childLabel: 'Einheit',
+      anlegen: (parsed, parentObj) => {
+        if (!parentObj.einheiten) parentObj.einheiten = [];
+        parsed.items.forEach(e => parentObj.einheiten.push({
+          id: uid(), titel: e.titel, notizen: e.beschreibung || '', stunden: []
+        }));
+      },
+    },
+    einheit: {
+      aufgabe: `Schlage eine Gliederung der Einheit in Unterrichtsstunden (je 45 Min.) vor. Jede Stunde hat einen klaren Fokus und ein Lernziel. Berücksichtige Progression und didaktische Logik.`,
+      childKey: 'items',
+      childLabel: 'Stunde',
+      anlegen: (parsed, parentObj) => {
+        if (!parentObj.stunden) parentObj.stunden = [];
+        parsed.items.forEach(e => parentObj.stunden.push({
+          id: uid(), titel: e.titel, lernziel: e.beschreibung || '',
+          prioritaet: 'pflicht', dauer: 45, phasen: [], klpInhalt: [], klpProzess: [], material: []
+        }));
+      },
+    },
+  };
+  const cfg = AUFGABEN[typ];
 
-NOTIZEN DER LEHRERIN (Stichworte, Ideen, Reihenfolge, offene Fragen):
+  const prompt = `Du bist Didaktik-Expertin für NRW-Gymnasien.
+
+KONTEXT: ${pfad.join(' › ')}
+KURS: ${fachName}, ${lp.fach.includes('GK') ? 'Grundkurs' : lp.fach.includes('LK') ? 'Leistungskurs' : 'Kurs'}, Jahrgang ${lp.jahrgang}
+
+NOTIZEN DER LEHRERIN:
 ${notizen}
 
-VERFÜGBARE KLP-KOMPETENZEN (${fachName}, ${isSII ? 'SII' : 'SI'}):
+VERFÜGBARE KLP-KOMPETENZEN:
 ${klpText || '(keine geladen)'}
 
-AUFGABE:
-Schlage eine sinnvolle Gliederung der Reihe in Unterrichtseinheiten vor.
-- Berücksichtige alle genannten Stichworte und ihre Reihenfolge
-- Platziere besondere Elemente (Referat, Experiment, Klassenarbeit…) an didaktisch sinnvoller Stelle
-- Ordne jeder Einheit passende KLP-Kompetenzen zu (nur IDs aus der Liste oben)
-- Gib eine realistische Stundenanzahl pro Einheit an (45 Min.)
-- Begründe kurz die Gesamtstruktur
+AUFGABE: ${cfg.aufgabe}
 
-Antworte mit einem JSON-Objekt:
+Antworte NUR mit einem JSON-Objekt:
 {
   "begruendung": "1-2 Sätze zur Gesamtstruktur",
-  "einheiten": [
+  "items": [
     {
-      "titel": "Einheitstitel",
-      "beschreibung": "Was wird gemacht, wie, warum hier",
+      "titel": "Titel der ${cfg.childLabel}",
+      "beschreibung": "Kurze Beschreibung – was, wie, warum hier",
       "stunden": 2,
       "klpIds": ["ID1", "ID2"]
     }
@@ -508,18 +545,13 @@ Antworte mit einem JSON-Objekt:
     const data = await res.json();
     const text = data.content?.[0]?.text || '';
     const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
-    if (!parsed.einheiten?.length) throw new Error('Keine Einheiten erhalten.');
+    if (!parsed.items?.length) throw new Error('Keine Vorschläge erhalten.');
 
-    // Ergebnis anzeigen
     resultDiv.innerHTML = '';
     const rb = mk('div', 'ki-plan-result');
+    if (parsed.begruendung) rb.appendChild(tx('div', 'ki-plan-begr', '💡 ' + parsed.begruendung));
 
-    if (parsed.begruendung) {
-      const begr = tx('div', 'ki-plan-begr', '💡 ' + parsed.begruendung);
-      rb.appendChild(begr);
-    }
-
-    parsed.einheiten.forEach((e, i) => {
+    parsed.items.forEach((e, i) => {
       const row = mk('div', 'ki-plan-row');
       const nr = tx('span', 'ki-plan-nr', (i + 1) + '.');
       const info = mk('div', 'ki-plan-info');
@@ -529,19 +561,16 @@ Antworte mit einem JSON-Objekt:
       if (e.stunden) meta.push(e.stunden + ' Std.');
       if (e.klpIds?.length) meta.push(e.klpIds.join(', '));
       if (meta.length) info.appendChild(tx('div', 'ki-plan-meta', meta.join(' · ')));
-      row.appendChild(nr);
-      row.appendChild(info);
+      row.appendChild(nr); row.appendChild(info);
       rb.appendChild(row);
     });
 
     const actRow = mk('div', 'ki-plan-actions');
-    const applyBtn = btn('✓ Alle als Einheiten anlegen', 'btn btn-pri btn-sm');
+    const applyBtn = btn('✓ Alle als ' + CHILD[typ] + ' anlegen', 'btn btn-pri btn-sm');
     applyBtn.onclick = () => {
-      if (reihe.einheiten?.length && !confirm('Vorhandene Einheiten bleiben erhalten – neue werden hinzugefügt. Fortfahren?')) return;
-      if (!reihe.einheiten) reihe.einheiten = [];
-      parsed.einheiten.forEach(e => {
-        reihe.einheiten.push({ id: uid(), titel: e.titel, notizen: e.beschreibung || '', stunden: [] });
-      });
+      const childArr = obj[{ block: 'reihen', reihe: 'einheiten', einheit: 'stunden' }[typ]] || [];
+      if (childArr.length && !confirm('Vorhandene ' + CHILD[typ] + ' bleiben erhalten – neue werden hinzugefügt. Fortfahren?')) return;
+      cfg.anlegen(parsed, obj);
       scheduleSave(); render();
     };
     const discardBtn = btn('Verwerfen', 'btn btn-ghost btn-sm');

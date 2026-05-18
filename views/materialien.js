@@ -1,11 +1,14 @@
 // ── Materialien-Datenbank ─────────────────────────────────────────
+let _kontextFiles = []; // persistent between panel open/close
+
 function viewMaterialien() {
   const div = mk('div', '');
 
   const hdr = mk('div', 'c-hdr');
   const left = mk('div', '');
   left.appendChild(tx('div', 'c-title', 'Materialdatenbank'));
-  left.appendChild(tx('div', 'c-sub', MATDB.length + ' Einträge'));
+  const subTitle = tx('div', 'c-sub', MATDB.length + ' Einträge');
+  left.appendChild(subTitle);
   hdr.appendChild(left);
 
   const hdrBtns = mk('div', ''); hdrBtns.style.cssText = 'display:flex;gap:8px;';
@@ -65,10 +68,38 @@ function viewMaterialien() {
 
     const panel = mk('div', 'mat-scan-panel');
 
-    function makeDropzone(label, hint) {
+    function makeDropzone(label, hint, { initialFiles = [], onFilesChange = null, clearAllBtn: showClearAll = false } = {}) {
       const wrap = mk('div', 'mat-scan-group');
-      wrap.appendChild(tx('div', 'mat-scan-group-label', label));
+      const labelRow = mk('div', 'mat-scan-group-hdr');
+      labelRow.appendChild(tx('div', 'mat-scan-group-label', label));
+      let files = [...initialFiles];
+
+      function notifyChange() { if (onFilesChange) onFilesChange([...files]); }
+      function renderPreview() {
+        preview.innerHTML = '';
+        files.forEach((f, i) => {
+          const thumb = mk('div', 'mat-scan-thumb');
+          const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className = 'mat-scan-img';
+          const rm = mk('button', 'mat-scan-rm'); rm.textContent = '✕';
+          rm.onclick = () => { files.splice(i, 1); notifyChange(); renderPreview(); updateBtn(); };
+          thumb.appendChild(img); thumb.appendChild(rm); preview.appendChild(thumb);
+        });
+        zone.style.display = files.length ? 'none' : '';
+      }
+      function addFiles(newFiles) {
+        files = [...files, ...Array.from(newFiles)];
+        notifyChange(); renderPreview(); updateBtn();
+      }
+      function clearFiles() { files = []; notifyChange(); renderPreview(); updateBtn(); }
+
+      if (showClearAll) {
+        const clrBtn = btn('Leeren', 'btn btn-ghost btn-xs');
+        clrBtn.onclick = clearFiles;
+        labelRow.appendChild(clrBtn);
+      }
+      wrap.appendChild(labelRow);
       wrap.appendChild(tx('div', 'mat-scan-group-hint', hint));
+
       const zone = mk('div', 'mat-scan-drop');
       zone.textContent = '📂 Bilder hierher ziehen oder klicken';
       const inp = document.createElement('input');
@@ -76,35 +107,21 @@ function viewMaterialien() {
       zone.onclick = () => inp.click();
       zone.ondragover = e => { e.preventDefault(); zone.classList.add('drag-over'); };
       zone.ondragleave = () => zone.classList.remove('drag-over');
-      const preview = mk('div', 'mat-scan-preview');
-      let files = [];
-      function addFiles(newFiles) {
-        files = [...files, ...Array.from(newFiles)];
-        renderPreview();
-        updateBtn();
-      }
-      function renderPreview() {
-        preview.innerHTML = '';
-        files.forEach((f, i) => {
-          const thumb = mk('div', 'mat-scan-thumb');
-          const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className = 'mat-scan-img';
-          const rm = mk('button', 'mat-scan-rm'); rm.textContent = '✕';
-          rm.onclick = () => { files.splice(i, 1); renderPreview(); updateBtn(); };
-          thumb.appendChild(img); thumb.appendChild(rm); preview.appendChild(thumb);
-        });
-        zone.textContent = files.length ? '' : '📂 Bilder hierher ziehen oder klicken';
-      }
       zone.ondrop = e => { e.preventDefault(); zone.classList.remove('drag-over'); addFiles(e.dataTransfer.files); };
       inp.onchange = () => addFiles(inp.files);
+
+      const preview = mk('div', 'mat-scan-preview');
       wrap.appendChild(zone); wrap.appendChild(inp); wrap.appendChild(preview);
-      return { wrap, getFiles: () => files };
+      renderPreview();
+      return { wrap, getFiles: () => files, clearFiles };
     }
 
     const { wrap: w1, getFiles: getKontext } = makeDropzone(
       '📋 Kontext',
-      'Titelseite, Lehrerhandreichung, Erläuterungen & Lösungsseiten – GPT-4o liest daraus Lösungen und Hinweise für die Schülermaterialien'
+      'Titelseite, Lehrerhandreichung, Erläuterungen & Lösungsseiten – bleibt geladen bis du ihn leerst',
+      { initialFiles: _kontextFiles, onFilesChange: f => { _kontextFiles = f; }, clearAllBtn: true }
     );
-    const { wrap: w2, getFiles: getSchuelermaterial } = makeDropzone(
+    const { wrap: w2, getFiles: getSchuelermaterial, clearFiles: clearSchuelermaterial } = makeDropzone(
       '📚 Schülermaterialien',
       'M1, M2, M3 … – die eigentlichen Arbeitsblätter und Versuchsanleitungen'
     );
@@ -173,10 +190,8 @@ REGELN – TITEL:
 
 REGELN – JAHRGANG (sehr wichtig, lies genau):
 - Lies Jahrgangsstufe aus dem Material, der Titelseite oder dem Kopf der Seiten – niemals raten
-- "Sekundarstufe I" oder "SI" ohne weitere Angabe → stattdessen die konkret genannte Klasse suchen (z.B. "Klasse 9/10" → ["9","10"])
-- "Sekundarstufe II" oder "SII" ohne weitere Spezifikation → ["EF","Q1","Q2"]
-- Konkrete SII-Angabe: "EF" → ["EF"], "Q1" → ["Q1"], "Q2" → ["Q2"], "Q1/Q2" → ["Q1","Q2"]
-- Konkrete SI-Angabe: "Klasse 9/10" → ["9","10"], "Jahrgang 8" → ["8"]
+- Alles was Sekundarstufe II, SII oder Oberstufe betrifft → immer ["EF","Q1","Q2"], egal ob spezifischer Jahrgang genannt wird oder nicht
+- SI-Angabe: "Klasse 9/10" → ["9","10"], "Jahrgang 8" → ["8"]; ohne konkrete Klasse die genannte Stufe vollständig angeben
 - Im Zweifel lieber die ganze Stufe angeben als falsch raten
 
 REGELN – LÖSUNGEN (aus Gruppe 1 übernehmen):
@@ -232,14 +247,17 @@ REGELN – INHALTE (niemals kürzen oder zusammenfassen):
         });
         clearInterval(timer);
         saveMatDB();
+        clearSchuelermaterial();
+        subTitle.textContent = MATDB.length + ' Einträge';
+        renderList();
         if (truncated) {
           statusMsg.style.color = '#d97706';
-          statusMsg.textContent = `⚠ Nur ${entries.length} von ${matFiles.length} Materialien erhalten – ggf. nicht alle importiert.`;
-          analyzeBtn.disabled = false;
+          statusMsg.textContent = `⚠ Antwort abgeschnitten – ggf. nicht alle Materialien importiert. Nächstes Schülermaterial hochladen.`;
         } else {
-          panel.remove();
-          S.view = 'materialien'; render();
+          statusMsg.style.color = 'var(--grn)';
+          statusMsg.textContent = `✓ ${entries.length} Material${entries.length !== 1 ? 'ien' : ''} importiert. Nächstes Schülermaterial hochladen.`;
         }
+        analyzeBtn.disabled = true;
 
       } catch(e) {
         clearInterval(timer);

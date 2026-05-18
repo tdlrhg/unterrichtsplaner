@@ -434,6 +434,7 @@ textarea::placeholder { color: #c4cdd6; }
 .mat-scan-thumb { position: relative; }
 .mat-scan-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid var(--bord); display: block; }
 .mat-scan-rm { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: #dc2626; color: #fff; border: none; cursor: pointer; font-size: 10px; line-height: 18px; text-align: center; padding: 0; }
+.mat-scan-group-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
 .mat-import-ta {
   width: 100%; min-height: 120px; font-family: monospace;
   font-size: 12px; border: 1px solid var(--bord); border-radius: 6px;

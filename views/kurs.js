@@ -183,8 +183,8 @@ function viewFachplanung() {
     const nc = mk('div', 'card');
     const nhdr = cardHdr(notizLabel);
 
-    // KI-Planung nur auf Reihen-Ebene
-    if (selReihe && !selEinheit) {
+    // KI-Planung auf Reihen-Ebene
+    if (sel.type === 'reihe' && selReihe) {
       const kiBtn = btn('✨ KI-Planung', 'btn btn-ghost btn-xs');
       kiBtn.onclick = () => kiPlanungReihe(lp, selBlock, selReihe, nta, kiResultDiv);
       nhdr.appendChild(kiBtn);

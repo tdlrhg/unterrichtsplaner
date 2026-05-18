@@ -388,10 +388,10 @@ textarea::placeholder { color: #c4cdd6; }
 
 /* ── Materialdatenbank-View ──────────────────────────────────────── */
 .mat-list-grid {
-  display: grid; grid-template-columns: 1fr 1fr;
+  display: grid; grid-template-columns: 1fr 1fr; width: 100%; overflow: hidden;
 }
 .mat-db-row {
-  padding: 7px 14px; cursor: pointer;
+  padding: 7px 14px; cursor: pointer; min-width: 0;
   border-bottom: 1px solid var(--bord);
   border-right: 1px solid var(--bord);
   transition: background .12s;

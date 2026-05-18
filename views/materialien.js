@@ -158,8 +158,8 @@ REGELN – JAHRGANG (sehr wichtig):
 - Wenn im Material "9/10" steht → ["9","10"]; wenn "Q1" steht → ["Q1"]
 
 REGELN – INHALTE:
-- loesung: Erwartungshorizonte, Musterlösungen, Lösungstabellen vollständig und strukturiert übertragen
-- erlaeuterung: Methodische Lehrerhinweise zu genau diesem Material (nicht allgemeine Hinweise zur ganzen Einheit)
+- loesung: Erwartungshorizonte, Musterlösungen, Lösungstabellen VOLLSTÄNDIG übertragen – nicht zusammenfassen, nicht kürzen; Tabelleninhalt Zeile für Zeile als strukturierten Text
+- erlaeuterung: Methodische Lehrerhinweise zu genau diesem Material VOLLSTÄNDIG übertragen – Methodik, Zeitplanung, didaktische Empfehlungen, typische Schülerfehler; nicht allgemeine Hinweise zur ganzen Einheit
 - Fach, Themen, Methoden, Sozialformen sorgfältig aus dem Bildinhalt ableiten – nicht raten
 - Bei Lehrerhandreichungen (Einführung, Sachanalyse, didaktische Kommentare): materialtyp "Lehrerhandreichung", materialnummer "LH"`;
 
@@ -168,7 +168,7 @@ REGELN – INHALTE:
           headers: { 'Authorization': 'Bearer ' + oaiKey, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'gpt-4o',
-            max_tokens: 4000,
+            max_tokens: 8000,
             messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }]
           })
         });

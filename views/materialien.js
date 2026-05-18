@@ -140,15 +140,28 @@ function viewMaterialien() {
 SCHEMA (halte dich exakt daran):
 ${schemaStr}
 
-REGELN:
+REGELN – ALLGEMEIN:
 - Gib ein JSON-Array aus, direkt importierbar, kein Text davor/danach
-- Jeder Eintrag braucht eine eindeutige id (Format: mat_[timestamp]_[nr], z.B. mat_${Date.now()}_1)
-- Titelkonvention: wenn Materialien zu einer Einheit gehören → "Einheitstitel – M1", "Einheitstitel – M2" usw.; andernfalls beschreibender Titel
-- rolleImKontext: kurze inhaltliche Beschreibung was das Material zeigt/verlangt
-- Fach, Jahrgang, Themen, Methoden, Sozialformen aus dem Bildinhalt ableiten
-- loesung: wenn Lösungen/Erwartungshorizonte sichtbar sind, hier eintragen; sonst leer
-- erlaeuterung: wenn Lehrerhinweise sichtbar sind, hier eintragen; sonst leer
-- Erstelle KEINEN Unterrichtseinheit-Eintrag, nur die Einzelmaterialien`;
+- Jeder Eintrag braucht eine eindeutige id (Format: mat_${Date.now()}_1, mat_${Date.now()}_2 usw.)
+- Erstelle KEINEN Unterrichtseinheit-Eintrag (materialtyp "Unterrichtseinheit"), nur Einzelmaterialien und ggf. Lehrerhandreichungen
+
+REGELN – TITEL:
+- Wenn Materialien zu einer Einheit gehören: "Einheitstitel – M1", "Einheitstitel – M2", Lehrerhandreichung: "Einheitstitel – LH"
+- Einheitstitel aus der Titelseite oder dem Kopf der Materialien entnehmen
+- rolleImKontext: knapper inhaltlicher Untertitel (was das Material konkret verlangt/zeigt)
+
+REGELN – JAHRGANG (sehr wichtig):
+- Trage NUR die konkret genannte Jahrgangsstufe ein, die im Material oder auf der Titelseite steht
+- Niemals eine ganze Stufe pauschal eintragen (z.B. NICHT ["EF","Q1","Q2"] wenn nur Q1 steht)
+- SI-Jahrgänge: "5", "6", "7", "8", "9", "10" (als String, einzeln)
+- SII-Jahrgänge: "EF", "Q1" oder "Q2" – nur die, die explizit genannt werden
+- Wenn im Material "9/10" steht → ["9","10"]; wenn "Q1" steht → ["Q1"]
+
+REGELN – INHALTE:
+- loesung: Erwartungshorizonte, Musterlösungen, Lösungstabellen vollständig und strukturiert übertragen
+- erlaeuterung: Methodische Lehrerhinweise zu genau diesem Material (nicht allgemeine Hinweise zur ganzen Einheit)
+- Fach, Themen, Methoden, Sozialformen sorgfältig aus dem Bildinhalt ableiten – nicht raten
+- Bei Lehrerhandreichungen (Einführung, Sachanalyse, didaktische Kommentare): materialtyp "Lehrerhandreichung", materialnummer "LH"`;
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',

@@ -162,6 +162,8 @@ ${schemaStr}
 REGELN – ALLGEMEIN:
 - Gib ein JSON-Array aus, direkt importierbar, kein Text davor/danach
 - Jeder Eintrag braucht eine eindeutige id (Format: mat_${idBase}_1, mat_${idBase}_2 usw.)
+- Gruppe 2 enthält genau ${matFiles.length} Schülermaterial${matFiles.length !== 1 ? 'ien' : ''} → erstelle genau ${matFiles.length} Einträge (einen pro Bild), nicht mehr, nicht weniger
+- Wenn ein Material mehrere Seiten auf einem Bild hat, fasst du diese zu EINEM Eintrag zusammen – aber jedes Bild ist ein eigenes Material
 - Erstelle KEINEN Unterrichtseinheit-Eintrag (materialtyp "Unterrichtseinheit"), nur Einzelmaterialien und ggf. Lehrerhandreichungen
 
 REGELN – TITEL:
@@ -213,11 +215,13 @@ REGELN – INHALTE (niemals kürzen oder zusammenfassen):
 
         const data = await res.json();
         if (!res.ok) throw new Error(data.error?.message || 'OpenAI-Fehler');
-        const text = data.choices?.[0]?.message?.content || '';
+        const choice = data.choices?.[0];
+        const text = choice?.message?.content || '';
         const match = text.match(/\[[\s\S]*\]/);
         if (!match) throw new Error('Kein JSON-Array in der Antwort gefunden.');
         const entries = JSON.parse(match[0]);
         if (!entries.length) throw new Error('Keine Einträge generiert.');
+        const truncated = choice?.finish_reason === 'length' || entries.length < matFiles.length;
 
         const now = new Date().toISOString();
         entries.forEach(e => {
@@ -228,8 +232,14 @@ REGELN – INHALTE (niemals kürzen oder zusammenfassen):
         });
         clearInterval(timer);
         saveMatDB();
-        panel.remove();
-        S.view = 'materialien'; render();
+        if (truncated) {
+          statusMsg.style.color = '#d97706';
+          statusMsg.textContent = `⚠ Nur ${entries.length} von ${matFiles.length} Materialien erhalten – ggf. nicht alle importiert.`;
+          analyzeBtn.disabled = false;
+        } else {
+          panel.remove();
+          S.view = 'materialien'; render();
+        }
 
       } catch(e) {
         clearInterval(timer);

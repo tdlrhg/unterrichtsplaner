@@ -158,18 +158,24 @@ REGELN – JAHRGANG (sehr wichtig, lies genau):
 - Konkrete SI-Angabe: "Klasse 9/10" → ["9","10"], "Jahrgang 8" → ["8"]
 - Im Zweifel lieber die ganze Stufe angeben als falsch raten
 
-REGELN – INHALTE:
-- loesung: Erwartungshorizonte, Musterlösungen, Lösungstabellen VOLLSTÄNDIG übertragen – nicht zusammenfassen, nicht kürzen; Tabelleninhalt Zeile für Zeile als strukturierten Text
-- erlaeuterung: Methodische Lehrerhinweise zu genau diesem Material VOLLSTÄNDIG übertragen – Methodik, Zeitplanung, didaktische Empfehlungen, typische Schülerfehler; nicht allgemeine Hinweise zur ganzen Einheit
-- Fach, Themen, Methoden, Sozialformen sorgfältig aus dem Bildinhalt ableiten – nicht raten
-- Bei Lehrerhandreichungen (Einführung, Sachanalyse, didaktische Kommentare): materialtyp "Lehrerhandreichung", materialnummer "LH"`;
+REGELN – INHALTE (niemals kürzen oder zusammenfassen):
+- schueleraktivitaeten: alle konkreten Tätigkeiten aus dem Material aufführen, so spezifisch wie möglich
+- artDerGeistigenTaetigkeit: alle kognitiven Prozesse vollständig benennen (Beobachten, Vergleichen, Hypothesen bilden, Analysieren, Transferieren usw.)
+- darstellungsformen: alle vorkommenden Darstellungsformen einzeln aufführen (Sachtext, Versuchsanleitung, Tabelle, Schemazeichnung usw.)
+- voraussetzungenFachlich: alle fachlichen Voraussetzungen konkret benennen, nicht weglassen
+- voraussetzungenMethodisch: alle methodischen Voraussetzungen konkret benennen, nicht weglassen
+- themen: alle inhaltlichen Themen und Unterthemen des Materials aufführen
+- loesung: Erwartungshorizonte und Lösungstabellen VOLLSTÄNDIG übertragen – Tabelleninhalt Zeile für Zeile, nichts weglassen
+- erlaeuterung: Methodische Lehrerhinweise VOLLSTÄNDIG übertragen – Methodik, Zeitplanung, didaktische Empfehlungen, typische Schülerfehler
+- Fach, Methoden, Sozialformen sorgfältig aus dem Bildinhalt ableiten – nicht raten
+- Bei Lehrerhandreichungen: materialtyp "Lehrerhandreichung", materialnummer "LH"`;
 
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: { 'Authorization': 'Bearer ' + oaiKey, 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: 'gpt-4o',
-            max_tokens: 8000,
+            max_tokens: 16000,
             messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, ...imageContents] }]
           })
         });

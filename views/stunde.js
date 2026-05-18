@@ -129,7 +129,10 @@ Antworte NUR als JSON-Array von Strings:
       ta1.className = 'lz-text finp';
       ta1.placeholder = 'Die SuS können/wissen … und zeigen dies, indem sie …';
       ta1.value = lz.text;
-      ta1.oninput = e => { lz.text = e.target.value; scheduleSave(); };
+      ta1.rows = 1;
+      const autoResize = t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; };
+      ta1.oninput = e => { lz.text = e.target.value; scheduleSave(); autoResize(e.target); };
+      requestAnimationFrame(() => autoResize(ta1));
       fields.appendChild(ta1);
 
       const delBtn = btn('🗑', 'btn btn-danger btn-xs lz-del');

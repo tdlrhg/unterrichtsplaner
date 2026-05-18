@@ -604,7 +604,7 @@ textarea::placeholder { color: #c4cdd6; }
 .lz-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 .lz-nr { font-size: 13px; font-weight: 700; color: var(--tx2); min-width: 20px; padding-top: 8px; }
 .lz-fields { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.lz-text { min-height: 48px; resize: vertical; font-size: 13px; }
+.lz-text { min-height: 0; resize: none; overflow: hidden; font-size: 13px; }
 .lz-indikator { min-height: 40px; resize: vertical; font-size: 12px; color: var(--tx2); font-style: italic; }
 .lz-del { align-self: flex-start; margin-top: 6px; opacity: 0; transition: opacity .15s; }
 .lz-row:hover .lz-del { opacity: 1; }

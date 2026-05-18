@@ -84,7 +84,8 @@ function viewMaterialien() {
           rm.onclick = () => { files.splice(i, 1); notifyChange(); renderPreview(); updateBtn(); };
           thumb.appendChild(img); thumb.appendChild(rm); preview.appendChild(thumb);
         });
-        zone.style.display = files.length ? 'none' : '';
+        zone.textContent = files.length ? '+ Weitere Bilder' : '📂 Bilder hierher ziehen oder klicken';
+        zone.style.padding = files.length ? '8px 14px' : '';
       }
       function addFiles(newFiles) {
         files = [...files, ...Array.from(newFiles)];

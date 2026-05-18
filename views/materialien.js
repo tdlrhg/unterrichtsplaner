@@ -150,12 +150,13 @@ REGELN – TITEL:
 - Einheitstitel aus der Titelseite oder dem Kopf der Materialien entnehmen
 - rolleImKontext: knapper inhaltlicher Untertitel (was das Material konkret verlangt/zeigt)
 
-REGELN – JAHRGANG (sehr wichtig):
-- Trage NUR die konkret genannte Jahrgangsstufe ein, die im Material oder auf der Titelseite steht
-- Niemals eine ganze Stufe pauschal eintragen (z.B. NICHT ["EF","Q1","Q2"] wenn nur Q1 steht)
-- SI-Jahrgänge: "5", "6", "7", "8", "9", "10" (als String, einzeln)
-- SII-Jahrgänge: "EF", "Q1" oder "Q2" – nur die, die explizit genannt werden
-- Wenn im Material "9/10" steht → ["9","10"]; wenn "Q1" steht → ["Q1"]
+REGELN – JAHRGANG (sehr wichtig, lies genau):
+- Lies Jahrgangsstufe aus dem Material, der Titelseite oder dem Kopf der Seiten – niemals raten
+- "Sekundarstufe I" oder "SI" ohne weitere Angabe → ["5","6","7","8","9","10"] NICHT verwenden; stattdessen die konkret genannte Klasse suchen (z.B. "Klasse 9/10" → ["9","10"])
+- "Sekundarstufe II" oder "SII" ohne weitere Spezifikation → ["EF","Q1","Q2"]
+- Konkrete SII-Angabe: "EF" → ["EF"], "Q1" → ["Q1"], "Q2" → ["Q2"], "Q1/Q2" → ["Q1","Q2"]
+- Konkrete SI-Angabe: "Klasse 9/10" → ["9","10"], "Jahrgang 8" → ["8"]
+- Im Zweifel lieber die ganze Stufe angeben als falsch raten
 
 REGELN – INHALTE:
 - loesung: Erwartungshorizonte, Musterlösungen, Lösungstabellen VOLLSTÄNDIG übertragen – nicht zusammenfassen, nicht kürzen; Tabelleninhalt Zeile für Zeile als strukturierten Text

@@ -466,7 +466,13 @@ async function kiPlanung(lp, obj, typ, nta, resultDiv, { selBlock, selReihe, sel
     block: {
       aufgabe: `Schlage eine Gliederung des Blocks in Unterrichtsreihen vor.
 
-Eine UNTERRICHTSREIHE ist ein großer thematischer Bogen, der mehrere Wochen umfasst und mehrere Unterrichtseinheiten enthält. Ein Block hat typischerweise 2–4 Reihen. Beispiel für den Block "Thermodynamik": Reihe 1 "Reaktionsenthalpie und Hess'scher Satz", Reihe 2 "Entropie und Gibbs-Energie". NICHT einzelne Unterrichtsstunden oder kleine Lernsequenzen vorschlagen.
+HIERARCHIE dieser Lehrerin (verbindlich):
+- STUNDE = 45 Min. (Einzelstunde) oder 90 Min. (Doppelstunde)
+- EINHEIT = 2–4 Stunden, didaktisch zusammengehörig – alles was über eine Doppelstunde hinausgeht
+- REIHE = mehrere Einheiten, thematischer Bogen über mehrere Wochen
+- BLOCK = mehrere Reihen, großes Thema (das ist die aktuelle Ebene)
+
+Ein Block hat typischerweise 2–4 Reihen. Beispiel für "Thermodynamik": Reihe 1 "Reaktionsenthalpie", Reihe 2 "Entropie und Gibbs-Energie". Keine Stunden oder Einheiten vorschlagen – nur Reihen.
 
 Berücksichtige alle Stichworte, besondere Elemente (Referate, Klassenarbeiten…) und ordne jeder Reihe passende KLP-Kompetenzen zu.`,
       childKey: 'items',
@@ -481,7 +487,12 @@ Berücksichtige alle Stichworte, besondere Elemente (Referate, Klassenarbeiten�
     reihe: {
       aufgabe: `Schlage eine Gliederung der Reihe in Unterrichtseinheiten vor.
 
-Eine UNTERRICHTSEINHEIT ist ein didaktisch zusammengehöriger Abschnitt innerhalb der Reihe, typischerweise 1–4 Stunden. Eine Reihe hat meist 2–5 Einheiten. Beispiel für die Reihe "Reaktionsenthalpie": Einheit 1 "Energieumsatz bei chemischen Reaktionen", Einheit 2 "Kalorimetrie", Einheit 3 "Hess'scher Satz". NICHT einzelne Stunden als Einheiten vorschlagen.
+HIERARCHIE dieser Lehrerin (verbindlich):
+- STUNDE = 45 Min. (Einzelstunde) oder 90 Min. (Doppelstunde)
+- EINHEIT = 2–4 Stunden, didaktisch zusammengehörig – alles was über eine Doppelstunde hinausgeht
+- REIHE = mehrere Einheiten (das ist die aktuelle Ebene)
+
+Eine Reihe hat typischerweise 2–5 Einheiten. Keine einzelnen Stunden als Einheiten vorschlagen – eine Einheit hat immer mindestens 2 Stunden.
 
 Berücksichtige alle Stichworte und ordne jeder Einheit passende KLP-Kompetenzen zu.`,
       childKey: 'items',
@@ -494,7 +505,13 @@ Berücksichtige alle Stichworte und ordne jeder Einheit passende KLP-Kompetenzen
       },
     },
     einheit: {
-      aufgabe: `Schlage eine Gliederung der Einheit in Unterrichtsstunden (je 45 Min.) vor. Jede Stunde hat einen klaren Fokus und ein Lernziel. Berücksichtige Progression und didaktische Logik.`,
+      aufgabe: `Schlage eine Gliederung der Einheit in Unterrichtsstunden vor.
+
+HIERARCHIE dieser Lehrerin (verbindlich):
+- STUNDE = 45 Min. (Einzelstunde) oder 90 Min. (Doppelstunde)
+- EINHEIT = 2–4 Stunden (das ist die aktuelle Ebene)
+
+Eine Einheit hat 2–4 Stunden. Jede Stunde hat einen klaren Fokus und ein konkretes Lernziel. Gib bei jeder Stunde an ob es eine Einzel- (45 Min.) oder Doppelstunde (90 Min.) ist. Berücksichtige didaktische Progression.`,
       childKey: 'items',
       childLabel: 'Stunde',
       anlegen: (parsed, parentObj) => {

@@ -149,7 +149,7 @@ function viewMaterialien() {
         const kontextImgs = await Promise.all(kontextFiles.map(toImgContent));
         const matImgs     = await Promise.all(matFiles.map(toImgContent));
 
-        const now = Date.now();
+        const idBase = Date.now();
         const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Du erhältst zwei Gruppen von Bildern.
 
 GRUPPE 1 – KONTEXT (${kontextFiles.length} Bild${kontextFiles.length !== 1 ? 'er' : ''}): Titelseite, Lehrerhandreichung, Erläuterungen und Lösungsseiten. Lese daraus: Lösungen, Erwartungshorizonte, methodische Hinweise, Zeitplanung, didaktische Tipps. Verwende diese Informationen, um die Felder loesung, loesungHinweis und erlaeuterung in den Einträgen der Schülermaterialien zu füllen.
@@ -161,7 +161,7 @@ ${schemaStr}
 
 REGELN – ALLGEMEIN:
 - Gib ein JSON-Array aus, direkt importierbar, kein Text davor/danach
-- Jeder Eintrag braucht eine eindeutige id (Format: mat_${now}_1, mat_${now}_2 usw.)
+- Jeder Eintrag braucht eine eindeutige id (Format: mat_${idBase}_1, mat_${idBase}_2 usw.)
 - Erstelle KEINEN Unterrichtseinheit-Eintrag (materialtyp "Unterrichtseinheit"), nur Einzelmaterialien und ggf. Lehrerhandreichungen
 
 REGELN – TITEL:

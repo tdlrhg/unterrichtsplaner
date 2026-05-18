@@ -173,6 +173,26 @@ function viewFachplanung() {
 
   div.appendChild(cols);
 
+  // ── Notizen zur ausgewählten Ebene ────────────────────────────
+  const notizObj = selEinheit || selReihe || selBlock;
+  const notizLabel = selEinheit ? 'Notizen · ' + selEinheit.titel
+                   : selReihe  ? 'Notizen · ' + selReihe.titel
+                   : selBlock  ? 'Notizen · ' + selBlock.titel
+                   : null;
+  if (notizObj && notizLabel) {
+    const nc = mk('div', 'card');
+    nc.appendChild(cardHdr(notizLabel));
+    const nb = mk('div', 'card-body');
+    const nta = document.createElement('textarea');
+    nta.className = 'finp fp-notizen';
+    nta.placeholder = 'Stichworte, Ideen, Materialhinweise, offene Fragen…';
+    nta.value = notizObj.notizen || '';
+    nta.onblur = () => { notizObj.notizen = nta.value; scheduleSave(); };
+    nb.appendChild(nta);
+    nc.appendChild(nb);
+    div.appendChild(nc);
+  }
+
   // ── KLP-Referenz ─────────────────────────────────────────────
   const klpOpenKey = 'klpRef_' + lp.id;
   const klpCard = mk('div', 'card klp-ref-card');

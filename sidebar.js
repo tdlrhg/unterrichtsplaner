@@ -162,9 +162,9 @@ function buildSidebar() {
     () => { S.view = 'kalender'; S.sel = null; render(); }
   ));
   sb.appendChild(sbRow(
-    'Kurse & Fachplanungen', null,
-    S.view === 'einstellungen',
-    () => { S.view = 'einstellungen'; S.sel = null; render(); }
+    'Kurse', null,
+    S.view === 'einstellungen' || S.view === 'kursEinstellungen',
+    () => { S.view = 'einstellungen'; S.aktKursDetailId = null; S.sel = null; render(); }
   ));
 
   return sb;

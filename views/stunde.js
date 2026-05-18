@@ -246,12 +246,12 @@ Verfügbare Modelle (nur eines wählen):
 - Direkte Instruktion: I do / We do / You do
 - Forschend-entdeckend: Phänomen / Hypothese / Experiment / Auswertung
 
-Antworte NUR als JSON-Objekt:
+Antworte NUR als JSON-Objekt. WICHTIG: Keine Zeilenumbrüche innerhalb von Strings – schreibe alles in einer Zeile pro Feld:
 {
   "modell": "3-Phasen",
   "begruendung": "Ein Satz, warum dieses Modell passt.",
   "phasen": [
-    { "titel": "Einstieg", "inhalt": "Konkrete Beschreibung der Lehreraktivität und Schüleraktivität", "methode": "z.B. Unterrichtsgespräch", "sozialform": "z.B. Plenum", "minuten": 10 }
+    { "titel": "Einstieg", "inhalt": "Konkrete Beschreibung in einem Satz ohne Zeilenumbruch", "methode": "z.B. Unterrichtsgespräch", "sozialform": "z.B. Plenum", "minuten": 10 }
   ]
 }`;
 
@@ -268,7 +268,9 @@ Antworte NUR als JSON-Objekt:
       });
       const data = await res.json();
       const text = data.content?.[0]?.text || '';
-      const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      const raw = text.match(/\{[\s\S]*\}/)?.[0] || '{}';
+      const sanitized = raw.replace(/[\r\n\t]+/g, ' ');
+      const parsed = JSON.parse(sanitized);
       if (!parsed.phasen?.length) throw new Error('Keine Phasen erhalten');
       if (stunde.phasen.length > 0 && !confirm(`KI wählt: ${parsed.modell}\n„${parsed.begruendung}"\n\nVorhandene Phasen ersetzen?`)) {
         kiVorlageBtn.textContent = '✨ KI entscheidet'; kiVorlageBtn.disabled = false; return;

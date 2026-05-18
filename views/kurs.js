@@ -597,7 +597,7 @@ Antworte NUR mit einem JSON-Objekt:
     });
 
     const actRow = mk('div', 'ki-plan-actions');
-    const applyBtn = btn('✓ Alle als ' + CHILD[typ] + ' anlegen', 'btn btn-pri btn-sm');
+    const applyBtn = btn('✓ Übernehmen', 'btn btn-pri btn-sm');
     applyBtn.onclick = () => {
       const childArr = obj[{ block: 'reihen', reihe: 'einheiten', einheit: 'stunden' }[typ]] || [];
       if (childArr.length && !confirm('Vorhandene ' + CHILD[typ] + ' bleiben erhalten – neue werden hinzugefügt. Fortfahren?')) return;
@@ -608,6 +608,66 @@ Antworte NUR mit einem JSON-Objekt:
     discardBtn.onclick = () => { resultDiv.innerHTML = ''; };
     actRow.appendChild(applyBtn); actRow.appendChild(discardBtn);
     rb.appendChild(actRow);
+
+    // Iterationsfeld
+    const iterWrap = mk('div', 'ki-iter-wrap');
+    iterWrap.appendChild(tx('div', 'ki-iter-label', 'Feedback an die KI – was soll anders sein?'));
+    const iterInp = document.createElement('textarea');
+    iterInp.className = 'finp ki-iter-inp';
+    iterInp.placeholder = 'z.B. „Lieber 2 Doppelstunden statt 3 Einzelstunden, wir haben wenig Zeit vor den Ferien"';
+    iterWrap.appendChild(iterInp);
+    const iterBtn = btn('↩ Überarbeiten', 'btn btn-ghost btn-sm');
+    iterBtn.onclick = async () => {
+      const feedback = iterInp.value.trim();
+      if (!feedback) return;
+      iterBtn.disabled = true; iterBtn.textContent = '…';
+      try {
+        const vorschlagText = parsed.items.map((e, i) =>
+          `${i+1}. ${e.titel} (${e.stunden || '?'} Std.): ${e.beschreibung || ''}`
+        ).join('\n');
+        const iterPrompt = `Du hast folgenden Planungsvorschlag gemacht:\n\n${vorschlagText}\n\nDie Lehrerin hat folgendes Feedback:\n„${feedback}"\n\nBitte überarbeite den Vorschlag entsprechend. Halte dich weiterhin an die Hierarchie (Stunde=45/90 Min, Einheit=2-4 Std, kurze prägnante Titel). Antworte NUR mit dem gleichen JSON-Format:\n{"begruendung": "...", "items": [{"titel": "...", "beschreibung": "...", "stunden": 2, "klpIds": []}]}`;
+        const res2 = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: iterPrompt }] }),
+        });
+        const d2 = await res2.json();
+        const t2 = d2.content?.[0]?.text || '';
+        const p2 = JSON.parse(t2.match(/\{[\s\S]*\}/)?.[0] || '{}');
+        if (!p2.items?.length) throw new Error('Kein Vorschlag erhalten.');
+        parsed.items = p2.items;
+        if (p2.begruendung) parsed.begruendung = p2.begruendung;
+        // Neu rendern
+        resultDiv.innerHTML = '';
+        // Rekursiv neu aufrufen mit gleichem parsed – einfacher: render() triggert alles neu
+        // Aber wir haben parsed lokal – also DOM direkt updaten
+        rb.querySelector('.ki-plan-begr') && (rb.querySelector('.ki-plan-begr').textContent = '💡 ' + parsed.begruendung);
+        rb.querySelectorAll('.ki-plan-row').forEach(r => r.remove());
+        const insertBefore = rb.querySelector('.ki-plan-actions');
+        parsed.items.forEach((e, i) => {
+          const row = mk('div', 'ki-plan-row');
+          const nr = tx('span', 'ki-plan-nr', (i + 1) + '.');
+          const info = mk('div', 'ki-plan-info');
+          info.appendChild(tx('div', 'ki-plan-titel', e.titel));
+          if (e.beschreibung) info.appendChild(tx('div', 'ki-plan-desc', e.beschreibung));
+          const meta = [];
+          if (e.stunden) meta.push(e.stunden + ' Std.');
+          if (e.klpIds?.length) meta.push(e.klpIds.join(', '));
+          if (meta.length) info.appendChild(tx('div', 'ki-plan-meta', meta.join(' · ')));
+          row.appendChild(nr); row.appendChild(info);
+          rb.insertBefore(row, insertBefore);
+        });
+        resultDiv.appendChild(rb);
+        iterInp.value = '';
+      } catch(e) {
+        iterBtn.textContent = '⚠ ' + e.message;
+      } finally {
+        iterBtn.disabled = false;
+        if (iterBtn.textContent === '…') iterBtn.textContent = '↩ Überarbeiten';
+      }
+    };
+    iterWrap.appendChild(iterBtn);
+    rb.appendChild(iterWrap);
     resultDiv.appendChild(rb);
 
   } catch(e) {

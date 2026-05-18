@@ -474,7 +474,9 @@ HIERARCHIE dieser Lehrerin (verbindlich):
 
 Ein Block hat typischerweise 2–4 Reihen. Beispiel für "Thermodynamik": Reihe 1 "Reaktionsenthalpie", Reihe 2 "Entropie und Gibbs-Energie". Keine Stunden oder Einheiten vorschlagen – nur Reihen.
 
-Berücksichtige alle Stichworte, besondere Elemente (Referate, Klassenarbeiten…) und ordne jeder Reihe passende KLP-Kompetenzen zu.`,
+Berücksichtige alle Stichworte, besondere Elemente (Referate, Klassenarbeiten…) und ordne jeder Reihe passende KLP-Kompetenzen zu.
+
+TITEL: Kurz und prägnant – ein Oberbegriff, kein vollständiger Satz. Maximal 4–5 Wörter.`,
       childKey: 'items',
       childLabel: 'Reihe',
       anlegen: (parsed, parentObj) => {
@@ -494,7 +496,9 @@ HIERARCHIE dieser Lehrerin (verbindlich):
 
 Eine Reihe hat typischerweise 2–5 Einheiten. Keine einzelnen Stunden als Einheiten vorschlagen – eine Einheit hat immer mindestens 2 Stunden.
 
-Berücksichtige alle Stichworte und ordne jeder Einheit passende KLP-Kompetenzen zu.`,
+Berücksichtige alle Stichworte und ordne jeder Einheit passende KLP-Kompetenzen zu.
+
+TITEL: Kurz und prägnant – ein Oberbegriff, kein vollständiger Satz. Maximal 4–5 Wörter.`,
       childKey: 'items',
       childLabel: 'Einheit',
       anlegen: (parsed, parentObj) => {
@@ -511,7 +515,9 @@ HIERARCHIE dieser Lehrerin (verbindlich):
 - STUNDE = 45 Min. (Einzelstunde) oder 90 Min. (Doppelstunde)
 - EINHEIT = 2–4 Stunden (das ist die aktuelle Ebene)
 
-Eine Einheit hat 2–4 Stunden. Jede Stunde hat einen klaren Fokus und ein konkretes Lernziel. Gib bei jeder Stunde an ob es eine Einzel- (45 Min.) oder Doppelstunde (90 Min.) ist. Berücksichtige didaktische Progression.`,
+Eine Einheit hat 2–4 Stunden. Jede Stunde hat einen klaren Fokus und ein konkretes Lernziel. Gib bei jeder Stunde an ob es eine Einzel- (45 Min.) oder Doppelstunde (90 Min.) ist. Berücksichtige didaktische Progression.
+
+TITEL: Kurz und prägnant – ein Oberbegriff, kein vollständiger Satz. Beispiel: "Hess'scher Satz" statt "Berechnung der Reaktionsenthalpie mithilfe des Hess'schen Satzes". Maximal 4–5 Wörter.`,
       childKey: 'items',
       childLabel: 'Stunde',
       anlegen: (parsed, parentObj) => {

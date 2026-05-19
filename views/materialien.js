@@ -662,14 +662,12 @@ function viewMaterialien() {
       const card = mk('div', 'matc-card');
       const needsReview = mat.review && Object.values(mat.review).some(r => r?.needsReview);
 
-      // Reihe per reiheId; Einheit per einheitId
+      // Block per blockId; Einheit per einheitId
       let einheitTitel = null, reiheTitel = null;
-      if (mat.reiheId) {
+      if (mat.blockId) {
         outer: for (const fp of (S.data.fachplanungen || [])) {
-          for (const block of (fp.blocks || [])) {
-            const r = (block.reihen || []).find(r => r.id === mat.reiheId);
-            if (r) { reiheTitel = r.titel || r.name || null; break outer; }
-          }
+          const b = (fp.blocks || []).find(b => b.id === mat.blockId);
+          if (b) { reiheTitel = b.titel || b.name || null; break outer; }
         }
       }
       if (mat.einheitId) {
@@ -830,33 +828,31 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   const SII_JG2 = new Set(['EF','Q1','Q2','SII']);
   const matFaecher = (mat.fach || []).map(f => f.toLowerCase());
   const FACH_MAP = { 'Ch': 'chemie', 'Ch_GK': 'chemie', 'Ch_LK': 'chemie', 'Bio': 'biologie', 'Bio_GK': 'biologie', 'Bio_LK': 'biologie', 'M': 'mathematik' };
-  const reiheOptionen = [{ value: '', label: '– keine Zuweisung –' }];
+  const blockOptionen = [{ value: '', label: '– keine Zuweisung –' }];
   (S.data.fachplanungen || []).forEach(fp => {
-    if (!SII_JG2.has(fp.jahrgang)) return; // nur SII
+    if (!SII_JG2.has(fp.jahrgang)) return;
     const fpFach = (FACH_MAP[fp.fach] || fp.fach || '').toLowerCase();
     if (matFaecher.length && !matFaecher.some(f => fpFach.includes(f) || f.includes(fpFach.split(' ')[0]))) return;
     (fp.blocks || []).forEach(block => {
-      (block.reihen || []).forEach(reihe => {
-        const label = fp.jahrgang + ' · ' + (block.titel || block.name || 'Block') + ' › ' + (reihe.titel || reihe.name || 'Reihe');
-        reiheOptionen.push({ value: reihe.id, label, reiheId: reihe.id });
-      });
+      const label = fp.jahrgang + ' · ' + (block.titel || block.name || 'Block');
+      blockOptionen.push({ value: block.id, label });
     });
   });
-  const reiheRow = mk('div', 'mat-detail-row');
-  reiheRow.appendChild(tx('span', 'mat-detail-label', 'Reihe'));
-  const reiheSel = document.createElement('select'); reiheSel.className = 'finp';
-  reiheSel.style.cssText = 'font-size:12px;padding:3px 6px;max-width:320px;';
-  reiheOptionen.forEach(o => {
+  const blockRow = mk('div', 'mat-detail-row');
+  blockRow.appendChild(tx('span', 'mat-detail-label', 'Block'));
+  const blockSel = document.createElement('select'); blockSel.className = 'finp';
+  blockSel.style.cssText = 'font-size:12px;padding:3px 6px;max-width:320px;';
+  blockOptionen.forEach(o => {
     const opt = document.createElement('option'); opt.value = o.value; opt.textContent = o.label;
-    if (mat.reiheId && mat.reiheId === o.value) opt.selected = true;
-    reiheSel.appendChild(opt);
+    if (mat.blockId && mat.blockId === o.value) opt.selected = true;
+    blockSel.appendChild(opt);
   });
-  reiheSel.onchange = () => {
-    mat.reiheId = reiheSel.value || null;
+  blockSel.onchange = () => {
+    mat.blockId = blockSel.value || null;
     saveMatDB(); renderCards();
   };
-  reiheRow.appendChild(reiheSel);
-  body.appendChild(reiheRow);
+  blockRow.appendChild(blockSel);
+  body.appendChild(blockRow);
   editRow('Fach',                 () => arrGet('fach'),              arrSet('fach'),                    false, 'fach');
   editRow('Jahrgang',             () => arrGet('jahrgang'),          arrSet('jahrgang'),                false, 'jahrgang');
   editRow('Themen',               () => arrGet('themen'),            arrSet('themen'));

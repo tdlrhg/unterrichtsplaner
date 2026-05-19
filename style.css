@@ -108,6 +108,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .didaktik-ta { font-size: 12px; line-height: 1.5; resize: vertical; min-height: 120px; }
 .card-title { font-weight: 700; font-size: 14px; color: var(--pri); }
 .card-body { padding: 18px; }
+.einst-section-hdr { font-size: 11px; font-weight: 700; color: var(--tx2); text-transform: uppercase; letter-spacing: .8px; margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--bord); }
 
 /* ── Forms ── */
 .fg { margin-bottom: 14px; }

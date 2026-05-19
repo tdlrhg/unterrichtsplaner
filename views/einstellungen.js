@@ -5,100 +5,6 @@ function viewEinstellungen() {
   hdr.appendChild(tx('div', 'c-title', 'Einstellungen'));
   div.appendChild(hdr);
 
-  // ── KI-Einstellungen ──────────────────────────────────────────
-  const aiCard = mk('div', 'card');
-  aiCard.appendChild(cardHdr('KI-Einstellungen'));
-  const aib = mk('div', 'card-body');
-
-  function apiKeyField(label, storageKey, placeholder, hint) {
-    const fg = mk('div', 'fg');
-    fg.appendChild(tx('label', 'fl', label));
-    const wrap = mk('div', ''); wrap.style.cssText = 'display:flex;gap:8px;align-items:center;';
-    const inp = document.createElement('input');
-    inp.type = 'password'; inp.className = 'finp'; inp.placeholder = placeholder;
-    inp.value = localStorage.getItem(storageKey) || '';
-    inp.style.flex = '1';
-    const saveBtn = btn('Speichern', 'btn btn-pri btn-sm');
-    saveBtn.onclick = () => {
-      const val = inp.value.trim();
-      if (val) { localStorage.setItem(storageKey, val); saveBtn.textContent = '✓ Gespeichert'; }
-      else { localStorage.removeItem(storageKey); saveBtn.textContent = '✓ Gelöscht'; }
-      setTimeout(() => { saveBtn.textContent = 'Speichern'; }, 2000);
-    };
-    wrap.appendChild(inp); wrap.appendChild(saveBtn);
-    fg.appendChild(wrap);
-    const h = tx('div', '', hint);
-    h.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:4px;';
-    fg.appendChild(h);
-    return fg;
-  }
-
-  aib.appendChild(apiKeyField('Anthropic API-Key (Claude)', 'ant_key', 'sk-ant-...', 'Wird nur lokal gespeichert – verlässt dieses Gerät nicht.'));
-  aib.appendChild(apiKeyField('OpenAI API-Key', 'oai_key', 'sk-proj-...', 'Wird nur lokal gespeichert – verlässt dieses Gerät nicht.'));
-  aiCard.appendChild(aib);
-  div.appendChild(aiCard);
-
-  // ── Cloudflare R2 ─────────────────────────────────────────────
-  const r2Card = mk('div', 'card');
-  r2Card.appendChild(cardHdr('Cloudflare R2 – Materialspeicher'));
-  const r2b = mk('div', 'card-body');
-
-  function r2Field(label, storageKey, placeholder, isSecret = false) {
-    const fg = mk('div', 'fg');
-    fg.appendChild(tx('label', 'fl', label));
-    const wrap = mk('div', ''); wrap.style.cssText = 'display:flex;gap:8px;align-items:center;';
-    const inp = document.createElement('input');
-    inp.type = isSecret ? 'password' : 'text';
-    inp.className = 'finp'; inp.placeholder = placeholder;
-    inp.value = localStorage.getItem(storageKey) || '';
-    inp.style.flex = '1';
-    const saveBtn = btn('Speichern', 'btn btn-pri btn-sm');
-    saveBtn.onclick = () => {
-      const val = inp.value.trim();
-      if (val) { localStorage.setItem(storageKey, val); saveBtn.textContent = '✓'; }
-      else { localStorage.removeItem(storageKey); saveBtn.textContent = '✓ Gelöscht'; }
-      setTimeout(() => { saveBtn.textContent = 'Speichern'; }, 2000);
-    };
-    wrap.appendChild(inp); wrap.appendChild(saveBtn);
-    fg.appendChild(wrap);
-    return fg;
-  }
-
-  r2b.appendChild(r2Field('S3 Endpoint', 'r2_endpoint', 'https://xxxx.r2.cloudflarestorage.com'));
-  r2b.appendChild(r2Field('Bucket-Name', 'r2_bucket', 'unterrichtsplaner-materialien'));
-  r2b.appendChild(r2Field('Access Key ID', 'r2_access_key', 'xxxxxxxxxxxx'));
-  r2b.appendChild(r2Field('Secret Access Key', 'r2_secret_key', '••••••••••••••••••••', true));
-  r2b.appendChild(r2Field('Öffentliche URL (optional)', 'r2_public_url', 'https://pub-xxxx.r2.dev'));
-
-  const hint = tx('div', '', '💡 Bucket muss CORS für diese Seite erlauben. Öffentliche URL nur nötig wenn Dateien direkt verlinkt werden sollen.');
-  hint.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:8px;';
-  r2b.appendChild(hint);
-
-  // Verbindungstest
-  const testRow = mk('div', ''); testRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:12px;';
-  const testBtn = btn('Verbindung testen', 'btn btn-ghost btn-sm');
-  const testStatus = tx('span', '', '');
-  testStatus.style.cssText = 'font-size:12px;';
-  testBtn.onclick = async () => {
-    testBtn.disabled = true; testStatus.textContent = '…'; testStatus.style.color = 'var(--tx3)';
-    try {
-      const testBlob = new Blob(['ok'], { type: 'text/plain' });
-      await r2Upload('_test.txt', testBlob, 'text/plain');
-      await r2Delete('_test.txt');
-      testStatus.textContent = '✓ Verbindung erfolgreich';
-      testStatus.style.color = 'var(--grn)';
-    } catch(e) {
-      testStatus.textContent = '✗ ' + e.message;
-      testStatus.style.color = '#dc2626';
-    }
-    testBtn.disabled = false;
-  };
-  testRow.appendChild(testBtn); testRow.appendChild(testStatus);
-  r2b.appendChild(testRow);
-
-  r2Card.appendChild(r2b);
-  div.appendChild(r2Card);
-
   // ── Kurse als Kacheln ─────────────────────────────────────────
   const kCard = mk('div', 'card');
   const kHdr = cardHdr('Meine Kurse');
@@ -116,37 +22,23 @@ function viewEinstellungen() {
     kurse.forEach(kurs => {
       const fp = getFachplanung(kurs.fachplanungId);
       const kachel = mk('div', 'kurs-kachel');
-
       const top = mk('div', 'kurs-kachel-top');
       top.appendChild(tx('div', 'kurs-kachel-name', kurs.klasse));
       top.appendChild(tx('div', 'kurs-kachel-sj', kurs.schuljahr || ''));
       kachel.appendChild(top);
-
       if (fp) kachel.appendChild(tx('div', 'kurs-kachel-fach', fachLabel(fp.fach) + ' · Jg. ' + fp.jahrgang));
-
-      // Indikatoren
       const indicators = mk('div', 'kurs-kachel-ind');
       const hasRes = kurs.ressourcen && Object.keys(kurs.ressourcen).length > 0;
       const hasLg  = kurs.lerngruppe && Object.keys(kurs.lerngruppe).some(k => kurs.lerngruppe[k]);
       if (hasRes) indicators.appendChild(tx('span', 'kurs-ind-chip', '📦 Ressourcen'));
       if (hasLg)  indicators.appendChild(tx('span', 'kurs-ind-chip', '👥 Lerngruppe'));
       kachel.appendChild(indicators);
-
-      kachel.onclick = () => {
-        S.view = 'kursEinstellungen';
-        S.aktKursDetailId = kurs.id;
-        render();
-      };
-
-      // Löschen-Button (hover)
+      kachel.onclick = () => { S.view = 'kursEinstellungen'; S.aktKursDetailId = kurs.id; render(); };
       const delBtn = mk('button', 'kurs-kachel-del');
       delBtn.textContent = '✕'; delBtn.title = 'Kurs löschen';
       delBtn.onclick = e => {
         e.stopPropagation();
-        if (confirm('Kurs "' + kurs.klasse + '" löschen?')) {
-          S.data.kurse = S.data.kurse.filter(k => k.id !== kurs.id);
-          scheduleSave(); render();
-        }
+        if (confirm('Kurs "' + kurs.klasse + '" löschen?')) { S.data.kurse = S.data.kurse.filter(k => k.id !== kurs.id); scheduleSave(); render(); }
       };
       kachel.appendChild(delBtn);
       grid.appendChild(kachel);
@@ -155,6 +47,70 @@ function viewEinstellungen() {
   }
   kCard.appendChild(kb);
   div.appendChild(kCard);
+
+  // ── Technische Einstellungen ──────────────────────────────────
+  const techHdr = mk('div', 'einst-section-hdr');
+  techHdr.textContent = 'Technische Einstellungen';
+  div.appendChild(techHdr);
+
+  function keyField(label, storageKey, placeholder, isSecret = true, hint = '') {
+    const fg = mk('div', 'fg');
+    fg.appendChild(tx('label', 'fl', label));
+    const wrap = mk('div', ''); wrap.style.cssText = 'display:flex;gap:8px;align-items:center;';
+    const inp = document.createElement('input');
+    inp.type = isSecret ? 'password' : 'text'; inp.className = 'finp';
+    inp.placeholder = placeholder; inp.value = localStorage.getItem(storageKey) || '';
+    inp.style.flex = '1';
+    const saveBtn = btn('Speichern', 'btn btn-pri btn-sm');
+    saveBtn.onclick = () => {
+      const val = inp.value.trim();
+      if (val) { localStorage.setItem(storageKey, val); saveBtn.textContent = '✓ Gespeichert'; }
+      else { localStorage.removeItem(storageKey); saveBtn.textContent = '✓ Gelöscht'; }
+      setTimeout(() => { saveBtn.textContent = 'Speichern'; }, 2000);
+    };
+    wrap.appendChild(inp); wrap.appendChild(saveBtn);
+    fg.appendChild(wrap);
+    if (hint) { const h = tx('div', '', hint); h.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:4px;'; fg.appendChild(h); }
+    return fg;
+  }
+
+  // KI-Keys
+  const aiCard = mk('div', 'card');
+  aiCard.appendChild(cardHdr('KI-Schnittstellen'));
+  const aib = mk('div', 'card-body');
+  aib.appendChild(keyField('Anthropic API-Key (Claude)', 'ant_key', 'sk-ant-...', true, 'Wird nur lokal gespeichert – verlässt dieses Gerät nicht.'));
+  aib.appendChild(keyField('OpenAI API-Key', 'oai_key', 'sk-proj-...', true, 'Wird nur lokal gespeichert – verlässt dieses Gerät nicht.'));
+  aiCard.appendChild(aib);
+  div.appendChild(aiCard);
+
+  // R2-Zugangsdaten
+  const r2Card = mk('div', 'card');
+  r2Card.appendChild(cardHdr('Cloudflare R2 – Materialspeicher'));
+  const r2b = mk('div', 'card-body');
+  r2b.appendChild(keyField('S3 Endpoint', 'r2_endpoint', 'https://xxxx.r2.cloudflarestorage.com', false));
+  r2b.appendChild(keyField('Bucket-Name', 'r2_bucket', 'unterrichtsplaner-materialien', false));
+  r2b.appendChild(keyField('Access Key ID', 'r2_access_key', 'xxxxxxxxxxxx', false));
+  r2b.appendChild(keyField('Secret Access Key', 'r2_secret_key', '••••••••••••••••••••', true));
+  r2b.appendChild(keyField('Öffentliche URL (optional)', 'r2_public_url', 'https://pub-xxxx.r2.dev', false));
+  const r2hint = tx('div', '', '💡 Bucket muss CORS für diese Seite erlauben. Öffentliche URL nur nötig wenn Dateien direkt verlinkt werden sollen.');
+  r2hint.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:8px;';
+  r2b.appendChild(r2hint);
+  const testRow = mk('div', ''); testRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:12px;';
+  const testBtn = btn('Verbindung testen', 'btn btn-ghost btn-sm');
+  const testStatus = tx('span', '', ''); testStatus.style.cssText = 'font-size:12px;';
+  testBtn.onclick = async () => {
+    testBtn.disabled = true; testStatus.textContent = '…'; testStatus.style.color = 'var(--tx3)';
+    try {
+      await r2Upload('_test.txt', new Blob(['ok'], { type: 'text/plain' }), 'text/plain');
+      await r2Delete('_test.txt');
+      testStatus.textContent = '✓ Verbindung erfolgreich'; testStatus.style.color = 'var(--grn)';
+    } catch(e) { testStatus.textContent = '✗ ' + e.message; testStatus.style.color = '#dc2626'; }
+    testBtn.disabled = false;
+  };
+  testRow.appendChild(testBtn); testRow.appendChild(testStatus);
+  r2b.appendChild(testRow);
+  r2Card.appendChild(r2b);
+  div.appendChild(r2Card);
 
   return div;
 }

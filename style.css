@@ -667,3 +667,18 @@ textarea::placeholder { color: #c4cdd6; }
 .pr-chip:hover { border-color: var(--pri); color: var(--pri); }
 .pr-chip.active { border-color: var(--pri); background: #ede9fe; color: var(--pri); font-weight: 700; }
 .pr-chip.active.ki { border-color: #7c3aed; background: #f5f3ff; color: #7c3aed; }
+
+/* ── Methodendatenbank ── */
+.meth-filter-chip { border:1px solid var(--bord); background:var(--surf2); color:var(--tx2); border-radius:10px; padding:2px 9px; font-size:11px; cursor:pointer; }
+.meth-filter-chip:hover { border-color:var(--pri); color:var(--pri); }
+.meth-filter-chip.on { border-color:var(--pri); background:#ede9fe; color:var(--pri); font-weight:600; }
+.meth-row { padding:10px 16px; }
+.meth-row-sep { border-bottom:1px solid var(--bord); }
+.meth-row-top { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:2px; }
+.meth-row-name { font-size:13px; font-weight:600; color:var(--tx); white-space:nowrap; }
+.meth-row-chips { display:flex; flex-wrap:wrap; gap:3px; }
+.meth-row-desc { font-size:12px; color:var(--tx2); line-height:1.4; }
+.meth-chip { border-radius:8px; font-size:10px; padding:1px 6px; }
+.meth-chip-phase { background:#ede9fe; color:#4f46e5; }
+.meth-chip-soz   { background:var(--surf2); color:var(--tx2); }
+.meth-chip-mat   { background:#fef3c7; color:#92400e; }

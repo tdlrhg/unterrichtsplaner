@@ -38,6 +38,67 @@ function viewEinstellungen() {
   aiCard.appendChild(aib);
   div.appendChild(aiCard);
 
+  // ── Cloudflare R2 ─────────────────────────────────────────────
+  const r2Card = mk('div', 'card');
+  r2Card.appendChild(cardHdr('Cloudflare R2 – Materialspeicher'));
+  const r2b = mk('div', 'card-body');
+
+  function r2Field(label, storageKey, placeholder, isSecret = false) {
+    const fg = mk('div', 'fg');
+    fg.appendChild(tx('label', 'fl', label));
+    const wrap = mk('div', ''); wrap.style.cssText = 'display:flex;gap:8px;align-items:center;';
+    const inp = document.createElement('input');
+    inp.type = isSecret ? 'password' : 'text';
+    inp.className = 'finp'; inp.placeholder = placeholder;
+    inp.value = localStorage.getItem(storageKey) || '';
+    inp.style.flex = '1';
+    const saveBtn = btn('Speichern', 'btn btn-pri btn-sm');
+    saveBtn.onclick = () => {
+      const val = inp.value.trim();
+      if (val) { localStorage.setItem(storageKey, val); saveBtn.textContent = '✓'; }
+      else { localStorage.removeItem(storageKey); saveBtn.textContent = '✓ Gelöscht'; }
+      setTimeout(() => { saveBtn.textContent = 'Speichern'; }, 2000);
+    };
+    wrap.appendChild(inp); wrap.appendChild(saveBtn);
+    fg.appendChild(wrap);
+    return fg;
+  }
+
+  r2b.appendChild(r2Field('S3 Endpoint', 'r2_endpoint', 'https://xxxx.r2.cloudflarestorage.com'));
+  r2b.appendChild(r2Field('Bucket-Name', 'r2_bucket', 'unterrichtsplaner-materialien'));
+  r2b.appendChild(r2Field('Access Key ID', 'r2_access_key', 'xxxxxxxxxxxx'));
+  r2b.appendChild(r2Field('Secret Access Key', 'r2_secret_key', '••••••••••••••••••••', true));
+  r2b.appendChild(r2Field('Öffentliche URL (optional)', 'r2_public_url', 'https://pub-xxxx.r2.dev'));
+
+  const hint = tx('div', '', '💡 Bucket muss CORS für diese Seite erlauben. Öffentliche URL nur nötig wenn Dateien direkt verlinkt werden sollen.');
+  hint.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:8px;';
+  r2b.appendChild(hint);
+
+  // Verbindungstest
+  const testRow = mk('div', ''); testRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:12px;';
+  const testBtn = btn('Verbindung testen', 'btn btn-ghost btn-sm');
+  const testStatus = tx('span', '', '');
+  testStatus.style.cssText = 'font-size:12px;';
+  testBtn.onclick = async () => {
+    testBtn.disabled = true; testStatus.textContent = '…'; testStatus.style.color = 'var(--tx3)';
+    try {
+      const testBlob = new Blob(['ok'], { type: 'text/plain' });
+      await r2Upload('_test.txt', testBlob, 'text/plain');
+      await r2Delete('_test.txt');
+      testStatus.textContent = '✓ Verbindung erfolgreich';
+      testStatus.style.color = 'var(--grn)';
+    } catch(e) {
+      testStatus.textContent = '✗ ' + e.message;
+      testStatus.style.color = '#dc2626';
+    }
+    testBtn.disabled = false;
+  };
+  testRow.appendChild(testBtn); testRow.appendChild(testStatus);
+  r2b.appendChild(testRow);
+
+  r2Card.appendChild(r2b);
+  div.appendChild(r2Card);
+
   // ── Kurse als Kacheln ─────────────────────────────────────────
   const kCard = mk('div', 'card');
   const kHdr = cardHdr('Meine Kurse');

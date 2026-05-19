@@ -647,6 +647,44 @@ textarea::placeholder { color: #c4cdd6; }
 .kurs-kachel:hover .kurs-kachel-del { opacity: 1; }
 .kurs-kachel-del:hover { color: var(--red); background: var(--red-bg); }
 
+/* ── Materialdatenbank – Karten-Grid ── */
+.matc-count { font-size: 11px; color: var(--tx3); padding: 8px 2px 6px; }
+.matc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+
+.matc-card { background: var(--surf); border: 1px solid var(--bord); border-radius: var(--r); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; box-shadow: var(--sh); cursor: pointer; transition: border-color .15s, box-shadow .15s; position: relative; }
+.matc-card:hover { border-color: var(--pri); box-shadow: 0 2px 10px rgba(79,70,229,.1); }
+
+.matc-card-hdr { display: flex; align-items: baseline; gap: 6px; }
+.matc-nr { font-size: 10px; font-weight: 700; background: var(--pri); color: #fff; border-radius: 6px; padding: 1px 6px; flex-shrink: 0; }
+.matc-title { font-size: 13px; font-weight: 700; color: var(--tx); flex: 1; min-width: 0; }
+.matc-del { border: none; background: none; cursor: pointer; color: var(--tx3); font-size: 12px; opacity: 0; transition: opacity .15s; padding: 0 2px; margin-left: auto; flex-shrink: 0; }
+.matc-card:hover .matc-del { opacity: 1; }
+.matc-del:hover { color: var(--red); }
+
+.matc-unit { font-size: 10px; color: var(--tx3); margin-top: -2px; }
+
+.matc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.matc-typ-badge { font-size: 10px; border-radius: 8px; padding: 1px 7px; font-weight: 600; white-space: nowrap; }
+.matc-fach { font-size: 10px; color: var(--tx2); background: var(--surf2); border-radius: 8px; padding: 1px 6px; }
+.matc-jg { font-size: 10px; color: var(--tx3); background: var(--surf2); border-radius: 8px; padding: 1px 6px; }
+
+.matc-phases { display: flex; flex-wrap: wrap; gap: 3px; }
+.matc-phase-chip { font-size: 10px; border-radius: 8px; padding: 1px 7px; font-weight: 500; }
+
+.matc-footer { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+.matc-klp-count { font-size: 10px; background: #dcfce7; color: #166534; border-radius: 8px; padding: 1px 7px; font-weight: 600; }
+.matc-kogn { font-size: 10px; color: var(--tx3); }
+.matc-laut { font-size: 12px; }
+
+/* ── Materialdatenbank – Detail-Overlay ── */
+.matd-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 200; align-items: flex-start; justify-content: flex-end; }
+.matd-overlay.open { display: flex; }
+.matd-panel { background: var(--surf); width: 560px; max-width: 95vw; height: 100vh; display: flex; flex-direction: column; box-shadow: -4px 0 24px rgba(0,0,0,.15); }
+.matd-panel-hdr { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--bord); flex-shrink: 0; }
+.matd-panel-title { font-size: 14px; font-weight: 700; color: var(--tx); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.matd-close { flex-shrink: 0; }
+.matd-panel-body { flex: 1; overflow-y: auto; padding: 12px 16px 24px; }
+
 /* ── Ressourcen-Editor ── */
 .res-check-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
 .res-check-label { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }

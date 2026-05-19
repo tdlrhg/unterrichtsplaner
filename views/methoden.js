@@ -126,7 +126,8 @@ function viewMethoden() {
 
       const chips = mk('div', 'meth-card-chips');
       m.phasen.forEach(p => chips.appendChild(tx('span', 'meth-chip meth-chip-phase', p)));
-      m.sozialform.forEach(s => chips.appendChild(tx('span', 'meth-chip meth-chip-soz', s)));
+      const SOZ_ABK = { 'Einzelarbeit':'EA', 'Partnerarbeit':'PA', 'Gruppenarbeit':'GA', 'Plenum':'PL' };
+      m.sozialform.forEach(s => chips.appendChild(tx('span', 'meth-chip meth-chip-soz', SOZ_ABK[s] || s)));
       m.materialtyp.forEach(mt => {
         if (mt !== 'Kein Material') chips.appendChild(tx('span', 'meth-chip meth-chip-mat', mt));
       });

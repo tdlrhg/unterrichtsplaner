@@ -707,6 +707,24 @@ textarea::placeholder { color: #c4cdd6; }
 .pr-chip.active { border-color: var(--pri); background: #ede9fe; color: var(--pri); font-weight: 700; }
 .pr-chip.active.ki { border-color: #7c3aed; background: #f5f3ff; color: #7c3aed; }
 
+/* ── PDF Upload Panel ── */
+.mat-upload-panel { background:var(--surf); border:1px solid var(--bord); border-radius:var(--r); padding:16px; margin-bottom:12px; box-shadow:var(--sh); }
+.mat-upload-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.mat-upload-title { font-size:14px; font-weight:700; color:var(--tx); }
+.mat-upload-path-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
+.mat-upload-sel { width:auto !important; flex-shrink:0; }
+.mat-upload-sub { flex:1; min-width:120px; }
+.mat-upload-sep { font-weight:700; color:var(--tx3); padding:0 2px; }
+.mat-upload-path-prev { font-size:11px; color:var(--pri); font-family:monospace; margin-bottom:12px; padding:5px 8px; background:var(--surf2); border-radius:4px; }
+.mat-upload-drop { border:2px dashed var(--bord); border-radius:var(--r); padding:24px; text-align:center; cursor:pointer; color:var(--tx2); font-size:13px; transition:border-color .15s,background .15s; margin-bottom:12px; }
+.mat-upload-drop:hover, .mat-upload-drop.drag-over { border-color:var(--pri); background:var(--surf2); }
+.mat-upload-spin { padding:12px; color:var(--tx3); font-size:13px; }
+.mat-upload-thumbs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; max-height:420px; overflow-y:auto; padding:4px 0; }
+.mat-upload-thumb { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.mat-upload-thumb canvas { border:1px solid var(--bord); border-radius:4px; display:block; box-shadow:var(--sh); }
+.mat-upload-thumb-nr { font-size:10px; color:var(--tx3); }
+.mat-upload-actions { display:flex; gap:8px; align-items:center; padding-top:10px; border-top:1px solid var(--bord); }
+
 /* ── Methodendatenbank ── */
 .meth-filter-chip { border:1px solid var(--bord); background:var(--surf2); color:var(--tx2); border-radius:10px; padding:2px 9px; font-size:11px; cursor:pointer; }
 .meth-filter-chip:hover { border-color:var(--pri); color:var(--pri); }

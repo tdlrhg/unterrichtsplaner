@@ -1,5 +1,113 @@
 // ── Materialien-Datenbank ─────────────────────────────────────────
-let _kontextFiles = [];
+let _kontextFiles  = [];
+let _uploadPdfFile = null;
+let _uploadPdfDoc  = null;
+
+function buildUploadPanel() {
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  }
+
+  const p = mk('div', 'mat-upload-panel');
+
+  // Header
+  const pHdr = mk('div', 'mat-upload-hdr');
+  pHdr.appendChild(tx('span', 'mat-upload-title', '📄 PDF hochladen'));
+  const closeP = btn('✕', 'btn btn-ghost btn-xs');
+  closeP.onclick = () => p.remove();
+  pHdr.appendChild(closeP);
+  p.appendChild(pHdr);
+
+  // Path builder
+  const pathRow = mk('div', 'mat-upload-path-row');
+  const fachOpts = ['Bio SI','Bio SII','Chemie SI','Chemie SII','Mathe'];
+  const fachSel2 = document.createElement('select'); fachSel2.className = 'finp mat-upload-sel';
+  fachOpts.forEach(f => { const o = document.createElement('option'); o.value = f; o.textContent = f; fachSel2.appendChild(o); });
+  const unterInp2 = document.createElement('input'); unterInp2.type = 'text'; unterInp2.className = 'finp mat-upload-sub';
+  unterInp2.placeholder = 'Unterordner (z.B. 7-8 oder Q1)';
+  const themaInp2 = document.createElement('input'); themaInp2.type = 'text'; themaInp2.className = 'finp mat-upload-sub';
+  themaInp2.placeholder = 'Thema (z.B. Elektrochemie)';
+  pathRow.appendChild(fachSel2);
+  pathRow.appendChild(tx('span', 'mat-upload-sep', '/'));
+  pathRow.appendChild(unterInp2);
+  pathRow.appendChild(tx('span', 'mat-upload-sep', '/'));
+  pathRow.appendChild(themaInp2);
+  p.appendChild(pathRow);
+
+  const pathPrev = tx('div', 'mat-upload-path-prev', '');
+  p.appendChild(pathPrev);
+
+  let currentFn = '';
+  function updatePath() {
+    const parts = [fachSel2.value, unterInp2.value.trim(), themaInp2.value.trim()].filter(Boolean);
+    pathPrev.textContent = '→ ' + parts.join('/') + '/' + (currentFn || '{dateiname}.pdf');
+  }
+  fachSel2.onchange = updatePath; unterInp2.oninput = updatePath; themaInp2.oninput = updatePath;
+  updatePath();
+
+  // Drop zone
+  const zone2 = mk('div', 'mat-upload-drop');
+  zone2.textContent = '📄 PDF hierher ziehen oder klicken';
+  const pdfInp = document.createElement('input'); pdfInp.type = 'file'; pdfInp.accept = 'application/pdf'; pdfInp.style.display = 'none';
+  zone2.onclick = () => pdfInp.click();
+  zone2.ondragover = e => { e.preventDefault(); zone2.classList.add('drag-over'); };
+  zone2.ondragleave = () => zone2.classList.remove('drag-over');
+  zone2.ondrop = e => { e.preventDefault(); zone2.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handlePdf(e.dataTransfer.files[0]); };
+  pdfInp.onchange = () => { if (pdfInp.files[0]) handlePdf(pdfInp.files[0]); };
+  p.appendChild(zone2); p.appendChild(pdfInp);
+
+  // Thumbnails
+  const thumbsWrap = mk('div', 'mat-upload-thumbs');
+  p.appendChild(thumbsWrap);
+
+  // Action row (shown after file loaded)
+  const acts = mk('div', 'mat-upload-actions');
+  acts.style.display = 'none';
+  const weiterBtn2 = btn('Weiter: Seiten aufteilen →', 'btn btn-pri btn-sm');
+  weiterBtn2.disabled = true;
+  acts.appendChild(weiterBtn2);
+  p.appendChild(acts);
+
+  async function handlePdf(file) {
+    _uploadPdfFile = file;
+    currentFn = file.name;
+    zone2.textContent = '✓ ' + file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+    zone2.style.cursor = 'default';
+    updatePath();
+    thumbsWrap.innerHTML = '';
+    const spin = tx('div', 'mat-upload-spin', '⏳ Lade Vorschau…');
+    thumbsWrap.appendChild(spin);
+    try {
+      if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js nicht geladen.');
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      _uploadPdfDoc = pdf;
+      thumbsWrap.innerHTML = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const vp0 = page.getViewport({ scale: 1 });
+        const scale = 140 / vp0.width;
+        const vp = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        canvas.width = vp.width; canvas.height = vp.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        const thumb = mk('div', 'mat-upload-thumb');
+        thumb.appendChild(canvas);
+        thumb.appendChild(tx('div', 'mat-upload-thumb-nr', 'S. ' + i));
+        thumbsWrap.appendChild(thumb);
+      }
+      acts.style.display = 'flex';
+      weiterBtn2.disabled = false;
+    } catch(e) {
+      thumbsWrap.innerHTML = '';
+      const err = tx('div', '', '⚠ ' + e.message);
+      err.style.cssText = 'padding:12px;color:#dc2626;font-size:13px;';
+      thumbsWrap.appendChild(err);
+    }
+  }
+
+  return p;
+}
 
 const PHASE_COLOR = {
   'Einstieg':    { bg: '#ede9fe', tx: '#5b21b6' },
@@ -232,7 +340,13 @@ function viewMaterialien() {
     div.insertBefore(p, div.children[1]);
   };
 
-  hdrBtns.appendChild(schemaBtn); hdrBtns.appendChild(scanBtn); hdrBtns.appendChild(importBtn);
+  const uploadBtn = btn('📄 PDF hochladen', 'btn btn-pri btn-sm');
+  uploadBtn.onclick = () => {
+    const ex = div.querySelector('.mat-upload-panel');
+    if (ex) { ex.remove(); return; }
+    div.insertBefore(buildUploadPanel(), div.children[1]);
+  };
+  hdrBtns.appendChild(uploadBtn); hdrBtns.appendChild(schemaBtn); hdrBtns.appendChild(scanBtn); hdrBtns.appendChild(importBtn);
   hdr.appendChild(hdrBtns);
   div.appendChild(hdr);
 

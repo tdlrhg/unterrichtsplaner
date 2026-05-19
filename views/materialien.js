@@ -244,6 +244,7 @@ function buildUploadPanel() {
           const entry = {
             id: 'mat_' + Date.now() + '_' + gi,
             titel: baseName + ' – ' + suffix,
+            materialnummer: suffix,
             materialtyp: typ === 'lh' ? 'Lehrerhandreichung' : 'Arbeitsblatt',
             fach: [fachSel2.value.replace(/ S(I{1,2}|i{1,2})$/, '').trim()],
             jahrgang: [],
@@ -319,9 +320,9 @@ Antworte NUR mit JSON (kein Text davor/danach):
                 const enriched = JSON.parse(match[0]);
                 const idx = MATDB.findIndex(m => m.id === entry.id);
                 if (idx >= 0) {
-                  const savedQuelle = MATDB[idx].quelle; // KI darf quelle nicht überschreiben
+                  const { quelle, materialnummer, r2key, r2url, kontextR2key, seiten, importiertAm, id } = MATDB[idx];
                   Object.assign(MATDB[idx], enriched);
-                  MATDB[idx].quelle = savedQuelle;
+                  Object.assign(MATDB[idx], { quelle, materialnummer, r2key, r2url, kontextR2key, seiten, importiertAm, id });
                 }
               }
             } catch(e2) { console.error('Analyse fehlgeschlagen:', entry.id, e2); }
@@ -951,8 +952,8 @@ Antworte NUR mit JSON (kein Text davor/danach):
           const enriched = JSON.parse(match[0]);
           const idx = MATDB.findIndex(m => m.id === mat.id);
           if (idx >= 0) {
-            const keep = (({ quelle, r2key, r2url, kontextR2key, seiten, importiertAm, id }) =>
-              ({ quelle, r2key, r2url, kontextR2key, seiten, importiertAm, id }))(MATDB[idx]);
+            const keep = (({ quelle, materialnummer, r2key, r2url, kontextR2key, seiten, importiertAm, id }) =>
+              ({ quelle, materialnummer, r2key, r2url, kontextR2key, seiten, importiertAm, id }))(MATDB[idx]);
             Object.assign(MATDB[idx], enriched, keep);
           }
           saveMatDB(); renderCards();

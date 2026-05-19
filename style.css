@@ -742,6 +742,8 @@ textarea::placeholder { color: #c4cdd6; }
 .mat-r2-file-exists { opacity:.5; }
 .mat-r2-filename { flex:1; font-size:12px; color:var(--tx); }
 .mat-r2-size { font-size:11px; color:var(--tx3); white-space:nowrap; }
+.mat-r2-file-wrap { margin:2px 0; }
+.mat-r2-ktx-thumb { padding:4px 6px 8px; }
 
 .mat-upload-sep { font-weight:700; color:var(--tx3); padding:0 2px; }
 .mat-upload-path-prev { font-size:11px; color:var(--pri); font-family:monospace; margin-bottom:12px; padding:5px 8px; background:var(--surf2); border-radius:4px; }

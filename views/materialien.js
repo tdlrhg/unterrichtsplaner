@@ -1123,8 +1123,44 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
         files.forEach(({ key }) => {
           if (!key.endsWith('.pdf') && !key.endsWith('.png') && !key.endsWith('.jpg')) return;
           const name = key.split('/').pop();
+          const wrap = mk('div', 'mat-r2-file-wrap');
           const row = mk('div', 'mat-r2-file');
           row.appendChild(tx('span', 'mat-r2-filename', name));
+
+          // Vorschau-Button
+          const prevBtn = btn('👁', 'btn btn-ghost btn-xs');
+          prevBtn.title = 'Erste Seite anzeigen';
+          const thumbWrap = mk('div', 'mat-r2-ktx-thumb'); thumbWrap.style.display = 'none';
+          prevBtn.onclick = async () => {
+            if (thumbWrap.style.display !== 'none') { thumbWrap.style.display = 'none'; return; }
+            prevBtn.textContent = '⏳'; prevBtn.disabled = true;
+            try {
+              const buf = await r2Download(key);
+              const isPdf = key.endsWith('.pdf');
+              thumbWrap.innerHTML = '';
+              if (isPdf) {
+                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+                const page = await pdf.getPage(1);
+                const vp0 = page.getViewport({ scale: 1 });
+                const cv = document.createElement('canvas');
+                const vp = page.getViewport({ scale: 320 / vp0.width });
+                cv.width = vp.width; cv.height = vp.height;
+                await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+                cv.style.cssText = 'max-width:300px;height:auto;border:1px solid var(--bord);border-radius:4px;';
+                thumbWrap.appendChild(cv);
+              } else {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(new Blob([buf]));
+                img.style.cssText = 'max-width:300px;height:auto;border:1px solid var(--bord);border-radius:4px;';
+                thumbWrap.appendChild(img);
+              }
+              thumbWrap.style.display = 'block';
+            } catch(e3) {
+              thumbWrap.textContent = '⚠ ' + e3.message; thumbWrap.style.display = 'block';
+            } finally { prevBtn.textContent = '👁'; prevBtn.disabled = false; }
+          };
+          row.appendChild(prevBtn);
+
           const useBtn = btn('Verwenden', 'btn btn-pri btn-xs');
           useBtn.onclick = () => {
             mat.kontextR2key = key; saveMatDB();
@@ -1132,7 +1168,9 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
             ktxClearBtn.style.display = '';
             ktxTree.style.display = 'none'; ktxPickBtn.textContent = '📂 Aus R2 wählen';
           };
-          row.appendChild(useBtn); container.appendChild(row);
+          row.appendChild(useBtn);
+          wrap.appendChild(row); wrap.appendChild(thumbWrap);
+          container.appendChild(wrap);
         });
       }
       renderKtxFolder('', ktxTree).catch(e => { ktxTree.innerHTML = '<span style="color:#dc2626;font-size:12px">⚠ ' + e.message + '</span>'; });

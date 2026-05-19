@@ -68,7 +68,7 @@ function viewMethoden() {
       });
     });
 
-    const filtered = METHDB.filter(m => {
+    const filtered = [...METHDB].sort((a, b) => a.name.localeCompare(b.name, 'de')).filter(m => {
       if (filterPhase  && !m.phasen.includes(filterPhase))       return false;
       if (filterSozial && !m.sozialform.includes(filterSozial))  return false;
       if (filterMat    && !m.materialtyp.includes(filterMat))    return false;

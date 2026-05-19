@@ -170,6 +170,9 @@ function buildUploadPanel() {
       splitInfo.textContent = matCount + ' Material' + (matCount !== 1 ? 'ien' : '') + (groups.length > matCount ? ', ' + (groups.length - matCount) + ' weitere Abschnitte' : '');
     }
     updateInfo();
+    let uploadedEntries = []; // { entry, matPageURLs }
+    let kontextPageURLs = []; // Seiten-Bilder der Kontext-Abschnitte
+
     upBtn.onclick = async () => {
       if (typeof PDFLib === 'undefined') { alert('pdf-lib nicht geladen – bitte Seite neu laden.'); return; }
       const groups = getGroups();
@@ -178,6 +181,14 @@ function buildUploadPanel() {
 
       upBtn.disabled = true;
       splitInfo.textContent = 'Lade hoch…';
+      uploadedEntries = []; kontextPageURLs = [];
+
+      // Kontext-Seiten sammeln
+      groups.forEach((g, gi) => {
+        if ((segTypes[gi] || 'material') === 'kontext') {
+          for (let p = g.start; p <= g.end; p++) kontextPageURLs.push(pageDataURLs[p - 1]);
+        }
+      });
 
       try {
         const srcBytes = await _uploadPdfFile.arrayBuffer();
@@ -189,9 +200,8 @@ function buildUploadPanel() {
         for (let gi = 0; gi < groups.length; gi++) {
           const g   = groups[gi];
           const typ = segTypes[gi] || 'material';
-          if (typ === 'skip' || typ === 'kontext') continue; // Kontext nur im Speicher, skip ignorieren
+          if (typ === 'skip' || typ === 'kontext') continue;
 
-          // PDF-Seiten extrahieren (0-indiziert)
           const newDoc = await PDFLib.PDFDocument.create();
           const pageIdxs = [];
           for (let p = g.start - 1; p < g.end; p++) pageIdxs.push(p);
@@ -200,7 +210,6 @@ function buildUploadPanel() {
           const pdfBytes = await newDoc.save();
           const blob = new Blob([pdfBytes], { type: 'application/pdf' });
 
-          // Dateiname
           const suffix = typ === 'lh' ? 'LH' : 'M' + matIndex;
           const baseName = currentFn.replace(/\.pdf$/i, '');
           const key = folder + '/' + baseName + '_' + suffix + '.pdf';
@@ -208,7 +217,6 @@ function buildUploadPanel() {
           splitInfo.textContent = 'Lade hoch: ' + suffix + '…';
           const url = await r2Upload(key, blob, 'application/pdf');
 
-          // Minimaler MATDB-Eintrag
           const now = new Date().toISOString();
           const entry = {
             id: 'mat_' + Date.now() + '_' + gi,
@@ -217,12 +225,13 @@ function buildUploadPanel() {
             fach: [fachSel2.value.replace(/ S(I{1,2}|i{1,2})$/, '').trim()],
             jahrgang: [],
             themen: themaInp2.value.trim() ? [themaInp2.value.trim()] : [],
-            r2url: url,
-            r2key: key,
+            r2url: url, r2key: key,
             seiten: g.end - g.start + 1,
             importiertAm: now,
           };
+          const matPageURLs = pageDataURLs.slice(g.start - 1, g.end);
           MATDB.unshift(entry);
+          uploadedEntries.push({ entry, matPageURLs });
           results.push({ suffix, url });
           if (typ === 'material') matIndex++;
         }
@@ -231,6 +240,59 @@ function buildUploadPanel() {
         splitInfo.textContent = '✓ ' + results.length + ' Datei' + (results.length !== 1 ? 'en' : '') + ' hochgeladen';
         splitInfo.style.color = 'var(--grn)';
         upBtn.textContent = '✓ Fertig';
+
+        // KI-Analyse Button einblenden
+        const aiBtn = btn('✨ KI analysiert alle', 'btn btn-pri btn-sm');
+        const aiStatus = tx('span', 'mat-split-info', '');
+        aiBtn.onclick = async () => {
+          const antKey = localStorage.getItem('ant_key');
+          if (!antKey) { alert('Kein Anthropic API-Key in den Einstellungen.'); return; }
+          aiBtn.disabled = true;
+
+          function toImgContent(dataURL) {
+            const [header, data] = dataURL.split(',');
+            const mediaType = header.match(/data:([^;]+)/)[1];
+            return { type: 'image', source: { type: 'base64', media_type: mediaType, data } };
+          }
+
+          for (let ei = 0; ei < uploadedEntries.length; ei++) {
+            const { entry, matPageURLs } = uploadedEntries[ei];
+            aiStatus.textContent = (ei + 1) + '/' + uploadedEntries.length + ' analysiere…';
+
+            const content = [];
+            if (kontextPageURLs.length) {
+              content.push({ type: 'text', text: '=== KONTEXT ===' });
+              kontextPageURLs.forEach(u => content.push(toImgContent(u)));
+            }
+            content.push({ type: 'text', text: '=== MATERIAL ===' });
+            matPageURLs.forEach(u => content.push(toImgContent(u)));
+            content.push({ type: 'text', text: `Analysiere dieses Unterrichtsmaterial für eine NRW-Gymnasiallehrerin.
+Bekannt: Fach=${entry.fach?.join(',')}, Typ=${entry.materialtyp}
+Antworte NUR mit JSON (kein Text davor/danach):
+{"titel":"Einheitstitel – M1","rolleImKontext":"1 Satz","beschreibung":"2-3 Sätze was SuS tun","themen":["..."],"jahrgang":["EF"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
+
+            try {
+              const res = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+                body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 1500, messages: [{ role: 'user', content }] })
+              });
+              const d = await res.json();
+              const text = d.content?.[0]?.text || '{}';
+              const match = text.match(/\{[\s\S]*\}/);
+              if (match) {
+                const enriched = JSON.parse(match[0]);
+                const idx = MATDB.findIndex(m => m.id === entry.id);
+                if (idx >= 0) { Object.assign(MATDB[idx], enriched); }
+              }
+            } catch(e2) { console.error('Analyse fehlgeschlagen:', entry.id, e2); }
+          }
+          saveMatDB();
+          aiStatus.textContent = '✓ Analyse abgeschlossen';
+          aiBtn.textContent = '✓ Fertig';
+        };
+        acts.appendChild(aiBtn);
+        acts.appendChild(aiStatus);
 
       } catch(e) {
         splitInfo.textContent = '✗ ' + e.message;

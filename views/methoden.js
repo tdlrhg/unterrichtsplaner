@@ -7,12 +7,30 @@ function viewMethoden() {
   let filterMat = null;
   let filterAufwand = null;
   let filterText = '';
+  let editMode = false;
 
+  // ── Header ────────────────────────────────────────────────────
   const hdr = mk('div', 'c-hdr');
   const left = mk('div', '');
   left.appendChild(tx('div', 'c-title', 'Methodendatenbank'));
   left.appendChild(tx('div', 'c-sub', METHDB.length + ' Methoden'));
   hdr.appendChild(left);
+
+  const hdrRight = mk('div', 'c-hdr-right');
+  const editToggle = btn('Bearbeiten', 'btn btn-sm');
+  editToggle.onclick = () => {
+    editMode = !editMode;
+    editToggle.textContent = editMode ? 'Fertig' : 'Bearbeiten';
+    editToggle.className = editMode ? 'btn btn-sm btn-pri' : 'btn btn-sm';
+    addBtn.style.display = editMode ? '' : 'none';
+    refresh();
+  };
+  const addBtn = btn('+ Methode', 'btn btn-sm btn-pri');
+  addBtn.style.display = 'none';
+  addBtn.onclick = () => openForm(null);
+  hdrRight.appendChild(editToggle);
+  hdrRight.appendChild(addBtn);
+  hdr.appendChild(hdrRight);
   div.appendChild(hdr);
 
   // ── Filter-Leiste ─────────────────────────────────────────────
@@ -63,7 +81,7 @@ function viewMethoden() {
   filterBar.appendChild(filterBody);
   div.appendChild(filterBar);
 
-  // ── Ergebniszähler + Grid ─────────────────────────────────────
+  // ── Zähler + Grid ─────────────────────────────────────────────
   const countLine = tx('div', '', '');
   countLine.style.cssText = 'font-size:11px;color:var(--tx3);margin-bottom:6px;';
   div.appendChild(countLine);
@@ -73,6 +91,11 @@ function viewMethoden() {
 
   const AUFWAND_LABEL = ['', '● gering', '●● mittel', '●●● hoch', '●●●● sehr hoch'];
   const AUFWAND_COLOR = ['', '#16a34a', '#eab308', '#f97316', '#dc2626'];
+  const SOZ_ABK = { 'Einzelarbeit':'EA', 'Partnerarbeit':'PA', 'Gruppenarbeit':'GA', 'Plenum':'PL' };
+
+  const SOZ_ALL  = ['Einzelarbeit','Partnerarbeit','Gruppenarbeit','Plenum'];
+  const PHAS_ALL = ['Einstieg','Erarbeitung','Sicherung'];
+  const MAT_ALL  = ['Kein Material','Texte','Karten','Arbeitsblätter','Experimente','Plakate/Papier','Bilder/Comics','Objekte/Modelle','Digitale Medien'];
 
   function refresh() {
     [pRow, sRow, mRow, aRow].forEach(row => {
@@ -109,7 +132,6 @@ function viewMethoden() {
     filtered.forEach(m => {
       const card = mk('div', 'meth-card');
 
-      // Name + Aufwand-Indikator
       const nameRow = mk('div', '');
       nameRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:6px;';
       nameRow.appendChild(tx('div', 'meth-card-name', m.name));
@@ -126,7 +148,6 @@ function viewMethoden() {
 
       const chips = mk('div', 'meth-card-chips');
       m.phasen.forEach(p => chips.appendChild(tx('span', 'meth-chip meth-chip-phase', p)));
-      const SOZ_ABK = { 'Einzelarbeit':'EA', 'Partnerarbeit':'PA', 'Gruppenarbeit':'GA', 'Plenum':'PL' };
       m.sozialform.forEach(s => chips.appendChild(tx('span', 'meth-chip meth-chip-soz', SOZ_ABK[s] || s)));
       m.materialtyp.forEach(mt => {
         if (mt !== 'Kein Material') chips.appendChild(tx('span', 'meth-chip meth-chip-mat', mt));
@@ -151,8 +172,167 @@ function viewMethoden() {
       details.appendChild(detBody);
       card.appendChild(details);
 
+      if (editMode) {
+        const editRow = mk('div', '');
+        editRow.style.cssText = 'display:flex;gap:6px;margin-top:6px;border-top:1px solid var(--bord);padding-top:6px;';
+        const eb = btn('Bearbeiten', 'btn btn-sm');
+        eb.onclick = () => openForm(m);
+        const db = btn('Löschen', 'btn btn-sm');
+        db.style.color = 'var(--red)';
+        db.onclick = () => deleteMethod(m.id);
+        editRow.appendChild(eb);
+        editRow.appendChild(db);
+        card.appendChild(editRow);
+      }
+
       listWrap.appendChild(card);
     });
+  }
+
+  // ── Formular-Overlay ──────────────────────────────────────────
+  const overlay = mk('div', 'meth-overlay');
+  div.appendChild(overlay);
+
+  function closeOverlay() { overlay.innerHTML = ''; overlay.classList.remove('open'); }
+
+  function openForm(existing) {
+    const isNew = !existing;
+    const m = existing ? JSON.parse(JSON.stringify(existing))
+      : { id:'', name:'', beschreibung:'', ziel:'', hinweise:'', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], quelle:'' };
+
+    overlay.innerHTML = '';
+    overlay.classList.add('open');
+
+    const panel = mk('div', 'meth-form-panel');
+
+    const fhdr = mk('div', '');
+    fhdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;';
+    fhdr.appendChild(tx('div', '', isNew ? 'Neue Methode' : 'Methode bearbeiten').cloneNode ? tx('strong','',isNew ? 'Neue Methode' : 'Methode bearbeiten') : null);
+    const closeBtn = btn('✕', '');
+    closeBtn.style.cssText = 'background:none;border:none;font-size:18px;cursor:pointer;color:var(--tx3);padding:0;';
+    closeBtn.onclick = closeOverlay;
+    fhdr.appendChild(tx('strong', '', isNew ? 'Neue Methode' : 'Methode bearbeiten'));
+    fhdr.appendChild(closeBtn);
+    panel.appendChild(fhdr);
+
+    function field(labelTxt, inputEl) {
+      const w = mk('div', '');
+      w.style.cssText = 'display:flex;flex-direction:column;gap:3px;';
+      w.appendChild(tx('label', 'meth-form-label', labelTxt));
+      w.appendChild(inputEl);
+      return w;
+    }
+
+    function textInput(val, placeholder) {
+      const el = mk('input', 'meth-form-input');
+      el.type = 'text'; el.value = val || ''; el.placeholder = placeholder || '';
+      return el;
+    }
+
+    function textarea(val, rows) {
+      const el = mk('textarea', 'meth-form-input');
+      el.value = val || ''; el.rows = rows || 2;
+      el.style.resize = 'vertical';
+      return el;
+    }
+
+    function checkGroup(options, selected) {
+      const w = mk('div', '');
+      w.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;';
+      options.forEach(opt => {
+        const lbl = mk('label', 'meth-form-check');
+        const cb = mk('input', '');
+        cb.type = 'checkbox'; cb.value = opt; cb.checked = selected.includes(opt);
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(' ' + opt));
+        w.appendChild(lbl);
+      });
+      return w;
+    }
+
+    const inpName   = textInput(m.name, 'Methodenname');
+    const inpDesc   = textarea(m.beschreibung, 2);
+    const inpZiel   = textarea(m.ziel, 2);
+    const inpHinw   = textarea(m.hinweise, 2);
+    const inpZeit   = textInput(m.zeitbedarf, 'z.B. 10–15 min');
+    const inpQuelle = textInput(m.quelle, 'https://…');
+
+    const selAufwand = mk('select', 'meth-form-input');
+    [{v:1,l:'● gering'},{v:2,l:'●● mittel'},{v:3,l:'●●● hoch'},{v:4,l:'●●●● sehr hoch'}].forEach(o => {
+      const opt = mk('option',''); opt.value = o.v; opt.textContent = o.l;
+      if (m.aufwand === o.v) opt.selected = true;
+      selAufwand.appendChild(opt);
+    });
+
+    const cbSoz  = checkGroup(SOZ_ALL,  m.sozialform);
+    const cbPhas = checkGroup(PHAS_ALL, m.phasen);
+    const cbMat  = checkGroup(MAT_ALL,  m.materialtyp);
+
+    const form = mk('div', '');
+    form.style.cssText = 'display:flex;flex-direction:column;gap:10px;overflow-y:auto;flex:1;';
+    form.appendChild(field('Name', inpName));
+    form.appendChild(field('Beschreibung', inpDesc));
+    form.appendChild(field('Ziel', inpZiel));
+    form.appendChild(field('Hinweise', inpHinw));
+    form.appendChild(field('Zeitbedarf', inpZeit));
+    form.appendChild(field('Aufwand', selAufwand));
+    form.appendChild(field('Sozialform', cbSoz));
+    form.appendChild(field('Phasen', cbPhas));
+    form.appendChild(field('Material', cbMat));
+    form.appendChild(field('Quelle (URL)', inpQuelle));
+    panel.appendChild(form);
+
+    const footer = mk('div', '');
+    footer.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--bord);flex-shrink:0;';
+    const cancelBtn = btn('Abbrechen', 'btn btn-sm');
+    cancelBtn.onclick = closeOverlay;
+    const saveBtn = btn('Speichern', 'btn btn-sm btn-pri');
+    saveBtn.onclick = async () => {
+      const name = inpName.value.trim();
+      if (!name) { inpName.style.borderColor = 'var(--red)'; return; }
+      const getChecked = cb => [...cb.querySelectorAll('input:checked')].map(x => x.value);
+      const updated = {
+        id: m.id || name.toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''),
+        name,
+        beschreibung: inpDesc.value.trim(),
+        ziel: inpZiel.value.trim(),
+        hinweise: inpHinw.value.trim(),
+        zeitbedarf: inpZeit.value.trim() || 'variabel',
+        aufwand: parseInt(selAufwand.value),
+        sozialform: getChecked(cbSoz),
+        phasen: getChecked(cbPhas),
+        materialtyp: getChecked(cbMat),
+        quelle: inpQuelle.value.trim(),
+      };
+      saveBtn.textContent = 'Speichert…'; saveBtn.disabled = true;
+      await saveMethod(updated, isNew);
+      closeOverlay();
+    };
+    footer.appendChild(cancelBtn);
+    footer.appendChild(saveBtn);
+    panel.appendChild(footer);
+
+    overlay.appendChild(panel);
+    inpName.focus();
+  }
+
+  async function saveMethod(updated, isNew) {
+    if (isNew) {
+      METHDB.push(updated);
+    } else {
+      const i = METHDB.findIndex(x => x.id === updated.id);
+      if (i >= 0) METHDB[i] = updated;
+    }
+    await sbUpload('methoden.json', METHDB);
+    refresh();
+  }
+
+  async function deleteMethod(id) {
+    if (!confirm('Methode wirklich löschen?')) return;
+    const i = METHDB.findIndex(m => m.id === id);
+    if (i >= 0) METHDB.splice(i, 1);
+    await sbUpload('methoden.json', METHDB);
+    refresh();
   }
 
   refresh();

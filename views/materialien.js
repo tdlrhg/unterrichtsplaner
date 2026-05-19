@@ -873,8 +873,94 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
     body.appendChild(tx('div', 'mat-detail-ts', 'Importiert am ' + ts.toLocaleDateString('de-DE') + ', ' + ts.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })));
   }
 
-  // Löschen
+  // Aktionsleiste
   const delBar = mk('div', 'mat-detail-delbar');
+
+  // Neu analysieren
+  if (mat.r2key) {
+    const reBtn = btn('🔄 Neu analysieren', 'btn btn-ghost btn-xs');
+    reBtn.onclick = async () => {
+      const antKey = localStorage.getItem('ant_key');
+      if (!antKey) { alert('Kein Anthropic API-Key in den Einstellungen.'); return; }
+      reBtn.disabled = true;
+
+      async function pdfBufToDataURLs(buf) {
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+        const urls = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const vp0 = page.getViewport({ scale: 1 });
+          const scale = 280 / vp0.width;
+          const vp = page.getViewport({ scale });
+          const cv = document.createElement('canvas');
+          cv.width = vp.width; cv.height = vp.height;
+          await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+          urls.push(cv.toDataURL('image/jpeg', 0.85));
+        }
+        return urls;
+      }
+
+      function toImgContent(dataURL) {
+        const [hdr, data] = dataURL.split(',');
+        return { type: 'image', source: { type: 'base64', media_type: hdr.match(/data:([^;]+)/)[1], data } };
+      }
+
+      try {
+        reBtn.textContent = '⏳ Lade Material…';
+        const matURLs = await pdfBufToDataURLs(await r2Download(mat.r2key));
+
+        let ktxURLs = [];
+        if (mat.kontextR2key) {
+          reBtn.textContent = '⏳ Lade Kontext…';
+          ktxURLs = await pdfBufToDataURLs(await r2Download(mat.kontextR2key));
+        }
+
+        reBtn.textContent = '⏳ KI analysiert…';
+        const content = [];
+        if (ktxURLs.length) { content.push({ type: 'text', text: '=== KONTEXT ===' }); ktxURLs.forEach(u => content.push(toImgContent(u))); }
+        content.push({ type: 'text', text: '=== MATERIAL ===' });
+        matURLs.forEach(u => content.push(toImgContent(u)));
+        content.push({ type: 'text', text: `Analysiere dieses Unterrichtsmaterial für eine NRW-Gymnasiallehrerin.
+Bekannt: Fach=${(mat.fach||[]).join(',')}, Typ=${mat.materialtyp}, Dateiname=${mat.titel}
+
+WICHTIG – Titelregeln:
+- "titel" = der tatsächliche Titel wie er auf dem Blatt gedruckt steht
+- Ist kein Titel aufgedruckt, verwende den Dateinamen: "${mat.titel}"
+- NIEMALS eine Rolle als Titel verwenden (nicht "Einführungsmaterial" o.ä.)
+- "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
+
+Antworte NUR mit JSON (kein Text davor/danach):
+{"titel":"...","rolleImKontext":"...","beschreibung":"...","themen":[...],"jahrgang":["SII"],"unterrichtsphase":[...],"sozialformenGeeignet":[...],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
+
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-5', max_tokens: 1500, messages: [{ role: 'user', content }] })
+        });
+        const d = await res.json();
+        const match = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/);
+        if (match) {
+          const enriched = JSON.parse(match[0]);
+          const idx = MATDB.findIndex(m => m.id === mat.id);
+          if (idx >= 0) {
+            const keep = (({ quelle, r2key, r2url, kontextR2key, seiten, importiertAm, id }) =>
+              ({ quelle, r2key, r2url, kontextR2key, seiten, importiertAm, id }))(MATDB[idx]);
+            Object.assign(MATDB[idx], enriched, keep);
+          }
+          saveMatDB(); renderCards();
+          overlay.classList.remove('open'); body.remove();
+          const fresh = MATDB.find(m => m.id === mat.id);
+          if (fresh) openMatOverlay(fresh, null, overlay, panel, panTitle, renderCards);
+        }
+      } catch(e2) {
+        reBtn.textContent = '✗ Fehler';
+        reBtn.disabled = false;
+        alert('Fehler: ' + e2.message);
+      }
+    };
+    delBar.appendChild(reBtn);
+  }
+
   const delBtn2 = btn('🗑 Eintrag löschen', 'btn btn-danger btn-xs');
   delBtn2.onclick = () => {
     if (!confirm('„' + mat.titel + '" aus der Datenbank löschen?')) return;

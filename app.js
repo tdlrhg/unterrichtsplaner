@@ -81,14 +81,16 @@ function buildSetup() {
 // ── Init ─────────────────────────────────────────────────────────
 (async () => {
   render();
-  const [loaded, matdb, klpdb, didaktik] = await Promise.all([
+  const [loaded, matdb, klpdb, didaktik, methdb] = await Promise.all([
     sbDownload('data.json').catch(() => null),
     sbDownload('materialien.json').catch(() => []),
     sbDownload('klp.json').catch(() => []),
     sbDownload('didaktik.json').catch(() => ({})),
+    sbDownload('methoden.json').catch(() => []),
   ]);
   MATDB = Array.isArray(matdb) ? matdb : [];
   KLPDB = Array.isArray(klpdb) ? klpdb : [];
+  METHDB = Array.isArray(methdb) ? methdb : [];
   DIDAKTIKDB = (didaktik && typeof didaktik === 'object' && !Array.isArray(didaktik)) ? didaktik : {};
   try {
     S.data = loaded || { fachplanungen: [], kurse: [] };

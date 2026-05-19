@@ -657,7 +657,7 @@ textarea::placeholder { color: #c4cdd6; }
 
 .matc-top-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: -2px; }
 .matc-quelle { font-size: 10px; color: var(--tx3); }
-.matc-fach-prominent { font-size: 11px; font-weight: 700; color: var(--pri); background: #ede9fe; border-radius: 8px; padding: 2px 9px; white-space: nowrap; letter-spacing: .01em; }
+.matc-fach-prominent { font-size: 11px; font-weight: 700; color: var(--pri); background: #ede9fe; border-radius: 8px; padding: 2px 9px; white-space: nowrap; letter-spacing: .01em; margin-left: auto; }
 
 .matc-sub-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: -2px; }
 .matc-reihe-chip { font-size: 10px; color: var(--pri); background: #ede9fe; border-radius: 8px; padding: 1px 7px; font-weight: 500; white-space: nowrap; max-width: 55%; overflow: hidden; text-overflow: ellipsis; }

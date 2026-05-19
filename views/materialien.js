@@ -484,6 +484,91 @@ function typBadge(typ) {
   return s;
 }
 
+function buildR2Browser(subTitle, renderCards) {
+  const p = mk('div', 'mat-r2browser');
+
+  const hdr = mk('div', 'mat-upload-hdr');
+  hdr.appendChild(tx('span', 'mat-upload-title', '📂 R2-Dateien importieren'));
+  const closeP = btn('✕', 'btn btn-ghost btn-xs'); closeP.onclick = () => p.remove();
+  hdr.appendChild(closeP);
+  p.appendChild(hdr);
+
+  const status = tx('div', 'mat-r2-status', '⏳ Lade R2-Inhalte…');
+  p.appendChild(status);
+
+  const tree = mk('div', 'mat-r2-tree');
+  p.appendChild(tree);
+
+  async function renderFolder(prefix, container) {
+    container.innerHTML = '<span style="color:var(--tx3);font-size:12px">⏳ Lade…</span>';
+    try {
+      const { folders, files } = await r2List(prefix);
+      container.innerHTML = '';
+
+      folders.forEach(f => {
+        const name = f.slice(prefix.length).replace(/\/$/, '');
+        const row = mk('div', 'mat-r2-folder');
+        const toggle = tx('span', 'mat-r2-folder-name', '📁 ' + name);
+        const sub = mk('div', 'mat-r2-subfolder'); sub.style.display = 'none';
+        let loaded = false;
+        toggle.onclick = () => {
+          const open = sub.style.display !== 'none';
+          sub.style.display = open ? 'none' : 'block';
+          if (!loaded && !open) { loaded = true; renderFolder(f, sub); }
+        };
+        row.appendChild(toggle); row.appendChild(sub);
+        container.appendChild(row);
+      });
+
+      files.forEach(({ key, size }) => {
+        const name = key.slice(prefix.length);
+        if (!name || (!name.endsWith('.pdf') && !name.endsWith('.png') && !name.endsWith('.jpg'))) return;
+        const inDB = MATDB.some(m => m.r2key === key);
+        const row = mk('div', 'mat-r2-file' + (inDB ? ' mat-r2-file-exists' : ''));
+        const nameEl = tx('span', 'mat-r2-filename', (inDB ? '✓ ' : '') + name);
+        row.appendChild(nameEl);
+        row.appendChild(tx('span', 'mat-r2-size', Math.round(size / 1024) + ' KB'));
+        if (!inDB) {
+          const impBtn = btn('Importieren', 'btn btn-pri btn-xs');
+          impBtn.onclick = async () => {
+            impBtn.disabled = true; impBtn.textContent = '⏳';
+            const pub = (localStorage.getItem('r2_public_url') || '').replace(/\/$/, '');
+            const endpoint = (localStorage.getItem('r2_endpoint') || '').replace(/\/$/, '');
+            const bucket = localStorage.getItem('r2_bucket') || '';
+            const r2url = pub ? `${pub}/${key}` : `${endpoint}/${bucket}/${key}`;
+            const baseName = name.replace(/\.[^.]+$/, '');
+            const entry = {
+              id: 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
+              titel: baseName,
+              r2key: key, r2url,
+              importiertAm: new Date().toISOString(),
+            };
+            MATDB.unshift(entry);
+            saveMatDB(); renderCards();
+            subTitle.textContent = MATDB.length + ' Einträge';
+            row.classList.add('mat-r2-file-exists');
+            nameEl.textContent = '✓ ' + name;
+            impBtn.remove();
+          };
+          row.appendChild(impBtn);
+        }
+        container.appendChild(row);
+      });
+
+      if (!folders.length && !files.length) {
+        container.appendChild(tx('span', '', 'Leer'));
+        container.style.cssText = 'color:var(--tx3);font-size:12px;padding:4px 0;';
+      }
+    } catch(e) {
+      container.innerHTML = '<span style="color:#dc2626;font-size:12px">⚠ ' + e.message + '</span>';
+    }
+  }
+
+  renderFolder('', tree).then(() => { status.remove(); }).catch(() => {});
+
+  return p;
+}
+
 function viewMaterialien() {
   const div = mk('div', '');
 
@@ -644,7 +729,15 @@ function viewMaterialien() {
     if (ex) { ex.remove(); return; }
     div.insertBefore(buildUploadPanel(), div.children[1]);
   };
-  hdrBtns.appendChild(uploadBtn); hdrBtns.appendChild(scanBtn);
+
+  const r2Btn = btn('📂 Von R2', 'btn btn-ghost btn-sm');
+  r2Btn.onclick = () => {
+    const ex = div.querySelector('.mat-r2browser');
+    if (ex) { ex.remove(); return; }
+    div.insertBefore(buildR2Browser(subTitle, renderCards), div.children[1]);
+  };
+
+  hdrBtns.appendChild(uploadBtn); hdrBtns.appendChild(r2Btn); hdrBtns.appendChild(scanBtn);
   hdr.appendChild(hdrBtns);
   div.appendChild(hdr);
 

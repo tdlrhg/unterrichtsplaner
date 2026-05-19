@@ -75,6 +75,54 @@ async function r2Upload(key, blob, contentType = 'application/pdf') {
   return pub ? `${pub}/${key}` : urlStr;
 }
 
+// ── R2 List (ListObjectsV2) ──────────────────────────────────────
+async function r2List(prefix = '', delimiter = '/') {
+  const endpoint  = (localStorage.getItem('r2_endpoint') || '').replace(/\/$/, '');
+  const bucket    = localStorage.getItem('r2_bucket') || '';
+  const accessKey = localStorage.getItem('r2_access_key') || '';
+  const secretKey = localStorage.getItem('r2_secret_key') || '';
+  if (!endpoint || !bucket || !accessKey || !secretKey) throw new Error('R2-Zugangsdaten fehlen.');
+
+  const params = new URLSearchParams({ 'list-type': '2' });
+  if (prefix)    params.set('prefix', prefix);
+  if (delimiter) params.set('delimiter', delimiter);
+
+  const urlObj = new URL(`${endpoint}/${bucket}?${params}`);
+  const host   = urlObj.host;
+  const now    = new Date();
+  const amzDate   = now.toISOString().replace(/[:\-]|\.\d{3}/g, '');
+  const dateStamp = amzDate.slice(0, 8);
+  const bodyHash  = await _sha256('');
+
+  const canonQS = [...params.entries()].sort(([a],[b]) => a.localeCompare(b))
+    .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
+  const canonHeaders = `host:${host}\nx-amz-content-sha256:${bodyHash}\nx-amz-date:${amzDate}\n`;
+  const signedHdrs   = 'host;x-amz-content-sha256;x-amz-date';
+  const canonReq     = ['GET', '/' + bucket, canonQS, canonHeaders, signedHdrs, bodyHash].join('\n');
+
+  const scope     = `${dateStamp}/auto/s3/aws4_request`;
+  const strToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${scope}\n${await _sha256(canonReq)}`;
+  const kDate    = await _hmac(`AWS4${secretKey}`, dateStamp);
+  const kRegion  = await _hmac(kDate, 'auto');
+  const kService = await _hmac(kRegion, 's3');
+  const kSign    = await _hmac(kService, 'aws4_request');
+  const sig      = await _hmacHex(kSign, strToSign);
+  const auth = `AWS4-HMAC-SHA256 Credential=${accessKey}/${scope}, SignedHeaders=${signedHdrs}, Signature=${sig}`;
+
+  const res = await fetch(urlObj.toString(), {
+    headers: { 'x-amz-date': amzDate, 'x-amz-content-sha256': bodyHash, Authorization: auth }
+  });
+  if (!res.ok) throw new Error(`R2 List fehlgeschlagen (${res.status})`);
+  const xml  = await res.text();
+  const doc  = new DOMParser().parseFromString(xml, 'text/xml');
+  const folders = [...doc.querySelectorAll('CommonPrefixes Prefix')].map(n => n.textContent);
+  const files   = [...doc.querySelectorAll('Contents')].map(n => ({
+    key:  n.querySelector('Key')?.textContent || '',
+    size: parseInt(n.querySelector('Size')?.textContent || '0'),
+  }));
+  return { folders, files };
+}
+
 // ── R2 Download (GET mit Signatur) ───────────────────────────────
 async function r2Download(key) {
   const endpoint  = (localStorage.getItem('r2_endpoint') || '').replace(/\/$/, '');

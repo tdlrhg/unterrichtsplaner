@@ -27,7 +27,8 @@ async function r2Upload(key, blob, contentType = 'application/pdf') {
     throw new Error('R2-Zugangsdaten fehlen – bitte in den Einstellungen eintragen.');
   }
 
-  const urlStr = `${endpoint}/${bucket}/${key}`;
+  const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+  const urlStr = `${endpoint}/${bucket}/${encodedKey}`;
   const urlObj = new URL(urlStr);
   const host   = urlObj.host;
 
@@ -83,7 +84,8 @@ async function r2Delete(key) {
 
   if (!endpoint || !bucket || !accessKey || !secretKey) return;
 
-  const urlStr = `${endpoint}/${bucket}/${key}`;
+  const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+  const urlStr = `${endpoint}/${bucket}/${encodedKey}`;
   const urlObj = new URL(urlStr);
   const host   = urlObj.host;
 

@@ -72,7 +72,7 @@ function viewMethoden() {
   div.appendChild(listWrap);
 
   const AUFWAND_LABEL = ['', '● gering', '●● mittel', '●●● hoch', '●●●● sehr hoch'];
-  const AUFWAND_COLOR = ['', '#16a34a', '#ca8a04', '#ea580c', '#dc2626'];
+  const AUFWAND_COLOR = ['', '#16a34a', '#eab308', '#f97316', '#dc2626'];
 
   function refresh() {
     [pRow, sRow, mRow, aRow].forEach(row => {

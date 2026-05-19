@@ -39,6 +39,14 @@ function buildUploadPanel() {
   const pathPrev = tx('div', 'mat-upload-path-prev', '');
   p.appendChild(pathPrev);
 
+  // Quelle-Feld
+  const quelleRow = mk('div', 'mat-upload-path-row');
+  quelleRow.appendChild(tx('span', 'mat-upload-sep', 'Quelle:'));
+  const quelleInp = document.createElement('input'); quelleInp.type = 'text'; quelleInp.className = 'finp mat-upload-sub';
+  quelleInp.placeholder = 'z.B. Rabe, Klett, Eigene, Schroedel…';
+  quelleRow.appendChild(quelleInp);
+  p.appendChild(quelleRow);
+
   let currentFn = '';
   function updatePath() {
     const parts = [fachSel2.value, unterInp2.value.trim(), themaInp2.value.trim()].filter(Boolean);
@@ -240,6 +248,7 @@ function buildUploadPanel() {
             fach: [fachSel2.value.replace(/ S(I{1,2}|i{1,2})$/, '').trim()],
             jahrgang: [],
             themen: themaInp2.value.trim() ? [themaInp2.value.trim()] : [],
+            quelle: quelleInp.value.trim() || null,
             r2url: url, r2key: key,
             kontextR2key: kontextR2key || null,
             seiten: g.end - g.start + 1,
@@ -286,9 +295,16 @@ function buildUploadPanel() {
             content.push({ type: 'text', text: '=== MATERIAL ===' });
             matPageURLs.forEach(u => content.push(toImgContent(u)));
             content.push({ type: 'text', text: `Analysiere dieses Unterrichtsmaterial für eine NRW-Gymnasiallehrerin.
-Bekannt: Fach=${entry.fach?.join(',')}, Typ=${entry.materialtyp}
+Bekannt: Fach=${entry.fach?.join(',')}, Typ=${entry.materialtyp}, Dateiname=${entry.titel}
+
+WICHTIG – Titelregeln:
+- "titel" = der tatsächliche Titel wie er auf dem Blatt gedruckt steht (z.B. "Wie entsteht Regen?", "M1: Zellatmung", "Station 3 – Fotosynthese")
+- Ist kein Titel aufgedruckt, übernimm den Dateinamen: "${entry.titel}"
+- NIEMALS eine Rolle als Titel verwenden (also NICHT "Einführungsmaterial", "Vertiefungsaufgabe", "Erarbeitungsphase" o.ä.)
+- "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion (z.B. "Einstieg in die Fotosynthese als Einzelarbeit")
+
 Antworte NUR mit JSON (kein Text davor/danach):
-{"titel":"Einheitstitel – M1","rolleImKontext":"1 Satz","beschreibung":"2-3 Sätze was SuS tun","themen":["..."],"jahrgang":["EF"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
+{"titel":"exakter Titel vom Blatt oder Dateiname","rolleImKontext":"1 Satz zur Funktion","beschreibung":"2-3 Sätze was SuS tun","themen":["..."],"jahrgang":["EF"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
 
             try {
               const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -302,7 +318,11 @@ Antworte NUR mit JSON (kein Text davor/danach):
               if (match) {
                 const enriched = JSON.parse(match[0]);
                 const idx = MATDB.findIndex(m => m.id === entry.id);
-                if (idx >= 0) { Object.assign(MATDB[idx], enriched); }
+                if (idx >= 0) {
+                  const savedQuelle = MATDB[idx].quelle; // KI darf quelle nicht überschreiben
+                  Object.assign(MATDB[idx], enriched);
+                  MATDB[idx].quelle = savedQuelle;
+                }
               }
             } catch(e2) { console.error('Analyse fehlgeschlagen:', entry.id, e2); }
           }
@@ -641,9 +661,7 @@ function viewMaterialien() {
       // Kopfzeile: Nr-Badge + Titel + Del-Button
       const cardHdr = mk('div', 'matc-card-hdr');
       if (mat.materialnummer) cardHdr.appendChild(tx('span', 'matc-nr', mat.materialnummer));
-      // Haupttitel: rolleImKontext wenn vorhanden, sonst Titel
-      const displayTitle = mat.rolleImKontext || mat.titel;
-      const titleEl = tx('span', 'matc-title', displayTitle);
+      const titleEl = tx('span', 'matc-title', mat.titel || '–');
       if (needsReview) {
         const rb = tx('span', 'mat-review-badge', '⚠'); rb.title = 'Felder prüfen';
         titleEl.appendChild(rb);
@@ -661,10 +679,10 @@ function viewMaterialien() {
       cardHdr.appendChild(delBtn);
       card.appendChild(cardHdr);
 
-      // Einheitstitel als Untertitel (nur wenn rolleImKontext genutzt wird)
-      if (mat.rolleImKontext) {
-        const unitTitle = mat.titel.replace(/\s*–\s*[A-Z]{1,2}\d*\s*$/, '').trim();
-        if (unitTitle && unitTitle !== mat.rolleImKontext) card.appendChild(tx('div', 'matc-unit', unitTitle));
+      // Quelle + rolleImKontext als Untertitel
+      if (mat.quelle || mat.rolleImKontext) {
+        const sub = [mat.quelle, mat.rolleImKontext].filter(Boolean).join(' · ');
+        card.appendChild(tx('div', 'matc-unit', sub));
       }
 
       // Typ-Badge + Fach + Jahrgang

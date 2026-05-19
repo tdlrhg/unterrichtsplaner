@@ -346,7 +346,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const vp0 = page.getViewport({ scale: 1 });
-        const scale = 200 / vp0.width;
+        const scale = 280 / vp0.width;
         const vp = page.getViewport({ scale });
         const canvas = document.createElement('canvas');
         canvas.width = vp.width; canvas.height = vp.height;

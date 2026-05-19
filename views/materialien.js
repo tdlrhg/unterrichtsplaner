@@ -799,6 +799,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   }
 
   editRow('Titel',                () => mat.titel || '',             v => { mat.titel = v; },           false, 'titel');
+  editRow('Quelle',               () => mat.quelle || '',            v => { mat.quelle = v; });
   editRow('Fach',                 () => arrGet('fach'),              arrSet('fach'),                    false, 'fach');
   editRow('Jahrgang',             () => arrGet('jahrgang'),          arrSet('jahrgang'),                false, 'jahrgang');
   editRow('Themen',               () => arrGet('themen'),            arrSet('themen'));

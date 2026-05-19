@@ -71,70 +71,103 @@ function buildUploadPanel() {
   p.appendChild(acts);
 
   // ── Split-Modus ──────────────────────────────────────────────
+  const SEGMENT_TYPES = [
+    { key: 'material', label: '📚 Schülermaterial', color: '#eff6ff' },
+    { key: 'kontext',  label: '🔍 Kontext',         color: '#f3f4f6' },
+    { key: 'lh',       label: '📋 Lehrerhandreichung', color: '#fdf2f8' },
+    { key: 'skip',     label: '⏭ Überspringen',    color: '#f9fafb' },
+  ];
+  const SPLIT_COLORS = ['#eff6ff','#f3f0ff','#f0fdf4','#fffbeb','#fdf2f8','#ecfdf5'];
+
   function showSplitMode() {
     titleSpan.textContent = '✂ Seiten aufteilen';
     zone2.style.display = 'none';
     thumbsWrap.innerHTML = '';
-    thumbsWrap.style.maxHeight = '520px';
+    thumbsWrap.style.maxHeight = '560px';
     acts.innerHTML = '';
 
-    const splitPoints = new Set();
-    const thumbEls   = [];
-    const COLORS = ['#f3f0ff','#eff6ff','#f0fdf4','#fffbeb','#fdf2f8','#ecfdf5'];
+    const splitPoints = new Set(); // Seitennummern nach denen getrennt wird
+    const segTypes    = {};        // groupIndex → type key (default: 'material')
 
-    thumbsWrap.appendChild(tx('div', 'mat-split-hint', 'Klicke auf + zwischen Seiten um ein neues Material zu beginnen. Nochmal klicken entfernt die Trennung.'));
+    thumbsWrap.appendChild(tx('div', 'mat-split-hint', 'Klicke auf + zwischen Seiten um aufzuteilen. Typ pro Abschnitt optional ändern.'));
 
-    const strip = mk('div', 'mat-split-strip');
-    thumbsWrap.appendChild(strip);
+    const container = mk('div', 'mat-split-container');
+    thumbsWrap.appendChild(container);
 
-    for (let i = 0; i < pageDataURLs.length; i++) {
-      const img = document.createElement('img');
-      img.src = pageDataURLs[i]; img.className = 'mat-split-thumb';
-      const wrap = mk('div', 'mat-split-thumb-wrap');
-      wrap.appendChild(img);
-      wrap.appendChild(tx('div', 'mat-upload-thumb-nr', 'S. ' + (i + 1)));
-      strip.appendChild(wrap);
-      thumbEls.push(wrap);
+    function getGroups() {
+      const groups = [];
+      let start = 1;
+      const sorted = [...splitPoints].sort((a, b) => a - b);
+      for (const sp of sorted) { groups.push({ start, end: sp }); start = sp + 1; }
+      groups.push({ start, end: pageDataURLs.length });
+      return groups;
+    }
 
-      if (i < pageDataURLs.length - 1) {
-        const divEl = mk('div', 'mat-split-divider');
-        divEl.dataset.page = String(i + 1);
-        divEl.appendChild(tx('span', 'mat-split-div-icon', '+'));
-        divEl.title = 'Hier aufteilen';
-        divEl.onclick = () => {
-          const pg = parseInt(divEl.dataset.page);
-          if (splitPoints.has(pg)) {
-            splitPoints.delete(pg);
-            divEl.classList.remove('active');
-            divEl.querySelector('.mat-split-div-icon').textContent = '+';
-            divEl.title = 'Hier aufteilen';
-          } else {
-            splitPoints.add(pg);
-            divEl.classList.add('active');
-            divEl.querySelector('.mat-split-div-icon').textContent = '✂';
-            divEl.title = 'Trennung entfernen';
+    function renderGroups() {
+      container.innerHTML = '';
+      const groups = getGroups();
+
+      groups.forEach((g, gi) => {
+        const typ = segTypes[gi] || 'material';
+        const typDef = SEGMENT_TYPES.find(t => t.key === typ) || SEGMENT_TYPES[0];
+        const color = SPLIT_COLORS[gi % SPLIT_COLORS.length];
+
+        const groupEl = mk('div', 'mat-split-group');
+        groupEl.style.borderColor = color;
+
+        // Typ-Leiste
+        const typRow = mk('div', 'mat-split-typ-row');
+        SEGMENT_TYPES.forEach(t => {
+          const b = btn(t.label, 'btn btn-xs ' + (t.key === typ ? 'btn-pri' : 'btn-ghost'));
+          b.onclick = () => { segTypes[gi] = t.key; renderGroups(); updateInfo(); };
+          typRow.appendChild(b);
+        });
+        const pageRange = tx('span', 'mat-split-range', 'S. ' + g.start + (g.end > g.start ? '–' + g.end : ''));
+        typRow.appendChild(pageRange);
+        groupEl.appendChild(typRow);
+
+        // Seiten
+        const pagesRow = mk('div', 'mat-split-pages-row');
+        for (let i = g.start; i <= g.end; i++) {
+          const img = document.createElement('img');
+          img.src = pageDataURLs[i - 1]; img.className = 'mat-split-thumb';
+          const wrap = mk('div', 'mat-split-thumb-wrap');
+          wrap.style.opacity = typ === 'skip' ? '0.35' : '1';
+          wrap.appendChild(img);
+          wrap.appendChild(tx('div', 'mat-upload-thumb-nr', 'S. ' + i));
+          pagesRow.appendChild(wrap);
+
+          // Trennzone nach jeder Seite (außer letzter Seite insgesamt)
+          if (i < pageDataURLs.length) {
+            const divEl = mk('div', 'mat-split-divider');
+            divEl.dataset.page = String(i);
+            const icon = tx('span', 'mat-split-div-icon', splitPoints.has(i) ? '✂' : '+');
+            if (splitPoints.has(i)) divEl.classList.add('active');
+            divEl.appendChild(icon);
+            divEl.title = splitPoints.has(i) ? 'Trennung entfernen' : 'Hier aufteilen';
+            divEl.onclick = () => {
+              const pg = parseInt(divEl.dataset.page);
+              if (splitPoints.has(pg)) splitPoints.delete(pg);
+              else splitPoints.add(pg);
+              renderGroups(); updateInfo();
+            };
+            pagesRow.appendChild(divEl);
           }
-          applyColors(); updateInfo();
-        };
-        strip.appendChild(divEl);
-      }
+        }
+        groupEl.appendChild(pagesRow);
+        container.appendChild(groupEl);
+      });
     }
 
-    function applyColors() {
-      let gi = 0;
-      for (let i = 0; i < thumbEls.length; i++) {
-        thumbEls[i].style.background = COLORS[gi % COLORS.length];
-        if (splitPoints.has(i + 1)) gi++;
-      }
-    }
-    applyColors();
+    renderGroups();
 
     acts.style.display = 'flex';
     const upBtn = btn('📤 Aufteilen & Hochladen', 'btn btn-pri btn-sm');
     const splitInfo = tx('span', 'mat-split-info', '');
     function updateInfo() {
-      const n = splitPoints.size + 1;
-      splitInfo.textContent = n === 1 ? '1 Material (ungeteilt)' : n + ' Materialien';
+      const groups = getGroups();
+      const matCount = groups.filter((_, gi) => (segTypes[gi] || 'material') === 'material').length;
+      splitInfo.textContent = matCount + ' Material' + (matCount !== 1 ? 'ien' : '') + (groups.length > matCount ? ', ' + (groups.length - matCount) + ' weitere Abschnitte' : '');
     }
     updateInfo();
     upBtn.onclick = () => alert('Kommt als Nächstes: Aufteilen & Hochladen!');

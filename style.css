@@ -733,6 +733,11 @@ textarea::placeholder { color: #c4cdd6; }
 .mat-split-divider.active { background:#fef3c7; color:#d97706; border-left:3px solid #d97706; border-right:3px solid #d97706; }
 .mat-split-div-icon { pointer-events:none; }
 .mat-split-info { font-size:12px; color:var(--tx2); align-self:center; }
+.mat-split-container { display:flex; flex-direction:column; gap:0; }
+.mat-split-group { border:2px solid var(--bord); border-radius:var(--r); margin-bottom:4px; overflow:hidden; }
+.mat-split-typ-row { display:flex; align-items:center; gap:4px; padding:6px 8px; background:var(--surf2); border-bottom:1px solid var(--bord); flex-wrap:wrap; }
+.mat-split-range { font-size:11px; color:var(--tx3); margin-left:auto; }
+.mat-split-pages-row { display:flex; flex-wrap:wrap; align-items:flex-start; padding:8px; gap:0; }
 
 /* ── Methodendatenbank ── */
 .meth-filter-chip { border:1px solid var(--bord); background:var(--surf2); color:var(--tx2); border-radius:10px; padding:2px 9px; font-size:11px; cursor:pointer; }

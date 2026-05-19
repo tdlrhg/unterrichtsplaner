@@ -111,12 +111,6 @@ function buildSetup() {
     }
     if (!S.data.fachplanungen) S.data.fachplanungen = [];
     if (!S.data.kurse) S.data.kurse = [];
-    // Fachplanungen: EF/Q1/Q2 → SII
-    let fpMigrated = false;
-    (S.data.fachplanungen || []).forEach(fp => {
-      if (SII_OLD.has(fp.jahrgang)) { fp.jahrgang = 'SII'; fpMigrated = true; }
-    });
-    if (fpMigrated) scheduleSave();
   } catch (e) {
     S.data = { fachplanungen: [], kurse: [] };
   }

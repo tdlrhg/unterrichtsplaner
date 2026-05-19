@@ -119,7 +119,7 @@ const KLP = {
 };
 
 const FAECHER = ['M', 'Ch', 'Bio', 'Ch_GK', 'Ch_LK', 'Bio_GK', 'Bio_LK'];
-const JAHRGAENGE = ['5', '6', '7', '8', '9', '10', 'SII'];
+const JAHRGAENGE = ['5', '6', '7', '8', '9', '10', 'EF', 'Q1', 'Q2'];
 const SOZIALFORMEN = ['Einzelarbeit', 'Partnerarbeit', 'Gruppenarbeit', 'Plenum', 'Lehrervortrag'];
 const METHODEN = ['Einführung', 'Erarbeitung', 'Übung', 'Sicherung', 'Wiederholung', 'Diskussion', 'Experiment', 'Lernzirkel', 'Präsentation'];
 const MATTYPEN = ['Arbeitsblatt', 'Lösung', 'Präsentation', 'Link', 'Buch', 'Video', 'Software', 'Sonstiges'];

@@ -226,7 +226,7 @@ function viewFachplanung() {
   if (S.open[klpOpenKey] && KLPDB.length > 0) {
     const fachNameMap = { 'M': 'Mathematik', 'Ch': 'Chemie', 'Bio': 'Biologie', 'Ch_GK': 'Chemie', 'Ch_LK': 'Chemie', 'Bio_GK': 'Biologie', 'Bio_LK': 'Biologie' };
     const fachName = fachNameMap[lp.fach] || lp.fach;
-    const isSII = lp.jahrgang === 'SII';
+    const isSII = ['EF', 'Q1', 'Q2', 'SII'].includes(lp.jahrgang);
     const isGK = lp.fach.includes('GK');
     const isLK = lp.fach.includes('LK');
 

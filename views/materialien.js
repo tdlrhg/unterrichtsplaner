@@ -763,6 +763,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   panel.querySelector('.matd-panel-body')?.remove();
   panTitle.textContent = mat.titel;
   const body = mk('div', 'matd-panel-body');
+  function closePanel() { overlay.classList.remove('open'); body.remove(); }
 
   const needsAny = mat.review && Object.values(mat.review).some(rv => rv?.needsReview);
   if (needsAny) {
@@ -800,7 +801,9 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
       ta.onblur = () => onSave(ta.value); r.appendChild(ta);
     } else {
       const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'mat-edit-inp'; inp.value = get();
-      inp.onblur = () => onSave(inp.value); r.appendChild(inp);
+      inp.onblur = () => onSave(inp.value);
+      inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); onSave(inp.value); inp.blur(); closePanel(); } };
+      r.appendChild(inp);
     }
     body.appendChild(r);
   }

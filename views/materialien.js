@@ -183,20 +183,36 @@ function buildUploadPanel() {
       splitInfo.textContent = 'Lade hoch…';
       uploadedEntries = []; kontextPageURLs = [];
 
-      // Kontext-Seiten sammeln
-      groups.forEach((g, gi) => {
-        if ((segTypes[gi] || 'material') === 'kontext') {
-          for (let p = g.start; p <= g.end; p++) kontextPageURLs.push(pageDataURLs[p - 1]);
-        }
-      });
-
       try {
         const srcBytes = await _uploadPdfFile.arrayBuffer();
         const srcDoc   = await PDFLib.PDFDocument.load(srcBytes);
+        const baseName = currentFn.replace(/\.pdf$/i, '');
 
         let matIndex = 1;
         const results = [];
+        let kontextR2key = null;
 
+        // Erst Kontext hochladen
+        for (let gi = 0; gi < groups.length; gi++) {
+          const g   = groups[gi];
+          const typ = segTypes[gi] || 'material';
+          if (typ !== 'kontext') continue;
+
+          const newDoc = await PDFLib.PDFDocument.create();
+          const pageIdxs = [];
+          for (let p = g.start - 1; p < g.end; p++) pageIdxs.push(p);
+          const copied = await newDoc.copyPages(srcDoc, pageIdxs);
+          copied.forEach(pg => newDoc.addPage(pg));
+          const blob = new Blob([await newDoc.save()], { type: 'application/pdf' });
+          const key = folder + '/' + baseName + '_Kontext.pdf';
+          splitInfo.textContent = 'Lade hoch: Kontext…';
+          await r2Upload(key, blob, 'application/pdf');
+          kontextR2key = key;
+          // Seiten-Bilder für sofortige KI-Analyse im Speicher halten
+          for (let p = g.start; p <= g.end; p++) kontextPageURLs.push(pageDataURLs[p - 1]);
+        }
+
+        // Dann Materialien & LH hochladen
         for (let gi = 0; gi < groups.length; gi++) {
           const g   = groups[gi];
           const typ = segTypes[gi] || 'material';
@@ -211,7 +227,6 @@ function buildUploadPanel() {
           const blob = new Blob([pdfBytes], { type: 'application/pdf' });
 
           const suffix = typ === 'lh' ? 'LH' : 'M' + matIndex;
-          const baseName = currentFn.replace(/\.pdf$/i, '');
           const key = folder + '/' + baseName + '_' + suffix + '.pdf';
 
           splitInfo.textContent = 'Lade hoch: ' + suffix + '…';
@@ -226,11 +241,15 @@ function buildUploadPanel() {
             jahrgang: [],
             themen: themaInp2.value.trim() ? [themaInp2.value.trim()] : [],
             r2url: url, r2key: key,
+            kontextR2key: kontextR2key || null,
             seiten: g.end - g.start + 1,
             importiertAm: now,
           };
           const matPageURLs = pageDataURLs.slice(g.start - 1, g.end);
-          MATDB.unshift(entry);
+          // Vorhandenen Eintrag mit gleichem R2-Key überschreiben
+          const existingIdx = MATDB.findIndex(m => m.r2key === key);
+          if (existingIdx >= 0) { entry.id = MATDB[existingIdx].id; MATDB[existingIdx] = entry; }
+          else MATDB.unshift(entry);
           uploadedEntries.push({ entry, matPageURLs });
           results.push({ suffix, url });
           if (typ === 'material') matIndex++;

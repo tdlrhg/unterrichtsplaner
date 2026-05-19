@@ -5,6 +5,7 @@ function initStunde(stunde) {
   if (!stunde.phasen) stunde.phasen = [];
   if (!stunde.material) stunde.material = [];
   if (!stunde.lernziele) stunde.lernziele = [];
+  if (!stunde.planungsrahmen) stunde.planungsrahmen = {};
 }
 
 function renderStundenBody(div, stunde, fp) {
@@ -151,6 +152,139 @@ Antworte NUR als JSON-Array von Strings:
   lzCard.classList.add('card-half');
   grid.appendChild(lzCard);
 
+  // ── Planungsrahmen ─────────────────────────────────────────────
+  const pr = stunde.planungsrahmen;
+  if (!pr.sozialformen) pr.sozialformen = [];
+  if (!pr.kiGewählt) pr.kiGewählt = [];
+
+  const prCard = mk('div', 'card');
+  const prHdr = cardHdr('Planungsrahmen');
+
+  const prKiBtn = btn('✨ KI wählt', 'btn btn-ghost btn-xs');
+  prKiBtn.onclick = async () => {
+    const antKey = localStorage.getItem('ant_key');
+    if (!antKey) { alert('Bitte zuerst Anthropic API-Key hinterlegen.'); return; }
+    prKiBtn.textContent = '…'; prKiBtn.disabled = true;
+
+    // Kurs-Ressourcen ermitteln
+    const kurs = (S.data.kurse || []).find(k => getFachplanung(k.fachplanungId)?.id === fp.id);
+    const res = kurs?.ressourcen || {};
+    const resText = [
+      res.schulbuch ? 'Schulbuch' + (res.schulbuchTitel ? ' (' + res.schulbuchTitel + ')' : '') : '',
+      res.arbeitsheft ? 'Arbeitsheft' : '',
+      res.ipad ? 'iPad' : '',
+      res.internet ? 'Internet' : '',
+      res.beamer ? 'Beamer' : '',
+      res.elmo ? 'Elmo' : '',
+      ...(res.apps || []),
+    ].filter(Boolean).join(', ') || '–';
+
+    const lernzieleText = (stunde.lernziele || []).map(z => z.text).join('\n') || '–';
+
+    const prompt = `Du planst eine Unterrichtsstunde und wählst passende Planungsparameter.
+
+Stunde:
+- Fach: ${fp.fach || '–'}, Jahrgang: ${fp.jahrgang || '–'}
+- Dauer: ${stunde.dauer || 45} Minuten
+- Intention: ${stunde.intention || '–'}
+- Lernziele: ${lernzieleText}
+- Verfügbare Ressourcen: ${resText}
+
+Wähle NUR Parameter, die noch nicht gesetzt sind:
+${!pr.sozialformen?.length ? '- sozialformen: Array aus ["Plenum","Partnerarbeit","Gruppenarbeit","Einzelarbeit"]' : ''}
+${!pr.schwerpunkt ? '- schwerpunkt: einer von ["Einführung","Erarbeitung","Übung & Festigung","Sicherung","Experiment","Diskussion","Präsentation"]' : ''}
+${pr.differenzierung === undefined || pr.differenzierung === null ? '- differenzierung: einer von ["Keine","Leicht (1 Niveau)","Stark (2+ Niveaus)"]' : ''}
+${pr.hausaufgaben === undefined || pr.hausaufgaben === null ? '- hausaufgaben: true oder false' : ''}
+
+Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in Strings:
+{}`;
+
+    try {
+      const res2 = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 300, messages: [{ role: 'user', content: prompt }] }),
+      });
+      const data = await res2.json();
+      const text = data.content?.[0]?.text || '';
+      const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      const gewählt = [];
+      if (parsed.sozialformen?.length && !pr.sozialformen?.length) { pr.sozialformen = parsed.sozialformen; gewählt.push('sozialformen'); }
+      if (parsed.schwerpunkt && !pr.schwerpunkt) { pr.schwerpunkt = parsed.schwerpunkt; gewählt.push('schwerpunkt'); }
+      if (parsed.differenzierung && pr.differenzierung == null) { pr.differenzierung = parsed.differenzierung; gewählt.push('differenzierung'); }
+      if (parsed.hausaufgaben != null && pr.hausaufgaben == null) { pr.hausaufgaben = parsed.hausaufgaben; gewählt.push('hausaufgaben'); }
+      pr.kiGewählt = [...new Set([...(pr.kiGewählt || []), ...gewählt])];
+      scheduleSave(); render();
+    } catch(e) { alert('Fehler: ' + e.message); }
+    prKiBtn.textContent = '✨ KI wählt'; prKiBtn.disabled = false;
+  };
+  prHdr.appendChild(prKiBtn);
+  prCard.appendChild(prHdr);
+
+  const prBody = mk('div', 'card-body');
+
+  function prSection(label) {
+    const h = tx('div', '', label);
+    h.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;margin-top:4px;';
+    prBody.appendChild(h);
+  }
+
+  function prChips(key, options, multi) {
+    const wrap = mk('div', 'pr-chip-wrap');
+    const kiSet = (pr.kiGewählt || []).includes(key);
+    options.forEach(opt => {
+      const isActive = multi ? (pr[key] || []).includes(opt) : pr[key] === opt;
+      const b = mk('button', 'btn btn-xs pr-chip' + (isActive ? ' active' : '') + (isActive && kiSet ? ' ki' : ''));
+      b.textContent = isActive && kiSet ? '✨ ' + opt : opt;
+      b.onclick = () => {
+        if (multi) {
+          if (!pr[key]) pr[key] = [];
+          pr[key] = pr[key].includes(opt) ? pr[key].filter(x => x !== opt) : [...pr[key], opt];
+        } else {
+          pr[key] = pr[key] === opt ? null : opt;
+        }
+        // Manuelle Änderung → nicht mehr als KI-gesetzt markieren
+        pr.kiGewählt = (pr.kiGewählt || []).filter(k => k !== key);
+        scheduleSave(); render();
+      };
+      wrap.appendChild(b);
+    });
+    prBody.appendChild(wrap);
+  }
+
+  prSection('Sozialformen');
+  prChips('sozialformen', ['Plenum', 'Partnerarbeit', 'Gruppenarbeit', 'Einzelarbeit'], true);
+
+  prSection('Schwerpunkt');
+  prChips('schwerpunkt', ['Einführung', 'Erarbeitung', 'Übung & Festigung', 'Sicherung', 'Experiment', 'Diskussion', 'Präsentation'], false);
+
+  prSection('Differenzierung');
+  prChips('differenzierung', ['Keine', 'Leicht (1 Niveau)', 'Stark (2+ Niveaus)'], false);
+
+  prSection('Hausaufgaben');
+  const haWrap = mk('div', 'pr-chip-wrap');
+  const kiHa = (pr.kiGewählt || []).includes('hausaufgaben');
+  [true, false].forEach(val => {
+    const label = val ? 'Ja' : 'Nein';
+    const isActive = pr.hausaufgaben === val;
+    const b = mk('button', 'btn btn-xs pr-chip' + (isActive ? ' active' : '') + (isActive && kiHa ? ' ki' : ''));
+    b.textContent = isActive && kiHa ? '✨ ' + label : label;
+    b.onclick = () => { pr.hausaufgaben = isActive ? null : val; pr.kiGewählt = (pr.kiGewählt||[]).filter(k=>k!=='hausaufgaben'); scheduleSave(); render(); };
+    haWrap.appendChild(b);
+  });
+  prBody.appendChild(haWrap);
+
+  prSection('Besondere Hinweise');
+  const hinweisTA = document.createElement('textarea');
+  hinweisTA.className = 'finp'; hinweisTA.rows = 2; hinweisTA.style.cssText = 'resize:none;font-size:13px;';
+  hinweisTA.placeholder = 'z.B. Heute kein Beamer, Max fehlt, Raumwechsel…';
+  hinweisTA.value = pr.hinweise || '';
+  hinweisTA.oninput = e => { pr.hinweise = e.target.value; scheduleSave(); };
+  prBody.appendChild(hinweisTA);
+
+  prCard.appendChild(prBody);
+  grid.appendChild(prCard);
+
   // ── Phasen ─────────────────────────────────────────────────────
   const pc = mk('div', 'card');
   const phdr = cardHdr('Unterrichtsphasen');
@@ -235,6 +369,15 @@ Antworte NUR als JSON-Array von Strings:
         ? stunde.lernziele.map((z, i) => `${i+1}. ${z.text}`).join('\n')
         : '–';
 
+      const pr2 = stunde.planungsrahmen || {};
+      const prText = [
+        pr2.sozialformen?.length ? 'Sozialformen: ' + pr2.sozialformen.join(', ') : '',
+        pr2.schwerpunkt ? 'Schwerpunkt: ' + pr2.schwerpunkt : '',
+        pr2.differenzierung ? 'Differenzierung: ' + pr2.differenzierung : '',
+        pr2.hausaufgaben != null ? 'Hausaufgaben: ' + (pr2.hausaufgaben ? 'Ja' : 'Nein') : '',
+        pr2.hinweise ? 'Hinweise: ' + pr2.hinweise : '',
+      ].filter(Boolean).join('\n') || '–';
+
       const prompt = `Du bist Didaktik-Experte für NRW-Gymnasien. Wähle für diese Unterrichtsstunde das passende Phasierungsmodell und befülle die Phasen konkret und sinnvoll.
 
 Stunde:
@@ -244,6 +387,8 @@ Stunde:
 - Intention: ${stunde.intention || '–'}
 - Lernziele:
 ${lernzieleText}
+- Planungsrahmen:
+${prText}
 
 Didaktisches Hintergrundwissen:
 ${wissenText}

@@ -660,3 +660,10 @@ textarea::placeholder { color: #c4cdd6; }
 .sb-resize-handle::after { content: ''; position: absolute; top: 0; left: 2px; width: 2px; height: 100%; background: transparent; transition: background .15s; }
 .sb-resize-handle:hover::after, .sb-resize-handle:active::after { background: var(--pri); opacity: .4; }
 .sidebar { position: relative; }
+
+/* ── Planungsrahmen ── */
+.pr-chip-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.pr-chip { border: 1px solid var(--bord); background: var(--surf2); color: var(--tx2); }
+.pr-chip:hover { border-color: var(--pri); color: var(--pri); }
+.pr-chip.active { border-color: var(--pri); background: #ede9fe; color: var(--pri); font-weight: 700; }
+.pr-chip.active.ki { border-color: #7c3aed; background: #f5f3ff; color: #7c3aed; }

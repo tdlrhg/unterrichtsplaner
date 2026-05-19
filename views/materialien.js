@@ -658,10 +658,29 @@ function viewMaterialien() {
       const card = mk('div', 'matc-card');
       const needsReview = mat.review && Object.values(mat.review).some(r => r?.needsReview);
 
-      // Kopfzeile: Nr-Badge + Titel + Del-Button
+      // Einheit + Reihe aus Fachplanung suchen
+      let einheitTitel = null, reiheTitel = null;
+      if (mat.einheitId) {
+        outer: for (const fp of (S.data.fachplanungen || [])) {
+          for (const block of (fp.blocks || [])) {
+            for (const reihe of (block.reihen || [])) {
+              const e = (reihe.einheiten || []).find(e => e.id === mat.einheitId);
+              if (e) { einheitTitel = e.titel || null; reiheTitel = reihe.titel || reihe.name || null; break outer; }
+            }
+          }
+        }
+      }
+
+      // ─ Zeile 1: Quelle (links, klein grau) + Reihe-Chip (rechts) ─
+      const topRow = mk('div', 'matc-top-row');
+      if (mat.quelle) topRow.appendChild(tx('span', 'matc-quelle', mat.quelle));
+      if (reiheTitel) topRow.appendChild(tx('span', 'matc-reihe-chip', reiheTitel));
+      if (topRow.children.length) card.appendChild(topRow);
+
+      // ─ Kopfzeile: [Nr – ]Titel + Del-Button ─
       const cardHdr = mk('div', 'matc-card-hdr');
-      if (mat.materialnummer) cardHdr.appendChild(tx('span', 'matc-nr', mat.materialnummer));
-      const titleEl = tx('span', 'matc-title', mat.titel || '–');
+      const titleText = mat.materialnummer ? mat.materialnummer + ' – ' + (mat.titel || '–') : (mat.titel || '–');
+      const titleEl = tx('span', 'matc-title', titleText);
       if (needsReview) {
         const rb = tx('span', 'mat-review-badge', '⚠'); rb.title = 'Felder prüfen';
         titleEl.appendChild(rb);
@@ -679,13 +698,10 @@ function viewMaterialien() {
       cardHdr.appendChild(delBtn);
       card.appendChild(cardHdr);
 
-      // Quelle + rolleImKontext als Untertitel
-      if (mat.quelle || mat.rolleImKontext) {
-        const sub = [mat.quelle, mat.rolleImKontext].filter(Boolean).join(' · ');
-        card.appendChild(tx('div', 'matc-unit', sub));
-      }
+      // ─ Untertitel: Einheitsname ─
+      if (einheitTitel) card.appendChild(tx('div', 'matc-unit', einheitTitel));
 
-      // Typ-Badge + Fach + Jahrgang
+      // ─ Typ-Badge + Fach + Jahrgang ─
       const metaRow = mk('div', 'matc-meta');
       if (mat.materialtyp) metaRow.appendChild(typBadge(mat.materialtyp));
       (mat.fach || []).forEach(f => {
@@ -698,28 +714,20 @@ function viewMaterialien() {
       }
       card.appendChild(metaRow);
 
-      // Phasen
+      // ─ Phasen ─
       if ((mat.unterrichtsphase || []).length) {
         const phRow = mk('div', 'matc-phases');
         mat.unterrichtsphase.forEach(p => phRow.appendChild(phaseChip(p)));
         card.appendChild(phRow);
       }
 
-      // Footer: KLP-Anzahl + Kognition
-      const footer = mk('div', 'matc-footer');
+      // ─ Footer: nur KLP-Anzahl ─
       const klpCount = (mat.kompetenzenKLP || []).length;
       if (klpCount) {
-        const klpBadge = tx('span', 'matc-klp-count', klpCount + ' KLP');
-        footer.appendChild(klpBadge);
+        const footer = mk('div', 'matc-footer');
+        footer.appendChild(tx('span', 'matc-klp-count', klpCount + ' KLP'));
+        card.appendChild(footer);
       }
-      if (mat.kognitiveBeanspruchung) {
-        footer.appendChild(tx('span', 'matc-kogn', mat.kognitiveBeanspruchung));
-      }
-      if (mat.lautstaerke) {
-        const icons = { 'leise': '🔇', 'mittel': '🔉', 'laut': '🔊' };
-        footer.appendChild(tx('span', 'matc-laut', icons[mat.lautstaerke] || mat.lautstaerke));
-      }
-      if (footer.children.length) card.appendChild(footer);
 
       card.onclick = () => openMatOverlay(mat, card, overlay, panel, panTitle, renderCards);
       grid.appendChild(card);

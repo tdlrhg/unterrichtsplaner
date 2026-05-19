@@ -53,7 +53,7 @@ function viewMethoden() {
     ['Kein Material','Texte','Karten','Arbeitsblätter','Experimente','Plakate/Papier','Bilder/Comics','Objekte/Modelle','Digitale Medien'].map(v => ({val:v,label:v})),
     () => filterMat, v => filterMat = v);
   const aRow = chipRow('Aufwand',
-    [{val:1,label:'● gering'},{val:2,label:'●● mittel'},{val:3,label:'●●● hoch'}],
+    [{val:1,label:'● gering'},{val:2,label:'●● mittel'},{val:3,label:'●●● hoch'},{val:4,label:'●●●● sehr hoch'}],
     () => filterAufwand, v => filterAufwand = v);
 
   filterBody.appendChild(pRow);
@@ -71,8 +71,8 @@ function viewMethoden() {
   const listWrap = mk('div', 'meth-grid');
   div.appendChild(listWrap);
 
-  const AUFWAND_LABEL = ['', '● gering', '●● mittel', '●●● hoch'];
-  const AUFWAND_COLOR = ['', '#16a34a', '#d97706', '#dc2626'];
+  const AUFWAND_LABEL = ['', '● gering', '●● mittel', '●●● hoch', '●●●● sehr hoch'];
+  const AUFWAND_COLOR = ['', '#16a34a', '#ca8a04', '#ea580c', '#dc2626'];
 
   function refresh() {
     [pRow, sRow, mRow, aRow].forEach(row => {
@@ -80,7 +80,7 @@ function viewMethoden() {
         const isOn = c.textContent === filterPhase
           || c.textContent === filterSozial
           || c.textContent === filterMat
-          || (filterAufwand && c.textContent === AUFWAND_LABEL[filterAufwand]);
+          || (filterAufwand !== null && c.textContent === AUFWAND_LABEL[filterAufwand]);
         c.className = 'meth-filter-chip' + (isOn ? ' on' : '');
       });
     });
@@ -114,8 +114,12 @@ function viewMethoden() {
       nameRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:6px;';
       nameRow.appendChild(tx('div', 'meth-card-name', m.name));
       if (m.aufwand) {
-        const aw = tx('span', 'meth-aufwand', AUFWAND_LABEL[m.aufwand]);
-        aw.style.color = AUFWAND_COLOR[m.aufwand];
+        const aw = mk('span', 'meth-aufwand');
+        for (let i = 1; i <= 4; i++) {
+          const dot = tx('span', 'meth-aufwand-dot', '●');
+          dot.style.color = i <= m.aufwand ? AUFWAND_COLOR[m.aufwand] : 'var(--bord)';
+          aw.appendChild(dot);
+        }
         nameRow.appendChild(aw);
       }
       card.appendChild(nameRow);

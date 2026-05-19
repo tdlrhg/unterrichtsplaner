@@ -38,7 +38,7 @@
     "zeitbedarf": "Doppelstunde oder mehr",
     "hinweise": "Max. 24 SuS bei 3 Experimenten; max. 4 SuS pro Gruppe. Schnellere erhalten Zusatzaufträge.",
     "quelle": "https://www.methodenkartei.uni-oldenburg.de/methode/experimentierpuzzle/",
-    "aufwand": 3
+    "aufwand": 4
   },
   {
     "id": "gruppenpuzzle",
@@ -105,7 +105,7 @@
     "zeitbedarf": "variabel",
     "hinweise": "Aufgaben nach Vorkenntnissen formulieren; Pflicht- und Wahlstationen möglich.",
     "quelle": "https://www.methodenkartei.uni-oldenburg.de/methode/stationenarbeit/",
-    "aufwand": 3
+    "aufwand": 4
   },
   {
     "id": "think-pair-share",
@@ -397,7 +397,7 @@
     "zeitbedarf": "mehrere Runden à 15–20 Minuten",
     "hinweise": "Papiertischdecken zum Notieren. Für komplexe, vielschichtige Themen geeignet.",
     "quelle": "https://www.methodenkartei.uni-oldenburg.de/methode/world-cafe/",
-    "aufwand": 2
+    "aufwand": 3
   },
   {
     "id": "sortieraufgabe",
@@ -783,7 +783,7 @@
     "zeitbedarf": "variabel (hohe Vorbereitungszeit für LP)",
     "hinweise": "Besonders gut für Binnendifferenzierung; leichte Sprache und Audiodateien für Förderbedarf.",
     "quelle": "https://www.methodenkartei.uni-oldenburg.de/methode/webquest/",
-    "aufwand": 2
+    "aufwand": 3
   },
   {
     "id": "cluster",
@@ -927,7 +927,7 @@
     "zeitbedarf": "5–10 Minuten",
     "hinweise": "Klebepunkte oder Kreuze an der Tafel. Einfache Sprachformulierungen für Förderbedarf.",
     "quelle": "https://www.methodenkartei.uni-oldenburg.de/methode/zielscheibe/",
-    "aufwand": 2
+    "aufwand": 1
   },
   {
     "id": "projektarbeit",
@@ -948,7 +948,7 @@
     "zeitbedarf": "mehrere Stunden bis Projektwoche",
     "hinweise": "Differenzierung nach Interessen und Fähigkeiten auf Ebene Organisation, Inhalt, Ergebnissicherung.",
     "quelle": "https://www.methodenkartei.uni-oldenburg.de/methode/projektarbeit/",
-    "aufwand": 3
+    "aufwand": 4
   },
   {
     "id": "impuls-lesen",
@@ -1477,7 +1477,7 @@
     "zeitbedarf": "variabel",
     "hinweise": "Didaktisch aufbereiten und mit klaren Unterrichtszielen verknüpfen. Anschließende Reflexion empfohlen.",
     "quelle": "https://www.methodenkartei.uni-oldenburg.de/methode/geocaching/",
-    "aufwand": 3
+    "aufwand": 4
   },
   {
     "id": "glueckstopf",
@@ -1899,7 +1899,7 @@
     "zeitbedarf": "mehrere Unterrichtsstunden",
     "hinweise": "Erfordert substanzielle Vorbereitungszeit.",
     "quelle": "https://www.methodenkartei.uni-oldenburg.de/methode/schauspiel/",
-    "aufwand": 3
+    "aufwand": 4
   },
   {
     "id": "sektempfang",

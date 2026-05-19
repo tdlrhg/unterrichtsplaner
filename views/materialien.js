@@ -961,6 +961,38 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   function arrGet(key) { return (mat[key] || []).join(', '); }
   function arrSet(key) { return v => { mat[key] = v.split(',').map(s => s.trim()).filter(Boolean); }; }
 
+  // ── Materialvorschau ─────────────────────────────────────────
+  if (mat.r2key) {
+    const prevWrap = mk('div', 'mat-detail-preview');
+    const prevBtn = btn('👁 Vorschau laden', 'btn btn-ghost btn-xs');
+    const prevPages = mk('div', 'mat-detail-preview-pages');
+    prevBtn.onclick = async () => {
+      prevBtn.disabled = true; prevBtn.textContent = '⏳ Lade…';
+      try {
+        const buf = await r2Download(mat.r2key);
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+        prevPages.innerHTML = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const vp0  = page.getViewport({ scale: 1 });
+          const scale = 280 / vp0.width;
+          const vp   = page.getViewport({ scale });
+          const cv   = document.createElement('canvas');
+          cv.width = vp.width; cv.height = vp.height;
+          await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+          cv.className = 'mat-detail-preview-thumb';
+          prevPages.appendChild(cv);
+        }
+        prevBtn.remove();
+      } catch(e2) {
+        prevBtn.textContent = '⚠ ' + e2.message; prevBtn.disabled = false;
+      }
+    };
+    prevWrap.appendChild(prevBtn);
+    prevWrap.appendChild(prevPages);
+    body.appendChild(prevWrap);
+  }
+
   // Teil von Einheit
   if (mat.einheitId) {
     const einheit = MATDB.find(m => m.id === mat.einheitId);

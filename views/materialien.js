@@ -430,50 +430,6 @@ function viewMaterialien() {
 
   const hdrBtns = mk('div', ''); hdrBtns.style.cssText = 'display:flex;gap:8px;';
 
-  const schemaBtn = btn('📋 Schema kopieren', 'btn btn-ghost btn-sm');
-  schemaBtn.onclick = async () => {
-    const schema = await sbDownload('schema.json');
-    await navigator.clipboard.writeText(JSON.stringify(schema, null, 2));
-    schemaBtn.textContent = '✓ Kopiert!';
-    setTimeout(() => { schemaBtn.textContent = '📋 Schema kopieren'; }, 2000);
-  };
-
-  const importBtn = btn('📥 Import', 'btn btn-pri btn-sm');
-  importBtn.onclick = () => {
-    const existing = div.querySelector('.mat-import-panel');
-    if (existing) { existing.remove(); return; }
-    const p = mk('div', 'mat-import-panel');
-    p.appendChild(tx('div', 'mat-import-hint', 'JSON-Eintrag oder Array einfügen (aus KI-generiertem Schema):'));
-    const ta = document.createElement('textarea');
-    ta.className = 'mat-import-ta'; ta.placeholder = '{ "id": "...", "titel": "...", ... }';
-    p.appendChild(ta);
-    const actions = mk('div', ''); actions.style.cssText = 'display:flex;gap:8px;margin-top:8px;';
-    const errMsg = tx('span', 'mat-import-err', '');
-    const addBtn2 = btn('Hinzufügen', 'btn btn-pri btn-sm');
-    addBtn2.onclick = () => {
-      errMsg.textContent = '';
-      let parsed;
-      try { parsed = JSON.parse(ta.value.trim()); } catch { errMsg.textContent = 'Ungültiges JSON.'; return; }
-      const entries = Array.isArray(parsed) ? parsed : [parsed];
-      const invalid = entries.filter(e => !e.id || !e.titel);
-      if (invalid.length) { errMsg.textContent = 'Jeder Eintrag braucht mindestens "id" und "titel".'; return; }
-      const now = new Date().toISOString();
-      entries.forEach(e => {
-        if (!e.importiertAm) e.importiertAm = now;
-        const idx = MATDB.findIndex(m => m.id === e.id);
-        if (idx >= 0) MATDB[idx] = e; else MATDB.unshift(e);
-      });
-      saveMatDB();
-      p.remove();
-      S.view = 'materialien'; render();
-    };
-    const cancelBtn2 = btn('Abbrechen', 'btn btn-ghost btn-sm');
-    cancelBtn2.onclick = () => p.remove();
-    actions.appendChild(addBtn2); actions.appendChild(cancelBtn2); actions.appendChild(errMsg);
-    p.appendChild(actions);
-    div.insertBefore(p, div.children[1]);
-  };
-
   const scanBtn = btn('📸 Aus Bild', 'btn btn-pri btn-sm');
   scanBtn.onclick = () => {
     const existing = div.querySelector('.mat-scan-panel');
@@ -607,7 +563,7 @@ function viewMaterialien() {
     if (ex) { ex.remove(); return; }
     div.insertBefore(buildUploadPanel(), div.children[1]);
   };
-  hdrBtns.appendChild(uploadBtn); hdrBtns.appendChild(schemaBtn); hdrBtns.appendChild(scanBtn); hdrBtns.appendChild(importBtn);
+  hdrBtns.appendChild(uploadBtn); hdrBtns.appendChild(scanBtn);
   hdr.appendChild(hdrBtns);
   div.appendChild(hdr);
 

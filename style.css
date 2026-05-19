@@ -722,6 +722,10 @@ textarea::placeholder { color: #c4cdd6; }
 .mat-upload-path-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:8px; }
 .mat-upload-sel { width:auto !important; flex-shrink:0; }
 .mat-upload-sub { flex:1; min-width:120px; }
+.mat-detail-ktx { padding:8px 0; border-top:1px solid var(--bord); margin-top:4px; }
+.mat-detail-ktx-hdr { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.mat-detail-ktx-key { font-size:11px; color:var(--tx2); font-family:monospace; flex:1; }
+
 .mat-detail-preview { padding:10px 0 4px; border-bottom:1px solid var(--bord); margin-bottom:4px; }
 .mat-detail-preview-pages { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
 .mat-detail-preview-thumb { max-width:160px; height:auto; border:1px solid var(--bord); border-radius:4px; box-shadow:var(--sh); }

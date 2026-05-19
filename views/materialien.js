@@ -1076,6 +1076,70 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
     editRow('Erläuterung',      () => mat.erlaeuterung || '',   v => { mat.erlaeuterung = v; },   true);
   }
 
+  // ── Kontext-Datei zuweisen ────────────────────────────────────
+  if (mat.r2key) {
+    const ktxSection = mk('div', 'mat-detail-ktx');
+    const ktxHdr = mk('div', 'mat-detail-ktx-hdr');
+    ktxHdr.appendChild(tx('span', 'mat-detail-label', 'Kontext-Datei'));
+    const ktxKey = tx('span', 'mat-detail-ktx-key', mat.kontextR2key ? '📎 ' + mat.kontextR2key.split('/').pop() : 'keine');
+    ktxHdr.appendChild(ktxKey);
+    const ktxPickBtn = btn('📂 Aus R2 wählen', 'btn btn-ghost btn-xs');
+    const ktxClearBtn = btn('✕', 'btn btn-ghost btn-xs');
+    ktxClearBtn.title = 'Kontext entfernen';
+    ktxClearBtn.style.display = mat.kontextR2key ? '' : 'none';
+    ktxClearBtn.onclick = () => {
+      mat.kontextR2key = null; saveMatDB();
+      ktxKey.textContent = 'keine'; ktxClearBtn.style.display = 'none';
+      ktxTree.innerHTML = ''; ktxTree.style.display = 'none'; ktxPickBtn.textContent = '📂 Aus R2 wählen';
+    };
+    ktxHdr.appendChild(ktxPickBtn); ktxHdr.appendChild(ktxClearBtn);
+    ktxSection.appendChild(ktxHdr);
+
+    const ktxTree = mk('div', 'mat-r2-tree'); ktxTree.style.display = 'none';
+    ktxSection.appendChild(ktxTree);
+
+    ktxPickBtn.onclick = () => {
+      if (ktxTree.style.display !== 'none') { ktxTree.style.display = 'none'; ktxPickBtn.textContent = '📂 Aus R2 wählen'; return; }
+      ktxTree.style.display = 'block'; ktxPickBtn.textContent = '▲ Schließen';
+      ktxTree.innerHTML = '<span style="color:var(--tx3);font-size:12px">⏳ Lade…</span>';
+
+      async function renderKtxFolder(prefix, container) {
+        container.innerHTML = '<span style="color:var(--tx3);font-size:12px">⏳</span>';
+        const { folders, files } = await r2List(prefix);
+        container.innerHTML = '';
+        folders.forEach(f => {
+          const name = f.slice(prefix.length).replace(/\/$/, '');
+          const row = mk('div', 'mat-r2-folder');
+          const toggle = tx('span', 'mat-r2-folder-name', '📁 ' + name);
+          const sub = mk('div', 'mat-r2-subfolder'); sub.style.display = 'none';
+          let loaded = false;
+          toggle.onclick = () => {
+            const open = sub.style.display !== 'none';
+            sub.style.display = open ? 'none' : 'block';
+            if (!loaded && !open) { loaded = true; renderKtxFolder(f, sub); }
+          };
+          row.appendChild(toggle); row.appendChild(sub); container.appendChild(row);
+        });
+        files.forEach(({ key }) => {
+          if (!key.endsWith('.pdf') && !key.endsWith('.png') && !key.endsWith('.jpg')) return;
+          const name = key.split('/').pop();
+          const row = mk('div', 'mat-r2-file');
+          row.appendChild(tx('span', 'mat-r2-filename', name));
+          const useBtn = btn('Verwenden', 'btn btn-pri btn-xs');
+          useBtn.onclick = () => {
+            mat.kontextR2key = key; saveMatDB();
+            ktxKey.textContent = '📎 ' + name;
+            ktxClearBtn.style.display = '';
+            ktxTree.style.display = 'none'; ktxPickBtn.textContent = '📂 Aus R2 wählen';
+          };
+          row.appendChild(useBtn); container.appendChild(row);
+        });
+      }
+      renderKtxFolder('', ktxTree).catch(e => { ktxTree.innerHTML = '<span style="color:#dc2626;font-size:12px">⚠ ' + e.message + '</span>'; });
+    };
+    body.appendChild(ktxSection);
+  }
+
   if (mat.materialtyp === 'Unterrichtseinheit') {
     const members = MATDB.filter(m => m.einheitId === mat.id)
       .sort((a, b) => (a.materialnummer || '').localeCompare(b.materialnummer || '', undefined, { numeric: true }));

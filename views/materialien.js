@@ -170,7 +170,74 @@ function buildUploadPanel() {
       splitInfo.textContent = matCount + ' Material' + (matCount !== 1 ? 'ien' : '') + (groups.length > matCount ? ', ' + (groups.length - matCount) + ' weitere Abschnitte' : '');
     }
     updateInfo();
-    upBtn.onclick = () => alert('Kommt als Nächstes: Aufteilen & Hochladen!');
+    upBtn.onclick = async () => {
+      if (typeof PDFLib === 'undefined') { alert('pdf-lib nicht geladen – bitte Seite neu laden.'); return; }
+      const groups = getGroups();
+      const parts = [fachSel2.value, unterInp2.value.trim(), themaInp2.value.trim()].filter(Boolean);
+      const folder = parts.join('/');
+
+      upBtn.disabled = true;
+      splitInfo.textContent = 'Lade hoch…';
+
+      try {
+        const srcBytes = await _uploadPdfFile.arrayBuffer();
+        const srcDoc   = await PDFLib.PDFDocument.load(srcBytes);
+
+        let matIndex = 1;
+        const results = [];
+
+        for (let gi = 0; gi < groups.length; gi++) {
+          const g   = groups[gi];
+          const typ = segTypes[gi] || 'material';
+          if (typ === 'skip' || typ === 'kontext') continue; // Kontext nur im Speicher, skip ignorieren
+
+          // PDF-Seiten extrahieren (0-indiziert)
+          const newDoc = await PDFLib.PDFDocument.create();
+          const pageIdxs = [];
+          for (let p = g.start - 1; p < g.end; p++) pageIdxs.push(p);
+          const copied = await newDoc.copyPages(srcDoc, pageIdxs);
+          copied.forEach(pg => newDoc.addPage(pg));
+          const pdfBytes = await newDoc.save();
+          const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+          // Dateiname
+          const suffix = typ === 'lh' ? 'LH' : 'M' + matIndex;
+          const baseName = currentFn.replace(/\.pdf$/i, '');
+          const key = folder + '/' + baseName + '_' + suffix + '.pdf';
+
+          splitInfo.textContent = 'Lade hoch: ' + suffix + '…';
+          const url = await r2Upload(key, blob, 'application/pdf');
+
+          // Minimaler MATDB-Eintrag
+          const now = new Date().toISOString();
+          const entry = {
+            id: 'mat_' + Date.now() + '_' + gi,
+            titel: baseName + ' – ' + suffix,
+            materialtyp: typ === 'lh' ? 'Lehrerhandreichung' : 'Arbeitsblatt',
+            fach: [fachSel2.value.replace(/ S(I{1,2}|i{1,2})$/, '').trim()],
+            jahrgang: [],
+            themen: themaInp2.value.trim() ? [themaInp2.value.trim()] : [],
+            r2url: url,
+            r2key: key,
+            seiten: g.end - g.start + 1,
+            importiertAm: now,
+          };
+          MATDB.unshift(entry);
+          results.push({ suffix, url });
+          if (typ === 'material') matIndex++;
+        }
+
+        saveMatDB();
+        splitInfo.textContent = '✓ ' + results.length + ' Datei' + (results.length !== 1 ? 'en' : '') + ' hochgeladen';
+        splitInfo.style.color = 'var(--grn)';
+        upBtn.textContent = '✓ Fertig';
+
+      } catch(e) {
+        splitInfo.textContent = '✗ ' + e.message;
+        splitInfo.style.color = '#dc2626';
+        upBtn.disabled = false;
+      }
+    };
     acts.appendChild(upBtn);
     acts.appendChild(splitInfo);
   }

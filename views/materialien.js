@@ -305,7 +305,7 @@ WICHTIG – Titelregeln:
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion (z.B. "Einstieg in die Fotosynthese als Einzelarbeit")
 
 Antworte NUR mit JSON (kein Text davor/danach):
-{"titel":"exakter Titel vom Blatt oder Dateiname","rolleImKontext":"1 Satz zur Funktion","beschreibung":"2-3 Sätze was SuS tun","themen":["..."],"jahrgang":["SII"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
+{"titel":"exakter Titel vom Blatt oder Dateiname","materialnummer":"M1","rolleImKontext":"1 Satz zur Funktion","beschreibung":"2-3 Sätze was SuS tun","themen":["..."],"jahrgang":["SII"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
 
             try {
               const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -322,7 +322,10 @@ Antworte NUR mit JSON (kein Text davor/danach):
                 if (idx >= 0) {
                   const { quelle, materialnummer, r2key, r2url, kontextR2key, seiten, importiertAm, id } = MATDB[idx];
                   Object.assign(MATDB[idx], enriched);
-                  Object.assign(MATDB[idx], { quelle, materialnummer, r2key, r2url, kontextR2key, seiten, importiertAm, id });
+                  // materialnummer: vorhandenen Wert bewahren, sonst KI-Wert behalten
+                  const keepFields = { quelle, r2key, r2url, kontextR2key, seiten, importiertAm, id };
+                  if (materialnummer) keepFields.materialnummer = materialnummer;
+                  Object.assign(MATDB[idx], keepFields);
                 }
               }
             } catch(e2) { console.error('Analyse fehlgeschlagen:', entry.id, e2); }
@@ -953,7 +956,9 @@ Antworte NUR mit JSON (kein Text davor/danach):
           const idx = MATDB.findIndex(m => m.id === mat.id);
           if (idx >= 0) {
             const keep = (({ quelle, materialnummer, r2key, r2url, kontextR2key, seiten, importiertAm, id }) =>
-              ({ quelle, materialnummer, r2key, r2url, kontextR2key, seiten, importiertAm, id }))(MATDB[idx]);
+              ({ quelle, materialnummer: materialnummer || null, r2key, r2url, kontextR2key, seiten, importiertAm, id }))(MATDB[idx]);
+            // Materialnummer: KI-Wert übernehmen wenn noch nicht gesetzt
+            if (!keep.materialnummer) delete keep.materialnummer;
             Object.assign(MATDB[idx], enriched, keep);
           }
           saveMatDB(); renderCards();

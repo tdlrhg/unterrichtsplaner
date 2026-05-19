@@ -9,10 +9,12 @@ function buildUploadPanel() {
   }
 
   const p = mk('div', 'mat-upload-panel');
+  const pageDataURLs = [];
 
   // Header
   const pHdr = mk('div', 'mat-upload-hdr');
-  pHdr.appendChild(tx('span', 'mat-upload-title', '📄 PDF hochladen'));
+  const titleSpan = tx('span', 'mat-upload-title', '📄 PDF hochladen');
+  pHdr.appendChild(titleSpan);
   const closeP = btn('✕', 'btn btn-ghost btn-xs');
   closeP.onclick = () => p.remove();
   pHdr.appendChild(closeP);
@@ -68,6 +70,80 @@ function buildUploadPanel() {
   acts.appendChild(weiterBtn2);
   p.appendChild(acts);
 
+  // ── Split-Modus ──────────────────────────────────────────────
+  function showSplitMode() {
+    titleSpan.textContent = '✂ Seiten aufteilen';
+    zone2.style.display = 'none';
+    thumbsWrap.innerHTML = '';
+    thumbsWrap.style.maxHeight = '520px';
+    acts.innerHTML = '';
+
+    const splitPoints = new Set();
+    const thumbEls   = [];
+    const COLORS = ['#f3f0ff','#eff6ff','#f0fdf4','#fffbeb','#fdf2f8','#ecfdf5'];
+
+    thumbsWrap.appendChild(tx('div', 'mat-split-hint', 'Klicke auf + zwischen Seiten um ein neues Material zu beginnen. Nochmal klicken entfernt die Trennung.'));
+
+    const strip = mk('div', 'mat-split-strip');
+    thumbsWrap.appendChild(strip);
+
+    for (let i = 0; i < pageDataURLs.length; i++) {
+      const img = document.createElement('img');
+      img.src = pageDataURLs[i]; img.className = 'mat-split-thumb';
+      const wrap = mk('div', 'mat-split-thumb-wrap');
+      wrap.appendChild(img);
+      wrap.appendChild(tx('div', 'mat-upload-thumb-nr', 'S. ' + (i + 1)));
+      strip.appendChild(wrap);
+      thumbEls.push(wrap);
+
+      if (i < pageDataURLs.length - 1) {
+        const divEl = mk('div', 'mat-split-divider');
+        divEl.dataset.page = String(i + 1);
+        divEl.appendChild(tx('span', 'mat-split-div-icon', '+'));
+        divEl.title = 'Hier aufteilen';
+        divEl.onclick = () => {
+          const pg = parseInt(divEl.dataset.page);
+          if (splitPoints.has(pg)) {
+            splitPoints.delete(pg);
+            divEl.classList.remove('active');
+            divEl.querySelector('.mat-split-div-icon').textContent = '+';
+            divEl.title = 'Hier aufteilen';
+          } else {
+            splitPoints.add(pg);
+            divEl.classList.add('active');
+            divEl.querySelector('.mat-split-div-icon').textContent = '✂';
+            divEl.title = 'Trennung entfernen';
+          }
+          applyColors(); updateInfo();
+        };
+        strip.appendChild(divEl);
+      }
+    }
+
+    function applyColors() {
+      let gi = 0;
+      for (let i = 0; i < thumbEls.length; i++) {
+        thumbEls[i].style.background = COLORS[gi % COLORS.length];
+        if (splitPoints.has(i + 1)) gi++;
+      }
+    }
+    applyColors();
+
+    acts.style.display = 'flex';
+    const upBtn = btn('📤 Aufteilen & Hochladen', 'btn btn-pri btn-sm');
+    const splitInfo = tx('span', 'mat-split-info', '');
+    function updateInfo() {
+      const n = splitPoints.size + 1;
+      splitInfo.textContent = n === 1 ? '1 Material (ungeteilt)' : n + ' Materialien';
+    }
+    updateInfo();
+    upBtn.onclick = () => alert('Kommt als Nächstes: Aufteilen & Hochladen!');
+    acts.appendChild(upBtn);
+    acts.appendChild(splitInfo);
+  }
+
+  weiterBtn2.onclick = () => showSplitMode();
+
   async function handlePdf(file) {
     _uploadPdfFile = file;
     currentFn = file.name;
@@ -75,6 +151,7 @@ function buildUploadPanel() {
     zone2.style.cursor = 'default';
     updatePath();
     thumbsWrap.innerHTML = '';
+    pageDataURLs.length = 0;
     const spin = tx('div', 'mat-upload-spin', '⏳ Lade Vorschau…');
     thumbsWrap.appendChild(spin);
     try {
@@ -91,6 +168,7 @@ function buildUploadPanel() {
         const canvas = document.createElement('canvas');
         canvas.width = vp.width; canvas.height = vp.height;
         await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        pageDataURLs.push(canvas.toDataURL());
         const thumb = mk('div', 'mat-upload-thumb');
         thumb.appendChild(canvas);
         thumb.appendChild(tx('div', 'mat-upload-thumb-nr', 'S. ' + i));

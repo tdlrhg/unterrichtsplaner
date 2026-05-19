@@ -681,10 +681,14 @@ function viewMaterialien() {
         }
       }
 
-      // ─ Zeile 1: Quelle (links, klein grau) + Reihe-Chip (rechts) ─
+      // ─ Zeile 1: Quelle (links, klein grau) + Fach (rechts, prominent) ─
       const topRow = mk('div', 'matc-top-row');
       if (mat.quelle) topRow.appendChild(tx('span', 'matc-quelle', mat.quelle));
-      if (reiheTitel) topRow.appendChild(tx('span', 'matc-reihe-chip', reiheTitel));
+      const fachArr = mat.fach || [];
+      if (fachArr.length) {
+        const fachBadge = tx('span', 'matc-fach-prominent', fachArr.join(' · '));
+        topRow.appendChild(fachBadge);
+      }
       if (topRow.children.length) card.appendChild(topRow);
 
       // ─ Kopfzeile: [Nr – ]Titel + Del-Button ─
@@ -708,17 +712,15 @@ function viewMaterialien() {
       cardHdr.appendChild(delBtn);
       card.appendChild(cardHdr);
 
-      // ─ Untertitel: Einheitsname ─
-      if (einheitTitel) card.appendChild(tx('div', 'matc-unit', einheitTitel));
+      // ─ Untertitel: Block-Chip + Einheitsname ─
+      const subLine = mk('div', 'matc-sub-line');
+      if (reiheTitel) subLine.appendChild(tx('span', 'matc-reihe-chip', reiheTitel));
+      if (einheitTitel) subLine.appendChild(tx('span', 'matc-unit-inline', einheitTitel));
+      if (subLine.children.length) card.appendChild(subLine);
 
-      // ─ Typ-Badge + Fach + Jahrgang ─
+      // ─ Typ-Badge + Jahrgang ─
       const metaRow = mk('div', 'matc-meta');
       if (mat.materialtyp) metaRow.appendChild(typBadge(mat.materialtyp));
-      (mat.fach || []).forEach(f => {
-        const key = Object.keys(FACH_ICONS || {}).find(k => k === f || FACH_ICONS[k] === f);
-        const icon = key ? FACH_ICONS[key] : '';
-        metaRow.appendChild(tx('span', 'matc-fach', icon + ' ' + f));
-      });
       if ((mat.jahrgang || []).length) {
         const SII_JG = new Set(['EF','Q1','Q2','SII']);
         const jgLabel = mat.jahrgang.every(j => SII_JG.has(j)) ? mat.jahrgang.join('/') : 'Jg. ' + mat.jahrgang.join('/');

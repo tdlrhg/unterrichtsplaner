@@ -5,6 +5,7 @@ function viewMethoden() {
   let filterPhase = null;
   let filterSozial = null;
   let filterMat = null;
+  let filterAufwand = null;
   let filterText = '';
 
   const hdr = mk('div', 'c-hdr');
@@ -34,20 +35,31 @@ function viewMethoden() {
     lbl.style.cssText = 'font-size:11px;color:var(--tx3);min-width:52px;';
     row.appendChild(lbl);
     options.forEach(opt => {
-      const c = mk('button', 'meth-filter-chip' + (getVal() === opt ? ' on' : ''));
-      c.textContent = opt;
-      c.onclick = () => { setVal(getVal() === opt ? null : opt); refresh(); };
+      const c = mk('button', 'meth-filter-chip' + (getVal() === opt.val ? ' on' : ''));
+      c.textContent = opt.label;
+      c.onclick = () => { setVal(getVal() === opt.val ? null : opt.val); refresh(); };
       row.appendChild(c);
     });
     return row;
   }
 
-  const pRow = chipRow('Phase', ['Einstieg', 'Erarbeitung', 'Sicherung'], () => filterPhase, v => filterPhase = v);
-  const sRow = chipRow('Sozialform', ['Einzelarbeit', 'Partnerarbeit', 'Gruppenarbeit', 'Plenum'], () => filterSozial, v => filterSozial = v);
-  const mRow = chipRow('Material', ['Kein Material', 'Texte', 'Karten', 'Arbeitsblätter', 'Experimente', 'Plakate/Papier', 'Bilder/Comics', 'Objekte/Modelle', 'Digitale Medien'], () => filterMat, v => filterMat = v);
+  const pRow = chipRow('Phase',
+    ['Einstieg','Erarbeitung','Sicherung'].map(v => ({val:v,label:v})),
+    () => filterPhase, v => filterPhase = v);
+  const sRow = chipRow('Sozialform',
+    ['Einzelarbeit','Partnerarbeit','Gruppenarbeit','Plenum'].map(v => ({val:v,label:v})),
+    () => filterSozial, v => filterSozial = v);
+  const mRow = chipRow('Material',
+    ['Kein Material','Texte','Karten','Arbeitsblätter','Experimente','Plakate/Papier','Bilder/Comics','Objekte/Modelle','Digitale Medien'].map(v => ({val:v,label:v})),
+    () => filterMat, v => filterMat = v);
+  const aRow = chipRow('Aufwand',
+    [{val:1,label:'● gering'},{val:2,label:'●● mittel'},{val:3,label:'●●● hoch'}],
+    () => filterAufwand, v => filterAufwand = v);
+
   filterBody.appendChild(pRow);
   filterBody.appendChild(sRow);
   filterBody.appendChild(mRow);
+  filterBody.appendChild(aRow);
   filterBar.appendChild(filterBody);
   div.appendChild(filterBar);
 
@@ -59,22 +71,28 @@ function viewMethoden() {
   const listWrap = mk('div', 'meth-grid');
   div.appendChild(listWrap);
 
+  const AUFWAND_LABEL = ['', '● gering', '●● mittel', '●●● hoch'];
+  const AUFWAND_COLOR = ['', '#16a34a', '#d97706', '#dc2626'];
+
   function refresh() {
-    [pRow, sRow, mRow].forEach(row => {
+    [pRow, sRow, mRow, aRow].forEach(row => {
       row.querySelectorAll('.meth-filter-chip').forEach(c => {
-        c.className = 'meth-filter-chip' + (
-          c.textContent === filterPhase || c.textContent === filterSozial || c.textContent === filterMat ? ' on' : ''
-        );
+        const isOn = c.textContent === filterPhase
+          || c.textContent === filterSozial
+          || c.textContent === filterMat
+          || (filterAufwand && c.textContent === AUFWAND_LABEL[filterAufwand]);
+        c.className = 'meth-filter-chip' + (isOn ? ' on' : '');
       });
     });
 
     const filtered = [...METHDB].sort((a, b) => a.name.localeCompare(b.name, 'de')).filter(m => {
-      if (filterPhase  && !m.phasen.includes(filterPhase))       return false;
-      if (filterSozial && !m.sozialform.includes(filterSozial))  return false;
-      if (filterMat    && !m.materialtyp.includes(filterMat))    return false;
-      if (filterText   && !m.name.toLowerCase().includes(filterText)
-                       && !m.beschreibung.toLowerCase().includes(filterText)
-                       && !m.ziel.toLowerCase().includes(filterText)) return false;
+      if (filterPhase   && !m.phasen.includes(filterPhase))       return false;
+      if (filterSozial  && !m.sozialform.includes(filterSozial))  return false;
+      if (filterMat     && !m.materialtyp.includes(filterMat))    return false;
+      if (filterAufwand && m.aufwand !== filterAufwand)           return false;
+      if (filterText    && !m.name.toLowerCase().includes(filterText)
+                        && !m.beschreibung.toLowerCase().includes(filterText)
+                        && !m.ziel.toLowerCase().includes(filterText)) return false;
       return true;
     });
 
@@ -91,7 +109,16 @@ function viewMethoden() {
     filtered.forEach(m => {
       const card = mk('div', 'meth-card');
 
-      card.appendChild(tx('div', 'meth-card-name', m.name));
+      // Name + Aufwand-Indikator
+      const nameRow = mk('div', '');
+      nameRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:6px;';
+      nameRow.appendChild(tx('div', 'meth-card-name', m.name));
+      if (m.aufwand) {
+        const aw = tx('span', 'meth-aufwand', AUFWAND_LABEL[m.aufwand]);
+        aw.style.color = AUFWAND_COLOR[m.aufwand];
+        nameRow.appendChild(aw);
+      }
+      card.appendChild(nameRow);
 
       const chips = mk('div', 'meth-card-chips');
       m.phasen.forEach(p => chips.appendChild(tx('span', 'meth-chip meth-chip-phase', p)));

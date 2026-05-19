@@ -258,7 +258,7 @@ function buildUploadPanel() {
         saveMatDB();
         splitInfo.textContent = '✓ ' + results.length + ' Datei' + (results.length !== 1 ? 'en' : '') + ' hochgeladen';
         splitInfo.style.color = 'var(--grn)';
-        upBtn.textContent = '✓ Fertig';
+        upBtn.textContent = '✓ Hochgeladen';
 
         // KI-Analyse Button einblenden
         const aiBtn = btn('✨ KI analysiert alle', 'btn btn-pri btn-sm');
@@ -308,7 +308,9 @@ Antworte NUR mit JSON (kein Text davor/danach):
           }
           saveMatDB();
           aiStatus.textContent = '✓ Analyse abgeschlossen';
-          aiBtn.textContent = '✓ Fertig';
+          aiBtn.textContent = '✓ Fertig – Schließen';
+          aiBtn.disabled = false;
+          aiBtn.onclick = () => { p.remove(); S.view = 'materialien'; render(); };
         };
         acts.appendChild(aiBtn);
         acts.appendChild(aiStatus);

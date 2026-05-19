@@ -20,7 +20,7 @@ function modalHandlerKurse(type, data, m) {
 
   if (type === 'newKurs') {
     m.appendChild(tx('div', 'modal-title', 'Neuen Kurs anlegen'));
-    m.appendChild(modalInput('mk', 'Klasse (z.B. 7c, Q1)', ''));
+    m.appendChild(modalInput('mk', 'Klasse (z.B. 7c, SII-GK)', ''));
     m.appendChild(modalSelect('mlp', 'Fachplanung', (S.data.fachplanungen||[]).map(lp=>[lp.id,fachLabel(lp.fach)+' Jg. '+lp.jahrgang])));
     m.appendChild(modalInput('msj', 'Schuljahr', '2025/26', '2025/26'));
     const footer = mk('div', 'modal-footer'); footer.appendChild(cancelBtn());

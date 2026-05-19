@@ -226,7 +226,7 @@ function viewFachplanung() {
   if (S.open[klpOpenKey] && KLPDB.length > 0) {
     const fachNameMap = { 'M': 'Mathematik', 'Ch': 'Chemie', 'Bio': 'Biologie', 'Ch_GK': 'Chemie', 'Ch_LK': 'Chemie', 'Bio_GK': 'Biologie', 'Bio_LK': 'Biologie' };
     const fachName = fachNameMap[lp.fach] || lp.fach;
-    const isSII = ['EF', 'Q1', 'Q2'].includes(lp.jahrgang);
+    const isSII = lp.jahrgang === 'SII';
     const isGK = lp.fach.includes('GK');
     const isLK = lp.fach.includes('LK');
 
@@ -441,7 +441,7 @@ async function kiPlanung(lp, obj, typ, nta, resultDiv, { selBlock, selReihe, sel
   // KLP-Kontext
   const fachNameMap = { 'M': 'Mathematik', 'Ch': 'Chemie', 'Bio': 'Biologie', 'Ch_GK': 'Chemie', 'Ch_LK': 'Chemie', 'Bio_GK': 'Biologie', 'Bio_LK': 'Biologie' };
   const fachName = fachNameMap[lp.fach] || lp.fach;
-  const isSII = ['EF', 'Q1', 'Q2'].includes(lp.jahrgang);
+  const isSII = lp.jahrgang === 'SII';
   const isGK = lp.fach.includes('GK'), isLK = lp.fach.includes('LK');
   const klpHits = KLPDB.filter(e => {
     if (e.fach !== fachName) return false;

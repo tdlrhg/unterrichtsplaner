@@ -92,6 +92,18 @@ function buildSetup() {
   KLPDB = Array.isArray(klpdb) ? klpdb : [];
   METHDB = Array.isArray(methdb) ? methdb : [];
   DIDAKTIKDB = (didaktik && typeof didaktik === 'object' && !Array.isArray(didaktik)) ? didaktik : {};
+
+  // ── Migration: EF/Q1/Q2 → SII ────────────────────────────────
+  const SII_OLD = new Set(['EF', 'Q1', 'Q2']);
+  let migrated = false;
+  MATDB.forEach(m => {
+    if (Array.isArray(m.jahrgang) && m.jahrgang.some(j => SII_OLD.has(j))) {
+      m.jahrgang = [...new Set(m.jahrgang.map(j => SII_OLD.has(j) ? 'SII' : j))];
+      migrated = true;
+    }
+  });
+  if (migrated) sbUpload('materialien.json', MATDB).catch(() => {});
+
   try {
     S.data = loaded || { fachplanungen: [], kurse: [] };
     if (S.data.kurse && S.data.planung && !S.data.fachplanungen) {
@@ -99,6 +111,12 @@ function buildSetup() {
     }
     if (!S.data.fachplanungen) S.data.fachplanungen = [];
     if (!S.data.kurse) S.data.kurse = [];
+    // Fachplanungen: EF/Q1/Q2 → SII
+    let fpMigrated = false;
+    (S.data.fachplanungen || []).forEach(fp => {
+      if (SII_OLD.has(fp.jahrgang)) { fp.jahrgang = 'SII'; fpMigrated = true; }
+    });
+    if (fpMigrated) scheduleSave();
   } catch (e) {
     S.data = { fachplanungen: [], kurse: [] };
   }

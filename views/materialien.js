@@ -55,15 +55,31 @@ function buildUploadPanel() {
   fachSel2.onchange = updatePath; unterInp2.oninput = updatePath; themaInp2.oninput = updatePath;
   updatePath();
 
+  let uploadMode = 'pdf'; // 'pdf' | 'images'
+  const imageSources = []; // originale Image-Files, parallel zu pageDataURLs
+
   // Drop zone
   const zone2 = mk('div', 'mat-upload-drop');
-  zone2.textContent = '📄 PDF hierher ziehen oder klicken';
-  const pdfInp = document.createElement('input'); pdfInp.type = 'file'; pdfInp.accept = 'application/pdf'; pdfInp.style.display = 'none';
+  zone2.textContent = '📄 PDF oder 🖼 PNG/JPG hierher ziehen oder klicken';
+  const pdfInp = document.createElement('input'); pdfInp.type = 'file';
+  pdfInp.accept = 'application/pdf,image/png,image/jpeg,image/jpg';
+  pdfInp.multiple = true; pdfInp.style.display = 'none';
   zone2.onclick = () => pdfInp.click();
   zone2.ondragover = e => { e.preventDefault(); zone2.classList.add('drag-over'); };
   zone2.ondragleave = () => zone2.classList.remove('drag-over');
-  zone2.ondrop = e => { e.preventDefault(); zone2.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handlePdf(e.dataTransfer.files[0]); };
-  pdfInp.onchange = () => { if (pdfInp.files[0]) handlePdf(pdfInp.files[0]); };
+  zone2.ondrop = e => {
+    e.preventDefault(); zone2.classList.remove('drag-over');
+    const files = Array.from(e.dataTransfer.files);
+    if (!files.length) return;
+    if (files[0].type === 'application/pdf') handlePdf(files[0]);
+    else handleImages(files);
+  };
+  pdfInp.onchange = () => {
+    const files = Array.from(pdfInp.files);
+    if (!files.length) return;
+    if (files[0].type === 'application/pdf') handlePdf(files[0]);
+    else handleImages(files);
+  };
   p.appendChild(zone2); p.appendChild(pdfInp);
 
   // Thumbnails
@@ -191,9 +207,29 @@ function buildUploadPanel() {
       splitInfo.textContent = 'Lade hoch…';
       uploadedEntries = []; kontextPageURLs = [];
 
+      // Hilfsfunktion: Segment → PDF-Blob
+      async function segmentToBlob(g, srcDoc) {
+        const newDoc = await PDFLib.PDFDocument.create();
+        if (uploadMode === 'images') {
+          for (let pg = g.start - 1; pg < g.end; pg++) {
+            const file = imageSources[pg];
+            const buf = await file.arrayBuffer();
+            const isPng = (file.type || '').includes('png') || file.name.toLowerCase().endsWith('.png');
+            const emb = isPng ? await newDoc.embedPng(buf) : await newDoc.embedJpg(buf);
+            const page = newDoc.addPage([emb.width, emb.height]);
+            page.drawImage(emb, { x: 0, y: 0, width: emb.width, height: emb.height });
+          }
+        } else {
+          const idxs = [];
+          for (let pg = g.start - 1; pg < g.end; pg++) idxs.push(pg);
+          const copied = await newDoc.copyPages(srcDoc, idxs);
+          copied.forEach(pg => newDoc.addPage(pg));
+        }
+        return new Blob([await newDoc.save()], { type: 'application/pdf' });
+      }
+
       try {
-        const srcBytes = await _uploadPdfFile.arrayBuffer();
-        const srcDoc   = await PDFLib.PDFDocument.load(srcBytes);
+        const srcDoc = uploadMode === 'pdf' ? await PDFLib.PDFDocument.load(await _uploadPdfFile.arrayBuffer()) : null;
         const baseName = currentFn.replace(/\.pdf$/i, '');
 
         let matIndex = 1;
@@ -206,18 +242,12 @@ function buildUploadPanel() {
           const typ = segTypes[gi] || 'material';
           if (typ !== 'kontext') continue;
 
-          const newDoc = await PDFLib.PDFDocument.create();
-          const pageIdxs = [];
-          for (let p = g.start - 1; p < g.end; p++) pageIdxs.push(p);
-          const copied = await newDoc.copyPages(srcDoc, pageIdxs);
-          copied.forEach(pg => newDoc.addPage(pg));
-          const blob = new Blob([await newDoc.save()], { type: 'application/pdf' });
+          const blob = await segmentToBlob(g, srcDoc);
           const key = folder + '/' + baseName + '_Kontext.pdf';
           splitInfo.textContent = 'Lade hoch: Kontext…';
           await r2Upload(key, blob, 'application/pdf');
           kontextR2key = key;
-          // Seiten-Bilder für sofortige KI-Analyse im Speicher halten
-          for (let p = g.start; p <= g.end; p++) kontextPageURLs.push(pageDataURLs[p - 1]);
+          for (let pg = g.start; pg <= g.end; pg++) kontextPageURLs.push(pageDataURLs[pg - 1]);
         }
 
         // Dann Materialien & LH hochladen
@@ -226,13 +256,7 @@ function buildUploadPanel() {
           const typ = segTypes[gi] || 'material';
           if (typ === 'skip' || typ === 'kontext') continue;
 
-          const newDoc = await PDFLib.PDFDocument.create();
-          const pageIdxs = [];
-          for (let p = g.start - 1; p < g.end; p++) pageIdxs.push(p);
-          const copied = await newDoc.copyPages(srcDoc, pageIdxs);
-          copied.forEach(pg => newDoc.addPage(pg));
-          const pdfBytes = await newDoc.save();
-          const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+          const blob = await segmentToBlob(g, srcDoc);
 
           const suffix = typ === 'lh' ? 'LH' : 'M' + matIndex;
           const key = folder + '/' + baseName + '_' + suffix + '.pdf';
@@ -351,7 +375,40 @@ Antworte NUR mit JSON (kein Text davor/danach):
 
   weiterBtn2.onclick = () => showSplitMode();
 
+  async function handleImages(files) {
+    uploadMode = 'images';
+    _uploadPdfFile = null;
+    imageSources.length = 0;
+    pageDataURLs.length = 0;
+    thumbsWrap.innerHTML = '';
+    currentFn = files.length === 1 ? files[0].name.replace(/\.[^.]+$/, '') : 'Scan';
+    zone2.textContent = '✓ ' + files.length + ' Bild' + (files.length !== 1 ? 'er' : '') + ' geladen';
+    zone2.style.cursor = 'default';
+    updatePath();
+    const spin = tx('div', 'mat-upload-spin', '⏳ Lade Vorschau…');
+    thumbsWrap.appendChild(spin);
+    for (const file of files) {
+      const dataURL = await new Promise((res, rej) => {
+        const reader = new FileReader(); reader.onload = e => res(e.target.result); reader.onerror = rej; reader.readAsDataURL(file);
+      });
+      imageSources.push(file);
+      pageDataURLs.push(dataURL);
+    }
+    thumbsWrap.innerHTML = '';
+    pageDataURLs.forEach((url, i) => {
+      const thumb = mk('div', 'mat-upload-thumb');
+      const img = document.createElement('img');
+      img.src = url; img.className = 'mat-split-thumb';
+      thumb.appendChild(img);
+      thumb.appendChild(tx('div', 'mat-upload-thumb-nr', (i + 1) + ''));
+      thumbsWrap.appendChild(thumb);
+    });
+    acts.style.display = 'flex';
+    weiterBtn2.disabled = false;
+  }
+
   async function handlePdf(file) {
+    uploadMode = 'pdf';
     _uploadPdfFile = file;
     currentFn = file.name;
     zone2.textContent = '✓ ' + file.name + ' (' + Math.round(file.size / 1024) + ' KB)';

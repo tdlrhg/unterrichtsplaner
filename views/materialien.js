@@ -673,7 +673,7 @@ function buildImportAssistent(subTitle, renderCards) {
   function step2() {
     stepEl.textContent = 'Schritt 2 / 3 · PDF aufteilen';
     if (!S.pdfFile) {
-      const zone = mk('div', 'mat-upload-drop'); zone.style.cssText += ';max-width:480px;margin:40px auto;';
+      const zone = mk('div', 'mat-upload-drop'); zone.style.cssText += ';max-width:600px;margin:60px auto;padding:60px 40px;font-size:16px;';
       zone.textContent = '📄 PDF hierher ziehen oder klicken';
       const pdfInp = document.createElement('input'); pdfInp.type='file'; pdfInp.accept='application/pdf'; pdfInp.style.display='none';
       async function loadPdf(file) {

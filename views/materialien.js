@@ -1340,7 +1340,7 @@ function viewMaterialien() {
   si.className = 'finp'; si.style.flex = '1 1 200px';
 
   const fachSel = document.createElement('select'); fachSel.className = 'finp'; fachSel.style.width = 'auto';
-  [['', 'Alle Fächer'], ['Mathematik','Mathematik'], ['Chemie','Chemie'], ['Biologie','Biologie']].forEach(([v, l]) => {
+  [['', 'Alle Fächer'], ['bio', '🌿 Bio'], ['chemie', '🧪 Chemie'], ['mathe', '📐 Mathe']].forEach(([v, l]) => {
     const o = document.createElement('option'); o.value = v; o.textContent = l; fachSel.appendChild(o);
   });
 
@@ -1376,7 +1376,7 @@ function viewMaterialien() {
     const fach = fachSel.value; const typ = typSel.value;
     const jg = jgSel.value;    const phase = phaseSel.value;
     return MATDB.filter(m => {
-      if (fach  && !(m.fach || []).includes(fach)) return false;
+      if (fach  && !(m.fach || []).some(f => { const l = f.toLowerCase(); return l.includes(fach) || fach.includes(l); })) return false;
       if (typ   && m.materialtyp !== typ) return false;
       if (jg    && !(m.jahrgang || []).includes(jg)) return false;
       if (phase && !(m.unterrichtsphase || []).includes(phase)) return false;

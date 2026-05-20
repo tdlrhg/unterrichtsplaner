@@ -699,7 +699,7 @@ function buildImportAssistent(subTitle, renderCards) {
         try {
           const buf = await file.arrayBuffer();
           S.pdfArrayBuffer = buf;
-          S.pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+          S.pdfDoc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
           for (let i = 1; i <= S.pdfDoc.numPages; i++) {
             const pg = await S.pdfDoc.getPage(i);
             const vp0 = pg.getViewport({ scale: 1 });

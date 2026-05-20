@@ -80,17 +80,21 @@ function viewEinstellungen() {
   const aib = mk('div', 'card-body');
   aib.appendChild(keyField('Anthropic API-Key (Claude)', 'ant_key', 'sk-ant-...', true, 'Wird nur lokal gespeichert – verlässt dieses Gerät nicht.'));
   aib.appendChild(keyField('OpenAI API-Key', 'oai_key', 'sk-proj-...', true, 'Wird nur lokal gespeichert – verlässt dieses Gerät nicht.'));
+  aiCard.appendChild(aib);
+  div.appendChild(aiCard);
 
-  // KI-Analyseregeln
-  const rulesWrap = mk('div', ''); rulesWrap.style.cssText = 'margin-top:16px;display:flex;flex-direction:column;gap:6px;';
-  const rulesLbl = tx('div', '', 'Zusätzliche KI-Analyseregeln'); rulesLbl.style.cssText = 'font-size:12px;font-weight:600;color:var(--tx2);';
-  const rulesHint = tx('div', '', 'Werden an jeden Analyse-Prompt angehängt (für alle Importe).'); rulesHint.style.cssText = 'font-size:11px;color:var(--tx3);';
+  // Regeln für die Materialanalyse
+  const rulesCard = mk('div', 'card');
+  rulesCard.appendChild(cardHdr('Regeln für die Materialanalyse'));
+  const rulesBody = mk('div', 'card-body');
+  const rulesHint = tx('div', '', 'Diese Regeln werden bei jeder KI-Analyse im Import-Assistenten angehängt. Hier kannst du z.B. festlegen, wie Jahrgang, Thema oder Quelle ermittelt werden sollen.');
+  rulesHint.style.cssText = 'font-size:12px;color:var(--tx2);margin-bottom:10px;line-height:1.5;';
   const rulesTA = document.createElement('textarea'); rulesTA.className = 'finp';
-  rulesTA.style.cssText = 'width:100%;min-height:80px;resize:vertical;font-size:12px;font-family:inherit;';
-  rulesTA.placeholder = 'z.B. "Jahrgang immer aus dem Dateinamen ableiten. Bei unklarem Jahrgang [\"SII\"] setzen."';
+  rulesTA.style.cssText = 'width:100%;min-height:100px;resize:vertical;font-size:13px;font-family:inherit;';
+  rulesTA.placeholder = 'z.B. Jahrgang immer aus dem Dateinamen ableiten. Bei fehlendem Jahrgang ["SII"] setzen. Quelle immer aus dem Cover-Bild lesen.';
   rulesTA.value = localStorage.getItem('mat_ki_regeln') || '';
-  const rulesRow = mk('div', ''); rulesRow.style.cssText = 'display:flex;gap:8px;align-items:center;';
-  const rulesSave = btn('Speichern', 'btn btn-ghost btn-sm');
+  const rulesRow = mk('div', ''); rulesRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:8px;';
+  const rulesSave = btn('Speichern', 'btn btn-pri btn-sm');
   const rulesMsg = tx('span', '', ''); rulesMsg.style.cssText = 'font-size:12px;color:var(--grn);';
   rulesSave.onclick = () => {
     const v = rulesTA.value.trim();
@@ -98,11 +102,9 @@ function viewEinstellungen() {
     rulesMsg.textContent = '✓ Gespeichert'; setTimeout(() => { rulesMsg.textContent = ''; }, 2000);
   };
   rulesRow.appendChild(rulesSave); rulesRow.appendChild(rulesMsg);
-  rulesWrap.appendChild(rulesLbl); rulesWrap.appendChild(rulesHint); rulesWrap.appendChild(rulesTA); rulesWrap.appendChild(rulesRow);
-  aib.appendChild(rulesWrap);
-
-  aiCard.appendChild(aib);
-  div.appendChild(aiCard);
+  rulesBody.appendChild(rulesHint); rulesBody.appendChild(rulesTA); rulesBody.appendChild(rulesRow);
+  rulesCard.appendChild(rulesBody);
+  div.appendChild(rulesCard);
 
   // R2-Zugangsdaten
   const r2Card = mk('div', 'card');

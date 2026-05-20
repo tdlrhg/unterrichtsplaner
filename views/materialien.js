@@ -603,6 +603,7 @@ function buildImportAssistent(subTitle, renderCards) {
     pageDataURLs: [],
     pdfFile: null,
     pdfDoc: null,
+    pdfArrayBuffer: null,
     splitPoints: new Set(),
     segTypes: {},
   };
@@ -688,6 +689,7 @@ function buildImportAssistent(subTitle, renderCards) {
         zone.textContent = '⏳ Lade ' + file.name + '…'; zone.style.cursor = 'default';
         try {
           const buf = await file.arrayBuffer();
+          S.pdfArrayBuffer = buf;
           S.pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
           for (let i = 1; i <= S.pdfDoc.numPages; i++) {
             const pg = await S.pdfDoc.getPage(i);
@@ -720,7 +722,7 @@ function buildImportAssistent(subTitle, renderCards) {
     const infoRow = tx('div', 'mat-import-split-info', ''); body.appendChild(infoRow);
     const sc = mk('div', 'mat-import-split-container'); body.appendChild(sc);
     const foot = stepFooter(() => { S.pdfFile = null; goto(2); });
-    const upBtn = btn('📤 Hochladen & Analysieren', 'btn btn-pri btn-sm');
+    const upBtn = btn('📤 Hochladen', 'btn btn-pri btn-sm');
     upBtn.onclick = () => goto(3); foot.appendChild(upBtn); body.appendChild(foot);
 
     function countMats() { return getGroups().filter((_,gi) => (S.segTypes[gi]||S.defaultType) === 'material').length; }
@@ -780,7 +782,7 @@ function buildImportAssistent(subTitle, renderCards) {
         const parts = [S.meta.fach, S.meta.unter.trim(), S.meta.thema.trim()].filter(Boolean);
         const folder = parts.join('/');
         const baseName = S.pdfFile.name.replace(/\.pdf$/i, '');
-        const srcDoc = await PDFLib.PDFDocument.load(await S.pdfFile.arrayBuffer());
+        const srcDoc = await PDFLib.PDFDocument.load(S.pdfArrayBuffer);
         async function makeBlob(g) {
           const doc = await PDFLib.PDFDocument.create();
           const idxs = []; for (let pg = g.start-1; pg < g.end; pg++) idxs.push(pg);

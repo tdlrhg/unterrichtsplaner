@@ -625,6 +625,12 @@ function buildImportAssistent(subTitle, renderCards) {
       { id: 'zeitschrift',    icon: '📰', title: 'Zeitschrift',     quelle: '',
         desc: 'Kontext-Artikel und Schülermaterial in separaten oder gemeinsamen Heften',
         types: [] },
+      { id: 'r2',            icon: '📂', title: 'Aus R2',           quelle: '',
+        desc: 'Dateien die bereits in Cloudflare R2 liegen in die Datenbank eintragen',
+        types: [] },
+      { id: 'bild',          icon: '📸', title: 'Aus Bild',         quelle: '',
+        desc: 'Fotos von Arbeitsblättern per GPT-4o analysieren und importieren',
+        types: [] },
     ].forEach(src => {
       const card = mk('div', 'mat-import-source-card');
       card.appendChild(tx('div', 'mat-import-source-icon', src.icon));
@@ -633,7 +639,8 @@ function buildImportAssistent(subTitle, renderCards) {
       card.onclick = () => {
         S.source = src.id; S.meta.quelle = src.quelle; S.types = src.types; S.defaultType = 'material';
         S.pageDataURLs.length = 0; S.splitPoints.clear(); S.segTypes = {}; S.pdfFile = null;
-        goto(src.id === 'zeitschrift' ? 10 : 1);
+        const target = src.id === 'zeitschrift' ? 10 : src.id === 'r2' ? 11 : src.id === 'bild' ? 12 : 1;
+        goto(target);
       };
       grid.appendChild(card);
     });
@@ -902,8 +909,10 @@ Antworte NUR mit JSON (kein Text davor/danach):
     const btns = mk('div', ''); btns.style.cssText = 'display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;';
     const goA = btn('→ Variante A: RAAbits-Workflow', 'btn btn-pri btn-sm');
     goA.onclick = () => { S.source='raabits'; S.meta.quelle=''; S.types=[{key:'kontext',label:'📋 Prä/Kontext'},{key:'material',label:'📄 M (auto)'},{key:'lh',label:'🔑 LH'},{key:'loesung',label:'✓ Lösung'},{key:'skip',label:'⊘ Skip'}]; goto(1); };
+    const goB_split = btn('✂ Kontext-Split', 'btn btn-ghost btn-sm'); goB_split.onclick = () => goto(13);
+    const goB_match = btn('🔗 Matching', 'btn btn-ghost btn-sm'); goB_match.onclick = () => goto(14);
     const backBtn2 = btn('← Zurück', 'btn btn-ghost btn-sm'); backBtn2.onclick = () => goto(0);
-    btns.appendChild(goA); btns.appendChild(backBtn2);
+    btns.appendChild(goA); btns.appendChild(goB_split); btns.appendChild(goB_match); btns.appendChild(backBtn2);
     body.appendChild(btns);
   }
 
@@ -913,7 +922,38 @@ Antworte NUR mit JSON (kein Text davor/danach):
     return f;
   }
 
-  const STEPS = { 0: step0, 1: step1, 2: step2, 3: step3, 10: step10 };
+  // ── Schritt 11: Aus R2 ────────────────────────────────────────
+  function step11() {
+    stepEl.textContent = 'Aus R2';
+    const panel = buildR2Browser(subTitle, renderCards);
+    const x = panel.querySelector('.btn-ghost.btn-xs'); if (x) x.onclick = () => goto(0);
+    body.appendChild(panel);
+  }
+
+  // ── Schritt 12: Aus Bild ──────────────────────────────────────
+  function step12() {
+    stepEl.textContent = 'Aus Bild';
+    const panel = buildScanPanel(subTitle, renderCards, () => goto(0));
+    body.appendChild(panel);
+  }
+
+  // ── Schritt 13: Kontext-Split ─────────────────────────────────
+  function step13() {
+    stepEl.textContent = 'Kontext-Split';
+    const panel = buildKontextSplitPanel();
+    const x = panel.querySelector('.btn-ghost.btn-xs'); if (x) x.onclick = () => goto(10);
+    body.appendChild(panel);
+  }
+
+  // ── Schritt 14: Matching ──────────────────────────────────────
+  function step14() {
+    stepEl.textContent = 'Matching';
+    const panel = buildMatchingView(subTitle);
+    const x = panel.querySelector('.btn-ghost.btn-xs'); if (x) x.onclick = () => goto(10);
+    body.appendChild(panel);
+  }
+
+  const STEPS = { 0: step0, 1: step1, 2: step2, 3: step3, 10: step10, 11: step11, 12: step12, 13: step13, 14: step14 };
   goto(0);
   return ov;
 }
@@ -1132,6 +1172,127 @@ function buildMatchingView(subTitle) {
   renderMatList(); return p;
 }
 
+function buildScanPanel(subTitle, renderCards, onClose) {
+  const oaiKey = localStorage.getItem('oai_key');
+  const p = mk('div', 'mat-scan-panel');
+  if (!oaiKey) {
+    const warn = tx('div', '', '⚠ Bitte zuerst den OpenAI API-Key in den Einstellungen hinterlegen.');
+    warn.style.cssText = 'padding:16px;color:#d97706;';
+    p.appendChild(warn); return p;
+  }
+  function makeDropzone(label, hint, { initialFiles = [], onFilesChange = null, clearAllBtn: showClearAll = false } = {}) {
+    const wrap = mk('div', 'mat-scan-group');
+    const labelRow = mk('div', 'mat-scan-group-hdr');
+    labelRow.appendChild(tx('div', 'mat-scan-group-label', label));
+    let files = [...initialFiles];
+    function notifyChange() { if (onFilesChange) onFilesChange([...files]); }
+    function renderPreview() {
+      preview.innerHTML = '';
+      files.forEach((f, i) => {
+        const thumb = mk('div', 'mat-scan-thumb');
+        const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className = 'mat-scan-img';
+        const rm = mk('button', 'mat-scan-rm'); rm.textContent = '✕';
+        rm.onclick = () => { files.splice(i, 1); notifyChange(); renderPreview(); updateBtn(); };
+        thumb.appendChild(img); thumb.appendChild(rm); preview.appendChild(thumb);
+      });
+      zone.textContent = files.length ? '+ Weitere Bilder' : '📂 Bilder hierher ziehen oder klicken';
+      zone.style.padding = files.length ? '8px 14px' : '';
+    }
+    function addFiles(newFiles) { files = [...files, ...Array.from(newFiles)]; notifyChange(); renderPreview(); updateBtn(); }
+    function clearFiles() { files = []; notifyChange(); renderPreview(); updateBtn(); }
+    if (showClearAll) { const clrBtn = btn('Leeren', 'btn btn-ghost btn-xs'); clrBtn.onclick = clearFiles; labelRow.appendChild(clrBtn); }
+    wrap.appendChild(labelRow);
+    wrap.appendChild(tx('div', 'mat-scan-group-hint', hint));
+    const zone = mk('div', 'mat-scan-drop'); zone.textContent = '📂 Bilder hierher ziehen oder klicken';
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true; inp.style.display = 'none';
+    zone.onclick = () => inp.click();
+    zone.ondragover = e => { e.preventDefault(); zone.classList.add('drag-over'); };
+    zone.ondragleave = () => zone.classList.remove('drag-over');
+    zone.ondrop = e => { e.preventDefault(); zone.classList.remove('drag-over'); addFiles(e.dataTransfer.files); };
+    inp.onchange = () => addFiles(inp.files);
+    const preview = mk('div', 'mat-scan-preview');
+    wrap.appendChild(zone); wrap.appendChild(inp); wrap.appendChild(preview);
+    renderPreview();
+    return { wrap, getFiles: () => files, clearFiles };
+  }
+  const { wrap: w1, getFiles: getKontext } = makeDropzone('📋 Kontext', 'Titelseite, Lehrerhandreichung, Erläuterungen & Lösungsseiten', { initialFiles: _kontextFiles, onFilesChange: f => { _kontextFiles = f; }, clearAllBtn: true });
+  const { wrap: w2, getFiles: getSchuelermaterial, clearFiles: clearSchuelermaterial } = makeDropzone('📚 Schülermaterialien', 'M1, M2, M3 … – die eigentlichen Arbeitsblätter und Versuchsanleitungen');
+  const groupsWrap = mk('div', 'mat-scan-groups');
+  groupsWrap.appendChild(w1); groupsWrap.appendChild(w2);
+  p.appendChild(groupsWrap);
+  const statusRow = mk('div', ''); statusRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:12px;';
+  const analyzeBtn = btn('✨ Analysieren & Importieren', 'btn btn-pri btn-sm');
+  analyzeBtn.disabled = true;
+  const statusMsg = tx('span', 'mat-import-err', '');
+  const cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm');
+  cancelBtn.onclick = () => { if (onClose) onClose(); else p.remove(); };
+  statusRow.appendChild(analyzeBtn); statusRow.appendChild(cancelBtn); statusRow.appendChild(statusMsg);
+  p.appendChild(statusRow);
+  function updateBtn() { analyzeBtn.disabled = getSchuelermaterial().length === 0; }
+  analyzeBtn.onclick = async () => {
+    const kontextFiles = getKontext(); const matFiles = getSchuelermaterial();
+    if (!matFiles.length) return;
+    const totalFiles = kontextFiles.length + matFiles.length;
+    analyzeBtn.disabled = true; statusMsg.style.color = 'var(--tx3)';
+    let elapsed = 0;
+    const timer = setInterval(() => { elapsed++; statusMsg.textContent = '⏳ Analysiere ' + totalFiles + ' Bild(er)… ' + elapsed + ' Sek.'; }, 1000);
+    statusMsg.textContent = '⏳ Analysiere ' + totalFiles + ' Bild(er)… 0 Sek.';
+    try {
+      const schema = await sbDownload('schema.json');
+      const schemaStr = JSON.stringify(schema, null, 2);
+      const toImgContent = f => new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = e => res({ type: 'image_url', image_url: { url: e.target.result, detail: 'high' } });
+        reader.onerror = rej; reader.readAsDataURL(f);
+      });
+      const kontextImgs = await Promise.all(kontextFiles.map(toImgContent));
+      const matImgs     = await Promise.all(matFiles.map(toImgContent));
+      const idBase = Date.now();
+      const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Du erhältst zwei Gruppen von Bildern.\n\nGRUPPE 1 – KONTEXT (${kontextFiles.length} Bild${kontextFiles.length !== 1 ? 'er' : ''}): Titelseite, Lehrerhandreichung, Erläuterungen und Lösungsseiten. Lese daraus: Lösungen, Erwartungshorizonte, methodische Hinweise, Zeitplanung, didaktische Tipps.\n\nGRUPPE 2 – SCHÜLERMATERIALIEN (${matFiles.length} Bild${matFiles.length !== 1 ? 'er' : ''}): M1, M2, M3 usw. – die eigentlichen Arbeitsblätter.\n\nSCHEMA:\n${schemaStr}\n\nREGELN:\n- Gib ein JSON-Array aus, kein Text davor/danach\n- id Format: mat_${idBase}_1, mat_${idBase}_2 usw.\n- Erkenne selbst welche Bilder zusammengehören (z.B. M1 Seite 1+2 → ein Eintrag)\n- Kein Unterrichtseinheit-Eintrag, nur Einzelmaterialien\n- Titel: "Einheitstitel – M1", Lehrerhandreichung: "Einheitstitel – LH"\n- SII/Oberstufe → immer ["SII"]\n- loesung, loesungHinweis, erlaeuterung vollständig aus Kontext übernehmen\n- schueleraktivitaeten, artDerGeistigenTaetigkeit, darstellungsformen: alle vollständig aufführen`;
+      const contentParts = [{ type: 'text', text: prompt }];
+      if (kontextImgs.length) { contentParts.push({ type: 'text', text: '=== GRUPPE 1: KONTEXT ===' }); contentParts.push(...kontextImgs); }
+      contentParts.push({ type: 'text', text: '=== GRUPPE 2: SCHÜLERMATERIALIEN ===' });
+      contentParts.push(...matImgs);
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + oaiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'gpt-4o', max_tokens: 16000, messages: [{ role: 'user', content: contentParts }] })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || 'OpenAI-Fehler');
+      const choice = data.choices?.[0];
+      const text2 = choice?.message?.content || '';
+      const match = text2.match(/\[[\s\S]*\]/);
+      if (!match) throw new Error('Kein JSON-Array in der Antwort gefunden.');
+      const entries = JSON.parse(match[0]);
+      if (!entries.length) throw new Error('Keine Einträge generiert.');
+      const truncated = choice?.finish_reason === 'length';
+      const now = new Date().toISOString();
+      entries.forEach(e => {
+        if (!e.id) e.id = 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
+        if (!e.importiertAm) e.importiertAm = now;
+        const idx = MATDB.findIndex(m => m.id === e.id);
+        if (idx >= 0) MATDB[idx] = e; else MATDB.unshift(e);
+      });
+      clearInterval(timer);
+      saveMatDB();
+      clearSchuelermaterial();
+      if (subTitle) subTitle.textContent = MATDB.length + ' Einträge';
+      if (renderCards) renderCards();
+      statusMsg.style.color = truncated ? '#d97706' : 'var(--grn)';
+      statusMsg.textContent = truncated
+        ? `⚠ Antwort abgeschnitten – ggf. nicht alle Materialien importiert.`
+        : `✓ ${entries.length} Material${entries.length !== 1 ? 'ien' : ''} importiert.`;
+      analyzeBtn.disabled = true;
+    } catch(e) {
+      clearInterval(timer);
+      statusMsg.style.color = '#dc2626'; statusMsg.textContent = 'Fehler: ' + e.message;
+      analyzeBtn.disabled = false;
+    }
+  };
+  return p;
+}
+
 function viewMaterialien() {
   const div = mk('div', '');
 
@@ -1159,158 +1320,10 @@ function viewMaterialien() {
 
   const hdrBtns = mk('div', ''); hdrBtns.style.cssText = 'display:flex;gap:8px;';
 
-  const scanBtn = btn('📸 Aus Bild', 'btn btn-pri btn-sm');
-  scanBtn.onclick = () => {
-    const existing = div.querySelector('.mat-scan-panel');
-    if (existing) { existing.remove(); return; }
-    const oaiKey = localStorage.getItem('oai_key');
-    if (!oaiKey) { alert('Bitte zuerst den OpenAI API-Key in den Einstellungen hinterlegen.'); return; }
-
-    const p = mk('div', 'mat-scan-panel');
-    function makeDropzone(label, hint, { initialFiles = [], onFilesChange = null, clearAllBtn: showClearAll = false } = {}) {
-      const wrap = mk('div', 'mat-scan-group');
-      const labelRow = mk('div', 'mat-scan-group-hdr');
-      labelRow.appendChild(tx('div', 'mat-scan-group-label', label));
-      let files = [...initialFiles];
-      function notifyChange() { if (onFilesChange) onFilesChange([...files]); }
-      function renderPreview() {
-        preview.innerHTML = '';
-        files.forEach((f, i) => {
-          const thumb = mk('div', 'mat-scan-thumb');
-          const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className = 'mat-scan-img';
-          const rm = mk('button', 'mat-scan-rm'); rm.textContent = '✕';
-          rm.onclick = () => { files.splice(i, 1); notifyChange(); renderPreview(); updateBtn(); };
-          thumb.appendChild(img); thumb.appendChild(rm); preview.appendChild(thumb);
-        });
-        zone.textContent = files.length ? '+ Weitere Bilder' : '📂 Bilder hierher ziehen oder klicken';
-        zone.style.padding = files.length ? '8px 14px' : '';
-      }
-      function addFiles(newFiles) { files = [...files, ...Array.from(newFiles)]; notifyChange(); renderPreview(); updateBtn(); }
-      function clearFiles() { files = []; notifyChange(); renderPreview(); updateBtn(); }
-      if (showClearAll) {
-        const clrBtn = btn('Leeren', 'btn btn-ghost btn-xs');
-        clrBtn.onclick = clearFiles; labelRow.appendChild(clrBtn);
-      }
-      wrap.appendChild(labelRow);
-      wrap.appendChild(tx('div', 'mat-scan-group-hint', hint));
-      const zone = mk('div', 'mat-scan-drop'); zone.textContent = '📂 Bilder hierher ziehen oder klicken';
-      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true; inp.style.display = 'none';
-      zone.onclick = () => inp.click();
-      zone.ondragover = e => { e.preventDefault(); zone.classList.add('drag-over'); };
-      zone.ondragleave = () => zone.classList.remove('drag-over');
-      zone.ondrop = e => { e.preventDefault(); zone.classList.remove('drag-over'); addFiles(e.dataTransfer.files); };
-      inp.onchange = () => addFiles(inp.files);
-      const preview = mk('div', 'mat-scan-preview');
-      wrap.appendChild(zone); wrap.appendChild(inp); wrap.appendChild(preview);
-      renderPreview();
-      return { wrap, getFiles: () => files, clearFiles };
-    }
-
-    const { wrap: w1, getFiles: getKontext } = makeDropzone('📋 Kontext', 'Titelseite, Lehrerhandreichung, Erläuterungen & Lösungsseiten', { initialFiles: _kontextFiles, onFilesChange: f => { _kontextFiles = f; }, clearAllBtn: true });
-    const { wrap: w2, getFiles: getSchuelermaterial, clearFiles: clearSchuelermaterial } = makeDropzone('📚 Schülermaterialien', 'M1, M2, M3 … – die eigentlichen Arbeitsblätter und Versuchsanleitungen');
-    const groupsWrap = mk('div', 'mat-scan-groups');
-    groupsWrap.appendChild(w1); groupsWrap.appendChild(w2);
-    p.appendChild(groupsWrap);
-
-    const statusRow = mk('div', ''); statusRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:12px;';
-    const analyzeBtn = btn('✨ Analysieren & Importieren', 'btn btn-pri btn-sm');
-    analyzeBtn.disabled = true;
-    const statusMsg = tx('span', 'mat-import-err', '');
-    const cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelBtn.onclick = () => p.remove();
-    statusRow.appendChild(analyzeBtn); statusRow.appendChild(cancelBtn); statusRow.appendChild(statusMsg);
-    p.appendChild(statusRow);
-
-    function updateBtn() { analyzeBtn.disabled = getSchuelermaterial().length === 0; }
-
-    analyzeBtn.onclick = async () => {
-      const kontextFiles = getKontext(); const matFiles = getSchuelermaterial();
-      if (!matFiles.length) return;
-      const totalFiles = kontextFiles.length + matFiles.length;
-      analyzeBtn.disabled = true; statusMsg.style.color = 'var(--tx3)';
-      let elapsed = 0;
-      const timer = setInterval(() => { elapsed++; statusMsg.textContent = '⏳ Analysiere ' + totalFiles + ' Bild(er)… ' + elapsed + ' Sek.'; }, 1000);
-      statusMsg.textContent = '⏳ Analysiere ' + totalFiles + ' Bild(er)… 0 Sek.';
-      try {
-        const schema = await sbDownload('schema.json');
-        const schemaStr = JSON.stringify(schema, null, 2);
-        const toImgContent = f => new Promise((res, rej) => {
-          const reader = new FileReader();
-          reader.onload = e => res({ type: 'image_url', image_url: { url: e.target.result, detail: 'high' } });
-          reader.onerror = rej; reader.readAsDataURL(f);
-        });
-        const kontextImgs = await Promise.all(kontextFiles.map(toImgContent));
-        const matImgs     = await Promise.all(matFiles.map(toImgContent));
-        const idBase = Date.now();
-        const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Du erhältst zwei Gruppen von Bildern.\n\nGRUPPE 1 – KONTEXT (${kontextFiles.length} Bild${kontextFiles.length !== 1 ? 'er' : ''}): Titelseite, Lehrerhandreichung, Erläuterungen und Lösungsseiten. Lese daraus: Lösungen, Erwartungshorizonte, methodische Hinweise, Zeitplanung, didaktische Tipps.\n\nGRUPPE 2 – SCHÜLERMATERIALIEN (${matFiles.length} Bild${matFiles.length !== 1 ? 'er' : ''}): M1, M2, M3 usw. – die eigentlichen Arbeitsblätter.\n\nSCHEMA:\n${schemaStr}\n\nREGELN:\n- Gib ein JSON-Array aus, kein Text davor/danach\n- id Format: mat_${idBase}_1, mat_${idBase}_2 usw.\n- Erkenne selbst welche Bilder zusammengehören (z.B. M1 Seite 1+2 → ein Eintrag)\n- Kein Unterrichtseinheit-Eintrag, nur Einzelmaterialien\n- Titel: "Einheitstitel – M1", Lehrerhandreichung: "Einheitstitel – LH"\n- SII/Oberstufe → immer ["SII"]\n- loesung, loesungHinweis, erlaeuterung vollständig aus Kontext übernehmen\n- schueleraktivitaeten, artDerGeistigenTaetigkeit, darstellungsformen: alle vollständig aufführen`;
-        const contentParts = [{ type: 'text', text: prompt }];
-        if (kontextImgs.length) { contentParts.push({ type: 'text', text: '=== GRUPPE 1: KONTEXT ===' }); contentParts.push(...kontextImgs); }
-        contentParts.push({ type: 'text', text: '=== GRUPPE 2: SCHÜLERMATERIALIEN ===' });
-        contentParts.push(...matImgs);
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + oaiKey, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: 'gpt-4o', max_tokens: 16000, messages: [{ role: 'user', content: contentParts }] })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error?.message || 'OpenAI-Fehler');
-        const choice = data.choices?.[0];
-        const text2 = choice?.message?.content || '';
-        const match = text2.match(/\[[\s\S]*\]/);
-        if (!match) throw new Error('Kein JSON-Array in der Antwort gefunden.');
-        const entries = JSON.parse(match[0]);
-        if (!entries.length) throw new Error('Keine Einträge generiert.');
-        const truncated = choice?.finish_reason === 'length';
-        const now = new Date().toISOString();
-        entries.forEach(e => {
-          if (!e.id) e.id = 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
-          if (!e.importiertAm) e.importiertAm = now;
-          const idx = MATDB.findIndex(m => m.id === e.id);
-          if (idx >= 0) MATDB[idx] = e; else MATDB.unshift(e);
-        });
-        clearInterval(timer);
-        saveMatDB();
-        clearSchuelermaterial();
-        subTitle.textContent = MATDB.length + ' Einträge';
-        renderCards();
-        statusMsg.style.color = truncated ? '#d97706' : 'var(--grn)';
-        statusMsg.textContent = truncated
-          ? `⚠ Antwort abgeschnitten – ggf. nicht alle Materialien importiert.`
-          : `✓ ${entries.length} Material${entries.length !== 1 ? 'ien' : ''} importiert.`;
-        analyzeBtn.disabled = true;
-      } catch(e) {
-        clearInterval(timer);
-        statusMsg.style.color = '#dc2626'; statusMsg.textContent = 'Fehler: ' + e.message;
-        analyzeBtn.disabled = false;
-      }
-    };
-    div.insertBefore(p, div.children[1]);
-  };
-
   const importBtn = btn('➕ Importieren', 'btn btn-pri btn-sm');
   importBtn.onclick = () => { buildImportAssistent(subTitle, renderCards); };
 
-  const r2Btn = btn('📂 Von R2', 'btn btn-ghost btn-sm');
-  r2Btn.onclick = () => {
-    const ex = div.querySelector('.mat-r2browser');
-    if (ex) { ex.remove(); return; }
-    div.insertBefore(buildR2Browser(subTitle, renderCards), div.children[1]);
-  };
-
-  const ktxBtn = btn('📋 Kontext-Split', 'btn btn-ghost btn-sm');
-  ktxBtn.onclick = () => {
-    const ex = div.querySelector('.mat-upload-panel');
-    if (ex) { ex.remove(); return; }
-    div.insertBefore(buildKontextSplitPanel(), div.children[1]);
-  };
-
-  const matchBtn = btn('🔗 Matching', 'btn btn-ghost btn-sm');
-  matchBtn.onclick = () => {
-    const ex = div.querySelector('.mat-matching-panel');
-    if (ex) { ex.remove(); return; }
-    div.insertBefore(buildMatchingView(subTitle), div.children[1]);
-  };
-
-  hdrBtns.appendChild(importBtn); hdrBtns.appendChild(r2Btn); hdrBtns.appendChild(ktxBtn); hdrBtns.appendChild(matchBtn); hdrBtns.appendChild(scanBtn);
+  hdrBtns.appendChild(importBtn);
   hdr.appendChild(hdrBtns);
   div.appendChild(hdr);
 

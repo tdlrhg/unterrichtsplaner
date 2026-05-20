@@ -1616,12 +1616,14 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   // ── Reihe zuweisen ────────────────────────────────────────────
   const SII_JG2 = new Set(['EF','Q1','Q2','SII']);
   const matFaecher = (mat.fach || []).map(f => f.toLowerCase());
-  const FACH_MAP = { 'Ch': 'chemie', 'Ch_GK': 'chemie', 'Ch_LK': 'chemie', 'Bio': 'biologie', 'Bio_GK': 'biologie', 'Bio_LK': 'biologie', 'M': 'mathematik' };
+  const matJgArr   = (mat.jahrgang || []).map(j => j.toLowerCase());
+  const FACH_MAP2  = { 'ch': 'chemie', 'bio': 'biologie', 'm': 'mathematik', 'mathe': 'mathematik' };
+  function normFach(f) { const l = (f||'').toLowerCase().split('_')[0].split(' ')[0]; return FACH_MAP2[l] || l; }
   const blockOptionen = [{ value: '', label: '– keine Zuweisung –' }];
   (S.data.fachplanungen || []).forEach(fp => {
-    if (!SII_JG2.has(fp.jahrgang)) return;
-    const fpFach = (FACH_MAP[fp.fach] || fp.fach || '').toLowerCase();
-    if (matFaecher.length && !matFaecher.some(f => fpFach.includes(f) || f.includes(fpFach.split(' ')[0]))) return;
+    const fpFach = normFach(fp.fach);
+    if (matFaecher.length && !matFaecher.some(f => { const nf = normFach(f); return fpFach.includes(nf) || nf.includes(fpFach); })) return;
+    if (matJgArr.length && !matJgArr.includes((fp.jahrgang||'').toLowerCase())) return;
     (fp.blocks || []).forEach(block => {
       const label = fp.jahrgang + ' · ' + (block.titel || block.name || 'Block');
       blockOptionen.push({ value: block.id, label });

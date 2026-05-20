@@ -80,6 +80,27 @@ function viewEinstellungen() {
   const aib = mk('div', 'card-body');
   aib.appendChild(keyField('Anthropic API-Key (Claude)', 'ant_key', 'sk-ant-...', true, 'Wird nur lokal gespeichert – verlässt dieses Gerät nicht.'));
   aib.appendChild(keyField('OpenAI API-Key', 'oai_key', 'sk-proj-...', true, 'Wird nur lokal gespeichert – verlässt dieses Gerät nicht.'));
+
+  // KI-Analyseregeln
+  const rulesWrap = mk('div', ''); rulesWrap.style.cssText = 'margin-top:16px;display:flex;flex-direction:column;gap:6px;';
+  const rulesLbl = tx('div', '', 'Zusätzliche KI-Analyseregeln'); rulesLbl.style.cssText = 'font-size:12px;font-weight:600;color:var(--tx2);';
+  const rulesHint = tx('div', '', 'Werden an jeden Analyse-Prompt angehängt (für alle Importe).'); rulesHint.style.cssText = 'font-size:11px;color:var(--tx3);';
+  const rulesTA = document.createElement('textarea'); rulesTA.className = 'finp';
+  rulesTA.style.cssText = 'width:100%;min-height:80px;resize:vertical;font-size:12px;font-family:inherit;';
+  rulesTA.placeholder = 'z.B. "Jahrgang immer aus dem Dateinamen ableiten. Bei unklarem Jahrgang [\"SII\"] setzen."';
+  rulesTA.value = localStorage.getItem('mat_ki_regeln') || '';
+  const rulesRow = mk('div', ''); rulesRow.style.cssText = 'display:flex;gap:8px;align-items:center;';
+  const rulesSave = btn('Speichern', 'btn btn-ghost btn-sm');
+  const rulesMsg = tx('span', '', ''); rulesMsg.style.cssText = 'font-size:12px;color:var(--grn);';
+  rulesSave.onclick = () => {
+    const v = rulesTA.value.trim();
+    if (v) localStorage.setItem('mat_ki_regeln', v); else localStorage.removeItem('mat_ki_regeln');
+    rulesMsg.textContent = '✓ Gespeichert'; setTimeout(() => { rulesMsg.textContent = ''; }, 2000);
+  };
+  rulesRow.appendChild(rulesSave); rulesRow.appendChild(rulesMsg);
+  rulesWrap.appendChild(rulesLbl); rulesWrap.appendChild(rulesHint); rulesWrap.appendChild(rulesTA); rulesWrap.appendChild(rulesRow);
+  aib.appendChild(rulesWrap);
+
   aiCard.appendChild(aib);
   div.appendChild(aiCard);
 

@@ -842,7 +842,8 @@ function buildImportAssistent(subTitle, renderCards) {
               const content = [];
               if (kontextPageURLs.length) { content.push({type:'text',text:'=== KONTEXT ==='}); kontextPageURLs.forEach(u => content.push(toImg(u))); }
               content.push({type:'text',text:'=== MATERIAL ==='}); matPageURLs.forEach(u => content.push(toImg(u)));
-              content.push({type:'text',text:`Analysiere dieses Unterrichtsmaterial für eine NRW-Gymnasiallehrerin.
+              const extraRules = localStorage.getItem('mat_ki_regeln');
+            content.push({type:'text',text:`Analysiere dieses Unterrichtsmaterial für eine NRW-Gymnasiallehrerin.
 Bekannt: Fach=${entry.fach?.join(',')}, Typ=${entry.materialtyp}, Dateiname=${entry.titel}
 
 WICHTIG – Titelregeln:
@@ -850,7 +851,7 @@ WICHTIG – Titelregeln:
 - Ist kein Titel aufgedruckt, übernimm den Dateinamen: "${entry.titel}"
 - NIEMALS eine Rolle als Titel verwenden
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
-
+${extraRules ? '\nZUSÄTZLICHE REGELN:\n' + extraRules : ''}
 Antworte NUR mit JSON (kein Text davor/danach):
 {"titel":"...","rolleImKontext":"...","beschreibung":"...","themen":[...],"jahrgang":["SII"],"unterrichtsphase":[...],"sozialformenGeeignet":[],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}`});
               try {

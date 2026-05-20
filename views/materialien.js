@@ -621,7 +621,7 @@ function buildImportAssistent(subTitle, renderCards) {
         types: [{key:'kontext',label:'📋 Prä/Kontext'},{key:'material',label:'📄 M (auto)'},{key:'lh',label:'🔑 LH'},{key:'loesung',label:'✓ Lösung'},{key:'skip',label:'⊘ Skip'}] },
       { id: 'einzelblaetter', icon: '📄', title: 'Einzelblätter',  quelle: '',
         desc: 'Auer, Persen, Verlag an der Ruhr u.a. — Arbeitsblätter, oft mit Lösungen am Ende',
-        types: [{key:'material',label:'📄 Material'},{key:'loesung',label:'✓ Lösung'},{key:'skip',label:'⊘ Skip'}] },
+        types: [{key:'kontext',label:'📖 Cover'},{key:'material',label:'📄 Material'},{key:'loesung',label:'✓ Lösung'},{key:'skip',label:'⊘ Skip'}] },
       { id: 'zeitschrift',    icon: '📰', title: 'Zeitschrift',     quelle: '',
         desc: 'Kontext-Artikel und Schülermaterial in separaten oder gemeinsamen Heften',
         types: [] },

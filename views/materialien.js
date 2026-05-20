@@ -755,9 +755,9 @@ function buildImportAssistent(subTitle, renderCards) {
     renderGroups(); updBtn();
   }
 
-  // ── Schritt 3: Hochladen + Analysieren ───────────────────────
+  // ── Schritt 3: Hochladen ─────────────────────────────────────
   function step3() {
-    stepEl.textContent = 'Schritt 3 / 3 · Hochladen & Analysieren';
+    stepEl.textContent = 'Schritt 3 / 3 · Hochladen';
     const log = mk('div', 'mat-import-log'); body.appendChild(log);
     function addLog(msg, color) {
       const line = tx('div', '', msg); if (color) line.style.color = color;
@@ -817,19 +817,25 @@ function buildImportAssistent(subTitle, renderCards) {
         }
         saveMatDB();
         addLog('✓ ' + uploaded.length + ' Einträge gespeichert', 'var(--grn)');
-        // KI-Analyse
+
+        // Buttons: KI-Analyse optional, immer Fertig
+        const btnRow = mk('div', ''); btnRow.style.cssText = 'display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;';
+        const doneBtn = btn('✓ Fertig & Schließen', 'btn btn-pri btn-sm');
+        doneBtn.onclick = () => { close(); renderCards(); subTitle.textContent = MATDB.length + ' Einträge'; };
         const antKey = localStorage.getItem('ant_key');
-        if (!antKey) { addLog('⚠ Kein API-Key – KI-Analyse übersprungen', '#d97706'); }
-        else {
-          addLog('✨ KI analysiert ' + uploaded.length + ' Materialien…');
-          function toImg(url) { const [h,d] = url.split(','); return {type:'image',source:{type:'base64',media_type:h.match(/data:([^;]+)/)[1],data:d}}; }
-          for (let ei = 0; ei < uploaded.length; ei++) {
-            const { entry, matPageURLs } = uploaded[ei];
-            addLog('⏳ ' + entry.materialnummer + ' (' + (ei+1) + '/' + uploaded.length + ')…');
-            const content = [];
-            if (kontextPageURLs.length) { content.push({type:'text',text:'=== KONTEXT ==='}); kontextPageURLs.forEach(u => content.push(toImg(u))); }
-            content.push({type:'text',text:'=== MATERIAL ==='}); matPageURLs.forEach(u => content.push(toImg(u)));
-            content.push({type:'text',text:`Analysiere dieses Unterrichtsmaterial für eine NRW-Gymnasiallehrerin.
+        if (antKey) {
+          const aiBtn = btn('✨ KI analysieren', 'btn btn-ghost btn-sm');
+          aiBtn.onclick = async () => {
+            aiBtn.disabled = true; doneBtn.disabled = true;
+            addLog('✨ KI analysiert ' + uploaded.length + ' Materialien…');
+            function toImg(url) { const [h,d] = url.split(','); return {type:'image',source:{type:'base64',media_type:h.match(/data:([^;]+)/)[1],data:d}}; }
+            for (let ei = 0; ei < uploaded.length; ei++) {
+              const { entry, matPageURLs } = uploaded[ei];
+              addLog('⏳ ' + entry.materialnummer + ' (' + (ei+1) + '/' + uploaded.length + ')…');
+              const content = [];
+              if (kontextPageURLs.length) { content.push({type:'text',text:'=== KONTEXT ==='}); kontextPageURLs.forEach(u => content.push(toImg(u))); }
+              content.push({type:'text',text:'=== MATERIAL ==='}); matPageURLs.forEach(u => content.push(toImg(u)));
+              content.push({type:'text',text:`Analysiere dieses Unterrichtsmaterial für eine NRW-Gymnasiallehrerin.
 Bekannt: Fach=${entry.fach?.join(',')}, Typ=${entry.materialtyp}, Dateiname=${entry.titel}
 
 WICHTIG – Titelregeln:
@@ -840,35 +846,36 @@ WICHTIG – Titelregeln:
 
 Antworte NUR mit JSON (kein Text davor/danach):
 {"titel":"...","rolleImKontext":"...","beschreibung":"...","themen":[...],"jahrgang":["SII"],"unterrichtsphase":[...],"sozialformenGeeignet":[],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}`});
-            try {
-              const res = await fetch('https://api.anthropic.com/v1/messages', {
-                method: 'POST',
-                headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-                body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1500, messages: [{role:'user',content}] })
-              });
-              if (!res.ok) { addLog('⚠ API ' + res.status + ' bei ' + entry.materialnummer, '#d97706'); continue; }
-              const d = await res.json();
-              const match = (d.content?.[0]?.text||'').match(/\{[\s\S]*\}/);
-              if (match) {
-                const enriched = JSON.parse(match[0]);
-                const idx = MATDB.findIndex(m => m.id === entry.id);
-                if (idx >= 0) {
-                  const { quelle, materialnummer, r2key, r2url, kontextR2key: krk, seiten, importiertAm, id } = MATDB[idx];
-                  const keep = { quelle, r2key, r2url, kontextR2key: krk, seiten, importiertAm, id };
-                  if (materialnummer) keep.materialnummer = materialnummer;
-                  Object.assign(MATDB[idx], enriched, keep);
+              try {
+                const res = await fetch('https://api.anthropic.com/v1/messages', {
+                  method: 'POST',
+                  headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+                  body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1500, messages: [{role:'user',content}] })
+                });
+                if (!res.ok) { addLog('⚠ API ' + res.status + ' bei ' + entry.materialnummer, '#d97706'); continue; }
+                const d = await res.json();
+                const match = (d.content?.[0]?.text||'').match(/\{[\s\S]*\}/);
+                if (match) {
+                  const enriched = JSON.parse(match[0]);
+                  const idx = MATDB.findIndex(m => m.id === entry.id);
+                  if (idx >= 0) {
+                    const { quelle, materialnummer, r2key, r2url, kontextR2key: krk, seiten, importiertAm, id } = MATDB[idx];
+                    const keep = { quelle, r2key, r2url, kontextR2key: krk, seiten, importiertAm, id };
+                    if (materialnummer) keep.materialnummer = materialnummer;
+                    Object.assign(MATDB[idx], enriched, keep);
+                  }
+                  addLog('✓ ' + entry.materialnummer, 'var(--grn)');
                 }
-                addLog('✓ ' + entry.materialnummer, 'var(--grn)');
-              }
-            } catch(e2) { addLog('⚠ ' + e2.message, '#d97706'); }
-          }
-          saveMatDB();
+              } catch(e2) { addLog('⚠ ' + e2.message, '#d97706'); }
+            }
+            saveMatDB();
+            addLog('✓ Analyse abgeschlossen!', 'var(--grn)');
+            aiBtn.remove(); doneBtn.disabled = false;
+          };
+          btnRow.appendChild(aiBtn);
         }
-        addLog('✓ Import abgeschlossen!', 'var(--grn)');
-        const doneBtn = btn('✓ Fertig & Schließen', 'btn btn-pri btn-sm');
-        doneBtn.style.marginTop = '16px';
-        doneBtn.onclick = () => { close(); renderCards(); subTitle.textContent = MATDB.length + ' Einträge'; };
-        body.appendChild(doneBtn);
+        btnRow.appendChild(doneBtn);
+        body.appendChild(btnRow);
       } catch(e) {
         addLog('✗ Fehler: ' + e.message, '#dc2626');
         const backBtn2 = btn('← Zurück', 'btn btn-ghost btn-sm'); backBtn2.style.marginTop = '12px';

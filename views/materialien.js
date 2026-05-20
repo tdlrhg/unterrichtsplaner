@@ -569,6 +569,220 @@ function buildR2Browser(subTitle, renderCards) {
   return p;
 }
 
+// ── Kontext-Split: Zeitschrift in Artikel aufteilen ────────────
+function buildKontextSplitPanel() {
+  const p = mk('div', 'mat-upload-panel');
+  const pHdr = mk('div', 'mat-upload-hdr');
+  pHdr.appendChild(tx('span', 'mat-upload-title', '📋 Kontext-Split'));
+  const closeP = btn('✕', 'btn btn-ghost btn-xs'); closeP.onclick = () => p.remove();
+  pHdr.appendChild(closeP); p.appendChild(pHdr);
+
+  const pageDataURLs = [];
+  let pdfFile = null, pdfDoc = null;
+
+  const zone = mk('div', 'mat-upload-drop');
+  zone.textContent = '📄 Zeitschrift-PDF hierher ziehen oder klicken';
+  const pdfInp = document.createElement('input'); pdfInp.type = 'file'; pdfInp.accept = 'application/pdf'; pdfInp.style.display = 'none';
+  zone.onclick = () => pdfInp.click();
+  zone.ondragover = e => { e.preventDefault(); zone.classList.add('drag-over'); };
+  zone.ondragleave = () => zone.classList.remove('drag-over');
+  zone.ondrop = e => { e.preventDefault(); zone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) handleKtxPdf(e.dataTransfer.files[0]); };
+  pdfInp.onchange = () => { if (pdfInp.files[0]) handleKtxPdf(pdfInp.files[0]); };
+  p.appendChild(zone); p.appendChild(pdfInp);
+
+  const thumbsWrap = mk('div', 'mat-upload-thumbs'); p.appendChild(thumbsWrap);
+  const acts = mk('div', 'mat-upload-acts'); acts.style.display = 'none'; p.appendChild(acts);
+  const weiterBtn = btn('✂ Aufteilen', 'btn btn-pri btn-sm'); weiterBtn.disabled = true;
+  acts.appendChild(weiterBtn);
+
+  async function handleKtxPdf(file) {
+    pdfFile = file; pageDataURLs.length = 0;
+    zone.textContent = '✓ ' + file.name; thumbsWrap.innerHTML = '';
+    thumbsWrap.appendChild(tx('div', 'mat-upload-spin', '⏳ Lade…'));
+    try {
+      const buf = await file.arrayBuffer();
+      pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+      thumbsWrap.innerHTML = '';
+      for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const vp0 = page.getViewport({ scale: 1 });
+        const cv = document.createElement('canvas');
+        const vp = page.getViewport({ scale: 280 / vp0.width });
+        cv.width = vp.width; cv.height = vp.height;
+        await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+        pageDataURLs.push(cv.toDataURL());
+        const thumb = mk('div', 'mat-upload-thumb');
+        thumb.appendChild(cv); thumb.appendChild(tx('div', 'mat-upload-thumb-nr', 'S. ' + i));
+        thumbsWrap.appendChild(thumb);
+      }
+      acts.style.display = 'flex'; weiterBtn.disabled = false;
+    } catch(e) {
+      thumbsWrap.innerHTML = '';
+      const err = tx('div', '', '⚠ ' + e.message); err.style.cssText = 'padding:12px;color:#dc2626;';
+      thumbsWrap.appendChild(err);
+    }
+  }
+
+  weiterBtn.onclick = () => {
+    thumbsWrap.innerHTML = ''; acts.innerHTML = ''; acts.style.display = 'flex';
+    const splitPoints = new Set(); const segNames = {};
+    const SPLIT_COLORS = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6'];
+
+    function getGroups() {
+      const groups = []; let start = 1;
+      for (const pt of [...splitPoints].sort((a,b) => a-b)) { groups.push({ start, end: pt }); start = pt + 1; }
+      groups.push({ start, end: pageDataURLs.length }); return groups;
+    }
+
+    const container = mk('div', 'mat-split-container'); thumbsWrap.appendChild(container);
+
+    function renderGroups() {
+      container.innerHTML = '';
+      getGroups().forEach((g, gi) => {
+        const groupEl = mk('div', 'mat-split-group'); groupEl.style.borderColor = SPLIT_COLORS[gi % SPLIT_COLORS.length];
+        const nameRow = mk('div', ''); nameRow.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 8px;';
+        const nameInp = document.createElement('input'); nameInp.type = 'text'; nameInp.className = 'finp'; nameInp.style.flex = '1';
+        nameInp.placeholder = 'Name des Artikels'; nameInp.value = segNames[gi] !== undefined ? segNames[gi] : ('Artikel ' + (gi + 1));
+        nameInp.oninput = () => { segNames[gi] = nameInp.value; };
+        nameRow.appendChild(nameInp); nameRow.appendChild(tx('span', 'mat-split-range', 'S. ' + g.start + (g.end > g.start ? '–' + g.end : '')));
+        groupEl.appendChild(nameRow);
+        const pagesRow = mk('div', 'mat-split-pages-row');
+        for (let i = g.start; i <= g.end; i++) {
+          const img = document.createElement('img'); img.src = pageDataURLs[i - 1]; img.className = 'mat-split-thumb';
+          const wrap = mk('div', 'mat-split-thumb-wrap');
+          wrap.appendChild(img); wrap.appendChild(tx('div', 'mat-upload-thumb-nr', 'S. ' + i)); pagesRow.appendChild(wrap);
+          if (i < pageDataURLs.length) {
+            const divEl = mk('div', 'mat-split-divider'); divEl.dataset.page = String(i);
+            const icon = tx('span', 'mat-split-div-icon', splitPoints.has(i) ? '✂' : '+');
+            if (splitPoints.has(i)) divEl.classList.add('active'); divEl.appendChild(icon);
+            divEl.onclick = () => { const pg = parseInt(divEl.dataset.page); if (splitPoints.has(pg)) splitPoints.delete(pg); else splitPoints.add(pg); renderGroups(); };
+            pagesRow.appendChild(divEl);
+          }
+        }
+        groupEl.appendChild(pagesRow); container.appendChild(groupEl);
+      });
+    }
+    renderGroups();
+
+    const upBtn = btn('📤 Hochladen', 'btn btn-pri btn-sm');
+    const splitInfo = tx('span', 'mat-split-info', '');
+    upBtn.onclick = async () => {
+      if (typeof PDFLib === 'undefined') { alert('pdf-lib nicht geladen.'); return; }
+      upBtn.disabled = true; splitInfo.style.color = '';
+      const groups = getGroups(); const srcDoc = await PDFLib.PDFDocument.load(await pdfFile.arrayBuffer());
+      try {
+        for (let gi = 0; gi < groups.length; gi++) {
+          const g = groups[gi];
+          const name = (segNames[gi]?.trim()) || ('Artikel_' + (gi + 1));
+          const newDoc = await PDFLib.PDFDocument.create();
+          const idxs = []; for (let pg = g.start - 1; pg < g.end; pg++) idxs.push(pg);
+          const copied = await newDoc.copyPages(srcDoc, idxs); copied.forEach(pg => newDoc.addPage(pg));
+          const blob = new Blob([await newDoc.save()], { type: 'application/pdf' });
+          splitInfo.textContent = 'Lade hoch: ' + name + '…';
+          await r2Upload('kontexte/' + name + '.pdf', blob, 'application/pdf');
+        }
+        splitInfo.textContent = '✓ ' + groups.length + ' Kontext' + (groups.length !== 1 ? 'e' : '') + ' hochgeladen';
+        splitInfo.style.color = 'var(--grn)'; upBtn.textContent = '✓ Fertig';
+      } catch(e) { splitInfo.textContent = '✗ ' + e.message; splitInfo.style.color = '#dc2626'; upBtn.disabled = false; }
+    };
+    acts.appendChild(upBtn); acts.appendChild(splitInfo);
+  };
+  return p;
+}
+
+// ── Matching: Kontexte mit Materialien verknüpfen ───────────────
+function buildMatchingView(subTitle) {
+  const p = mk('div', 'mat-matching-panel');
+  const pHdr = mk('div', 'mat-upload-hdr');
+  pHdr.appendChild(tx('span', 'mat-upload-title', '🔗 Kontext-Matching'));
+  const closeP = btn('✕', 'btn btn-ghost btn-xs'); closeP.onclick = () => p.remove();
+  pHdr.appendChild(closeP); p.appendChild(pHdr);
+  const hint = tx('div', '', '← Kontext wählen (links), dann Material anklicken (rechts) → verknüpft');
+  hint.style.cssText = 'font-size:12px;color:var(--tx3);padding:4px 0 10px;';
+  p.appendChild(hint);
+
+  const cols = mk('div', 'mat-matching-cols'); p.appendChild(cols);
+
+  // ── Linke Spalte: Kontexte aus R2/kontexte/ ────────────────
+  const leftCol = mk('div', 'mat-matching-left');
+  leftCol.appendChild(tx('div', 'mat-matching-col-hdr', '📋 Kontexte'));
+  const ctxList = mk('div', 'mat-matching-ctx-list'); leftCol.appendChild(ctxList); cols.appendChild(leftCol);
+  let selectedCtxKey = null; let selectedCtxEl = null;
+
+  (async () => {
+    ctxList.innerHTML = '<span style="color:var(--tx3);font-size:12px">⏳ Lade…</span>';
+    try {
+      const { files } = await r2List('kontexte/', '');
+      ctxList.innerHTML = '';
+      const pdfs = files.filter(f => f.key.endsWith('.pdf'));
+      if (!pdfs.length) { ctxList.innerHTML = '<span style="color:var(--tx3);font-size:12px">Keine Kontexte in R2/kontexte/ – zuerst Kontext-Split nutzen.</span>'; return; }
+      pdfs.forEach(({ key }) => {
+        const name = key.split('/').pop().replace(/\.pdf$/i, '');
+        const wrap = mk('div', 'mat-r2-file-wrap');
+        const row = mk('div', 'mat-matching-ctx-row');
+        row.appendChild(tx('span', 'mat-r2-filename', name));
+        const thumbWrap = mk('div', 'mat-r2-ktx-thumb'); thumbWrap.style.display = 'none';
+        const prevBtn = btn('👁', 'btn btn-ghost btn-xs'); prevBtn.title = 'Vorschau';
+        prevBtn.onclick = async e => {
+          e.stopPropagation();
+          if (thumbWrap.style.display !== 'none') { thumbWrap.style.display = 'none'; return; }
+          prevBtn.textContent = '⏳'; prevBtn.disabled = true;
+          try {
+            const buf = await r2Download(key); thumbWrap.innerHTML = '';
+            const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+            const page = await pdf.getPage(1); const vp0 = page.getViewport({ scale: 1 });
+            const cv = document.createElement('canvas'); const vp = page.getViewport({ scale: 280 / vp0.width });
+            cv.width = vp.width; cv.height = vp.height;
+            await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+            cv.style.cssText = 'max-width:280px;height:auto;border:1px solid var(--bord);border-radius:4px;';
+            thumbWrap.appendChild(cv); thumbWrap.style.display = 'block';
+          } catch(e3) { thumbWrap.textContent = '⚠ ' + e3.message; thumbWrap.style.display = 'block'; }
+          finally { prevBtn.textContent = '👁'; prevBtn.disabled = false; }
+        };
+        row.appendChild(prevBtn);
+        row.onclick = () => {
+          if (selectedCtxEl) selectedCtxEl.classList.remove('mat-matching-ctx-selected');
+          if (selectedCtxKey === key) { selectedCtxKey = null; selectedCtxEl = null; return; }
+          selectedCtxKey = key; selectedCtxEl = row; row.classList.add('mat-matching-ctx-selected');
+        };
+        wrap.appendChild(row); wrap.appendChild(thumbWrap); ctxList.appendChild(wrap);
+      });
+    } catch(e) { ctxList.innerHTML = '<span style="color:#dc2626;font-size:12px">⚠ ' + e.message + '</span>'; }
+  })();
+
+  // ── Rechte Spalte: Materialien ────────────────────────────
+  const rightCol = mk('div', 'mat-matching-right');
+  const rightHdr = mk('div', 'mat-matching-col-hdr');
+  rightHdr.appendChild(tx('span', '', '📚 Materialien'));
+  let showAll = false;
+  const toggleBtn = btn('Alle anzeigen', 'btn btn-ghost btn-xs');
+  toggleBtn.onclick = () => { showAll = !showAll; toggleBtn.textContent = showAll ? 'Nur unverknüpfte' : 'Alle anzeigen'; renderMatList(); };
+  rightHdr.appendChild(toggleBtn); rightCol.appendChild(rightHdr);
+  const matList = mk('div', 'mat-matching-mat-list'); rightCol.appendChild(matList); cols.appendChild(rightCol);
+
+  function renderMatList() {
+    matList.innerHTML = '';
+    const items = showAll ? MATDB : MATDB.filter(m => !m.kontextR2key);
+    if (!items.length) {
+      matList.innerHTML = '<span style="color:var(--tx3);font-size:12px">Alle Materialien haben bereits einen Kontext.</span>';
+      return;
+    }
+    items.forEach(mat => {
+      const linked = !!mat.kontextR2key;
+      const row = mk('div', 'mat-matching-mat-row' + (linked ? ' mat-matching-linked' : ''));
+      row.appendChild(tx('span', 'mat-matching-mat-title', (mat.materialnummer ? mat.materialnummer + ' – ' : '') + (mat.titel || '–')));
+      if (linked) row.appendChild(tx('span', 'mat-matching-mat-ctx', '📎 ' + mat.kontextR2key.split('/').pop().replace(/\.pdf$/i, '')));
+      row.onclick = () => {
+        if (!selectedCtxKey) { alert('Bitte zuerst einen Kontext links auswählen.'); return; }
+        mat.kontextR2key = selectedCtxKey;
+        saveMatDB(); renderMatList();
+      };
+      matList.appendChild(row);
+    });
+  }
+  renderMatList(); return p;
+}
+
 function viewMaterialien() {
   const div = mk('div', '');
 
@@ -737,7 +951,21 @@ function viewMaterialien() {
     div.insertBefore(buildR2Browser(subTitle, renderCards), div.children[1]);
   };
 
-  hdrBtns.appendChild(uploadBtn); hdrBtns.appendChild(r2Btn); hdrBtns.appendChild(scanBtn);
+  const ktxBtn = btn('📋 Kontext-Split', 'btn btn-ghost btn-sm');
+  ktxBtn.onclick = () => {
+    const ex = div.querySelector('.mat-upload-panel');
+    if (ex) { ex.remove(); return; }
+    div.insertBefore(buildKontextSplitPanel(), div.children[1]);
+  };
+
+  const matchBtn = btn('🔗 Matching', 'btn btn-ghost btn-sm');
+  matchBtn.onclick = () => {
+    const ex = div.querySelector('.mat-matching-panel');
+    if (ex) { ex.remove(); return; }
+    div.insertBefore(buildMatchingView(subTitle), div.children[1]);
+  };
+
+  hdrBtns.appendChild(uploadBtn); hdrBtns.appendChild(r2Btn); hdrBtns.appendChild(ktxBtn); hdrBtns.appendChild(matchBtn); hdrBtns.appendChild(scanBtn);
   hdr.appendChild(hdrBtns);
   div.appendChild(hdr);
 

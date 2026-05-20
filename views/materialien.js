@@ -577,7 +577,8 @@ function buildImportAssistent(subTitle, renderCards) {
   const dlg = mk('div', 'mat-import-dialog');
   ov.appendChild(dlg);
 
-  function close() { ov.remove(); }
+  document.body.style.overflow = 'hidden';
+  function close() { ov.remove(); document.body.style.overflow = ''; }
   ov.onclick = e => { if (e.target === ov) close(); };
   const _esc = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', _esc); } };
   document.addEventListener('keydown', _esc);

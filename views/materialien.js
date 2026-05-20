@@ -1423,7 +1423,14 @@ function viewMaterialien() {
       if (mat.quelle) topRow.appendChild(tx('span', 'matc-quelle', mat.quelle));
       const fachArr = mat.fach || [];
       if (fachArr.length) {
-        const fachBadge = tx('span', 'matc-fach-prominent', fachArr.join(' · '));
+        function fachSymbol(f) {
+          const l = (f||'').toLowerCase();
+          if (l.includes('bio')) return '🌿';
+          if (l.includes('chem')) return '🧪';
+          if (l.includes('math') || l === 'mathe') return '📐';
+          return f;
+        }
+        const fachBadge = tx('span', 'matc-fach-prominent', fachArr.map(fachSymbol).join(' '));
         topRow.appendChild(fachBadge);
       }
       if (topRow.children.length) card.appendChild(topRow);

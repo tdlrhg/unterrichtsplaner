@@ -570,6 +570,346 @@ function buildR2Browser(subTitle, renderCards) {
   return p;
 }
 
+// ── Import-Assistent ─────────────────────────────────────────────
+function buildImportAssistent(subTitle, renderCards) {
+  const ov = mk('div', 'mat-import-overlay');
+  document.body.appendChild(ov);
+  const dlg = mk('div', 'mat-import-dialog');
+  ov.appendChild(dlg);
+
+  function close() { ov.remove(); }
+  ov.onclick = e => { if (e.target === ov) close(); };
+  const _esc = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', _esc); } };
+  document.addEventListener('keydown', _esc);
+
+  // Header
+  const hdr = mk('div', 'mat-import-hdr');
+  const titleEl = tx('span', 'mat-import-title', '📥 Material importieren');
+  const stepEl = tx('span', 'mat-import-step', '');
+  const closeBtn = btn('✕', 'btn btn-ghost btn-sm'); closeBtn.onclick = close;
+  hdr.appendChild(titleEl); hdr.appendChild(stepEl); hdr.appendChild(closeBtn);
+  dlg.appendChild(hdr);
+
+  const body = mk('div', 'mat-import-body');
+  dlg.appendChild(body);
+
+  // Shared state across steps
+  const S = {
+    source: null,
+    meta: { fach: 'Chemie SI', unter: '', thema: '', quelle: '' },
+    types: [],
+    defaultType: 'material',
+    pageDataURLs: [],
+    pdfFile: null,
+    pdfDoc: null,
+    splitPoints: new Set(),
+    segTypes: {},
+  };
+
+  function goto(n) { step = n; body.innerHTML = ''; (STEPS[n] || (() => {}))(); }
+  let step = 0;
+
+  // ── Schritt 0: Quellauswahl ───────────────────────────────────
+  function step0() {
+    stepEl.textContent = '';
+    body.appendChild(tx('div', 'mat-import-section-title', 'Welche Art von Material möchtest du importieren?'));
+    const grid = mk('div', 'mat-import-sources');
+    [
+      { id: 'raabits',        icon: '📚', title: 'RAAbits',        quelle: 'RAAbits',
+        desc: 'Strukturiertes Heft mit Prä-Material, M1–Mn, Lehrerhandreichung und Lösungen',
+        types: [{key:'kontext',label:'📋 Prä/Kontext'},{key:'material',label:'📄 M (auto)'},{key:'lh',label:'🔑 LH'},{key:'loesung',label:'✓ Lösung'},{key:'skip',label:'⊘ Skip'}] },
+      { id: 'einzelblaetter', icon: '📄', title: 'Einzelblätter',  quelle: '',
+        desc: 'Auer, Persen, Verlag an der Ruhr u.a. — Arbeitsblätter, oft mit Lösungen am Ende',
+        types: [{key:'material',label:'📄 Material'},{key:'loesung',label:'✓ Lösung'},{key:'skip',label:'⊘ Skip'}] },
+      { id: 'zeitschrift',    icon: '📰', title: 'Zeitschrift',     quelle: '',
+        desc: 'Kontext-Artikel und Schülermaterial in separaten oder gemeinsamen Heften',
+        types: [] },
+    ].forEach(src => {
+      const card = mk('div', 'mat-import-source-card');
+      card.appendChild(tx('div', 'mat-import-source-icon', src.icon));
+      card.appendChild(tx('div', 'mat-import-source-title', src.title));
+      card.appendChild(tx('div', 'mat-import-source-desc', src.desc));
+      card.onclick = () => {
+        S.source = src.id; S.meta.quelle = src.quelle; S.types = src.types; S.defaultType = 'material';
+        S.pageDataURLs.length = 0; S.splitPoints.clear(); S.segTypes = {}; S.pdfFile = null;
+        goto(src.id === 'zeitschrift' ? 10 : 1);
+      };
+      grid.appendChild(card);
+    });
+    body.appendChild(grid);
+  }
+
+  // ── Schritt 1: Metadaten ──────────────────────────────────────
+  function step1() {
+    stepEl.textContent = 'Schritt 1 / 3 · Metadaten';
+    const grid = mk('div', 'mat-import-meta-grid');
+    function field(label, inp) {
+      const f = mk('div', 'mat-import-meta-field');
+      f.appendChild(tx('label', 'mat-import-meta-label', label)); f.appendChild(inp); grid.appendChild(f);
+    }
+    const fachSel = document.createElement('select'); fachSel.className = 'finp';
+    ['Bio SI','Bio SII','Chemie SI','Chemie SII','Mathe'].forEach(f => { const o = document.createElement('option'); o.value = f; o.textContent = f; fachSel.appendChild(o); });
+    fachSel.value = S.meta.fach; fachSel.onchange = () => { S.meta.fach = fachSel.value; updPath(); };
+    field('Fach', fachSel);
+    const unterInp = document.createElement('input'); unterInp.type='text'; unterInp.className='finp'; unterInp.placeholder='z.B. 7-8 oder SII'; unterInp.value=S.meta.unter;
+    unterInp.oninput = () => { S.meta.unter = unterInp.value; updPath(); };
+    field('Unterordner', unterInp);
+    const themaInp = document.createElement('input'); themaInp.type='text'; themaInp.className='finp'; themaInp.placeholder='z.B. Elektrochemie *'; themaInp.value=S.meta.thema;
+    themaInp.oninput = () => { S.meta.thema = themaInp.value; updPath(); nextBtn.disabled = !S.meta.thema.trim(); };
+    field('Thema *', themaInp);
+    const quelleInp = document.createElement('input'); quelleInp.type='text'; quelleInp.className='finp'; quelleInp.placeholder='Verlag / Quelle'; quelleInp.value=S.meta.quelle;
+    quelleInp.oninput = () => { S.meta.quelle = quelleInp.value; };
+    field('Quelle', quelleInp);
+    body.appendChild(grid);
+    const pathPrev = tx('div', 'mat-upload-path-prev', ''); body.appendChild(pathPrev);
+    function updPath() { const pts = [S.meta.fach, S.meta.unter.trim(), S.meta.thema.trim()].filter(Boolean); pathPrev.textContent = '→ ' + pts.join('/') + '/…'; }
+    updPath();
+    const foot = stepFooter(() => goto(0)); const nextBtn = btn('Weiter →', 'btn btn-pri btn-sm');
+    nextBtn.disabled = !S.meta.thema.trim(); nextBtn.onclick = () => goto(2); foot.appendChild(nextBtn); body.appendChild(foot);
+  }
+
+  // ── Schritt 2: PDF hochladen + Aufteilen ──────────────────────
+  function step2() {
+    stepEl.textContent = 'Schritt 2 / 3 · PDF aufteilen';
+    if (!S.pdfFile) {
+      const zone = mk('div', 'mat-upload-drop'); zone.style.cssText += ';max-width:480px;margin:40px auto;';
+      zone.textContent = '📄 PDF hierher ziehen oder klicken';
+      const pdfInp = document.createElement('input'); pdfInp.type='file'; pdfInp.accept='application/pdf'; pdfInp.style.display='none';
+      async function loadPdf(file) {
+        S.pdfFile = file; S.pageDataURLs.length = 0; S.splitPoints.clear(); S.segTypes = {};
+        zone.textContent = '⏳ Lade ' + file.name + '…'; zone.style.cursor = 'default';
+        try {
+          const buf = await file.arrayBuffer();
+          S.pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+          for (let i = 1; i <= S.pdfDoc.numPages; i++) {
+            const pg = await S.pdfDoc.getPage(i);
+            const vp0 = pg.getViewport({ scale: 1 });
+            const cv = document.createElement('canvas');
+            const vp = pg.getViewport({ scale: 280 / vp0.width });
+            cv.width = vp.width; cv.height = vp.height;
+            await pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+            S.pageDataURLs.push(cv.toDataURL());
+            zone.textContent = '⏳ Seite ' + i + '/' + S.pdfDoc.numPages + '…';
+          }
+          goto(2);
+        } catch(e) { zone.textContent = '⚠ ' + e.message; S.pdfFile = null; }
+      }
+      zone.onclick = () => pdfInp.click();
+      zone.ondragover = e => { e.preventDefault(); zone.classList.add('drag-over'); };
+      zone.ondragleave = () => zone.classList.remove('drag-over');
+      zone.ondrop = e => { e.preventDefault(); zone.classList.remove('drag-over'); if (e.dataTransfer.files[0]) loadPdf(e.dataTransfer.files[0]); };
+      pdfInp.onchange = () => { if (pdfInp.files[0]) loadPdf(pdfInp.files[0]); };
+      body.appendChild(zone); body.appendChild(pdfInp);
+      body.appendChild(stepFooter(() => goto(1)));
+      return;
+    }
+    const COLORS = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6'];
+    function getGroups() {
+      const g = []; let s = 1;
+      for (const pt of [...S.splitPoints].sort((a,b)=>a-b)) { g.push({start:s,end:pt}); s=pt+1; }
+      g.push({start:s,end:S.pageDataURLs.length}); return g;
+    }
+    const infoRow = tx('div', 'mat-import-split-info', ''); body.appendChild(infoRow);
+    const sc = mk('div', 'mat-import-split-container'); body.appendChild(sc);
+    const foot = stepFooter(() => { S.pdfFile = null; goto(2); });
+    const upBtn = btn('📤 Hochladen & Analysieren', 'btn btn-pri btn-sm');
+    upBtn.onclick = () => goto(3); foot.appendChild(upBtn); body.appendChild(foot);
+
+    function countMats() { return getGroups().filter((_,gi) => (S.segTypes[gi]||S.defaultType) === 'material').length; }
+    function renderGroups() {
+      sc.innerHTML = '';
+      getGroups().forEach((g, gi) => {
+        const typ = S.segTypes[gi] || S.defaultType;
+        const groupEl = mk('div', 'mat-split-group'); groupEl.style.borderColor = COLORS[gi % COLORS.length];
+        const typRow = mk('div', 'mat-split-typ-row');
+        S.types.forEach(t => {
+          const b = btn(t.label, 'btn btn-xs ' + (t.key === typ ? 'btn-pri' : 'btn-ghost'));
+          b.onclick = () => { S.segTypes[gi] = t.key; renderGroups(); updBtn(); };
+          typRow.appendChild(b);
+        });
+        typRow.appendChild(tx('span', 'mat-split-range', 'S. ' + g.start + (g.end > g.start ? '–' + g.end : '')));
+        groupEl.appendChild(typRow);
+        const pagesRow = mk('div', 'mat-split-pages-row');
+        for (let i = g.start; i <= g.end; i++) {
+          const img = document.createElement('img'); img.src = S.pageDataURLs[i-1]; img.className = 'mat-split-thumb mat-split-thumb-lg';
+          const wrap = mk('div', 'mat-split-thumb-wrap'); wrap.style.opacity = typ==='skip'?'0.3':'1';
+          wrap.appendChild(img); wrap.appendChild(tx('div', 'mat-upload-thumb-nr', 'S. '+i));
+          pagesRow.appendChild(wrap);
+          if (i < S.pageDataURLs.length) {
+            const divEl = mk('div', 'mat-split-divider'); divEl.dataset.page = String(i);
+            const icon = tx('span', 'mat-split-div-icon', S.splitPoints.has(i) ? '✂' : '+');
+            if (S.splitPoints.has(i)) divEl.classList.add('active'); divEl.appendChild(icon);
+            divEl.onclick = () => { const pg = parseInt(divEl.dataset.page); S.splitPoints.has(pg) ? S.splitPoints.delete(pg) : S.splitPoints.add(pg); renderGroups(); updBtn(); };
+            pagesRow.appendChild(divEl);
+          }
+        }
+        groupEl.appendChild(pagesRow); sc.appendChild(groupEl);
+      });
+    }
+    function updBtn() {
+      const n = countMats();
+      infoRow.textContent = n + ' Material' + (n!==1?'ien':'') + ' · Trennpunkte setzen und Typen zuweisen';
+      upBtn.disabled = n === 0;
+    }
+    renderGroups(); updBtn();
+  }
+
+  // ── Schritt 3: Hochladen + Analysieren ───────────────────────
+  function step3() {
+    stepEl.textContent = 'Schritt 3 / 3 · Hochladen & Analysieren';
+    const log = mk('div', 'mat-import-log'); body.appendChild(log);
+    function addLog(msg, color) {
+      const line = tx('div', '', msg); if (color) line.style.color = color;
+      line.style.padding = '3px 0'; log.appendChild(line); log.scrollTop = log.scrollHeight;
+    }
+    (async () => {
+      try {
+        const groups = (() => {
+          const g = []; let s = 1;
+          for (const pt of [...S.splitPoints].sort((a,b)=>a-b)) { g.push({start:s,end:pt}); s=pt+1; }
+          g.push({start:s,end:S.pageDataURLs.length}); return g;
+        })();
+        const parts = [S.meta.fach, S.meta.unter.trim(), S.meta.thema.trim()].filter(Boolean);
+        const folder = parts.join('/');
+        const baseName = S.pdfFile.name.replace(/\.pdf$/i, '');
+        const srcDoc = await PDFLib.PDFDocument.load(await S.pdfFile.arrayBuffer());
+        async function makeBlob(g) {
+          const doc = await PDFLib.PDFDocument.create();
+          const idxs = []; for (let pg = g.start-1; pg < g.end; pg++) idxs.push(pg);
+          const copied = await doc.copyPages(srcDoc, idxs); copied.forEach(pg => doc.addPage(pg));
+          return new Blob([await doc.save()], { type: 'application/pdf' });
+        }
+        // Kontext zuerst
+        let kontextR2key = null, kontextPageURLs = [];
+        for (let gi = 0; gi < groups.length; gi++) {
+          if ((S.segTypes[gi]||S.defaultType) !== 'kontext') continue;
+          const key = folder + '/' + baseName + '_Kontext.pdf';
+          addLog('📤 Prä/Kontext hochladen…');
+          await r2Upload(key, await makeBlob(groups[gi]), 'application/pdf');
+          kontextR2key = key;
+          for (let i = groups[gi].start-1; i < groups[gi].end; i++) kontextPageURLs.push(S.pageDataURLs[i]);
+          addLog('✓ Kontext gespeichert', 'var(--grn)');
+        }
+        // Materialien
+        let matIdx = 1; const uploaded = [];
+        for (let gi = 0; gi < groups.length; gi++) {
+          const typ = S.segTypes[gi] || S.defaultType;
+          if (typ === 'skip' || typ === 'kontext') continue;
+          const suffix = typ==='lh'?'LH':typ==='loesung'?'Lösung':'M'+matIdx;
+          const key = folder + '/' + baseName + '_' + suffix + '.pdf';
+          addLog('📤 ' + suffix + ' hochladen…');
+          const url = await r2Upload(key, await makeBlob(groups[gi]), 'application/pdf');
+          addLog('✓ ' + suffix, 'var(--grn)');
+          const entry = {
+            id: 'mat_'+Date.now()+'_'+gi, titel: baseName+' – '+suffix,
+            materialnummer: suffix,
+            materialtyp: typ==='lh'?'Lehrerhandreichung':typ==='loesung'?'Lösung':'Arbeitsblatt',
+            fach: [S.meta.fach.replace(/ S(I{1,2})$/i,'').trim()],
+            jahrgang: [], themen: S.meta.thema?[S.meta.thema]:[], quelle: S.meta.quelle||null,
+            r2url: url, r2key: key, kontextR2key: kontextR2key||null,
+            seiten: groups[gi].end-groups[gi].start+1, importiertAm: new Date().toISOString(),
+          };
+          const ex = MATDB.findIndex(m => m.r2key === key);
+          if (ex >= 0) { entry.id = MATDB[ex].id; MATDB[ex] = entry; } else MATDB.unshift(entry);
+          uploaded.push({ entry, matPageURLs: S.pageDataURLs.slice(groups[gi].start-1, groups[gi].end) });
+          if (typ === 'material') matIdx++;
+        }
+        saveMatDB();
+        addLog('✓ ' + uploaded.length + ' Einträge gespeichert', 'var(--grn)');
+        // KI-Analyse
+        const antKey = localStorage.getItem('ant_key');
+        if (!antKey) { addLog('⚠ Kein API-Key – KI-Analyse übersprungen', '#d97706'); }
+        else {
+          addLog('✨ KI analysiert ' + uploaded.length + ' Materialien…');
+          function toImg(url) { const [h,d] = url.split(','); return {type:'image',source:{type:'base64',media_type:h.match(/data:([^;]+)/)[1],data:d}}; }
+          for (let ei = 0; ei < uploaded.length; ei++) {
+            const { entry, matPageURLs } = uploaded[ei];
+            addLog('⏳ ' + entry.materialnummer + ' (' + (ei+1) + '/' + uploaded.length + ')…');
+            const content = [];
+            if (kontextPageURLs.length) { content.push({type:'text',text:'=== KONTEXT ==='}); kontextPageURLs.forEach(u => content.push(toImg(u))); }
+            content.push({type:'text',text:'=== MATERIAL ==='}); matPageURLs.forEach(u => content.push(toImg(u)));
+            content.push({type:'text',text:`Analysiere dieses Unterrichtsmaterial für eine NRW-Gymnasiallehrerin.
+Bekannt: Fach=${entry.fach?.join(',')}, Typ=${entry.materialtyp}, Dateiname=${entry.titel}
+
+WICHTIG – Titelregeln:
+- "titel" = der tatsächliche Titel wie er auf dem Blatt gedruckt steht
+- Ist kein Titel aufgedruckt, übernimm den Dateinamen: "${entry.titel}"
+- NIEMALS eine Rolle als Titel verwenden
+- "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
+
+Antworte NUR mit JSON (kein Text davor/danach):
+{"titel":"...","rolleImKontext":"...","beschreibung":"...","themen":[...],"jahrgang":["SII"],"unterrichtsphase":[...],"sozialformenGeeignet":[],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}`});
+            try {
+              const res = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+                body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1500, messages: [{role:'user',content}] })
+              });
+              if (!res.ok) { addLog('⚠ API ' + res.status + ' bei ' + entry.materialnummer, '#d97706'); continue; }
+              const d = await res.json();
+              const match = (d.content?.[0]?.text||'').match(/\{[\s\S]*\}/);
+              if (match) {
+                const enriched = JSON.parse(match[0]);
+                const idx = MATDB.findIndex(m => m.id === entry.id);
+                if (idx >= 0) {
+                  const { quelle, materialnummer, r2key, r2url, kontextR2key: krk, seiten, importiertAm, id } = MATDB[idx];
+                  const keep = { quelle, r2key, r2url, kontextR2key: krk, seiten, importiertAm, id };
+                  if (materialnummer) keep.materialnummer = materialnummer;
+                  Object.assign(MATDB[idx], enriched, keep);
+                }
+                addLog('✓ ' + entry.materialnummer, 'var(--grn)');
+              }
+            } catch(e2) { addLog('⚠ ' + e2.message, '#d97706'); }
+          }
+          saveMatDB();
+        }
+        addLog('✓ Import abgeschlossen!', 'var(--grn)');
+        const doneBtn = btn('✓ Fertig & Schließen', 'btn btn-pri btn-sm');
+        doneBtn.style.marginTop = '16px';
+        doneBtn.onclick = () => { close(); renderCards(); subTitle.textContent = MATDB.length + ' Einträge'; };
+        body.appendChild(doneBtn);
+      } catch(e) {
+        addLog('✗ Fehler: ' + e.message, '#dc2626');
+        const backBtn2 = btn('← Zurück', 'btn btn-ghost btn-sm'); backBtn2.style.marginTop = '12px';
+        backBtn2.onclick = () => goto(2); body.appendChild(backBtn2);
+      }
+    })();
+  }
+
+  // ── Schritt 10: Zeitschrift ───────────────────────────────────
+  function step10() {
+    stepEl.textContent = 'Zeitschrift';
+    const note = mk('div', ''); note.style.cssText = 'max-width:600px;line-height:1.8;';
+    note.innerHTML = '<p style="margin-bottom:16px;font-size:14px;color:var(--tx2)">Zeitschriften haben zwei typische Strukturen:</p>' +
+      '<div style="display:flex;flex-direction:column;gap:16px;">' +
+      '<div style="border:1px solid var(--bord);border-radius:8px;padding:16px;">' +
+      '<strong>A · Kontext und Material im selben Heft</strong><br>' +
+      '<span style="font-size:13px;color:var(--tx2)">Wähle den RAAbits-Workflow: Kontextseiten als „Prä/Kontext" markieren, Materialseiten als „M".</span>' +
+      '</div>' +
+      '<div style="border:1px solid var(--bord);border-radius:8px;padding:16px;">' +
+      '<strong>B · Kontext und Material in separaten Heften</strong><br>' +
+      '<span style="font-size:13px;color:var(--tx2)">Schritt 1: Zeitschrift über „Kontext-Split" in Artikel aufteilen.<br>Schritt 2: Materialheft hier importieren (RAAbits oder Einzelblätter).<br>Schritt 3: Materialien und Kontexte über „Matching" verknüpfen.</span>' +
+      '</div></div>';
+    body.appendChild(note);
+    const btns = mk('div', ''); btns.style.cssText = 'display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;';
+    const goA = btn('→ Variante A: RAAbits-Workflow', 'btn btn-pri btn-sm');
+    goA.onclick = () => { S.source='raabits'; S.meta.quelle=''; S.types=[{key:'kontext',label:'📋 Prä/Kontext'},{key:'material',label:'📄 M (auto)'},{key:'lh',label:'🔑 LH'},{key:'loesung',label:'✓ Lösung'},{key:'skip',label:'⊘ Skip'}]; goto(1); };
+    const backBtn2 = btn('← Zurück', 'btn btn-ghost btn-sm'); backBtn2.onclick = () => goto(0);
+    btns.appendChild(goA); btns.appendChild(backBtn2);
+    body.appendChild(btns);
+  }
+
+  function stepFooter(onBack) {
+    const f = mk('div', 'mat-import-step-footer');
+    const b = btn('← Zurück', 'btn btn-ghost btn-sm'); b.onclick = onBack; f.appendChild(b);
+    return f;
+  }
+
+  const STEPS = { 0: step0, 1: step1, 2: step2, 3: step3, 10: step10 };
+  goto(0);
+  return ov;
+}
+
 // ── Kontext-Split: Zeitschrift in Artikel aufteilen ────────────
 function buildKontextSplitPanel() {
   const p = mk('div', 'mat-upload-panel');
@@ -938,12 +1278,8 @@ function viewMaterialien() {
     div.insertBefore(p, div.children[1]);
   };
 
-  const uploadBtn = btn('📄 PDF hochladen', 'btn btn-pri btn-sm');
-  uploadBtn.onclick = () => {
-    const ex = div.querySelector('.mat-upload-panel');
-    if (ex) { ex.remove(); return; }
-    div.insertBefore(buildUploadPanel(), div.children[1]);
-  };
+  const importBtn = btn('➕ Importieren', 'btn btn-pri btn-sm');
+  importBtn.onclick = () => { buildImportAssistent(subTitle, renderCards); };
 
   const r2Btn = btn('📂 Von R2', 'btn btn-ghost btn-sm');
   r2Btn.onclick = () => {
@@ -966,7 +1302,7 @@ function viewMaterialien() {
     div.insertBefore(buildMatchingView(subTitle), div.children[1]);
   };
 
-  hdrBtns.appendChild(uploadBtn); hdrBtns.appendChild(r2Btn); hdrBtns.appendChild(ktxBtn); hdrBtns.appendChild(matchBtn); hdrBtns.appendChild(scanBtn);
+  hdrBtns.appendChild(importBtn); hdrBtns.appendChild(r2Btn); hdrBtns.appendChild(ktxBtn); hdrBtns.appendChild(matchBtn); hdrBtns.appendChild(scanBtn);
   hdr.appendChild(hdrBtns);
   div.appendChild(hdr);
 

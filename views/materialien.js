@@ -3,6 +3,15 @@ let _kontextFiles  = [];
 let _uploadPdfFile = null;
 let _uploadPdfDoc  = null;
 
+function getBlockTitel(blockId) {
+  if (!blockId) return null;
+  for (const fp of (S.data.fachplanungen || [])) {
+    const b = (fp.blocks || []).find(b => b.id === blockId);
+    if (b) return b.titel || b.name || null;
+  }
+  return null;
+}
+
 function buildUploadPanel() {
   if (typeof pdfjsLib !== 'undefined') {
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
@@ -1855,8 +1864,9 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
         if (ktxURLs.length) { content.push({ type: 'text', text: '=== KONTEXT ===' }); ktxURLs.forEach(u => content.push(toImgContent(u))); }
         content.push({ type: 'text', text: '=== MATERIAL ===' });
         matURLs.forEach(u => content.push(toImgContent(u)));
+        const blockTitelRe = getBlockTitel(mat.blockId);
         content.push({ type: 'text', text: `Analysiere dieses Unterrichtsmaterial für eine NRW-Gymnasiallehrerin.
-Bekannt: Fach=${(mat.fach||[]).join(',')}, Typ=${mat.materialtyp}, Dateiname=${mat.titel}
+Bekannt: Fach=${(mat.fach||[]).join(',')}, Typ=${mat.materialtyp}, Dateiname=${mat.titel}${blockTitelRe ? ', Themenblock="'+blockTitelRe+'"' : ''}
 
 WICHTIG – Titelregeln:
 - "titel" = der tatsächliche Titel wie er auf dem Blatt gedruckt steht
@@ -1919,7 +1929,8 @@ async function klpKiVorschlag(mat, onResult) {
   const klpText = kandidaten.map(e =>
     `ID: ${e.id}\nJg: ${e.jahrgang} | IF: ${e.inhaltsfeld} | Codes: ${e.kompetenzcodes.join(', ')}\n${e.beschreibung}`
   ).join('\n\n');
-  const prompt = `Du bist Assistent für NRW-Lehrkräfte. Analysiere das Unterrichtsmaterial und wähle passende KLP-Kompetenzen.\n\nMaterial:\n- Titel: ${mat.titel || '–'}\n- Fach: ${(mat.fach || []).join(', ') || '–'}\n- Jahrgang: ${(mat.jahrgang || []).join(', ') || '–'}\n- Themen: ${(mat.themen || []).join(', ') || '–'}\n- Beschreibung: ${mat.beschreibung || '–'}\n\nWähle 2–6 passende KLP-Einträge. Antworte NUR mit JSON-Array der IDs: ["ID1","ID2"]\n\nKLP-Einträge:\n${klpText}`;
+  const blockTitelKlp = getBlockTitel(mat.blockId);
+  const prompt = `Du bist Assistent für NRW-Lehrkräfte. Analysiere das Unterrichtsmaterial und wähle passende KLP-Kompetenzen.\n\nMaterial:\n- Titel: ${mat.titel || '–'}\n- Fach: ${(mat.fach || []).join(', ') || '–'}\n- Jahrgang: ${(mat.jahrgang || []).join(', ') || '–'}\n- Themen: ${(mat.themen || []).join(', ') || '–'}\n- Beschreibung: ${mat.beschreibung || '–'}${blockTitelKlp ? '\n- Themenblock: ' + blockTitelKlp : ''}\n\nWähle 2–6 passende KLP-Einträge. Antworte NUR mit JSON-Array der IDs: ["ID1","ID2"]\n\nKLP-Einträge:\n${klpText}`;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },

@@ -1607,7 +1607,7 @@ function buildScanPanel(subTitle, renderCards, onClose) {
     wrap.appendChild(labelRow);
     wrap.appendChild(tx('div', 'mat-scan-group-hint', hint));
     const zone = mk('div', 'mat-scan-drop'); zone.textContent = '📂 Bilder hierher ziehen oder klicken';
-    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true; inp.style.display = 'none';
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*,application/pdf'; inp.multiple = true; inp.style.display = 'none';
     zone.onclick = () => inp.click();
     zone.ondragover = e => { e.preventDefault(); zone.classList.add('drag-over'); };
     zone.ondragleave = () => zone.classList.remove('drag-over');

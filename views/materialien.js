@@ -1217,7 +1217,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
     function updateUploadLabel(){
       const n=matches.size;
       uploadBtn.textContent=n>0?`📤 ${n} Paar${n>1?'e':''} hochladen`:'📤 Hochladen';
-      uploadBtn.disabled=!S.zsAusgabe||n===0;
+      uploadBtn.disabled=n===0;
     }
 
     renderMatchCards();
@@ -1225,39 +1225,49 @@ Antworte NUR mit JSON (kein Text davor/danach):
 
     // Upload: alle Segmente nach R2, MATDB-Einträge für alle außer Skip
     uploadBtn.onclick=async()=>{
-      if(!S.zsAusgabe){alert('Bitte Ausgabe-Name eingeben.');return;}
+      if(!S.zsAusgabe){
+        ausgabeInp.focus();
+        statusEl.textContent='⚠ Bitte zuerst den Ausgabe-Namen eingeben.';
+        statusEl.style.color='#dc2626';
+        return;
+      }
       uploadBtn.disabled=true;
       const folder=S.zsAusgabe.replace(/[/\\:*?"<>|]/g,'-');
       try{
-        // Alle Segmente nach R2 hochladen
-        for(const seg of S.zsSegments.filter(s=>s.type!=='skip'&&!s.r2Path)){
+        // Nur die gematchten Segmente hochladen
+        const matchedMidSet=new Set(matches.keys());
+        const matchedKidSet=new Set(matches.values());
+        const toUpload=S.zsSegments.filter(s=>s.type!=='skip'&&!s.r2Path&&(matchedMidSet.has(s.id)||matchedKidSet.has(s.id)));
+        for(const seg of toUpload){
           const subdir=seg.type==='kontext'?'kontexte':'materialien';
           seg.r2Path=subdir+'/'+folder+'/'+seg.name+'.pdf';
           statusEl.textContent='Lade hoch: '+seg.name+'…';
           await r2Upload(seg.r2Path,seg.blob,'application/pdf');
         }
-        // MATDB-Einträge für alle Segmente
-        const matchedMatIds=[...matches.keys()];
-        const matchedKtxIds=new Set([...matches.values()]);
+        // MATDB-Einträge nur für die gematchten Segmente
         const newEntries=[];
-        for(const seg of S.zsSegments.filter(s=>s.type!=='skip'&&s.r2Path)){
-          if(seg.type==='material'){
-            const ktxSeg=kontextSegs.find(s=>s.id===matches.get(seg.id));
-            newEntries.push({id:uid(),titel:seg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
-              materialtyp:'Arbeitsblatt',quelle:S.zsAusgabe,dateipfad:seg.r2Path,
-              kontextPfad:ktxSeg?.r2Path||null,unterrichtsphase:[],sozialformenGeeignet:[],
-              methodenGeeignet:[],blockId:null});
-          } else if(seg.type==='kontext'){
-            newEntries.push({id:uid(),titel:seg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
-              materialtyp:'Kontext',quelle:S.zsAusgabe,dateipfad:seg.r2Path,
-              kontextPfad:null,unterrichtsphase:[],sozialformenGeeignet:[],
-              methodenGeeignet:[],blockId:null});
-          }
+        for(const [mid,kid] of matches){
+          const matSeg=materialSegs.find(s=>s.id===mid);
+          const ktxSeg=kontextSegs.find(s=>s.id===kid);
+          if(matSeg?.r2Path) newEntries.push({id:uid(),titel:matSeg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
+            materialtyp:'Arbeitsblatt',quelle:S.zsAusgabe,dateipfad:matSeg.r2Path,
+            kontextPfad:ktxSeg?.r2Path||null,unterrichtsphase:[],sozialformenGeeignet:[],
+            methodenGeeignet:[],blockId:null});
+        }
+        // Kontext-Segmente ohne Match bleiben in S.zsSegments; gematchte Kontexte auch in MATDB
+        const uploadedKtxIds=new Set(toUpload.filter(s=>s.type==='kontext').map(s=>s.id));
+        for(const kid of uploadedKtxIds){
+          const ktxSeg=kontextSegs.find(s=>s.id===kid);
+          if(ktxSeg?.r2Path) newEntries.push({id:uid(),titel:ktxSeg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
+            materialtyp:'Kontext',quelle:S.zsAusgabe,dateipfad:ktxSeg.r2Path,
+            kontextPfad:null,unterrichtsphase:[],sozialformenGeeignet:[],
+            methodenGeeignet:[],blockId:null});
         }
         newEntries.forEach(e=>MATDB.push(e));
         await sbUpload('materialien.json',MATDB);
-        // Alle hochgeladenen Segmente entfernen
-        S.zsSegments=S.zsSegments.filter(s=>s.type==='skip'||!s.r2Path);
+        // Nur hochgeladene Segmente entfernen
+        const uploadedIds=new Set(toUpload.map(s=>s.id));
+        S.zsSegments=S.zsSegments.filter(s=>!uploadedIds.has(s.id));
         matches.clear(); selId=null; selSide=null;
         const restliche=S.zsSegments.filter(s=>s.type!=='skip').length;
         statusEl.textContent='✓ '+newEntries.length+' Einträge angelegt'+(restliche?' · '+restliche+' gesichert, noch nicht gematcht':'');

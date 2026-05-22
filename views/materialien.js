@@ -1119,10 +1119,9 @@ Antworte NUR mit JSON (kein Text davor/danach):
     const pairColors=new Map(); let colorIdx=0;
     let selId=null, selSide=null;
 
-    function pairColor(kid,mid){
-      const key=kid+'|'+mid;
-      if(!pairColors.has(key)) pairColors.set(key,MATCH_COLORS[colorIdx++%MATCH_COLORS.length]);
-      return pairColors.get(key);
+    function pairColor(kid){
+      if(!pairColors.has(kid)) pairColors.set(kid,MATCH_COLORS[colorIdx++%MATCH_COLORS.length]);
+      return pairColors.get(kid);
     }
 
     // Zwei-Spalten-Layout
@@ -1142,17 +1141,17 @@ Antworte NUR mit JSON (kein Text davor/danach):
     const statusRow=mk('div',''); statusRow.style.cssText='display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap;';
     const statusEl=tx('span','','');
     const uploadBtn=btn('📤 Hochladen','btn btn-pri btn-sm'); uploadBtn.disabled=true;
+    const restBtn=btn('📤 Restliche einzeln hochladen','btn btn-ghost btn-sm');
     const backBtn3=btn('← Zurück','btn btn-ghost btn-sm'); backBtn3.onclick=()=>goto(13);
-    statusRow.appendChild(uploadBtn); statusRow.appendChild(statusEl); statusRow.appendChild(backBtn3);
+    statusRow.appendChild(uploadBtn); statusRow.appendChild(restBtn); statusRow.appendChild(statusEl); statusRow.appendChild(backBtn3);
     body.appendChild(statusRow);
 
     function updateUploadBtn(){ updateUploadLabel(); }
 
     function makeCard(seg, side) {
       const isKtx=side==='kontext';
-      const matchedPairId=isKtx?[...matches.entries()].find(([mid,kid])=>kid===seg.id)?.[0]:matches.get(seg.id);
-      const matchedSeg=matchedPairId?(isKtx?materialSegs:kontextSegs).find(s=>s.id===matchedPairId):null;
-      const color=matchedSeg?pairColor(isKtx?seg.id:matchedPairId,isKtx?matchedPairId:seg.id):null;
+      const kid=isKtx?seg.id:matches.get(seg.id);
+      const color=kid?pairColor(kid):null;
       const isSel=selId===seg.id&&selSide===side;
       const card=mk('div','');
       card.style.cssText=`border:2px solid ${isSel?'#6366f1':color||'var(--bord)'};border-radius:8px;padding:8px;margin-bottom:12px;cursor:pointer;background:${isSel?'#ede9fe':'var(--surf)'};transition:border-color .15s;`;
@@ -1165,10 +1164,15 @@ Antworte NUR mit JSON (kein Text davor/danach):
       }
       const nameRow=mk('div',''); nameRow.style.cssText='font-size:12px;font-weight:600;margin-top:6px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;';
       nameRow.appendChild(tx('span','',seg.name));
-      if(matchedSeg){
-        const badge=tx('span','',matchedSeg.name);
-        badge.style.cssText=`background:${color};color:#fff;border-radius:4px;padding:1px 6px;font-size:11px;`;
-        nameRow.appendChild(badge);
+      if(isKtx){
+        // alle gematchten Materialien anzeigen
+        [...matches.entries()].filter(([mid,k])=>k===seg.id).forEach(([mid])=>{
+          const ms=materialSegs.find(s=>s.id===mid);
+          if(ms){ const badge=tx('span','',ms.name); badge.style.cssText=`background:${color};color:#fff;border-radius:4px;padding:1px 6px;font-size:11px;`; nameRow.appendChild(badge); }
+        });
+      } else if(kid){
+        const ktxSeg=kontextSegs.find(s=>s.id===kid);
+        if(ktxSeg){ const badge=tx('span','',ktxSeg.name); badge.style.cssText=`background:${color};color:#fff;border-radius:4px;padding:1px 6px;font-size:11px;`; nameRow.appendChild(badge); }
       }
       card.appendChild(nameRow);
       card.onclick=()=>handleClick(seg.id,side);
@@ -1223,7 +1227,40 @@ Antworte NUR mit JSON (kein Text davor/danach):
     renderMatchCards();
     loadThumbs();
 
-    // Upload: alle Segmente nach R2, MATDB-Einträge für alle außer Skip
+    // Restliche (ungematchte) Segmente einzeln hochladen
+    restBtn.onclick=async()=>{
+      if(!S.zsAusgabe){ ausgabeInp.focus(); statusEl.textContent='⚠ Bitte zuerst den Ausgabe-Namen eingeben.'; statusEl.style.color='#dc2626'; return; }
+      const matchedIds=new Set([...matches.keys(),...matches.values()]);
+      const rest=S.zsSegments.filter(s=>s.type!=='skip'&&!matchedIds.has(s.id));
+      if(!rest.length){ statusEl.textContent='Keine ungematchten Segmente.'; return; }
+      restBtn.disabled=true;
+      const folder=S.zsAusgabe.replace(/[/\\:*?"<>|]/g,'-');
+      try{
+        for(const seg of rest.filter(s=>!s.r2Path)){
+          const subdir=seg.type==='kontext'?'kontexte':'materialien';
+          seg.r2Path=subdir+'/'+folder+'/'+seg.name+'.pdf';
+          statusEl.textContent='Lade hoch: '+seg.name+'…';
+          await r2Upload(seg.r2Path,seg.blob,'application/pdf');
+        }
+        const newEntries=[];
+        for(const seg of rest.filter(s=>s.r2Path)){
+          newEntries.push({id:uid(),titel:seg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
+            materialtyp:seg.type==='kontext'?'Kontext':'Arbeitsblatt',
+            quelle:S.zsAusgabe,dateipfad:seg.r2Path,kontextPfad:null,
+            unterrichtsphase:[],sozialformenGeeignet:[],methodenGeeignet:[],blockId:null});
+        }
+        newEntries.forEach(e=>MATDB.push(e));
+        await sbUpload('materialien.json',MATDB);
+        const restIds=new Set(rest.map(s=>s.id));
+        S.zsSegments=S.zsSegments.filter(s=>!restIds.has(s.id));
+        statusEl.textContent='✓ '+newEntries.length+' Einträge angelegt';
+        statusEl.style.color='var(--grn)';
+        if(S.zsSegments.filter(s=>s.type!=='skip').length===0){ S.zsAusgabe=''; }
+        goto(14);
+      }catch(e){ statusEl.textContent='✗ '+e.message; statusEl.style.color='#dc2626'; restBtn.disabled=false; }
+    };
+
+    // Upload: gematchte Paare hochladen
     uploadBtn.onclick=async()=>{
       if(!S.zsAusgabe){
         ausgabeInp.focus();

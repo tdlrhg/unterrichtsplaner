@@ -3,6 +3,7 @@ function viewReihe(kursId, blockId, reiheId) {
   const kurs = getKurs(kursId);
   const block = findBlock(kursId, blockId);
   const reihe = findReihe(kursId, blockId, reiheId);
+  if (!kurs || !block || !reihe) { S.sel = null; render(); return mk('div', ''); }
   const div = mk('div', '');
 
   div.appendChild(breadcrumb([

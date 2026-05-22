@@ -497,6 +497,9 @@ function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
   const reihe = findReihe(fpId, blockId, reiheId);
   const einheit = findEinheit(fpId, blockId, reiheId, einheitId);
   const stunde = findStunde(fpId, blockId, reiheId, einheitId, stundeId);
+  if (!fp || !block || !reihe || !einheit || !stunde) {
+    S.sel = null; render(); return mk('div', '');
+  }
   initStunde(stunde);
 
   const div = mk('div', '');

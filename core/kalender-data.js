@@ -93,48 +93,45 @@ function strToDate(str) {
   return new Date(Date.UTC(y, m - 1, d));
 }
 
-// ── Unterrichtsstunden pro Kurs berechnen ────────────────────────
-function berechneStunden(kurs, fp, schuljahr, ausfalltage, einzelAusfaelle, klassenarbeiten) {
-  const ferien = NRW_FERIEN[schuljahr] || [];
-  if (!ferien.length) return 0;
-
-  // Schuljahresbeginn: Tag nach den ersten Sommerferien
-  const start = strToDate(ferien[0].bis);
-  start.setDate(start.getDate() + 1);
-  // Schuljahresende: letzter Tag vor den letzten Sommerferien
-  const end = strToDate(ferien[ferien.length - 1].von);
-  end.setDate(end.getDate() - 1);
-
-  if (!kurs.stundenplan || kurs.stundenplan.length === 0) return null;
-
+// ── Shared: Stunden in einem Zeitraum zählen ────────────────────
+function _zaehleStunden(kurs, schuljahr, ausfalltage, einzelAusfaelle, start, end) {
   let count = 0;
   const cur = new Date(start);
-
   while (cur <= end) {
     if (isSchultag(cur, schuljahr, ausfalltage)) {
-      const dw = cur.getDay(); // 1=Mo...5=Fr
+      const dw = cur.getUTCDay();
       const dwStr = ['', 'Mo', 'Di', 'Mi', 'Do', 'Fr'][dw];
       const gerade = isGeradeKW(cur);
       const ds = dateToStr(cur);
-
       kurs.stundenplan.forEach(slot => {
         if (slot.tag !== dwStr) return;
         if (slot.kwTyp === 'gerade' && !gerade) return;
         if (slot.kwTyp === 'ungerade' && gerade) return;
-
-        // Einzelausfälle prüfen
         const ausgefallen = (einzelAusfaelle || []).some(a =>
           a.kursId === kurs.id && a.datum === ds && a.stunde === slot.stunde
         );
         if (!ausgefallen) count++;
-        // Klassenarbeit belegt diese Stunde (zählt als verwendet)
-        // Bereits in count enthalten da Klassenarbeit eine reguläre Stunde ist
       });
     }
-    cur.setDate(cur.getDate() + 1);
+    cur.setUTCDate(cur.getUTCDate() + 1);
   }
-
   return count;
+}
+
+// ── Unterrichtsstunden pro Kurs berechnen ────────────────────────
+function berechneStunden(kurs, fp, schuljahr, ausfalltage, einzelAusfaelle, klassenarbeiten) {
+  const ferien = NRW_FERIEN[schuljahr] || [];
+  if (!ferien.length) return 0;
+  if (!kurs.stundenplan || kurs.stundenplan.length === 0) return null;
+
+  // Schuljahresbeginn: Tag nach den ersten Sommerferien
+  const start = strToDate(ferien[0].bis);
+  start.setUTCDate(start.getUTCDate() + 1);
+  // Schuljahresende: letzter Tag vor den letzten Sommerferien
+  const end = strToDate(ferien[ferien.length - 1].von);
+  end.setUTCDate(end.getUTCDate() - 1);
+
+  return _zaehleStunden(kurs, schuljahr, ausfalltage, einzelAusfaelle, start, end);
 }
 
 
@@ -152,35 +149,9 @@ function berechneRestStunden(kurs, fp, schuljahr, ausfalltage, einzelAusfaelle, 
   if (!ferien.length) return null;
   if (!kurs.stundenplan || kurs.stundenplan.length === 0) return null;
 
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  const start = today;
-  const end = bis;
-  if (start > end) return 0;
+  const start = new Date();
+  start.setUTCHours(0, 0, 0, 0);
+  if (start > bis) return 0;
 
-  let count = 0;
-  const cur = new Date(start);
-
-  while (cur <= end) {
-    if (isSchultag(cur, schuljahr, ausfalltage)) {
-      const dw = cur.getUTCDay();
-      const dwStr = ['', 'Mo', 'Di', 'Mi', 'Do', 'Fr'][dw];
-      const gerade = isGeradeKW(cur);
-      const ds = dateToStr(cur);
-
-      kurs.stundenplan.forEach(slot => {
-        if (slot.tag !== dwStr) return;
-        if (slot.kwTyp === 'gerade' && !gerade) return;
-        if (slot.kwTyp === 'ungerade' && gerade) return;
-        const ausgefallen = (einzelAusfaelle || []).some(a =>
-          a.kursId === kurs.id && a.datum === ds && a.stunde === slot.stunde
-        );
-        if (!ausgefallen) count++;
-        // Klassenarbeit belegt diese Stunde (zählt als verwendet)
-        // Bereits in count enthalten da Klassenarbeit eine reguläre Stunde ist
-      });
-    }
-    cur.setUTCDate(cur.getUTCDate() + 1);
-  }
-  return count;
+  return _zaehleStunden(kurs, schuljahr, ausfalltage, einzelAusfaelle, start, bis);
 }

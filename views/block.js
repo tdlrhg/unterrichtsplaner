@@ -2,6 +2,7 @@
 function viewBlock(kursId, blockId) {
   const kurs = getKurs(kursId);
   const block = findBlock(kursId, blockId);
+  if (!kurs || !block) { S.sel = null; render(); return mk('div', ''); }
   const div = mk('div', '');
 
   div.appendChild(breadcrumb([

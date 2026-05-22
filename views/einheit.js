@@ -4,6 +4,7 @@ function viewEinheit(kursId, blockId, reiheId, einheitId) {
   const block = findBlock(kursId, blockId);
   const reihe = findReihe(kursId, blockId, reiheId);
   const einheit = findEinheit(kursId, blockId, reiheId, einheitId);
+  if (!kurs || !block || !reihe || !einheit) { S.sel = null; render(); return mk('div', ''); }
   const div = mk('div', '');
 
   div.appendChild(breadcrumb([

@@ -1208,9 +1208,8 @@ Antworte NUR mit JSON (kein Text davor/danach):
       else if(selSide!==side){
         const kid=side==='kontext'?id:selId;
         const mid=side==='material'?id:selId;
-        if(matches.get(mid)===kid){ matches.delete(mid); }
-        else { matches.delete(mid); matches.set(mid,kid); }
-        selId=null; selSide=null;
+        if(matches.get(mid)===kid){ matches.delete(mid); selId=null; selSide=null; }
+        else { matches.delete(mid); matches.set(mid,kid); selId=kid; selSide='kontext'; }
       } else { selId=id; selSide=side; }
       renderMatchCards();
     }

@@ -1289,6 +1289,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
           newEntries.push({id:uid(),titel:seg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
             materialtyp:seg.type==='kontext'?'Kontext':'Arbeitsblatt',
             quelle:S.zsAusgabe,dateipfad:seg.r2Path,kontextPfad:null,
+            importiertAm:new Date().toISOString(),
             unterrichtsphase:[],sozialformenGeeignet:[],methodenGeeignet:[],blockId:null});
         }
         newEntries.forEach(e=>MATDB.push(e));
@@ -1331,8 +1332,8 @@ Antworte NUR mit JSON (kein Text davor/danach):
           const ktxSeg=kontextSegs.find(s=>s.id===kid);
           if(matSeg?.r2Path) newEntries.push({id:uid(),titel:matSeg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
             materialtyp:'Arbeitsblatt',quelle:S.zsAusgabe,dateipfad:matSeg.r2Path,
-            kontextPfad:ktxSeg?.r2Path||null,unterrichtsphase:[],sozialformenGeeignet:[],
-            methodenGeeignet:[],blockId:null});
+            kontextPfad:ktxSeg?.r2Path||null,importiertAm:new Date().toISOString(),
+            unterrichtsphase:[],sozialformenGeeignet:[],methodenGeeignet:[],blockId:null});
         }
         newEntries.forEach(e=>MATDB.push(e));
         await sbUpload('materialien.json',MATDB);

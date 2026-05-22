@@ -1223,26 +1223,21 @@ Antworte NUR mit JSON (kein Text davor/danach):
     renderMatchCards();
     loadThumbs();
 
-    // Upload: nur gematchte Paare, danach aus Liste entfernen
+    // Upload: gematchte Paare + alle restlichen Segmente nach R2 sichern
     uploadBtn.onclick=async()=>{
       if(!S.zsAusgabe){alert('Bitte Ausgabe-Name eingeben.');return;}
       uploadBtn.disabled=true;
       const folder=S.zsAusgabe.replace(/[/\\:*?"<>|]/g,'-');
-      const uploadedIds=new Set();
       try{
-        // Alle beteiligten Segmente (gematchte Materialien + ihre Kontexte) hochladen
-        const matchedMatIds=[...matches.keys()];
-        const matchedKtxIds=[...new Set([...matches.values()])];
-        const toUpload=S.zsSegments.filter(s=>matchedMatIds.includes(s.id)||matchedKtxIds.includes(s.id));
-        for(const seg of toUpload){
-          if(seg.r2Path){uploadedIds.add(seg.id);continue;} // bereits hochgeladen
+        // Alle Segmente nach R2 hochladen (falls noch nicht geschehen)
+        for(const seg of S.zsSegments.filter(s=>s.type!=='skip'&&!s.r2Path)){
           const subdir=seg.type==='kontext'?'kontexte':'materialien';
-          const path=subdir+'/'+folder+'/'+seg.name+'.pdf';
+          seg.r2Path=subdir+'/'+folder+'/'+seg.name+'.pdf';
           statusEl.textContent='Lade hoch: '+seg.name+'…';
-          await r2Upload(path,seg.blob,'application/pdf');
-          seg.r2Path=path; uploadedIds.add(seg.id);
+          await r2Upload(seg.r2Path,seg.blob,'application/pdf');
         }
-        // MATDB-Einträge für gematchte Materialien
+        // MATDB-Einträge nur für gematchte Materialien
+        const matchedMatIds=[...matches.keys()];
         const newEntries=[];
         for(const mid of matchedMatIds){
           const matSeg=materialSegs.find(s=>s.id===mid); if(!matSeg?.r2Path) continue;
@@ -1254,17 +1249,15 @@ Antworte NUR mit JSON (kein Text davor/danach):
         }
         newEntries.forEach(e=>MATDB.push(e));
         await sbUpload('materialien.json',MATDB);
-        // Hochgeladene Segmente aus S.zsSegments entfernen, Matches leeren
-        S.zsSegments=S.zsSegments.filter(s=>!uploadedIds.has(s.id));
+        // Gematchte Segmente aus der Liste entfernen, Matches leeren
+        const doneIds=new Set([...matchedMatIds,...matches.values()]);
+        S.zsSegments=S.zsSegments.filter(s=>!doneIds.has(s.id));
         matches.clear(); selId=null; selSide=null;
-        statusEl.textContent='✓ '+newEntries.length+' Einträge angelegt';
+        const restliche=S.zsSegments.filter(s=>s.type!=='skip').length;
+        statusEl.textContent='✓ '+newEntries.length+' Einträge angelegt'+(restliche?' · '+restliche+' gesichert, noch nicht gematcht':'');
         statusEl.style.color='var(--grn)';
-        if(S.zsSegments.filter(s=>s.type!=='skip').length===0){
-          S.zsAusgabe=''; uploadBtn.textContent='✓ Fertig';
-        } else {
-          // Noch ungematchte Segmente vorhanden → View neu aufbauen
-          goto(14);
-        }
+        if(restliche===0){ S.zsAusgabe=''; uploadBtn.textContent='✓ Fertig'; }
+        else { goto(14); }
       }catch(e){statusEl.textContent='✗ '+e.message;statusEl.style.color='#dc2626';uploadBtn.disabled=false;}
     };
   }

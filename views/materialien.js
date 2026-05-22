@@ -1146,10 +1146,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
     statusRow.appendChild(uploadBtn); statusRow.appendChild(statusEl); statusRow.appendChild(backBtn3);
     body.appendChild(statusRow);
 
-    function updateUploadBtn(){
-      uploadBtn.disabled=!S.zsAusgabe||S.zsSegments.filter(s=>s.type!=='skip').length===0;
-    }
-    updateUploadBtn();
+    function updateUploadBtn(){ updateUploadLabel(); }
 
     function makeCard(seg, side) {
       const isKtx=side==='kontext';
@@ -1183,6 +1180,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
       kontextSegs.forEach(seg=>leftCards.appendChild(makeCard(seg,'kontext')));
       materialSegs.forEach(seg=>rightCards.appendChild(makeCard(seg,'material')));
       statusEl.textContent=matches.size>0?matches.size+' Paar'+(matches.size>1?'e':'')+' verbunden':'';
+      updateUploadLabel();
     }
 
     function handleClick(id,side){
@@ -1216,27 +1214,39 @@ Antworte NUR mit JSON (kein Text davor/danach):
       }
     }
 
+    function updateUploadLabel(){
+      const n=matches.size;
+      uploadBtn.textContent=n>0?`📤 ${n} Paar${n>1?'e':''} hochladen`:'📤 Hochladen';
+      uploadBtn.disabled=!S.zsAusgabe||n===0;
+    }
+
     renderMatchCards();
     loadThumbs();
 
-    // Upload
+    // Upload: nur gematchte Paare, danach aus Liste entfernen
     uploadBtn.onclick=async()=>{
       if(!S.zsAusgabe){alert('Bitte Ausgabe-Name eingeben.');return;}
       uploadBtn.disabled=true;
       const folder=S.zsAusgabe.replace(/[/\\:*?"<>|]/g,'-');
+      const uploadedIds=new Set();
       try{
-        for(const seg of S.zsSegments.filter(s=>s.type!=='skip')){
+        // Alle beteiligten Segmente (gematchte Materialien + ihre Kontexte) hochladen
+        const matchedMatIds=[...matches.keys()];
+        const matchedKtxIds=[...new Set([...matches.values()])];
+        const toUpload=S.zsSegments.filter(s=>matchedMatIds.includes(s.id)||matchedKtxIds.includes(s.id));
+        for(const seg of toUpload){
+          if(seg.r2Path){uploadedIds.add(seg.id);continue;} // bereits hochgeladen
           const subdir=seg.type==='kontext'?'kontexte':'materialien';
           const path=subdir+'/'+folder+'/'+seg.name+'.pdf';
           statusEl.textContent='Lade hoch: '+seg.name+'…';
           await r2Upload(path,seg.blob,'application/pdf');
-          seg.r2Path=path;
+          seg.r2Path=path; uploadedIds.add(seg.id);
         }
+        // MATDB-Einträge für gematchte Materialien
         const newEntries=[];
-        for(const matSeg of materialSegs){
-          if(!matSeg.r2Path) continue;
-          const kid=matches.get(matSeg.id);
-          const ktxSeg=kid?kontextSegs.find(s=>s.id===kid):null;
+        for(const mid of matchedMatIds){
+          const matSeg=materialSegs.find(s=>s.id===mid); if(!matSeg?.r2Path) continue;
+          const ktxSeg=kontextSegs.find(s=>s.id===matches.get(mid));
           newEntries.push({id:uid(),titel:matSeg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
             materialtyp:'material',quelle:S.zsAusgabe,dateipfad:matSeg.r2Path,
             kontextPfad:ktxSeg?.r2Path||null,unterrichtsphase:[],sozialformenGeeignet:[],
@@ -1244,10 +1254,17 @@ Antworte NUR mit JSON (kein Text davor/danach):
         }
         newEntries.forEach(e=>MATDB.push(e));
         await sbUpload('materialien.json',MATDB);
-        statusEl.textContent='✓ '+S.zsSegments.filter(s=>s.type!=='skip').length+' Dateien, '+newEntries.length+' Einträge';
-        statusEl.style.color='var(--grn)'; uploadBtn.textContent='✓ Fertig';
-        S.zsSegments=[]; S.zsAusgabe='';
-        renderCards();
+        // Hochgeladene Segmente aus S.zsSegments entfernen, Matches leeren
+        S.zsSegments=S.zsSegments.filter(s=>!uploadedIds.has(s.id));
+        matches.clear(); selId=null; selSide=null;
+        statusEl.textContent='✓ '+newEntries.length+' Einträge angelegt';
+        statusEl.style.color='var(--grn)';
+        if(S.zsSegments.filter(s=>s.type!=='skip').length===0){
+          S.zsAusgabe=''; uploadBtn.textContent='✓ Fertig';
+        } else {
+          // Noch ungematchte Segmente vorhanden → View neu aufbauen
+          goto(14);
+        }
       }catch(e){statusEl.textContent='✗ '+e.message;statusEl.style.color='#dc2626';uploadBtn.disabled=false;}
     };
   }

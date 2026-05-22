@@ -114,7 +114,7 @@ function buildSetup() {
   MATDB = Array.isArray(matdb) ? matdb : [];
   KLPDB = Array.isArray(klpdb) ? klpdb : [];
   METHDB = Array.isArray(methdb) ? methdb : [];
-  DIDAKTIKDB = (didaktik && typeof didaktik === 'object' && !Array.isArray(didaktik)) ? didaktik : {};
+  DIDAKTIKDB = Array.isArray(didaktik) ? didaktik : [];
 
   // ── Migration: EF/Q1/Q2 → SII ────────────────────────────────
   const SII_OLD = new Set(['EF', 'Q1', 'Q2']);

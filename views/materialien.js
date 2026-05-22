@@ -952,7 +952,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
   function step13() {
     stepEl.textContent = 'PDF aufteilen';
     const SPLIT_COLORS = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6'];
-    const TYPE_OPTS = [{key:'kontext',label:'📋 Kontext'},{key:'material',label:'📄 Material'},{key:'skip',label:'⊘ Skip'}];
+    const TYPE_OPTS = [{key:'kontext',label:'📋 Kontext'},{key:'material',label:'📄 Material'},{key:'didaktik',label:'🎓 Didaktik'},{key:'skip',label:'⊘ Skip'}];
 
     // ── Ausgabe-Name ──
     const ausgabeWrap = mk('div',''); ausgabeWrap.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:20px;';
@@ -1104,6 +1104,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
     const MATCH_COLORS=['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6','#0ea5e9'];
     const kontextSegs=S.zsSegments.filter(s=>s.type==='kontext');
     const materialSegs=S.zsSegments.filter(s=>s.type==='material');
+    const didaktikSegs=S.zsSegments.filter(s=>s.type==='didaktik');
 
     // Ausgabe-Name
     const ausgabeWrap=mk('div',''); ausgabeWrap.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:16px;';
@@ -1137,13 +1138,29 @@ Antworte NUR mit JSON (kein Text davor/danach):
     cols.appendChild(leftWrap); cols.appendChild(rightWrap);
     body.appendChild(cols);
 
+    // Didaktik-Sektion
+    if(didaktikSegs.length>0){
+      const dSec=mk('div',''); dSec.style.cssText='margin-top:16px;padding:12px;border:1px solid var(--bord);border-radius:8px;background:var(--surf);';
+      const dHdr=tx('div','',`🎓 Didaktik-Artikel (${didaktikSegs.length}) – werden als Wissenstext gespeichert`);
+      dHdr.style.cssText='font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:8px;';
+      dSec.appendChild(dHdr);
+      didaktikSegs.forEach(seg=>{
+        const row=tx('div','',seg.name); row.style.cssText='font-size:12px;color:var(--tx2);padding:2px 0;';
+        dSec.appendChild(row);
+      });
+      body.appendChild(dSec);
+    }
+
     // Status + Buttons
     const statusRow=mk('div',''); statusRow.style.cssText='display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap;';
     const statusEl=tx('span','','');
     const uploadBtn=btn('📤 Hochladen','btn btn-pri btn-sm'); uploadBtn.disabled=true;
+    const didaktikBtn=didaktikSegs.length>0?btn(`🎓 ${didaktikSegs.length} Didaktik hochladen`,'btn btn-ghost btn-sm'):null;
     const restBtn=btn('📤 Restliche einzeln hochladen','btn btn-ghost btn-sm');
     const backBtn3=btn('← Zurück','btn btn-ghost btn-sm'); backBtn3.onclick=()=>goto(13);
-    statusRow.appendChild(uploadBtn); statusRow.appendChild(restBtn); statusRow.appendChild(statusEl); statusRow.appendChild(backBtn3);
+    statusRow.appendChild(uploadBtn);
+    if(didaktikBtn) statusRow.appendChild(didaktikBtn);
+    statusRow.appendChild(restBtn); statusRow.appendChild(statusEl); statusRow.appendChild(backBtn3);
     body.appendChild(statusRow);
 
     function updateUploadBtn(){ updateUploadLabel(); }
@@ -1226,6 +1243,34 @@ Antworte NUR mit JSON (kein Text davor/danach):
 
     renderMatchCards();
     loadThumbs();
+
+    // Didaktik-Artikel hochladen
+    if(didaktikBtn) didaktikBtn.onclick=async()=>{
+      if(!S.zsAusgabe){ ausgabeInp.focus(); statusEl.textContent='⚠ Bitte zuerst den Ausgabe-Namen eingeben.'; statusEl.style.color='#dc2626'; return; }
+      didaktikBtn.disabled=true;
+      const folder=S.zsAusgabe.replace(/[/\\:*?"<>|]/g,'-');
+      try{
+        const newEntries=[];
+        for(const seg of didaktikSegs){
+          statusEl.textContent='🎓 '+seg.name+'…';
+          if(!seg.r2Path){
+            seg.r2Path='didaktik/'+folder+'/'+seg.name+'.pdf';
+            await r2Upload(seg.r2Path,seg.blob,'application/pdf');
+          }
+          statusEl.textContent='🎓 Text extrahieren: '+seg.name+'…';
+          const text=await extractPdfText(seg.blob);
+          newEntries.push({id:uid(),titel:seg.name,themen:[],quelle:S.zsAusgabe,
+            dateipfad:seg.r2Path,text,importiertAm:new Date().toISOString()});
+        }
+        newEntries.forEach(e=>DIDAKTIKDB.push(e));
+        await sbUpload('didaktik.json',DIDAKTIKDB);
+        const didIds=new Set(didaktikSegs.map(s=>s.id));
+        S.zsSegments=S.zsSegments.filter(s=>!didIds.has(s.id));
+        statusEl.textContent='✓ '+newEntries.length+' Didaktik-Artikel gespeichert';
+        statusEl.style.color='var(--grn)';
+        goto(14);
+      }catch(e){ statusEl.textContent='✗ '+e.message; statusEl.style.color='#dc2626'; didaktikBtn.disabled=false; }
+    };
 
     // Restliche (ungematchte) Segmente einzeln hochladen
     restBtn.onclick=async()=>{
@@ -1909,6 +1954,23 @@ function viewMaterialien() {
 
 function saveMatDB() {
   sbUpload('materialien.json', MATDB).catch(e => console.error('Speichern fehlgeschlagen:', e));
+}
+function saveDDB() {
+  sbUpload('didaktik.json', DIDAKTIKDB).catch(e => console.error('Didaktik speichern fehlgeschlagen:', e));
+}
+
+async function extractPdfText(blob) {
+  try {
+    const buf = await blob.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+    const lines = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      lines.push(content.items.map(it => it.str).join(' '));
+    }
+    return lines.join('\n').trim();
+  } catch(e) { return ''; }
 }
 
 // ── Detail-Overlay öffnen ────────────────────────────────────────

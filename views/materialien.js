@@ -1686,11 +1686,50 @@ function viewMaterialien() {
 
   // ── Karten-Grid ──────────────────────────────────────────────
   const gridWrap = mk('div', '');
-  const countRow = tx('div', 'matc-count', '');
+  const countRow = mk('div', 'matc-count');
+  countRow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
+  const countTxt = tx('span', '', '');
+  const selToggle = btn('Auswählen', 'btn btn-ghost btn-xs');
+  const bulkDelBtn = btn('', 'btn btn-danger btn-xs');
+  bulkDelBtn.style.display = 'none';
+  countRow.appendChild(countTxt);
+  countRow.appendChild(selToggle);
+  countRow.appendChild(bulkDelBtn);
   gridWrap.appendChild(countRow);
   const grid = mk('div', 'matc-grid');
   gridWrap.appendChild(grid);
   div.appendChild(gridWrap);
+
+  let selMode = false;
+  const selIds = new Set();
+
+  selToggle.onclick = () => {
+    selMode = !selMode;
+    selIds.clear();
+    selToggle.textContent = selMode ? 'Abbrechen' : 'Auswählen';
+    selToggle.className = selMode ? 'btn btn-ghost btn-xs' : 'btn btn-ghost btn-xs';
+    bulkDelBtn.style.display = 'none';
+    renderCards();
+  };
+
+  function updateBulkBtn() {
+    const n = selIds.size;
+    if (n === 0) { bulkDelBtn.style.display = 'none'; return; }
+    bulkDelBtn.textContent = n + (n === 1 ? ' Eintrag löschen' : ' Einträge löschen');
+    bulkDelBtn.style.display = '';
+  }
+
+  bulkDelBtn.onclick = () => {
+    const n = selIds.size;
+    if (!confirm(n + (n === 1 ? ' Eintrag' : ' Einträge') + ' löschen?')) return;
+    MATDB = MATDB.filter(m => !selIds.has(m.id));
+    selIds.clear();
+    saveMatDB();
+    selMode = false;
+    selToggle.textContent = 'Auswählen';
+    bulkDelBtn.style.display = 'none';
+    renderCards();
+  };
 
   function filteredList() {
     const q = si.value.toLowerCase().trim();
@@ -1712,7 +1751,7 @@ function viewMaterialien() {
   function renderCards() {
     grid.innerHTML = '';
     const hits = filteredList();
-    countRow.textContent = hits.length + ' von ' + MATDB.length + ' Materialien';
+    countTxt.textContent = hits.length + ' von ' + MATDB.length + ' Materialien';
     if (!hits.length) {
       const empty = tx('div', '', 'Keine Einträge gefunden.');
       empty.style.cssText = 'padding:20px;color:var(--tx3);grid-column:1/-1;';
@@ -1774,7 +1813,7 @@ function viewMaterialien() {
         if (!confirm('„' + mat.titel + '" löschen?')) return;
         MATDB = MATDB.filter(m => m.id !== mat.id);
         saveMatDB(); card.remove();
-        countRow.textContent = filteredList().length + ' von ' + MATDB.length + ' Materialien';
+        countTxt.textContent = filteredList().length + ' von ' + MATDB.length + ' Materialien';
       };
       cardHdr.appendChild(delBtn);
       card.appendChild(cardHdr);
@@ -1810,7 +1849,17 @@ function viewMaterialien() {
         card.appendChild(footer);
       }
 
-      card.onclick = () => openMatOverlay(mat, card, overlay, panel, panTitle, renderCards);
+      if (selMode) {
+        const isSel = selIds.has(mat.id);
+        card.style.outline = isSel ? '3px solid #6366f1' : '';
+        card.style.background = isSel ? '#ede9fe' : '';
+        card.onclick = () => {
+          if (selIds.has(mat.id)) selIds.delete(mat.id); else selIds.add(mat.id);
+          updateBulkBtn(); renderCards();
+        };
+      } else {
+        card.onclick = () => openMatOverlay(mat, card, overlay, panel, panTitle, renderCards);
+      }
       grid.appendChild(card);
     });
   }

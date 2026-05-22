@@ -1,3 +1,5 @@
+let VERSION = null; // set at startup from version.json
+
 // ── Nav-State persistieren ────────────────────────────────────────
 const NAV_KEY = 'up_nav';
 function saveNav() {
@@ -60,6 +62,12 @@ function buildTopbar() {
   } else if (S.loaded) {
     right.appendChild(tx('span', '', '✓ Gespeichert'));
   }
+  if (VERSION) {
+    const d = new Date(VERSION);
+    const label = d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'2-digit' })
+      + ' ' + d.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+    right.appendChild(tx('span', 'topbar-version', label));
+  }
   bar.appendChild(right);
   return bar;
 }
@@ -81,6 +89,9 @@ function buildSetup() {
 // ── Init ─────────────────────────────────────────────────────────
 (async () => {
   render();
+  fetch('version.json?t=' + Date.now())
+    .then(r => r.json()).then(v => { VERSION = v.built; refreshTopbar(); }).catch(() => {});
+
   const [loaded, matdb, klpdb, didaktik, methdb] = await Promise.all([
     sbDownload('data.json').catch(() => null),
     sbDownload('materialien.json').catch(() => []),

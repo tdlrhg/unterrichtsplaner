@@ -354,10 +354,9 @@ Antworte NUR mit JSON (kein Text davor/danach):
                 const enriched = JSON.parse(match[0]);
                 const idx = MATDB.findIndex(m => m.id === entry.id);
                 if (idx >= 0) {
-                  const { quelle, materialnummer, r2key, r2url, kontextR2key, seiten, importiertAm, id } = MATDB[idx];
+                  const { quelle, materialnummer, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id } = MATDB[idx];
                   Object.assign(MATDB[idx], enriched);
-                  // materialnummer: vorhandenen Wert bewahren, sonst KI-Wert behalten
-                  const keepFields = { quelle, r2key, r2url, kontextR2key, seiten, importiertAm, id };
+                  const keepFields = { quelle, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id };
                   if (materialnummer) keepFields.materialnummer = materialnummer;
                   Object.assign(MATDB[idx], keepFields);
                 }
@@ -880,8 +879,8 @@ Antworte NUR mit JSON (kein Text davor/danach):
                   const enriched = JSON.parse(match[0]);
                   const idx = MATDB.findIndex(m => m.id === entry.id);
                   if (idx >= 0) {
-                    const { quelle, materialnummer, r2key, r2url, kontextR2key: krk, seiten, importiertAm, id } = MATDB[idx];
-                    const keep = { quelle, r2key, r2url, kontextR2key: krk, seiten, importiertAm, id };
+                    const { quelle, materialnummer, r2key, r2url, kontextR2key: krk, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id } = MATDB[idx];
+                    const keep = { quelle, r2key, r2url, kontextR2key: krk, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id };
                     if (materialnummer) keep.materialnummer = materialnummer;
                     Object.assign(MATDB[idx], enriched, keep);
                   }
@@ -1325,15 +1324,23 @@ Antworte NUR mit JSON (kein Text davor/danach):
           statusEl.textContent='Lade hoch: '+seg.name+'…';
           await r2Upload(seg.r2Path,seg.blob,'application/pdf');
         }
-        // MATDB-Einträge nur für die gematchten Segmente
-        const newEntries=[];
+        // MATDB-Einträge: nach Kontext gruppieren → ein Eintrag pro Kontext
+        const byKid=new Map(); // kid → [matSeg, ...]
         for(const [mid,kid] of matches){
           const matSeg=materialSegs.find(s=>s.id===mid);
+          if(!byKid.has(kid)) byKid.set(kid,[]);
+          if(matSeg?.r2Path) byKid.get(kid).push(matSeg);
+        }
+        const newEntries=[];
+        for(const [kid,mats] of byKid){
           const ktxSeg=kontextSegs.find(s=>s.id===kid);
-          if(matSeg?.r2Path) newEntries.push({id:uid(),titel:matSeg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
-            materialtyp:'Arbeitsblatt',quelle:S.zsAusgabe,dateipfad:matSeg.r2Path,
+          const [first,...rest]=mats;
+          const entry={id:uid(),titel:first.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
+            materialtyp:'Arbeitsblatt',quelle:S.zsAusgabe,dateipfad:first.r2Path,
             kontextPfad:ktxSeg?.r2Path||null,importiertAm:new Date().toISOString(),
-            unterrichtsphase:[],sozialformenGeeignet:[],methodenGeeignet:[],blockId:null});
+            unterrichtsphase:[],sozialformenGeeignet:[],methodenGeeignet:[],blockId:null};
+          if(rest.length) entry.dateipfadeWeitere=rest.map(m=>m.r2Path);
+          newEntries.push(entry);
         }
         newEntries.forEach(e=>MATDB.push(e));
         await sbUpload('materialien.json',MATDB);
@@ -2047,6 +2054,34 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
     prevWrap.appendChild(prevBtn);
     prevWrap.appendChild(prevPages);
     body.appendChild(prevWrap);
+
+    // Weitere Dateien
+    (mat.dateipfadeWeitere || []).forEach((wKey, i) => {
+      const wWrap = mk('div', 'mat-detail-preview');
+      const wBtn = btn(`👁 Datei ${i + 2} laden`, 'btn btn-ghost btn-xs');
+      const wPages = mk('div', 'mat-detail-preview-pages');
+      wBtn.onclick = async () => {
+        wBtn.disabled = true; wBtn.textContent = '⏳ Lade…';
+        try {
+          const buf = await r2Download(wKey);
+          const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+          wPages.innerHTML = '';
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const vp0 = page.getViewport({ scale: 1 });
+            const vp = page.getViewport({ scale: 280 / vp0.width });
+            const cv = document.createElement('canvas');
+            cv.width = vp.width; cv.height = vp.height;
+            await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+            cv.className = 'mat-detail-preview-thumb';
+            wPages.appendChild(cv);
+          }
+          wBtn.remove();
+        } catch(e2) { wBtn.textContent = '⚠ ' + e2.message; wBtn.disabled = false; }
+      };
+      wWrap.appendChild(wBtn); wWrap.appendChild(wPages);
+      body.appendChild(wWrap);
+    });
   }
 
   // Teil von Einheit
@@ -2310,6 +2345,13 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
         reBtn.textContent = '⏳ Lade Material…';
         const matURLs = await pdfBufToDataURLs(await r2Download(_matKey));
 
+        const weitereURLs = [];
+        for (const wKey of (mat.dateipfadeWeitere || [])) {
+          reBtn.textContent = '⏳ Lade Datei 2…';
+          const urls = await pdfBufToDataURLs(await r2Download(wKey));
+          weitereURLs.push(...urls);
+        }
+
         let ktxURLs = [];
         const _ktxKey = mat.kontextR2key || mat.kontextPfad;
         if (_ktxKey) {
@@ -2322,6 +2364,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
         if (ktxURLs.length) { content.push({ type: 'text', text: '=== KONTEXT ===' }); ktxURLs.forEach(u => content.push(toImgContent(u))); }
         content.push({ type: 'text', text: '=== MATERIAL ===' });
         matURLs.forEach(u => content.push(toImgContent(u)));
+        if (weitereURLs.length) { content.push({ type: 'text', text: '=== WEITERES MATERIAL ===' }); weitereURLs.forEach(u => content.push(toImgContent(u))); }
         const blockTitelRe = getBlockTitel(mat.blockId);
         content.push({ type: 'text', text: `Analysiere dieses Unterrichtsmaterial für eine NRW-Gymnasiallehrerin.
 Bekannt: Fach=${(mat.fach||[]).join(',')}, Typ=${mat.materialtyp}, Dateiname=${mat.titel}${blockTitelRe ? ', Themenblock="'+blockTitelRe+'"' : ''}
@@ -2348,8 +2391,8 @@ Antworte NUR mit JSON (kein Text davor/danach):
           const enriched = JSON.parse(match[0]);
           const idx = MATDB.findIndex(m => m.id === mat.id);
           if (idx >= 0) {
-            const keep = (({ quelle, materialnummer, r2key, r2url, kontextR2key, dateipfad, kontextPfad, seiten, importiertAm, id }) =>
-              ({ quelle, materialnummer: materialnummer || null, r2key, r2url, kontextR2key, dateipfad, kontextPfad, seiten, importiertAm, id }))(MATDB[idx]);
+            const keep = (({ quelle, materialnummer, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id }) =>
+              ({ quelle, materialnummer: materialnummer || null, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id }))(MATDB[idx]);
             // Materialnummer: KI-Wert übernehmen wenn noch nicht gesetzt
             if (!keep.materialnummer) delete keep.materialnummer;
             Object.assign(MATDB[idx], enriched, keep);

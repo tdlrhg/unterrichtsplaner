@@ -104,17 +104,19 @@ function buildSetup() {
     refreshTopbar();
   });
 
-  const [loaded, matdb, klpdb, didaktik, methdb] = await Promise.all([
+  const [loaded, matdb, klpdb, didaktik, methdb, didart] = await Promise.all([
     sbDownload('data.json').catch(() => null),
     sbDownload('materialien.json').catch(() => []),
     sbDownload('klp.json').catch(() => []),
     sbDownload('didaktik.json').catch(() => ({})),
     sbDownload('methoden.json').catch(() => []),
+    sbDownload('didaktik-artikel.json').catch(() => []),
   ]);
   MATDB = Array.isArray(matdb) ? matdb : [];
   KLPDB = Array.isArray(klpdb) ? klpdb : [];
   METHDB = Array.isArray(methdb) ? methdb : [];
-  DIDAKTIKDB = Array.isArray(didaktik) ? didaktik : [];
+  DIDAKTIKDB = (didaktik && typeof didaktik === 'object' && !Array.isArray(didaktik)) ? didaktik : {};
+  DIDARTDB = Array.isArray(didart) ? didart : [];
 
   // ── Migration: EF/Q1/Q2 → SII ────────────────────────────────
   const SII_OLD = new Set(['EF', 'Q1', 'Q2']);

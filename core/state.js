@@ -10,6 +10,9 @@ let KLPDB = [];
 // ── Didaktik-Wissensmodell ────────────────────────────────────────
 let DIDAKTIKDB = {};
 
+// ── Didaktik-Artikel (aus Zeitschriften) ─────────────────────────
+let DIDARTDB = [];
+
 // ── State ────────────────────────────────────────────────────────
 const S = {
   data: null,        // { fachplanungen: [], kurse: [] }

@@ -1,7 +1,6 @@
 // ── Materialien-Datenbank ─────────────────────────────────────────
 let _kontextFiles  = [];
 let _uploadPdfFile = null;
-let _uploadPdfDoc  = null;
 
 function getBlockTitel(blockId) {
   if (!blockId) return null;
@@ -433,7 +432,6 @@ Antworte NUR mit JSON (kein Text davor/danach):
       if (typeof pdfjsLib === 'undefined') throw new Error('PDF.js nicht geladen.');
       const buf = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-      _uploadPdfDoc = pdf;
       thumbsWrap.innerHTML = '';
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
@@ -1262,8 +1260,8 @@ Antworte NUR mit JSON (kein Text davor/danach):
           newEntries.push({id:uid(),titel:seg.name,themen:[],quelle:S.zsAusgabe,
             dateipfad:seg.r2Path,text,importiertAm:new Date().toISOString()});
         }
-        newEntries.forEach(e=>DIDAKTIKDB.push(e));
-        await sbUpload('didaktik.json',DIDAKTIKDB);
+        newEntries.forEach(e=>DIDARTDB.push(e));
+        await sbUpload('didaktik-artikel.json',DIDARTDB);
         const didIds=new Set(didaktikSegs.map(s=>s.id));
         S.zsSegments=S.zsSegments.filter(s=>!didIds.has(s.id));
         statusEl.textContent='✓ '+newEntries.length+' Didaktik-Artikel gespeichert';
@@ -1956,7 +1954,7 @@ function saveMatDB() {
   sbUpload('materialien.json', MATDB).catch(e => console.error('Speichern fehlgeschlagen:', e));
 }
 function saveDDB() {
-  sbUpload('didaktik.json', DIDAKTIKDB).catch(e => console.error('Didaktik speichern fehlgeschlagen:', e));
+  sbUpload('didaktik-artikel.json', DIDARTDB).catch(e => console.error('Didaktik-Artikel speichern fehlgeschlagen:', e));
 }
 
 async function extractPdfText(blob) {

@@ -1223,35 +1223,41 @@ Antworte NUR mit JSON (kein Text davor/danach):
     renderMatchCards();
     loadThumbs();
 
-    // Upload: gematchte Paare + alle restlichen Segmente nach R2 sichern
+    // Upload: alle Segmente nach R2, MATDB-Einträge für alle außer Skip
     uploadBtn.onclick=async()=>{
       if(!S.zsAusgabe){alert('Bitte Ausgabe-Name eingeben.');return;}
       uploadBtn.disabled=true;
       const folder=S.zsAusgabe.replace(/[/\\:*?"<>|]/g,'-');
       try{
-        // Alle Segmente nach R2 hochladen (falls noch nicht geschehen)
+        // Alle Segmente nach R2 hochladen
         for(const seg of S.zsSegments.filter(s=>s.type!=='skip'&&!s.r2Path)){
           const subdir=seg.type==='kontext'?'kontexte':'materialien';
           seg.r2Path=subdir+'/'+folder+'/'+seg.name+'.pdf';
           statusEl.textContent='Lade hoch: '+seg.name+'…';
           await r2Upload(seg.r2Path,seg.blob,'application/pdf');
         }
-        // MATDB-Einträge nur für gematchte Materialien
+        // MATDB-Einträge für alle Segmente
         const matchedMatIds=[...matches.keys()];
+        const matchedKtxIds=new Set([...matches.values()]);
         const newEntries=[];
-        for(const mid of matchedMatIds){
-          const matSeg=materialSegs.find(s=>s.id===mid); if(!matSeg?.r2Path) continue;
-          const ktxSeg=kontextSegs.find(s=>s.id===matches.get(mid));
-          newEntries.push({id:uid(),titel:matSeg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
-            materialtyp:'material',quelle:S.zsAusgabe,dateipfad:matSeg.r2Path,
-            kontextPfad:ktxSeg?.r2Path||null,unterrichtsphase:[],sozialformenGeeignet:[],
-            methodenGeeignet:[],blockId:null});
+        for(const seg of S.zsSegments.filter(s=>s.type!=='skip'&&s.r2Path)){
+          if(seg.type==='material'){
+            const ktxSeg=kontextSegs.find(s=>s.id===matches.get(seg.id));
+            newEntries.push({id:uid(),titel:seg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
+              materialtyp:'Arbeitsblatt',quelle:S.zsAusgabe,dateipfad:seg.r2Path,
+              kontextPfad:ktxSeg?.r2Path||null,unterrichtsphase:[],sozialformenGeeignet:[],
+              methodenGeeignet:[],blockId:null});
+          } else if(seg.type==='kontext'){
+            newEntries.push({id:uid(),titel:seg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
+              materialtyp:'Kontext',quelle:S.zsAusgabe,dateipfad:seg.r2Path,
+              kontextPfad:null,unterrichtsphase:[],sozialformenGeeignet:[],
+              methodenGeeignet:[],blockId:null});
+          }
         }
         newEntries.forEach(e=>MATDB.push(e));
         await sbUpload('materialien.json',MATDB);
-        // Gematchte Segmente aus der Liste entfernen, Matches leeren
-        const doneIds=new Set([...matchedMatIds,...matches.values()]);
-        S.zsSegments=S.zsSegments.filter(s=>!doneIds.has(s.id));
+        // Alle hochgeladenen Segmente entfernen
+        S.zsSegments=S.zsSegments.filter(s=>s.type==='skip'||!s.r2Path);
         matches.clear(); selId=null; selSide=null;
         const restliche=S.zsSegments.filter(s=>s.type!=='skip').length;
         statusEl.textContent='✓ '+newEntries.length+' Einträge angelegt'+(restliche?' · '+restliche+' gesichert, noch nicht gematcht':'');

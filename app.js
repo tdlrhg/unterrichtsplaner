@@ -1,4 +1,5 @@
-let VERSION = null; // set at startup from version.json
+let VERSION = null;       // built timestamp from version.json
+let VERSION_STATUS = null; // 'current' | 'deploying' | null
 
 // ── Nav-State persistieren ────────────────────────────────────────
 const NAV_KEY = 'up_nav';
@@ -66,7 +67,8 @@ function buildTopbar() {
     const d = new Date(VERSION);
     const label = d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'2-digit' })
       + ' ' + d.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
-    right.appendChild(tx('span', 'topbar-version', label));
+    const indicator = VERSION_STATUS === 'current' ? ' ✓' : VERSION_STATUS === 'deploying' ? ' ⏳' : '';
+    right.appendChild(tx('span', 'topbar-version', label + indicator));
   }
   bar.appendChild(right);
   return bar;
@@ -89,8 +91,18 @@ function buildSetup() {
 // ── Init ─────────────────────────────────────────────────────────
 (async () => {
   render();
-  fetch('version.json?t=' + Date.now())
-    .then(r => r.json()).then(v => { VERSION = v.built; refreshTopbar(); }).catch(() => {});
+  Promise.all([
+    fetch('version.json?t=' + Date.now()).then(r => r.json()).catch(() => null),
+    fetch('https://api.github.com/repos/tdlrhg/unterrichtsplaner/commits/main',
+      { headers: { 'Accept': 'application/vnd.github.v3+json' } }).then(r => r.json()).catch(() => null)
+  ]).then(([v, gh]) => {
+    if (!v) return;
+    VERSION = v.built;
+    if (gh?.commit?.committer?.date) {
+      VERSION_STATUS = new Date(v.built) >= new Date(gh.commit.committer.date) ? 'current' : 'deploying';
+    }
+    refreshTopbar();
+  });
 
   const [loaded, matdb, klpdb, didaktik, methdb] = await Promise.all([
     sbDownload('data.json').catch(() => null),

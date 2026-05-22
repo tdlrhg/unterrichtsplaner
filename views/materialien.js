@@ -1274,20 +1274,21 @@ Antworte NUR mit JSON (kein Text davor/danach):
     restBtn.onclick=async()=>{
       if(!S.zsAusgabe){ ausgabeInp.focus(); statusEl.textContent='⚠ Bitte zuerst den Ausgabe-Namen eingeben.'; statusEl.style.color='#dc2626'; return; }
       const matchedIds=new Set([...matches.keys(),...matches.values()]);
-      const rest=S.zsSegments.filter(s=>s.type!=='skip'&&s.type!=='kontext'&&!matchedIds.has(s.id));
-      if(!rest.length){ statusEl.textContent='Keine ungematchten Segmente (Kontext-Segmente bitte matchen oder als Didaktik markieren).'; return; }
+      const rest=S.zsSegments.filter(s=>s.type!=='skip'&&!matchedIds.has(s.id));
+      if(!rest.length){ statusEl.textContent='Keine ungematchten Segmente.'; return; }
       restBtn.disabled=true;
       const folder=S.zsAusgabe.replace(/[/\\:*?"<>|]/g,'-');
       try{
         for(const seg of rest.filter(s=>!s.r2Path)){
-          seg.r2Path='materialien/'+folder+'/'+seg.name+'.pdf';
+          const subdir=seg.type==='kontext'?'kontexte':'materialien';
+          seg.r2Path=subdir+'/'+folder+'/'+seg.name+'.pdf';
           statusEl.textContent='Lade hoch: '+seg.name+'…';
           await r2Upload(seg.r2Path,seg.blob,'application/pdf');
         }
         const newEntries=[];
         for(const seg of rest.filter(s=>s.r2Path)){
           newEntries.push({id:uid(),titel:seg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
-            materialtyp:'Arbeitsblatt',
+            materialtyp:seg.type==='kontext'?'Kontext':'Arbeitsblatt',
             quelle:S.zsAusgabe,dateipfad:seg.r2Path,kontextPfad:null,
             unterrichtsphase:[],sozialformenGeeignet:[],methodenGeeignet:[],blockId:null});
         }

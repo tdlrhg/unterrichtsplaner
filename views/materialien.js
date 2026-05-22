@@ -2090,14 +2090,15 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
     const ktxSection = mk('div', 'mat-detail-ktx');
     const ktxHdr = mk('div', 'mat-detail-ktx-hdr');
     ktxHdr.appendChild(tx('span', 'mat-detail-label', 'Kontext-Datei'));
-    const ktxKey = tx('span', 'mat-detail-ktx-key', mat.kontextR2key ? '📎 ' + mat.kontextR2key.split('/').pop() : 'keine');
+    const _ktxDisplay = mat.kontextR2key || mat.kontextPfad;
+    const ktxKey = tx('span', 'mat-detail-ktx-key', _ktxDisplay ? '📎 ' + _ktxDisplay.split('/').pop() : 'keine');
     ktxHdr.appendChild(ktxKey);
     const ktxPickBtn = btn('📂 Aus R2 wählen', 'btn btn-ghost btn-xs');
     const ktxClearBtn = btn('✕', 'btn btn-ghost btn-xs');
     ktxClearBtn.title = 'Kontext entfernen';
-    ktxClearBtn.style.display = mat.kontextR2key ? '' : 'none';
+    ktxClearBtn.style.display = _ktxDisplay ? '' : 'none';
     ktxClearBtn.onclick = () => {
-      mat.kontextR2key = null; saveMatDB();
+      mat.kontextR2key = null; mat.kontextPfad = null; saveMatDB();
       ktxKey.textContent = 'keine'; ktxClearBtn.style.display = 'none';
       ktxTree.innerHTML = ''; ktxTree.style.display = 'none'; ktxPickBtn.textContent = '📂 Aus R2 wählen';
     };
@@ -2172,7 +2173,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
 
           const useBtn = btn('Verwenden', 'btn btn-pri btn-xs');
           useBtn.onclick = () => {
-            mat.kontextR2key = key; saveMatDB();
+            mat.kontextR2key = key; mat.kontextPfad = null; saveMatDB();
             ktxKey.textContent = '📎 ' + name;
             ktxClearBtn.style.display = '';
             ktxTree.style.display = 'none'; ktxPickBtn.textContent = '📂 Aus R2 wählen';

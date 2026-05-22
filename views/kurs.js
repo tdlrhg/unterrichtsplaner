@@ -59,6 +59,16 @@ function viewFachplanung() {
   left.appendChild(tx('div', 'c-title', fachLabel(lp.fach) + ' · Jahrgang ' + lp.jahrgang));
   left.appendChild(tx('div', 'c-sub', 'Fachplanung · wird in ' + kurseForFachplanung(lp.id).length + ' Kurs/Kursen verwendet'));
   hdr.appendChild(left);
+  const freieBtn = btn('+ Freie Stunde', 'btn btn-ghost btn-sm');
+  freieBtn.onclick = () => {
+    if (!lp.freieStunden) lp.freieStunden = [];
+    const s = { id: uid(), titel: '', prioritaet: 'pflicht', dauer: 45, phasen: [], klpInhalt: [], klpProzess: [], material: [] };
+    lp.freieStunden.unshift(s);
+    scheduleSave();
+    S.view = 'freieStunden'; S.sel = { type: 'freieStunde', ids: [lp.id, s.id] };
+    render();
+  };
+  hdr.appendChild(freieBtn);
   const exportBtn = btn('⬇ Export', 'btn btn-ghost btn-sm');
   exportBtn.title = 'Als Markdown exportieren';
   exportBtn.onclick = () => exportFachplanung(lp.id);

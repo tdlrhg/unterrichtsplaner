@@ -1192,7 +1192,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
         const kid=side==='kontext'?id:selId;
         const mid=side==='material'?id:selId;
         if(matches.get(mid)===kid){ matches.delete(mid); }
-        else { matches.forEach((k,m)=>{if(k===kid||m===mid)matches.delete(m);}); matches.set(mid,kid); }
+        else { matches.delete(mid); matches.set(mid,kid); }
         selId=null; selSide=null;
       } else { selId=id; selSide=side; }
       renderMatchCards();

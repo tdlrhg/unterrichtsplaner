@@ -1965,14 +1965,15 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   function arrSet(key) { return v => { mat[key] = v.split(',').map(s => s.trim()).filter(Boolean); }; }
 
   // ── Materialvorschau ─────────────────────────────────────────
-  if (mat.r2key) {
+  const _matKey = mat.r2key || mat.dateipfad;
+  if (_matKey) {
     const prevWrap = mk('div', 'mat-detail-preview');
     const prevBtn = btn('👁 Vorschau laden', 'btn btn-ghost btn-xs');
     const prevPages = mk('div', 'mat-detail-preview-pages');
     prevBtn.onclick = async () => {
       prevBtn.disabled = true; prevBtn.textContent = '⏳ Lade…';
       try {
-        const buf = await r2Download(mat.r2key);
+        const buf = await r2Download(_matKey);
         const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
         prevPages.innerHTML = '';
         for (let i = 1; i <= pdf.numPages; i++) {
@@ -2085,7 +2086,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   }
 
   // ── Kontext-Datei zuweisen ────────────────────────────────────
-  if (mat.r2key) {
+  if (_matKey) {
     const ktxSection = mk('div', 'mat-detail-ktx');
     const ktxHdr = mk('div', 'mat-detail-ktx-hdr');
     ktxHdr.appendChild(tx('span', 'mat-detail-label', 'Kontext-Datei'));
@@ -2224,7 +2225,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   const delBar = mk('div', 'mat-detail-delbar');
 
   // Neu analysieren
-  if (mat.r2key) {
+  if (_matKey) {
     const reBtn = btn('🔄 Neu analysieren', 'btn btn-ghost btn-xs');
     reBtn.onclick = async () => {
       const antKey = localStorage.getItem('ant_key');
@@ -2254,12 +2255,13 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
 
       try {
         reBtn.textContent = '⏳ Lade Material…';
-        const matURLs = await pdfBufToDataURLs(await r2Download(mat.r2key));
+        const matURLs = await pdfBufToDataURLs(await r2Download(_matKey));
 
         let ktxURLs = [];
-        if (mat.kontextR2key) {
+        const _ktxKey = mat.kontextR2key || mat.kontextPfad;
+        if (_ktxKey) {
           reBtn.textContent = '⏳ Lade Kontext…';
-          ktxURLs = await pdfBufToDataURLs(await r2Download(mat.kontextR2key));
+          ktxURLs = await pdfBufToDataURLs(await r2Download(_ktxKey));
         }
 
         reBtn.textContent = '⏳ KI analysiert…';
@@ -2293,8 +2295,8 @@ Antworte NUR mit JSON (kein Text davor/danach):
           const enriched = JSON.parse(match[0]);
           const idx = MATDB.findIndex(m => m.id === mat.id);
           if (idx >= 0) {
-            const keep = (({ quelle, materialnummer, r2key, r2url, kontextR2key, seiten, importiertAm, id }) =>
-              ({ quelle, materialnummer: materialnummer || null, r2key, r2url, kontextR2key, seiten, importiertAm, id }))(MATDB[idx]);
+            const keep = (({ quelle, materialnummer, r2key, r2url, kontextR2key, dateipfad, kontextPfad, seiten, importiertAm, id }) =>
+              ({ quelle, materialnummer: materialnummer || null, r2key, r2url, kontextR2key, dateipfad, kontextPfad, seiten, importiertAm, id }))(MATDB[idx]);
             // Materialnummer: KI-Wert übernehmen wenn noch nicht gesetzt
             if (!keep.materialnummer) delete keep.materialnummer;
             Object.assign(MATDB[idx], enriched, keep);

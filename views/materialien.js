@@ -1237,7 +1237,8 @@ Antworte NUR mit JSON (kein Text davor/danach):
         // Nur die gematchten Segmente hochladen
         const matchedMidSet=new Set(matches.keys());
         const matchedKidSet=new Set(matches.values());
-        const toUpload=S.zsSegments.filter(s=>s.type!=='skip'&&!s.r2Path&&(matchedMidSet.has(s.id)||matchedKidSet.has(s.id)));
+        const matchedSegIds=new Set([...matchedMidSet,...matchedKidSet]);
+        const toUpload=S.zsSegments.filter(s=>matchedSegIds.has(s.id)&&!s.r2Path);
         for(const seg of toUpload){
           const subdir=seg.type==='kontext'?'kontexte':'materialien';
           seg.r2Path=subdir+'/'+folder+'/'+seg.name+'.pdf';
@@ -1254,9 +1255,8 @@ Antworte NUR mit JSON (kein Text davor/danach):
             kontextPfad:ktxSeg?.r2Path||null,unterrichtsphase:[],sozialformenGeeignet:[],
             methodenGeeignet:[],blockId:null});
         }
-        // Kontext-Segmente ohne Match bleiben in S.zsSegments; gematchte Kontexte auch in MATDB
-        const uploadedKtxIds=new Set(toUpload.filter(s=>s.type==='kontext').map(s=>s.id));
-        for(const kid of uploadedKtxIds){
+        // Kontext-Einträge für alle gematchten Kontext-Segmente (auch wenn r2Path schon gesetzt war)
+        for(const kid of matchedKidSet){
           const ktxSeg=kontextSegs.find(s=>s.id===kid);
           if(ktxSeg?.r2Path) newEntries.push({id:uid(),titel:ktxSeg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
             materialtyp:'Kontext',quelle:S.zsAusgabe,dateipfad:ktxSeg.r2Path,
@@ -1265,9 +1265,8 @@ Antworte NUR mit JSON (kein Text davor/danach):
         }
         newEntries.forEach(e=>MATDB.push(e));
         await sbUpload('materialien.json',MATDB);
-        // Nur hochgeladene Segmente entfernen
-        const uploadedIds=new Set(toUpload.map(s=>s.id));
-        S.zsSegments=S.zsSegments.filter(s=>!uploadedIds.has(s.id));
+        // Gematchte Segmente entfernen (egal ob gerade oder schon früher hochgeladen)
+        S.zsSegments=S.zsSegments.filter(s=>!matchedSegIds.has(s.id));
         matches.clear(); selId=null; selSide=null;
         const restliche=S.zsSegments.filter(s=>s.type!=='skip').length;
         statusEl.textContent='✓ '+newEntries.length+' Einträge angelegt'+(restliche?' · '+restliche+' gesichert, noch nicht gematcht':'');

@@ -336,7 +336,7 @@ WICHTIG – Titelregeln:
 - Vermeide kryptische Dateinamen als Titel; übernimm den Dateinamen nur wenn er erkennbar dem Drucktitel entspricht
 - NIEMALS eine Rolle als Titel verwenden (also NICHT "Einführungsmaterial", "Vertiefungsaufgabe", "Erarbeitungsphase" o.ä.)
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion (z.B. "Einstieg in die Fotosynthese als Einzelarbeit")
-- "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
+- "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — ZUERST: steht auf dem Material eine explizite Klassen-/Jahrgangsangabe (z.B. "Klasse 9/10", "Jg. 7", "für die 8. Klasse")? Dann diese wörtlich übernehmen. NUR wenn keine explizite Angabe vorhanden: aus Aufgabenniveau und Thema schätzen. Bei "9/10" → ["9","10"], bei "7/8" → ["7","8"]. Wenn wirklich unklar: []
 - "fach" = erlaubte Werte: "Bio", "Ch", "M" — NUR aus dem MATERIAL-Teil (=== MATERIAL ===) ermitteln, nicht aus dem Kontext
 - "themen" = fachspezifische Kernthemen, die im MATERIAL-Teil behandelt werden — IGNORIERE den KONTEXT-Teil vollständig für die Themenbestimmung. Kritisches Beispiel: Wenn der Kontext ein Bio-Text über Korallenriffe ist und das Material eine Mathe-Aufgabe zum Beckenumfang, dann sind die Themen ["Umfang", "Rechteck"] — NICHT ["Ökologie", "Korallenriffe", "Biodiversität"]. Die Themen stammen immer aus dem MATERIAL, nie aus dem KONTEXT.
 
@@ -2381,7 +2381,7 @@ WICHTIG – Titelregeln:
 - Vermeide kryptische Dateinamen als Titel; übernimm den Dateinamen nur wenn er erkennbar dem Drucktitel entspricht
 - NIEMALS eine Rolle als Titel verwenden (nicht "Einführungsmaterial" o.ä.)
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
-- "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
+- "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — ZUERST: steht auf dem Material eine explizite Klassen-/Jahrgangsangabe (z.B. "Klasse 9/10", "Jg. 7", "für die 8. Klasse")? Dann diese wörtlich übernehmen. NUR wenn keine explizite Angabe vorhanden: aus Aufgabenniveau und Thema schätzen. Bei "9/10" → ["9","10"], bei "7/8" → ["7","8"]. Wenn wirklich unklar: []
 - "fach" = erlaubte Werte: "Bio", "Ch", "M" — NUR aus dem MATERIAL-Teil (=== MATERIAL ===) ermitteln, nicht aus dem Kontext
 - "themen" = fachspezifische Kernthemen, die im MATERIAL-Teil behandelt werden — IGNORIERE den KONTEXT-Teil vollständig für die Themenbestimmung. Kritisches Beispiel: Wenn der Kontext ein Bio-Text über Korallenriffe ist und das Material eine Mathe-Aufgabe zum Beckenumfang, dann sind die Themen ["Umfang", "Rechteck"] — NICHT ["Ökologie", "Korallenriffe", "Biodiversität"]. Die Themen stammen immer aus dem MATERIAL, nie aus dem KONTEXT.
 

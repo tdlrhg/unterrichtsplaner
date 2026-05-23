@@ -352,7 +352,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
               const res = await fetch('https://api.anthropic.com/v1/messages', {
                 method: 'POST',
                 headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-                body: JSON.stringify({ model: 'claude-sonnet-4-5-20251001', max_tokens: 1500, messages: [{ role: 'user', content }] })
+                body: JSON.stringify({ model: 'claude-3-5-sonnet-20241022', max_tokens: 1500, messages: [{ role: 'user', content }] })
               });
               if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error('API ' + res.status + ': ' + (err.error?.message || res.statusText)); }
               const d = await res.json();
@@ -2396,7 +2396,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-sonnet-4-5-20251001', max_tokens: 1500, messages: [{ role: 'user', content }] })
+          body: JSON.stringify({ model: 'claude-3-5-sonnet-20241022', max_tokens: 1500, messages: [{ role: 'user', content }] })
         });
         if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error('API ' + res.status + ': ' + (err.error?.message || res.statusText)); }
         const d = await res.json();
@@ -2495,7 +2495,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
         const r1 = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-sonnet-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: c1 }] })
+          body: JSON.stringify({ model: 'claude-3-5-sonnet-20241022', max_tokens: 600, messages: [{ role: 'user', content: c1 }] })
         });
         if (!r1.ok) throw new Error('API ' + r1.status);
         const d1 = await r1.json();

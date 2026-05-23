@@ -981,13 +981,43 @@ Antworte NUR mit JSON (kein Text davor/danach):
     const pageDataURLs=[]; let pdfBuf=null; let pdfDoc=null;
     const splitPoints=new Set(); const segNames={}; const segTypes={};
 
-    const zone=mk('div','mat-upload-drop'); zone.textContent='📄 PDF hierher ziehen oder klicken';
-    const pdfInp=document.createElement('input'); pdfInp.type='file'; pdfInp.accept='application/pdf'; pdfInp.style.display='none';
+    const zone=mk('div','mat-upload-drop'); zone.textContent='📄 PDF hierher ziehen oder klicken (mehrere möglich)';
+    const pdfInp=document.createElement('input'); pdfInp.type='file'; pdfInp.accept='application/pdf'; pdfInp.multiple=true; pdfInp.style.display='none';
     zone.onclick=()=>pdfInp.click();
     zone.ondragover=e=>{e.preventDefault();zone.classList.add('drag-over');};
     zone.ondragleave=()=>zone.classList.remove('drag-over');
-    zone.ondrop=e=>{e.preventDefault();zone.classList.remove('drag-over');if(e.dataTransfer.files[0])loadHeft(e.dataTransfer.files[0]);};
-    pdfInp.onchange=()=>{if(pdfInp.files[0])loadHeft(pdfInp.files[0]);};
+    zone.ondrop=e=>{
+      e.preventDefault(); zone.classList.remove('drag-over');
+      const files=[...e.dataTransfer.files].filter(f=>f.type==='application/pdf');
+      if(!files.length) return;
+      if(files.length===1){ loadHeft(files[0]); return; }
+      // Mehrere PDFs: jede direkt als Segment anlegen
+      (async()=>{
+        zone.textContent='⏳ Verarbeite '+files.length+' Dateien…';
+        for(const f of files){
+          const buf=await f.arrayBuffer();
+          const blob=new Blob([buf],{type:'application/pdf'});
+          const name=f.name.replace(/\.pdf$/i,'');
+          S.zsSegments.push({id:uid(),name,type:'material',blob,heft:heftNr,thumb:null,r2Path:null});
+        }
+        goto(13);
+      })();
+    };
+    pdfInp.onchange=()=>{
+      const files=[...pdfInp.files];
+      if(!files.length) return;
+      if(files.length===1){ loadHeft(files[0]); return; }
+      (async()=>{
+        zone.textContent='⏳ Verarbeite '+files.length+' Dateien…';
+        for(const f of files){
+          const buf=await f.arrayBuffer();
+          const blob=new Blob([buf],{type:'application/pdf'});
+          const name=f.name.replace(/\.pdf$/i,'');
+          S.zsSegments.push({id:uid(),name,type:'material',blob,heft:heftNr,thumb:null,r2Path:null});
+        }
+        goto(13);
+      })();
+    };
     body.appendChild(zone); body.appendChild(pdfInp);
 
     const thumbsWrap=mk('div','mat-upload-thumbs'); body.appendChild(thumbsWrap);

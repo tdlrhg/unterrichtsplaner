@@ -2564,15 +2564,25 @@ Antworte NUR mit JSON (kein Text davor/danach):
         const c1 = [{ type: 'text', text: '=== MATERIAL ===' }];
         matURLs.forEach(u => c1.push(toImgC(u)));
         c1.push({ type: 'text', text: `Analysiere dieses Unterrichtsmaterial für eine NRW-Lehrkraft.
-Enthält dieses Material eine didaktische Methode, die sich auch für andere Unterrichtsinhalte eignen würde – also eine übertragbare didaktische Idee?
+
+Schritt 1: Gibt es im Material eine explizit benannte Unterrichtsmethode (z.B. "Think-Pair-Share", "Fishbowl", "Jigsaw", "Placemat", oder einen anderen Eigennamen)? Falls ja, verwende diesen Namen.
+Schritt 2: Falls keine benannte Methode vorkommt – gibt es eine didaktische Idee, die übertragbar auf andere Inhalte wäre?
+Falls weder noch: gib {"method": null} zurück.
+
+Wenn eine Methode gefunden wird, fülle aus:
+- name: exakter Eigenname falls vorhanden, sonst kurzer beschreibender Name
+- beschreibung: Was tun die Schülerinnen und Schüler konkret? (2–3 Sätze)
+- ziel: Welches didaktische Ziel verfolgt die Methode? (1–2 Sätze)
+- hinweise: Worauf sollte man bei der Durchführung achten? Varianten? (2–3 Sätze)
+
 Antworte NUR mit JSON (kein Text davor/danach):
-{"method": {"name": "Methodenname", "beschreibung": "1–2 Sätze zur übertragbaren Idee"}} ODER {"method": null}` });
+{"method": {"name": "...", "beschreibung": "...", "ziel": "...", "hinweise": "..."}} ODER {"method": null}` });
 
         mchkBtn.textContent = '⏳ KI analysiert…';
         const r1 = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 300, messages: [{ role: 'user', content: c1 }] })
+          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: c1 }] })
         });
         if (!r1.ok) throw new Error('API ' + r1.status);
         const d1 = await r1.json();
@@ -2627,7 +2637,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
           const nBtn2 = btn('+ Trotzdem neu anlegen', 'btn btn-ghost btn-xs');
           nBtn2.onclick = () => {
             mchkPanel.remove(); mchkPanel = null;
-            S.view = 'methoden'; S._pendingNewMethod = { name: method.name, beschreibung: method.beschreibung, linkMatId: mat.id };
+            S.view = 'methoden'; S._pendingNewMethod = { name: method.name, beschreibung: method.beschreibung, ziel: method.ziel || '', hinweise: method.hinweise || '', linkMatId: mat.id };
             render();
           };
           btnsRow.appendChild(nBtn2);
@@ -2635,7 +2645,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
           const nBtn = btn('✨ Als neue Methode anlegen', 'btn btn-pri btn-xs');
           nBtn.onclick = () => {
             mchkPanel.remove(); mchkPanel = null;
-            S.view = 'methoden'; S._pendingNewMethod = { name: method.name, beschreibung: method.beschreibung, linkMatId: mat.id };
+            S.view = 'methoden'; S._pendingNewMethod = { name: method.name, beschreibung: method.beschreibung, ziel: method.ziel || '', hinweise: method.hinweise || '', linkMatId: mat.id };
             render();
           };
           btnsRow.appendChild(nBtn);

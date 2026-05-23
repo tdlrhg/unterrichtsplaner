@@ -199,7 +199,7 @@ function viewMethoden() {
     prefill = prefill || {};
     const isNew = !existing;
     const m = existing ? JSON.parse(JSON.stringify(existing))
-      : { id:'', name: prefill.name || '', beschreibung: prefill.beschreibung || '', ziel:'', hinweise:'', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], quelle:'' };
+      : { id:'', name: prefill.name || '', beschreibung: prefill.beschreibung || '', ziel: prefill.ziel || '', hinweise: prefill.hinweise || '', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], quelle:'' };
 
     overlay.innerHTML = '';
     overlay.classList.add('open');

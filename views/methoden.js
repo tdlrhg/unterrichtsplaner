@@ -195,10 +195,11 @@ function viewMethoden() {
 
   function closeOverlay() { overlay.innerHTML = ''; overlay.classList.remove('open'); }
 
-  function openForm(existing) {
+  function openForm(existing, prefill) {
+    prefill = prefill || {};
     const isNew = !existing;
     const m = existing ? JSON.parse(JSON.stringify(existing))
-      : { id:'', name:'', beschreibung:'', ziel:'', hinweise:'', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], quelle:'' };
+      : { id:'', name: prefill.name || '', beschreibung: prefill.beschreibung || '', ziel:'', hinweise:'', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], quelle:'' };
 
     overlay.innerHTML = '';
     overlay.classList.add('open');
@@ -306,6 +307,15 @@ function viewMethoden() {
       };
       saveBtn.textContent = 'Speichert…'; saveBtn.disabled = true;
       await saveMethod(updated, isNew);
+      // Wenn aus Material-Analyse kommend: Material verknüpfen
+      if (isNew && prefill.linkMatId) {
+        const matIdx = MATDB.findIndex(m => m.id === prefill.linkMatId);
+        if (matIdx >= 0) {
+          if (!MATDB[matIdx].methodenIds) MATDB[matIdx].methodenIds = [];
+          if (!MATDB[matIdx].methodenIds.includes(updated.id)) MATDB[matIdx].methodenIds.push(updated.id);
+          saveMatDB();
+        }
+      }
       closeOverlay();
     };
     footer.appendChild(cancelBtn);
@@ -336,5 +346,13 @@ function viewMethoden() {
   }
 
   refresh();
+
+  // Auto-Formular wenn aus Methoden-Check kommend
+  if (S._pendingNewMethod) {
+    const pending = S._pendingNewMethod;
+    S._pendingNewMethod = null;
+    openForm(null, pending);
+  }
+
   return div;
 }

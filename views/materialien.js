@@ -2206,6 +2206,35 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   editRow('Unterrichtsphase',       () => arrGet('unterrichtsphase'),           arrSet('unterrichtsphase'),           false, 'unterrichtsphase');
   editRow('Sozialform geeignet',    () => arrGet('sozialformenGeeignet'),        arrSet('sozialformenGeeignet'));
   editRow('Methoden geeignet',      () => arrGet('methodenGeeignet'),            arrSet('methodenGeeignet'));
+
+  // ── Methoden-Verknüpfungen (IDs aus METHDB) ───────────────────
+  const methLinkRow = mk('div', 'mat-detail-row');
+  methLinkRow.appendChild(tx('span', 'mat-detail-label', 'Methoden-Links'));
+  const methLinkVal = mk('div', '');
+  methLinkVal.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;align-items:center;';
+  function renderMethLinks() {
+    methLinkVal.innerHTML = '';
+    (mat.methodenIds || []).forEach(mid => {
+      const m = METHDB.find(x => x.id === mid);
+      if (!m) return;
+      const chip = mk('span', '');
+      chip.style.cssText = 'display:inline-flex;align-items:center;gap:3px;background:var(--bg2);border:1px solid var(--bdr);border-radius:4px;padding:2px 7px;font-size:11px;cursor:default;';
+      chip.appendChild(document.createTextNode(m.name));
+      const unlink = mk('button', '');
+      unlink.textContent = '✕'; unlink.title = 'Verknüpfung entfernen';
+      unlink.style.cssText = 'border:none;background:none;cursor:pointer;font-size:10px;color:var(--tx3);padding:0 0 0 4px;line-height:1;';
+      unlink.onclick = () => {
+        mat.methodenIds = (mat.methodenIds || []).filter(x => x !== mid);
+        saveMatDB(); renderMethLinks();
+      };
+      chip.appendChild(unlink);
+      methLinkVal.appendChild(chip);
+    });
+    if (!(mat.methodenIds || []).length) methLinkVal.appendChild(tx('span', '', '–'));
+  }
+  renderMethLinks();
+  methLinkRow.appendChild(methLinkVal);
+  body.appendChild(methLinkRow);
   editRow('Schüleraktivitäten',     () => arrGet('schueleraktivitaeten'),        arrSet('schueleraktivitaeten'));
   editRow('Art der Tätigkeit',      () => arrGet('artDerGeistigenTaetigkeit'),   arrSet('artDerGeistigenTaetigkeit'));
   editRow('Darstellungsformen',     () => arrGet('darstellungsformen'),          arrSet('darstellungsformen'));
@@ -2465,6 +2494,142 @@ Antworte NUR mit JSON (kein Text davor/danach):
       }
     };
     delBar.appendChild(reBtn);
+  }
+
+  // ── Methoden-Check ────────────────────────────────────────────
+  if (_matKey) {
+    const mchkBtn = btn('🎯 Methoden-Check', 'btn btn-ghost btn-xs');
+    let mchkPanel = null;
+    mchkBtn.onclick = async () => {
+      const antKey = localStorage.getItem('ant_key');
+      if (!antKey) { alert('Kein Anthropic API-Key in den Einstellungen.'); return; }
+      if (mchkPanel) { mchkPanel.remove(); mchkPanel = null; }
+      mchkBtn.disabled = true; mchkBtn.textContent = '⏳ Lade PDF…';
+
+      async function pdfPagesForMchk(r2key) {
+        const buf = await r2Download(r2key);
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+        const urls = [];
+        for (let i = 1; i <= Math.min(pdf.numPages, 4); i++) {
+          const page = await pdf.getPage(i);
+          const vp0 = page.getViewport({ scale: 1 });
+          const vp = page.getViewport({ scale: 240 / vp0.width });
+          const cv = document.createElement('canvas');
+          cv.width = vp.width; cv.height = vp.height;
+          await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+          urls.push(cv.toDataURL('image/jpeg', 0.75));
+        }
+        return urls;
+      }
+      function toImgC(dataURL) {
+        const [hdr, data] = dataURL.split(',');
+        return { type: 'image', source: { type: 'base64', media_type: hdr.match(/data:([^;]+)/)[1], data } };
+      }
+      function showMchkPanel(el) {
+        mchkPanel = mk('div', '');
+        mchkPanel.style.cssText = 'margin:8px 0;padding:10px 12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;font-size:12px;display:flex;flex-direction:column;gap:7px;';
+        mchkPanel.appendChild(el);
+        body.insertBefore(mchkPanel, delBar);
+      }
+
+      try {
+        const matURLs = await pdfPagesForMchk(_matKey);
+
+        // Call 1: Gibt es eine übertragbare Methode?
+        const c1 = [{ type: 'text', text: '=== MATERIAL ===' }];
+        matURLs.forEach(u => c1.push(toImgC(u)));
+        c1.push({ type: 'text', text: `Analysiere dieses Unterrichtsmaterial für eine NRW-Lehrkraft.
+Enthält dieses Material eine didaktische Methode, die sich auch für andere Unterrichtsinhalte eignen würde – also eine übertragbare didaktische Idee?
+Antworte NUR mit JSON (kein Text davor/danach):
+{"method": {"name": "Methodenname", "beschreibung": "1–2 Sätze zur übertragbaren Idee"}} ODER {"method": null}` });
+
+        mchkBtn.textContent = '⏳ KI analysiert…';
+        const r1 = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 300, messages: [{ role: 'user', content: c1 }] })
+        });
+        if (!r1.ok) throw new Error('API ' + r1.status);
+        const d1 = await r1.json();
+        const j1 = (d1.content?.[0]?.text || '').match(/\{[\s\S]*\}/);
+        if (!j1) throw new Error('Kein JSON in Antwort');
+        const { method } = JSON.parse(j1[0]);
+
+        if (!method) {
+          const noM = tx('div', '', 'Kein übertragbares Methodenpotenzial erkannt.');
+          noM.style.color = 'var(--tx3)';
+          showMchkPanel(noM);
+          mchkBtn.textContent = '🎯 Methoden-Check'; mchkBtn.disabled = false;
+          return;
+        }
+
+        // Call 2: Duplikatcheck gegen METHDB
+        mchkBtn.textContent = '⏳ Vergleiche Methoden…';
+        const methList = METHDB.map(m => `ID: ${m.id} | ${m.name}${m.beschreibung ? ' – ' + m.beschreibung.slice(0, 80) : ''}`).join('\n');
+        const p2 = `Vorgeschlagene neue Methode:\nName: "${method.name}"\nBeschreibung: "${method.beschreibung}"\n\nBereits vorhandene Methoden (${METHDB.length}):\n${methList}\n\nGibt es einen semantisch ähnlichen Eintrag? Antworte NUR mit JSON:\n{"matchId": "exakte-ID-oder-null", "matchName": "Name-oder-null"}`;
+        const r2 = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 120, messages: [{ role: 'user', content: p2 }] })
+        });
+        if (!r2.ok) throw new Error('API ' + r2.status);
+        const d2 = await r2.json();
+        const j2 = (d2.content?.[0]?.text || '').match(/\{[\s\S]*\}/);
+        const { matchId, matchName } = j2 ? JSON.parse(j2[0]) : { matchId: null, matchName: null };
+        const matchEntry = matchId && METHDB.find(x => x.id === matchId);
+
+        // Ergebnis-UI aufbauen
+        const resWrap = mk('div', '');
+        resWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+        const mName = tx('div', '', '🎯 ' + method.name); mName.style.fontWeight = '600';
+        resWrap.appendChild(mName);
+        resWrap.appendChild(tx('div', '', method.beschreibung));
+        const btnsRow = mk('div', ''); btnsRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;';
+
+        if (matchEntry) {
+          const hint = tx('div', '', `Ähnlich zu vorhandener Methode: „${matchName || matchEntry.name}"`);
+          hint.style.cssText = 'font-size:11px;color:var(--tx3);';
+          resWrap.appendChild(hint);
+
+          const lBtn = btn('🔗 Verknüpfen', 'btn btn-pri btn-xs');
+          lBtn.onclick = () => {
+            if (!mat.methodenIds) mat.methodenIds = [];
+            if (!mat.methodenIds.includes(matchId)) { mat.methodenIds.push(matchId); saveMatDB(); }
+            renderMethLinks(); mchkPanel.remove(); mchkPanel = null;
+          };
+          btnsRow.appendChild(lBtn);
+
+          const nBtn2 = btn('+ Trotzdem neu anlegen', 'btn btn-ghost btn-xs');
+          nBtn2.onclick = () => {
+            mchkPanel.remove(); mchkPanel = null;
+            S.view = 'methoden'; S._pendingNewMethod = { name: method.name, beschreibung: method.beschreibung, linkMatId: mat.id };
+            render();
+          };
+          btnsRow.appendChild(nBtn2);
+        } else {
+          const nBtn = btn('✨ Als neue Methode anlegen', 'btn btn-pri btn-xs');
+          nBtn.onclick = () => {
+            mchkPanel.remove(); mchkPanel = null;
+            S.view = 'methoden'; S._pendingNewMethod = { name: method.name, beschreibung: method.beschreibung, linkMatId: mat.id };
+            render();
+          };
+          btnsRow.appendChild(nBtn);
+        }
+
+        const ignBtn = btn('Ignorieren', 'btn btn-ghost btn-xs');
+        ignBtn.onclick = () => { mchkPanel.remove(); mchkPanel = null; };
+        btnsRow.appendChild(ignBtn);
+        resWrap.appendChild(btnsRow);
+        showMchkPanel(resWrap);
+
+      } catch (e) {
+        const errD = tx('div', '', '⚠ Fehler: ' + e.message);
+        errD.style.color = 'var(--red)';
+        showMchkPanel(errD);
+      }
+      mchkBtn.textContent = '🎯 Methoden-Check'; mchkBtn.disabled = false;
+    };
+    delBar.appendChild(mchkBtn);
   }
 
   const delBtn2 = btn('🗑 Eintrag löschen', 'btn btn-danger btn-xs');

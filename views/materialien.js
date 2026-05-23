@@ -693,6 +693,7 @@ function buildImportAssistent(subTitle, renderCards) {
       wrap.appendChild(tx('div','mat-import-section-title', label));
 
       let pdfBuf = null;
+      let pendingSegId = null;   // ID des auto-hinzugefügten ganzen PDFs (wird bei Split ersetzt)
       const pageDataURLs = [];
       const splitPoints = new Set();
       const segNames = {}, segTypes = {};
@@ -713,6 +714,7 @@ function buildImportAssistent(subTitle, renderCards) {
       const splitArea = mk('div','');
 
       async function addMulti(files) {
+        if (pendingSegId) { S.zsSegments = S.zsSegments.filter(s => s.id !== pendingSegId); pendingSegId = null; }
         zone.textContent = '⏳ Verarbeite ' + files.length + ' Dateien…';
         for (const f of files) {
           const blob = new Blob([await f.arrayBuffer()], {type:'application/pdf'});
@@ -723,6 +725,8 @@ function buildImportAssistent(subTitle, renderCards) {
       }
 
       async function loadSingle(file) {
+        // Altes auto-hinzugefügtes Segment entfernen
+        if (pendingSegId) { S.zsSegments = S.zsSegments.filter(s => s.id !== pendingSegId); pendingSegId = null; }
         pdfBuf = await file.arrayBuffer();
         pageDataURLs.length = 0; thumbsWrap.innerHTML = ''; splitArea.innerHTML = '';
         zone.textContent = '✓ ' + file.name;
@@ -742,25 +746,23 @@ function buildImportAssistent(subTitle, renderCards) {
             thumb.appendChild(cv); thumb.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
             thumbsWrap.appendChild(thumb);
           }
-          addBtn.style.display=''; splitBtn.style.display='';
+          // Sofort als ganzes PDF in S.zsSegments aufnehmen (wird bei Split ersetzt)
+          pendingSegId = uid();
+          S.zsSegments.push({id: pendingSegId, name: file.name.replace(/\.pdf$/i,''), type: defaultTyp, blob: new Blob([pdfBuf], {type:'application/pdf'}), heft: heftNr, thumb: null, r2Path: null});
+          addBtn.style.display='none'; splitBtn.style.display='';
+          renderSegments(); renderNav();
         } catch(e) {
           thumbsWrap.innerHTML = `<div style="padding:8px;color:#dc2626;">⚠ ${e.message}</div>`;
         }
       }
 
+      // addBtn wird durch loadSingle-Auto-Add nicht mehr benötigt, bleibt als Fallback
       addBtn.onclick = async () => {
         if (!pdfBuf || typeof PDFLib==='undefined') return;
-        addBtn.disabled=true; addBtn.textContent='⏳';
-        const srcDoc=await PDFLib.PDFDocument.load(pdfBuf);
-        const newDoc=await PDFLib.PDFDocument.create();
-        const copied=await newDoc.copyPages(srcDoc,[...Array(srcDoc.getPageCount()).keys()]);
-        copied.forEach(pg=>newDoc.addPage(pg));
-        const name=zone.textContent.replace('✓ ','').replace(/\.pdf$/i,'');
-        S.zsSegments.push({id:uid(), name, type:defaultTyp, blob:new Blob([await newDoc.save()],{type:'application/pdf'}), heft:heftNr, thumb:null, r2Path:null});
+        // Kein Duplikat erzeugen – pendingSegId ist bereits in S.zsSegments
         pdfBuf=null; thumbsWrap.innerHTML=''; splitArea.innerHTML='';
-        addBtn.style.display='none'; splitBtn.style.display='none'; addBtn.disabled=false; addBtn.textContent='+ Ganzes PDF hinzufügen';
+        addBtn.style.display='none'; splitBtn.style.display='none';
         zone.textContent='📄 PDF(s) hierher ziehen oder klicken';
-        renderSegments(); renderNav();
       };
 
       function getGroups(){
@@ -806,6 +808,8 @@ function buildImportAssistent(subTitle, renderCards) {
           saveSegBtn.onclick=async()=>{
             if(typeof PDFLib==='undefined'){alert('pdf-lib nicht geladen.');return;}
             saveSegBtn.disabled=true; saveSegBtn.textContent='⏳';
+            // Auto-hinzugefügtes ganzes PDF durch die Split-Segmente ersetzen
+            if (pendingSegId) { S.zsSegments = S.zsSegments.filter(s => s.id !== pendingSegId); pendingSegId = null; }
             const groups=getGroups();
             const srcDoc=await PDFLib.PDFDocument.load(pdfBuf);
             for(let gi2=0;gi2<groups.length;gi2++){

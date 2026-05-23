@@ -1109,17 +1109,21 @@ function buildImportAssistent(subTitle, renderCards) {
     renderMatchCards();
     loadThumbs();
 
+    // R2-sichere Pfadkomponente: nur Alphanumerisch, Bindestrich, Unterstrich, Punkt, Leerzeichen
+    // Apostrophe, !, (, ) etc. werden von encodeURIComponent nicht kodiert → Signaturfehler
+    function r2safe(s){ return s.replace(/[^a-zA-Z0-9äöüÄÖÜß\-_. ]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').trim(); }
+
     // Didaktik-Artikel hochladen
     if(didaktikBtn) didaktikBtn.onclick=async()=>{
       if(!S.zsAusgabe){ ausgabeInp.focus(); statusEl.textContent='⚠ Bitte zuerst den Ausgabe-Namen eingeben.'; statusEl.style.color='#dc2626'; return; }
       didaktikBtn.disabled=true;
-      const folder=S.zsAusgabe.replace(/[/\\:*?"<>|]/g,'-');
+      const folder=r2safe(S.zsAusgabe);
       try{
         const newEntries=[];
         for(const seg of didaktikSegs){
           statusEl.textContent='🎓 '+seg.name+'…';
           if(!seg.r2Path){
-            seg.r2Path='didaktik/'+folder+'/'+seg.name+'.pdf';
+            seg.r2Path='didaktik/'+folder+'/'+r2safe(seg.name)+'.pdf';
             await r2Upload(seg.r2Path,seg.blob,'application/pdf');
           }
           statusEl.textContent='🎓 Text extrahieren: '+seg.name+'…';
@@ -1144,11 +1148,11 @@ function buildImportAssistent(subTitle, renderCards) {
       const rest=S.zsSegments.filter(s=>s.type!=='skip'&&!matchedIds.has(s.id));
       if(!rest.length){ statusEl.textContent='Keine ungematchten Segmente.'; return; }
       restBtn.disabled=true;
-      const folder=S.zsAusgabe.replace(/[/\\:*?"<>|]/g,'-');
+      const folder=r2safe(S.zsAusgabe);
       try{
         for(const seg of rest.filter(s=>!s.r2Path)){
           const subdir=seg.type==='kontext'?'kontexte':'materialien';
-          seg.r2Path=subdir+'/'+folder+'/'+seg.name+'.pdf';
+          seg.r2Path=subdir+'/'+folder+'/'+r2safe(seg.name)+'.pdf';
           statusEl.textContent='Lade hoch: '+seg.name+'…';
           await r2Upload(seg.r2Path,seg.blob,'application/pdf');
         }
@@ -1180,7 +1184,7 @@ function buildImportAssistent(subTitle, renderCards) {
         return;
       }
       uploadBtn.disabled=true;
-      const folder=S.zsAusgabe.replace(/[/\\:*?"<>|]/g,'-');
+      const folder=r2safe(S.zsAusgabe);
       try{
         // Nur die gematchten Segmente hochladen
         const matchedMidSet=new Set(matches.keys());
@@ -1189,7 +1193,7 @@ function buildImportAssistent(subTitle, renderCards) {
         const toUpload=S.zsSegments.filter(s=>matchedSegIds.has(s.id)&&!s.r2Path);
         for(const seg of toUpload){
           const subdir=seg.type==='kontext'?'kontexte':'materialien';
-          seg.r2Path=subdir+'/'+folder+'/'+seg.name+'.pdf';
+          seg.r2Path=subdir+'/'+folder+'/'+r2safe(seg.name)+'.pdf';
           statusEl.textContent='Lade hoch: '+seg.name+'…';
           await r2Upload(seg.r2Path,seg.blob,'application/pdf');
         }

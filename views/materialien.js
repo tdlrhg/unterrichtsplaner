@@ -336,9 +336,10 @@ WICHTIG – Titelregeln:
 - NIEMALS eine Rolle als Titel verwenden (also NICHT "Einführungsmaterial", "Vertiefungsaufgabe", "Erarbeitungsphase" o.ä.)
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion (z.B. "Einstieg in die Fotosynthese als Einzelarbeit")
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
+- "fach" = erlaubte Werte: "Bio", "Ch", "M" — aus Inhalt, Themen und Fachsprache ermitteln
 
 Antworte NUR mit JSON (kein Text davor/danach):
-{"titel":"exakter Titel vom Blatt oder Dateiname","materialnummer":"M1","rolleImKontext":"1 Satz zur Funktion","beschreibung":"2-3 Sätze was SuS tun","themen":["..."],"jahrgang":["z.B. 7 oder EF – aus Material ermitteln"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
+{"fach":["Bio"],"titel":"exakter Titel vom Blatt oder Dateiname","materialnummer":"M1","rolleImKontext":"1 Satz zur Funktion","beschreibung":"2-3 Sätze was SuS tun","themen":["..."],"jahrgang":["z.B. 7 oder EF – aus Material ermitteln"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
 
             try {
               const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -863,9 +864,10 @@ WICHTIG – Titelregeln:
 - NIEMALS eine Rolle als Titel verwenden
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
+- "fach" = erlaubte Werte: "Bio", "Ch", "M" — aus Inhalt, Themen und Fachsprache ermitteln
 ${extraRules ? '\nZUSÄTZLICHE REGELN:\n' + extraRules : ''}
 Antworte NUR mit JSON (kein Text davor/danach):
-{"titel":"...","rolleImKontext":"...","beschreibung":"...","themen":[...],"jahrgang":["z.B. 7 oder EF – aus Material ermitteln"],"unterrichtsphase":[...],"sozialformenGeeignet":[],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}`});
+{"fach":["Bio"],"titel":"...","rolleImKontext":"...","beschreibung":"...","themen":[...],"jahrgang":["z.B. 7 oder EF – aus Material ermitteln"],"unterrichtsphase":[...],"sozialformenGeeignet":[],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}`});
               try {
                 const res = await fetch('https://api.anthropic.com/v1/messages', {
                   method: 'POST',
@@ -2460,9 +2462,10 @@ WICHTIG – Titelregeln:
 - NIEMALS eine Rolle als Titel verwenden (nicht "Einführungsmaterial" o.ä.)
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
+- "fach" = erlaubte Werte: "Bio", "Ch", "M" — aus Inhalt, Themen und Fachsprache ermitteln
 
 Antworte NUR mit JSON (kein Text davor/danach):
-{"titel":"...","rolleImKontext":"...","beschreibung":"...","themen":[...],"jahrgang":["z.B. 7 oder EF – aus Material ermitteln"],"unterrichtsphase":[...],"sozialformenGeeignet":[...],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
+{"fach":["Bio"],"titel":"...","rolleImKontext":"...","beschreibung":"...","themen":[...],"jahrgang":["z.B. 7 oder EF – aus Material ermitteln"],"unterrichtsphase":[...],"sozialformenGeeignet":[...],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
 
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',

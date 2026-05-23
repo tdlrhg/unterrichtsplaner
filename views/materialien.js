@@ -714,12 +714,11 @@ function buildImportAssistent(subTitle, renderCards) {
       actionRow.appendChild(addBtn); actionRow.appendChild(splitBtn);
       const splitArea = mk('div','');
 
-      async function addMulti(files) {
+      function addMulti(files) {
         if (pendingSegId) { S.zsSegments = S.zsSegments.filter(s => s.id !== pendingSegId); pendingSegId = null; }
-        zone.textContent = '⏳ Verarbeite ' + files.length + ' Dateien…';
+        // File IS a Blob – direkt verwenden, kein arrayBuffer()-Klon nötig
         for (const f of files) {
-          const blob = new Blob([await f.arrayBuffer()], {type:'application/pdf'});
-          S.zsSegments.push({id:uid(), name:f.name.replace(/\.pdf$/i,''), type:defaultTyp, blob, heft:heftNr, thumb:null, r2Path:null});
+          S.zsSegments.push({id:uid(), name:f.name.replace(/\.pdf$/i,''), type:defaultTyp, blob:f, heft:heftNr, thumb:null, r2Path:null});
         }
         zone.textContent = '✓ ' + files.length + ' Datei(en) geladen – weitere möglich';
         renderSegments(); renderNav();

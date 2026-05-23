@@ -337,8 +337,8 @@ WICHTIG – Titelregeln:
 - NIEMALS eine Rolle als Titel verwenden (also NICHT "Einführungsmaterial", "Vertiefungsaufgabe", "Erarbeitungsphase" o.ä.)
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion (z.B. "Einstieg in die Fotosynthese als Einzelarbeit")
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
-- "fach" = erlaubte Werte: "Bio", "Ch", "M" — aus Inhalt, Themen und Fachsprache ermitteln
-- "themen" = fachspezifische Kernthemen des erkannten Fachs; bei fächerübergreifenden Materialien NUR die Themen des erkannten Fachs, nicht die des Kontexts
+- "fach" = erlaubte Werte: "Bio", "Ch", "M" — NUR aus dem MATERIAL-Teil (=== MATERIAL ===) ermitteln, nicht aus dem Kontext
+- "themen" = fachspezifische Kernthemen, die im MATERIAL-Teil behandelt werden — IGNORIERE den KONTEXT-Teil vollständig für die Themenbestimmung. Kritisches Beispiel: Wenn der Kontext ein Bio-Text über Korallenriffe ist und das Material eine Mathe-Aufgabe zum Beckenumfang, dann sind die Themen ["Umfang", "Rechteck"] — NICHT ["Ökologie", "Korallenriffe", "Biodiversität"]. Die Themen stammen immer aus dem MATERIAL, nie aus dem KONTEXT.
 
 Antworte NUR mit JSON (kein Text davor/danach):
 {"fach":["Bio"],"titel":"exakter Titel vom Blatt oder Dateiname","materialnummer":"M1","rolleImKontext":"1 Satz zur Funktion","beschreibung":"2-3 Sätze was SuS tun","themen":["..."],"jahrgang":["z.B. 7 oder EF – aus Material ermitteln"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
@@ -2327,8 +2327,8 @@ WICHTIG – Titelregeln:
 - NIEMALS eine Rolle als Titel verwenden (nicht "Einführungsmaterial" o.ä.)
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
-- "fach" = erlaubte Werte: "Bio", "Ch", "M" — aus Inhalt, Themen und Fachsprache ermitteln
-- "themen" = fachspezifische Kernthemen des erkannten Fachs; bei fächerübergreifenden Materialien NUR die Themen des erkannten Fachs, nicht die des Kontexts
+- "fach" = erlaubte Werte: "Bio", "Ch", "M" — NUR aus dem MATERIAL-Teil (=== MATERIAL ===) ermitteln, nicht aus dem Kontext
+- "themen" = fachspezifische Kernthemen, die im MATERIAL-Teil behandelt werden — IGNORIERE den KONTEXT-Teil vollständig für die Themenbestimmung. Kritisches Beispiel: Wenn der Kontext ein Bio-Text über Korallenriffe ist und das Material eine Mathe-Aufgabe zum Beckenumfang, dann sind die Themen ["Umfang", "Rechteck"] — NICHT ["Ökologie", "Korallenriffe", "Biodiversität"]. Die Themen stammen immer aus dem MATERIAL, nie aus dem KONTEXT.
 
 Antworte NUR mit JSON (kein Text davor/danach):
 {"fach":["Bio"],"titel":"...","rolleImKontext":"...","beschreibung":"...","themen":[...],"jahrgang":["z.B. 7 oder EF – aus Material ermitteln"],"unterrichtsphase":[...],"sozialformenGeeignet":[...],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });

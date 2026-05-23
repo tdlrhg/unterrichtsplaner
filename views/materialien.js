@@ -1120,7 +1120,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
       const matchBtn=btn('→ Zum Matching','btn btn-pri btn-sm'); matchBtn.onclick=()=>goto(14);
       navRow.appendChild(matchBtn);
     }
-    const backBtn2=btn('← Zurück','btn btn-ghost btn-sm'); backBtn2.onclick=()=>{S.zsSegments=[];S.zsAusgabe='';goto(10);};
+    const backBtn2=btn('← Zurück','btn btn-ghost btn-sm'); backBtn2.onclick=()=>{S.zsSegments=[];S.zsAusgabe='';goto(0);};
     navRow.appendChild(backBtn2);
     body.appendChild(navRow);
   }

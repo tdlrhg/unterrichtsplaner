@@ -787,6 +787,32 @@ function buildImportAssistent(subTitle, renderCards) {
         g.push({start:s,end:pageDataURLs.length}); return g;
       }
 
+      // Zentrale Save-Funktion – wird vom Button UND von renderNav verwendet
+      async function saveSplits(statusEl) {
+        if(typeof PDFLib==='undefined'){alert('pdf-lib nicht geladen.');return false;}
+        if (pendingSegId) { S.zsSegments = S.zsSegments.filter(s => s.id !== pendingSegId); pendingSegId = null; }
+        if (!pdfBuf && currentFile) { pdfBuf = await currentFile.arrayBuffer(); }
+        const groups=getGroups();
+        const srcDoc=await PDFLib.PDFDocument.load(pdfBuf);
+        for(let gi2=0;gi2<groups.length;gi2++){
+          const type2=segTypes[gi2]!==undefined?segTypes[gi2]:defaultTyp;
+          if(type2==='skip') continue;
+          const g2=groups[gi2];
+          const name2=(segNames[gi2]?.trim())||('Segment_'+(gi2+1));
+          const newDoc=await PDFLib.PDFDocument.create();
+          const idxs=[]; for(let pg=g2.start-1;pg<g2.end;pg++) idxs.push(pg);
+          const copied=await newDoc.copyPages(srcDoc,idxs); copied.forEach(pg=>newDoc.addPage(pg));
+          S.zsSegments.push({id:uid(),name:name2,type:type2,blob:new Blob([await newDoc.save()],{type:'application/pdf'}),heft:heftNr,thumb:null,r2Path:null});
+          if(statusEl) statusEl.textContent=`⏳ ${gi2+1}/${groups.length}…`;
+        }
+        pdfBuf=null; thumbsWrap.innerHTML=''; splitArea.innerHTML='';
+        addBtn.style.display='none'; splitBtn.style.display='none';
+        zone.textContent='📄 PDF(s) hierher ziehen oder klicken';
+        splitPoints.clear();
+        renderSegments(); renderNav();
+        return true;
+      }
+
       function renderSplitGroups(){
         splitArea.innerHTML='';
         getGroups().forEach((g,gi)=>{
@@ -820,34 +846,16 @@ function buildImportAssistent(subTitle, renderCards) {
             }
           }
           groupEl.appendChild(pagesRow);
-          const saveSegBtn=btn('💾 Speichern','btn btn-pri btn-xs'); saveSegBtn.style.margin='6px 8px';
-          saveSegBtn.onclick=async()=>{
-            if(typeof PDFLib==='undefined'){alert('pdf-lib nicht geladen.');return;}
-            saveSegBtn.disabled=true; saveSegBtn.textContent='⏳';
-            // Auto-hinzugefügtes ganzes PDF durch die Split-Segmente ersetzen
-            if (pendingSegId) { S.zsSegments = S.zsSegments.filter(s => s.id !== pendingSegId); pendingSegId = null; }
-            // pdfBuf lazy laden – erst jetzt wirklich benötigt
-            if (!pdfBuf && currentFile) { pdfBuf = await currentFile.arrayBuffer(); }
-            const groups=getGroups();
-            const srcDoc=await PDFLib.PDFDocument.load(pdfBuf);
-            for(let gi2=0;gi2<groups.length;gi2++){
-              const type2=segTypes[gi2]!==undefined?segTypes[gi2]:defaultTyp;
-              if(type2==='skip') continue;
-              const g2=groups[gi2];
-              const name2=(segNames[gi2]?.trim())||('Segment_'+(gi2+1));
-              const newDoc=await PDFLib.PDFDocument.create();
-              const idxs=[]; for(let pg=g2.start-1;pg<g2.end;pg++) idxs.push(pg);
-              const copied=await newDoc.copyPages(srcDoc,idxs); copied.forEach(pg=>newDoc.addPage(pg));
-              S.zsSegments.push({id:uid(),name:name2,type:type2,blob:new Blob([await newDoc.save()],{type:'application/pdf'}),heft:heftNr,thumb:null,r2Path:null});
-            }
-            pdfBuf=null; thumbsWrap.innerHTML=''; splitArea.innerHTML='';
-            addBtn.style.display='none'; splitBtn.style.display='none';
-            zone.textContent='📄 PDF(s) hierher ziehen oder klicken';
-            renderSegments(); renderNav();
-          };
-          groupEl.appendChild(saveSegBtn);
           splitArea.appendChild(groupEl);
         });
+        // Einzelner prominenter Speichern-Button am Ende
+        const saveAllBtn=btn(`💾 ${getGroups().length} Segment${getGroups().length!==1?'e':''} übernehmen`,'btn btn-pri btn-sm');
+        saveAllBtn.style.cssText='margin-top:12px;width:100%;';
+        const saveSt=tx('span','',''); saveSt.style.cssText='margin-left:8px;font-size:12px;color:var(--tx3);';
+        const saveRow=mk('div',''); saveRow.style.cssText='display:flex;align-items:center;gap:8px;margin-top:8px;';
+        saveRow.appendChild(saveAllBtn); saveRow.appendChild(saveSt);
+        saveAllBtn.onclick=async()=>{ saveAllBtn.disabled=true; saveAllBtn.textContent='⏳'; await saveSplits(saveSt); };
+        splitArea.appendChild(saveRow);
       }
 
       splitBtn.onclick = () => { splitBtn.style.display='none'; addBtn.style.display='none'; renderSplitGroups(); };
@@ -867,11 +875,17 @@ function buildImportAssistent(subTitle, renderCards) {
 
       wrap.appendChild(zone); wrap.appendChild(pdfInp);
       wrap.appendChild(thumbsWrap); wrap.appendChild(actionRow); wrap.appendChild(splitArea);
+      // Expose saveSplits für renderNav (auto-save beim Navigieren)
+      wrap._saveSplitsIfOpen = async () => {
+        if (splitArea.children.length > 0) { await saveSplits(null); }
+      };
       return wrap;
     }
 
-    zonesRow.appendChild(makeZone(1, 'kontext',  '📋 Kontext'));
-    zonesRow.appendChild(makeZone(2, 'material', '📄 Material'));
+    const zoneEl1 = makeZone(1, 'kontext',  '📋 Kontext');
+    const zoneEl2 = makeZone(2, 'material', '📄 Material');
+    zonesRow.appendChild(zoneEl1);
+    zonesRow.appendChild(zoneEl2);
     body.appendChild(zonesRow);
 
     // Segment-Liste
@@ -905,7 +919,14 @@ function buildImportAssistent(subTitle, renderCards) {
     function renderNav() {
       navWrap.innerHTML='';
       if(S.zsSegments.length>0){
-        const matchBtn=btn('→ Zum Matching','btn btn-pri btn-sm'); matchBtn.onclick=()=>goto(14);
+        const matchBtn=btn('→ Zum Matching','btn btn-pri btn-sm');
+        matchBtn.onclick=async()=>{
+          // Auto-save offene Split-Ansichten beider Zonen
+          matchBtn.disabled=true; matchBtn.textContent='⏳ Speichere…';
+          await zoneEl1._saveSplitsIfOpen();
+          await zoneEl2._saveSplitsIfOpen();
+          goto(14);
+        };
         navWrap.appendChild(matchBtn);
       }
       const backBtn2=btn('← Zurück','btn btn-ghost btn-sm'); backBtn2.onclick=()=>{S.zsSegments=[];S.zsAusgabe='';goto(0);};

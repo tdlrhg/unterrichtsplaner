@@ -332,7 +332,8 @@ Bekannt: Fach=${entry.fach?.join(',')}, Typ=${entry.materialtyp}, Dateiname=${en
 
 WICHTIG – Titelregeln:
 - "titel" = der tatsächliche Titel wie er auf dem Blatt gedruckt steht (z.B. "Wie entsteht Regen?", "M1: Zellatmung", "Station 3 – Fotosynthese")
-- Ist kein Titel aufgedruckt, übernimm den Dateinamen: "${entry.titel}"
+- Ist kein Drucktitel erkennbar: erstelle einen beschreibenden Kurztitel aus Thema + Aufgabentyp (z.B. "Fotosynthese – Lückentext", "Aggregatzustände – Stationenarbeit", "Zellatmung – Kreuzworträtsel")
+- NIEMALS den Dateinamen als Titel verwenden
 - NIEMALS eine Rolle als Titel verwenden (also NICHT "Einführungsmaterial", "Vertiefungsaufgabe", "Erarbeitungsphase" o.ä.)
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion (z.B. "Einstieg in die Fotosynthese als Einzelarbeit")
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
@@ -860,7 +861,8 @@ Bekannt: Fach=${entry.fach?.join(',')}, Typ=${entry.materialtyp}, Dateiname=${en
 
 WICHTIG – Titelregeln:
 - "titel" = der tatsächliche Titel wie er auf dem Blatt gedruckt steht
-- Ist kein Titel aufgedruckt, übernimm den Dateinamen: "${entry.titel}"
+- Ist kein Drucktitel erkennbar: erstelle einen beschreibenden Kurztitel aus Thema + Aufgabentyp (z.B. "Fotosynthese – Lückentext", "Aggregatzustände – Stationenarbeit")
+- NIEMALS den Dateinamen als Titel verwenden
 - NIEMALS eine Rolle als Titel verwenden
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
@@ -2458,7 +2460,8 @@ Bekannt: Fach=${(mat.fach||[]).join(',')}, Typ=${mat.materialtyp}, Dateiname=${m
 
 WICHTIG – Titelregeln:
 - "titel" = der tatsächliche Titel wie er auf dem Blatt gedruckt steht
-- Ist kein Titel aufgedruckt, verwende den Dateinamen: "${mat.titel}"
+- Ist kein Drucktitel erkennbar: erstelle einen beschreibenden Kurztitel aus Thema + Aufgabentyp (z.B. "Fotosynthese – Lückentext", "Aggregatzustände – Stationenarbeit")
+- NIEMALS den Dateinamen als Titel verwenden
 - NIEMALS eine Rolle als Titel verwenden (nicht "Einführungsmaterial" o.ä.)
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []

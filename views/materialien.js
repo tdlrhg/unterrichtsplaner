@@ -954,8 +954,15 @@ function buildImportAssistent(subTitle, renderCards) {
     const ausgabeInp=document.createElement('input'); ausgabeInp.type='text'; ausgabeInp.className='finp';
     ausgabeInp.placeholder='Ausgabe / Ordnername'; ausgabeInp.value=S.zsAusgabe;
     ausgabeInp.style.cssText='flex:1;max-width:400px;';
-    ausgabeInp.oninput=()=>{S.zsAusgabe=ausgabeInp.value.trim();updateUploadBtn();};
-    ausgabeWrap.appendChild(tx('span','','Ausgabe:')); ausgabeWrap.appendChild(ausgabeInp);
+    const ausgabeHint=tx('span','',''); ausgabeHint.style.cssText='font-size:11px;color:var(--tx3);white-space:nowrap;';
+    function updateAusgabeHint(){
+      const safe=r2safe(ausgabeInp.value.trim());
+      const raw=ausgabeInp.value.trim();
+      ausgabeHint.textContent = (raw && safe!==raw) ? '→ Ordner: '+safe : '';
+    }
+    ausgabeInp.oninput=()=>{S.zsAusgabe=ausgabeInp.value.trim();updateUploadBtn();updateAusgabeHint();};
+    updateAusgabeHint();
+    ausgabeWrap.appendChild(tx('span','','Ausgabe:')); ausgabeWrap.appendChild(ausgabeInp); ausgabeWrap.appendChild(ausgabeHint);
     body.appendChild(ausgabeWrap);
 
     // Matching-State

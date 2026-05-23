@@ -848,14 +848,10 @@ function buildImportAssistent(subTitle, renderCards) {
           groupEl.appendChild(pagesRow);
           splitArea.appendChild(groupEl);
         });
-        // Einzelner prominenter Speichern-Button am Ende
-        const saveAllBtn=btn(`💾 ${getGroups().length} Segment${getGroups().length!==1?'e':''} übernehmen`,'btn btn-pri btn-sm');
-        saveAllBtn.style.cssText='margin-top:12px;width:100%;';
-        const saveSt=tx('span','',''); saveSt.style.cssText='margin-left:8px;font-size:12px;color:var(--tx3);';
-        const saveRow=mk('div',''); saveRow.style.cssText='display:flex;align-items:center;gap:8px;margin-top:8px;';
-        saveRow.appendChild(saveAllBtn); saveRow.appendChild(saveSt);
-        saveAllBtn.onclick=async()=>{ saveAllBtn.disabled=true; saveAllBtn.textContent='⏳'; await saveSplits(saveSt); };
-        splitArea.appendChild(saveRow);
+        // Hinweis: Speichern passiert automatisch beim Klick auf "→ Zum Matching"
+        const hint=tx('div','',`✂ ${getGroups().length} Segment${getGroups().length!==1?'e':''} – einfach auf „→ Zum Matching" klicken`);
+        hint.style.cssText='margin-top:10px;font-size:12px;color:var(--tx3);text-align:center;';
+        splitArea.appendChild(hint);
       }
 
       splitBtn.onclick = () => { splitBtn.style.display='none'; addBtn.style.display='none'; renderSplitGroups(); };

@@ -739,15 +739,14 @@ function buildImportAssistent(subTitle, renderCards) {
           pdfDoc = await pdfjsLib.getDocument(blobUrl).promise;
           thumbsWrap.innerHTML = '';
           const total = pdfDoc.numPages;
-          const MAX_THUMBS = 40;
-          for (let i=1; i<=Math.min(total, MAX_THUMBS); i++) {
+          for (let i=1; i<=total; i++) {
             const page = await pdfDoc.getPage(i);
             const vp0 = page.getViewport({scale:1});
             const cv = document.createElement('canvas');
             const vp = page.getViewport({scale: 110/vp0.width});
             cv.width=vp.width; cv.height=vp.height;
             await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
-            // JPEG spart ~70 % gegenüber PNG; Canvas-Pixel sofort freigeben
+            // JPEG ~3–5 KB pro Seite; Canvas-Pixel sofort freigeben
             const dataURL = cv.toDataURL('image/jpeg', 0.75);
             cv.width = 0; cv.height = 0;
             page.cleanup();
@@ -758,9 +757,6 @@ function buildImportAssistent(subTitle, renderCards) {
             const thumb = mk('div','mat-upload-thumb');
             thumb.appendChild(img); thumb.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
             thumbsWrap.appendChild(thumb);
-          }
-          if (total > MAX_THUMBS) {
-            thumbsWrap.appendChild(tx('div','mat-upload-spin', `… ${total - MAX_THUMBS} weitere Seiten (werden beim Splitten berücksichtigt)`));
           }
           await pdfDoc.destroy(); pdfDoc = null;
           URL.revokeObjectURL(blobUrl); blobUrl = null;

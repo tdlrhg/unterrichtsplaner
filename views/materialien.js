@@ -2645,16 +2645,25 @@ Antworte NUR mit JSON (kein Text davor/danach):
         const c1 = [{ type: 'text', text: '=== MATERIAL ===' }];
         matURLs.forEach(u => c1.push(toImgC(u)));
         c1.push({ type: 'text', text: `Analysiere dieses Unterrichtsmaterial für eine NRW-Lehrkraft.
+Materialname: "${mat.titel || ''}"
 
-Schritt 1: Gibt es im Material eine explizit benannte Unterrichtsmethode (z.B. "Think-Pair-Share", "Fishbowl", "Jigsaw", "Placemat", oder einen anderen Eigennamen)? Falls ja, verwende diesen Namen.
-Schritt 2: Falls keine benannte Methode vorkommt – gibt es eine didaktische Idee, die übertragbar auf andere Inhalte wäre?
-Falls weder noch: gib {"method": null} zurück.
+Aufgabe: Erkenne die zentrale didaktische Methode oder das didaktische Konzept dieses Materials.
 
-Wenn eine Methode gefunden wird, fülle aus:
-- name: exakter Eigenname falls vorhanden, sonst kurzer beschreibender Name
-- beschreibung: Was tun die Schülerinnen und Schüler konkret? (2–3 Sätze)
-- ziel: Welches didaktische Ziel verfolgt die Methode? (1–2 Sätze)
-- hinweise: Worauf sollte man bei der Durchführung achten? Varianten? (2–3 Sätze)
+WICHTIG – was als Methode zählt:
+- Benannte Unterrichtsmethoden: Think-Pair-Share, Fishbowl, Jigsaw, Placemat, Lerntempoduett …
+- Didaktische Werkzeuge und Konzepte: Kompetenzraster, Portfolio, Lerntagebuch, Concept Map, Lerntheke, Advance Organizer, Growth Mindset …
+- Der Materialname ist oft der stärkste Hinweis – wenn dort "Kompetenzraster" steht, ist das die Methode
+- Nicht: einzelne Aufgabentypen wie "Lückentext", "Multiple Choice", oder visuelle Elemente wie "Skala"
+
+Schritt 1: Prüfe zuerst den Materialnamen und die Überschriften – gibt es dort eine benannte Methode oder ein didaktisches Konzept?
+Schritt 2: Falls nicht im Namen – gibt es im Inhalt eine explizit genannte oder klar erkennbare Methode?
+Schritt 3: Falls gar nichts – gibt es eine übertragbare didaktische Idee? Sonst: {"method": null}
+
+Fülle aus:
+- name: exakter Methoden-/Konzeptname
+- beschreibung: Was tun Schülerinnen und Schüler konkret? (2–3 Sätze)
+- ziel: Didaktisches Ziel der Methode (1–2 Sätze)
+- hinweise: Durchführungshinweise, Varianten (2–3 Sätze)
 
 Antworte NUR mit JSON (kein Text davor/danach):
 {"method": {"name": "...", "beschreibung": "...", "ziel": "...", "hinweise": "..."}} ODER {"method": null}` });

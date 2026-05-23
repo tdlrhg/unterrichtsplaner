@@ -1788,7 +1788,88 @@ function viewMaterialien() {
   const importBtn = btn('➕ Importieren', 'btn btn-pri btn-sm');
   importBtn.onclick = () => { buildImportAssistent(subTitle, renderCards); };
 
+  const cleanupBtn = btn('🧹 Aufräumen', 'btn btn-ghost btn-sm');
+  cleanupBtn.onclick = async () => {
+    cleanupBtn.disabled = true; cleanupBtn.textContent = '⏳ Suche verwaiste Dateien…';
+
+    // Alle referenzierten R2-Keys sammeln
+    const referenced = new Set();
+    MATDB.forEach(m => {
+      if (m.r2key) referenced.add(m.r2key);
+      if (m.dateipfad) referenced.add(m.dateipfad);
+      if (m.kontextR2key) referenced.add(m.kontextR2key);
+      if (m.kontextPfad) referenced.add(m.kontextPfad);
+      (m.dateipfadeWeitere || []).forEach(k => { if (k) referenced.add(k); });
+    });
+
+    // R2 rekursiv auflisten
+    async function listAllR2(prefix) {
+      const { folders, files } = await r2List(prefix);
+      let all = files.map(f => f.key);
+      for (const folder of folders) all = all.concat(await listAllR2(folder));
+      return all;
+    }
+
+    try {
+      const allKeys = await listAllR2('');
+      const orphans = allKeys.filter(k => !referenced.has(k));
+
+      if (!orphans.length) {
+        alert('✓ Keine verwaisten Dateien gefunden. R2 ist sauber.');
+        cleanupBtn.textContent = '🧹 Aufräumen'; cleanupBtn.disabled = false;
+        return;
+      }
+
+      // Overlay aufbauen
+      const ov = mk('div', 'matd-overlay'); ov.style.zIndex = '9999';
+      const pan = mk('div', 'matd-panel');
+      const phdr = mk('div', 'matd-panel-hdr');
+      phdr.appendChild(tx('span', 'matd-panel-title', orphans.length + ' verwaiste Dateien'));
+      const cls = btn('✕', 'btn btn-ghost btn-sm matd-close');
+      cls.onclick = () => ov.remove();
+      phdr.appendChild(cls); pan.appendChild(phdr);
+
+      const pbody = mk('div', 'matd-panel-body');
+      pbody.style.padding = '16px';
+
+      const hint = tx('p', '', 'Diese Dateien sind in R2 vorhanden, aber in keinem MATDB-Eintrag referenziert.');
+      hint.style.cssText = 'color:var(--tx2);font-size:12px;margin:0 0 12px 0;';
+      pbody.appendChild(hint);
+
+      const list = mk('div', ''); list.style.cssText = 'display:flex;flex-direction:column;gap:4px;margin-bottom:16px;max-height:400px;overflow-y:auto;';
+      const checked = new Set(orphans);
+      orphans.forEach(key => {
+        const row = mk('div', ''); row.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:12px;';
+        const cb = mk('input', ''); cb.type = 'checkbox'; cb.checked = true;
+        cb.onchange = () => cb.checked ? checked.add(key) : checked.delete(key);
+        row.appendChild(cb);
+        row.appendChild(tx('span', '', key));
+        list.appendChild(row);
+      });
+      pbody.appendChild(list);
+
+      const delAllBtn = btn('🗑 Markierte löschen (' + orphans.length + ')', 'btn btn-danger btn-sm');
+      delAllBtn.onclick = async () => {
+        delAllBtn.disabled = true; delAllBtn.textContent = '⏳ Lösche…';
+        let n = 0;
+        for (const key of checked) {
+          try { await r2Delete(key); n++; } catch(e) { console.warn('Löschen fehlgeschlagen:', key, e); }
+        }
+        ov.remove();
+        alert('✓ ' + n + ' Datei' + (n !== 1 ? 'en' : '') + ' gelöscht.');
+      };
+      pbody.appendChild(delAllBtn);
+      pan.appendChild(pbody); ov.appendChild(pan);
+      ov.onclick = e => { if (e.target === ov) ov.remove(); };
+      div.appendChild(ov); ov.classList.add('open');
+    } catch(e) {
+      alert('Fehler beim Auflisten: ' + e.message);
+    }
+    cleanupBtn.textContent = '🧹 Aufräumen'; cleanupBtn.disabled = false;
+  };
+
   hdrBtns.appendChild(importBtn);
+  hdrBtns.appendChild(cleanupBtn);
   hdr.appendChild(hdrBtns);
   div.appendChild(hdr);
 
@@ -2669,9 +2750,25 @@ Antworte NUR mit JSON (kein Text davor/danach):
 
   const delBtn2 = btn('🗑 Eintrag löschen', 'btn btn-danger btn-xs');
   delBtn2.onclick = () => {
-    if (!confirm('„' + mat.titel + '" aus der Datenbank löschen?')) return;
+    if (!confirm('„' + mat.titel + '" aus der Datenbank löschen?\nDie zugehörigen Dateien in der Cloud werden ebenfalls gelöscht.')) return;
+
+    // R2-Schlüssel sammeln
+    const keysToDelete = [];
+    const matR2 = mat.r2key || mat.dateipfad;
+    if (matR2) keysToDelete.push(matR2);
+    (mat.dateipfadeWeitere || []).forEach(k => { if (k) keysToDelete.push(k); });
+    // Kontext nur löschen wenn kein anderer Eintrag dieselbe Datei nutzt
+    const ctxKey = mat.kontextR2key || mat.kontextPfad;
+    if (ctxKey) {
+      const shared = MATDB.some(m => m.id !== mat.id && (m.kontextR2key === ctxKey || m.kontextPfad === ctxKey));
+      if (!shared) keysToDelete.push(ctxKey);
+    }
+
     MATDB = MATDB.filter(m => m.id !== mat.id);
     saveMatDB(); overlay.classList.remove('open'); body.remove(); renderCards();
+
+    // R2-Dateien im Hintergrund löschen
+    keysToDelete.forEach(k => r2Delete(k).catch(e => console.warn('R2-Löschen fehlgeschlagen:', k, e)));
   };
   delBar.appendChild(delBtn2); body.appendChild(delBar);
 

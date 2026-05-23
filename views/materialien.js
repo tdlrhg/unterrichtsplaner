@@ -629,31 +629,24 @@ function buildImportAssistent(subTitle, renderCards) {
     body.appendChild(tx('div', 'mat-import-section-title', 'Welche Art von Material möchtest du importieren?'));
     const grid = mk('div', 'mat-import-sources');
     [
-      { id: 'raabits',        icon: '📚', title: 'RAAbits',        quelle: 'RAAbits',
-        desc: 'Strukturiertes Heft mit Prä-Material, M1–Mn, Lehrerhandreichung und Lösungen',
-        types: [{key:'kontext',label:'📋 Prä/Kontext'},{key:'material',label:'📄 M (auto)'},{key:'lh',label:'🔑 LH'},{key:'loesung',label:'✓ Lösung'},{key:'skip',label:'⊘ Skip'}] },
-      { id: 'einzelblaetter', icon: '📄', title: 'Einzelblätter',  quelle: '',
-        desc: 'Auer, Persen, Verlag an der Ruhr u.a. — Arbeitsblätter, oft mit Lösungen am Ende',
-        types: [{key:'kontext',label:'📖 Cover'},{key:'material',label:'📄 Material'},{key:'loesung',label:'✓ Lösung'},{key:'skip',label:'⊘ Skip'}] },
-      { id: 'zeitschrift',    icon: '📰', title: 'Zeitschrift',     quelle: '',
-        desc: 'Kontext-Artikel und Schülermaterial in separaten oder gemeinsamen Heften',
-        types: [] },
-      { id: 'r2',            icon: '📂', title: 'Aus R2',           quelle: '',
+      { id: 'pdf',  icon: '📄', title: 'PDF importieren', quelle: '',
+        desc: 'Ein oder mehrere PDFs hochladen, aufteilen, als Kontext oder Material zuweisen und matchen',
+        target: 13 },
+      { id: 'r2',   icon: '📂', title: 'Aus R2',          quelle: '',
         desc: 'Dateien die bereits in Cloudflare R2 liegen in die Datenbank eintragen',
-        types: [] },
-      { id: 'bild',          icon: '📸', title: 'Aus Bild',         quelle: '',
+        target: 11 },
+      { id: 'bild', icon: '📸', title: 'Aus Bild',         quelle: '',
         desc: 'Fotos von Arbeitsblättern per GPT-4o analysieren und importieren',
-        types: [] },
+        target: 12 },
     ].forEach(src => {
       const card = mk('div', 'mat-import-source-card');
       card.appendChild(tx('div', 'mat-import-source-icon', src.icon));
       card.appendChild(tx('div', 'mat-import-source-title', src.title));
       card.appendChild(tx('div', 'mat-import-source-desc', src.desc));
       card.onclick = () => {
-        S.source = src.id; S.meta.quelle = src.quelle; S.types = src.types; S.defaultType = 'material';
+        S.source = src.id; S.meta.quelle = src.quelle; S.types = []; S.defaultType = 'material';
         S.pageDataURLs.length = 0; S.splitPoints.clear(); S.segTypes = {}; S.pdfFile = null;
-        const target = src.id === 'zeitschrift' ? 13 : src.id === 'r2' ? 11 : src.id === 'bild' ? 12 : 1;
-        goto(target);
+        goto(src.target);
       };
       grid.appendChild(card);
     });

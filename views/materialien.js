@@ -1,6 +1,21 @@
 // ── Materialien-Datenbank ─────────────────────────────────────────
 let _kontextFiles  = [];
 let _uploadPdfFile = null;
+const MAT_ANALYSIS_LONG_EDGE = 1568;
+
+async function renderPdfPageDataURL(page, longEdge = MAT_ANALYSIS_LONG_EDGE, quality = 0.88) {
+  const vp0 = page.getViewport({ scale: 1 });
+  const scale = longEdge / Math.max(vp0.width, vp0.height);
+  const vp = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(vp.width);
+  canvas.height = Math.round(vp.height);
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+  const dataURL = canvas.toDataURL('image/jpeg', quality);
+  canvas.width = 0; canvas.height = 0;
+  page.cleanup();
+  return dataURL;
+}
 
 function getBlockTitel(blockId) {
   if (!blockId) return null;
@@ -18,6 +33,7 @@ function buildUploadPanel() {
 
   const p = mk('div', 'mat-upload-panel');
   const pageDataURLs = [];
+  const analysisDataURLs = [];
 
   // Header
   const pHdr = mk('div', 'mat-upload-hdr');
@@ -255,7 +271,7 @@ function buildUploadPanel() {
           splitInfo.textContent = 'Lade hoch: Kontext…';
           await r2Upload(key, blob, 'application/pdf');
           kontextR2key = key;
-          for (let pg = g.start; pg <= g.end; pg++) kontextPageURLs.push(pageDataURLs[pg - 1]);
+          for (let pg = g.start; pg <= g.end; pg++) kontextPageURLs.push(analysisDataURLs[pg - 1]);
         }
 
         // Dann Materialien & LH hochladen
@@ -287,7 +303,7 @@ function buildUploadPanel() {
             seiten: g.end - g.start + 1,
             importiertAm: now,
           };
-          const matPageURLs = pageDataURLs.slice(g.start - 1, g.end);
+          const matPageURLs = analysisDataURLs.slice(g.start - 1, g.end);
           // Vorhandenen Eintrag mit gleichem R2-Key überschreiben
           const existingIdx = MATDB.findIndex(m => m.r2key === key);
           if (existingIdx >= 0) { entry.id = MATDB[existingIdx].id; MATDB[existingIdx] = entry; }
@@ -316,6 +332,8 @@ function buildUploadPanel() {
             return { type: 'image', source: { type: 'base64', media_type: mediaType, data } };
           }
 
+          let okCount = 0;
+          const failed = [];
           for (let ei = 0; ei < uploadedEntries.length; ei++) {
             const { entry, matPageURLs } = uploadedEntries[ei];
             aiStatus.textContent = (ei + 1) + '/' + uploadedEntries.length + ' analysiere…';
@@ -352,28 +370,38 @@ Antworte NUR mit JSON (kein Text davor/danach):
               const res = await fetch('https://api.anthropic.com/v1/messages', {
                 method: 'POST',
                 headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-                body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1500, messages: [{ role: 'user', content }] })
+                body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 3000, messages: [{ role: 'user', content }] })
               });
               if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error('API ' + res.status + ': ' + (err.error?.message || res.statusText)); }
               const d = await res.json();
               const text = d.content?.[0]?.text || '{}';
               const match = text.match(/\{[\s\S]*\}/);
-              if (match) {
-                const enriched = JSON.parse(match[0]);
-                const idx = MATDB.findIndex(m => m.id === entry.id);
-                if (idx >= 0) {
-                  const { quelle, materialnummer, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id } = MATDB[idx];
-                  Object.assign(MATDB[idx], enriched);
-                  const keepFields = { quelle, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id };
-                  if (materialnummer) keepFields.materialnummer = materialnummer;
-                  Object.assign(MATDB[idx], keepFields);
-                }
+              if (!match) throw new Error('Kein JSON in der KI-Antwort.');
+              const enriched = JSON.parse(match[0]);
+              const idx = MATDB.findIndex(m => m.id === entry.id);
+              if (idx >= 0) {
+                const { quelle, materialnummer, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id } = MATDB[idx];
+                Object.assign(MATDB[idx], enriched);
+                const keepFields = { quelle, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id };
+                if (materialnummer) keepFields.materialnummer = materialnummer;
+                Object.assign(MATDB[idx], keepFields);
               }
-            } catch(e2) { console.error('Analyse fehlgeschlagen:', entry.id, e2); }
+              okCount++;
+            } catch(e2) {
+              console.error('Analyse fehlgeschlagen:', entry.id, e2);
+              failed.push((entry.materialnummer || entry.titel || entry.id) + ': ' + e2.message);
+            }
           }
           saveMatDB();
-          aiStatus.textContent = '✓ Analyse abgeschlossen';
-          aiBtn.textContent = '✓ Fertig – Schließen';
+          if (failed.length) {
+            aiStatus.style.color = '#dc2626';
+            aiStatus.textContent = `⚠ ${okCount}/${uploadedEntries.length} analysiert. Fehler: ${failed.slice(0, 2).join(' | ')}${failed.length > 2 ? ' …' : ''}`;
+            aiBtn.textContent = 'Schließen';
+          } else {
+            aiStatus.style.color = 'var(--grn)';
+            aiStatus.textContent = '✓ Analyse abgeschlossen';
+            aiBtn.textContent = '✓ Fertig – Schließen';
+          }
           aiBtn.disabled = false;
           aiBtn.onclick = () => { p.remove(); S.view = 'materialien'; render(); };
         };
@@ -397,6 +425,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
     _uploadPdfFile = null;
     imageSources.length = 0;
     pageDataURLs.length = 0;
+    analysisDataURLs.length = 0;
     thumbsWrap.innerHTML = '';
     currentFn = files.length === 1 ? files[0].name.replace(/\.[^.]+$/, '') : 'Scan';
     zone2.textContent = '✓ ' + files.length + ' Bild' + (files.length !== 1 ? 'er' : '') + ' geladen';
@@ -410,6 +439,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
       });
       imageSources.push(file);
       pageDataURLs.push(dataURL);
+      analysisDataURLs.push(dataURL);
     }
     thumbsWrap.innerHTML = '';
     pageDataURLs.forEach((url, i) => {
@@ -433,6 +463,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
     updatePath();
     thumbsWrap.innerHTML = '';
     pageDataURLs.length = 0;
+    analysisDataURLs.length = 0;
     const spin = tx('div', 'mat-upload-spin', '⏳ Lade Vorschau…');
     thumbsWrap.appendChild(spin);
     try {
@@ -449,6 +480,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
         canvas.width = vp.width; canvas.height = vp.height;
         await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
         pageDataURLs.push(canvas.toDataURL());
+        analysisDataURLs.push(await renderPdfPageDataURL(page));
         const thumb = mk('div', 'mat-upload-thumb');
         thumb.appendChild(canvas);
         thumb.appendChild(tx('div', 'mat-upload-thumb-nr', 'S. ' + i));
@@ -2336,14 +2368,9 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
         const urls = [];
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
-          const vp0 = page.getViewport({ scale: 1 });
-          const scale = 280 / vp0.width;
-          const vp = page.getViewport({ scale });
-          const cv = document.createElement('canvas');
-          cv.width = vp.width; cv.height = vp.height;
-          await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
-          urls.push(cv.toDataURL('image/jpeg', 0.85));
+          urls.push(await renderPdfPageDataURL(page));
         }
+        await pdf.destroy();
         return urls;
       }
 
@@ -2396,25 +2423,27 @@ Antworte NUR mit JSON (kein Text davor/danach):
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
           headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 1500, messages: [{ role: 'user', content }] })
+          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 3000, messages: [{ role: 'user', content }] })
         });
         if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error('API ' + res.status + ': ' + (err.error?.message || res.statusText)); }
         const d = await res.json();
         const match = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/);
-        if (match) {
-          const enriched = JSON.parse(match[0]);
-          const idx = MATDB.findIndex(m => m.id === mat.id);
-          if (idx >= 0) {
-            const keep = (({ quelle, materialnummer, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id }) =>
-              ({ quelle, materialnummer: materialnummer || null, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id }))(MATDB[idx]);
-            // Materialnummer: KI-Wert übernehmen wenn noch nicht gesetzt
-            if (!keep.materialnummer) delete keep.materialnummer;
-            Object.assign(MATDB[idx], enriched, keep);
-          }
-          saveMatDB(); renderCards();
-          overlay.classList.remove('open'); body.remove();
-          const fresh = MATDB.find(m => m.id === mat.id);
-          if (fresh) openMatOverlay(fresh, null, overlay, panel, panTitle, renderCards);
+        if (!match) throw new Error('Kein JSON in der KI-Antwort.');
+        const enriched = JSON.parse(match[0]);
+        const idx = MATDB.findIndex(m => m.id === mat.id);
+        if (idx < 0) throw new Error('Materialeintrag nicht mehr gefunden.');
+        const keep = (({ quelle, materialnummer, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id }) =>
+          ({ quelle, materialnummer: materialnummer || null, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id }))(MATDB[idx]);
+        // Materialnummer: KI-Wert übernehmen wenn noch nicht gesetzt
+        if (!keep.materialnummer) delete keep.materialnummer;
+        Object.assign(MATDB[idx], enriched, keep);
+        saveMatDB(); renderCards();
+        overlay.classList.remove('open'); body.remove();
+        const fresh = MATDB.find(m => m.id === mat.id);
+        if (fresh) {
+          openMatOverlay(fresh, null, overlay, panel, panTitle, renderCards);
+        } else {
+          throw new Error('Materialeintrag nach der Analyse nicht gefunden.');
         }
       } catch(e2) {
         reBtn.textContent = '✗ Fehler';

@@ -1925,8 +1925,8 @@ function viewMaterialien() {
         function fachSymbol(f) {
           const l = (f||'').toLowerCase();
           if (l.includes('bio')) return '🌿';
-          if (l.includes('chem')) return '🧪';
-          if (l.includes('math') || l === 'mathe') return '📐';
+          if (l.includes('chem') || l === 'ch') return '🧪';
+          if (l.includes('math') || l === 'mathe' || l === 'm') return '📐';
           return f;
         }
         const fachBadge = tx('span', 'matc-fach-prominent', fachArr.map(fachSymbol).join(' '));

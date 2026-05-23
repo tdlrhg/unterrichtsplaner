@@ -731,27 +731,44 @@ function buildImportAssistent(subTitle, renderCards) {
         pageDataURLs.length = 0; thumbsWrap.innerHTML = ''; splitArea.innerHTML = '';
         zone.textContent = '✓ ' + file.name;
         thumbsWrap.appendChild(tx('div','mat-upload-spin','⏳ Lade Vorschau…'));
+        let pdfDoc = null;
         try {
-          const pdfDoc = await pdfjsLib.getDocument({data: pdfBuf.slice(0)}).promise;
+          // Kein .slice() – kein zweiter ArrayBuffer-Klon
+          pdfDoc = await pdfjsLib.getDocument({data: pdfBuf}).promise;
           thumbsWrap.innerHTML = '';
-          for (let i=1; i<=pdfDoc.numPages; i++) {
+          const total = pdfDoc.numPages;
+          const MAX_THUMBS = 40;
+          for (let i=1; i<=Math.min(total, MAX_THUMBS); i++) {
             const page = await pdfDoc.getPage(i);
             const vp0 = page.getViewport({scale:1});
             const cv = document.createElement('canvas');
-            const vp = page.getViewport({scale: 120/vp0.width});
+            const vp = page.getViewport({scale: 110/vp0.width});
             cv.width=vp.width; cv.height=vp.height;
             await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
-            pageDataURLs.push(cv.toDataURL());
+            // JPEG spart ~70 % gegenüber PNG; danach Canvas-Pixel freigeben
+            const dataURL = cv.toDataURL('image/jpeg', 0.75);
+            cv.width = 0; cv.height = 0;   // Pixel-Buffer sofort freigeben
+            page.cleanup();
+            pageDataURLs.push(dataURL);
+            // <img> statt <canvas> im DOM – Canvas kann GC'd werden
+            const img = document.createElement('img');
+            img.src = dataURL; img.className = 'mat-split-thumb';
             const thumb = mk('div','mat-upload-thumb');
-            thumb.appendChild(cv); thumb.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
+            thumb.appendChild(img); thumb.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
             thumbsWrap.appendChild(thumb);
           }
+          if (total > MAX_THUMBS) {
+            thumbsWrap.appendChild(tx('div','mat-upload-spin', `… ${total - MAX_THUMBS} weitere Seiten (werden beim Splitten berücksichtigt)`));
+          }
+          // pdf.js-Dokument zerstören – gibt interne Puffer frei
+          await pdfDoc.destroy(); pdfDoc = null;
           // Sofort als ganzes PDF in S.zsSegments aufnehmen (wird bei Split ersetzt)
           pendingSegId = uid();
           S.zsSegments.push({id: pendingSegId, name: file.name.replace(/\.pdf$/i,''), type: defaultTyp, blob: new Blob([pdfBuf], {type:'application/pdf'}), heft: heftNr, thumb: null, r2Path: null});
           addBtn.style.display='none'; splitBtn.style.display='';
           renderSegments(); renderNav();
         } catch(e) {
+          if (pdfDoc) { pdfDoc.destroy().catch(()=>{}); pdfDoc = null; }
           thumbsWrap.innerHTML = `<div style="padding:8px;color:#dc2626;">⚠ ${e.message}</div>`;
         }
       }

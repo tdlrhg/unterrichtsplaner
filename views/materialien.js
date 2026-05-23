@@ -333,7 +333,7 @@ Bekannt: Fach=${entry.fach?.join(',')}, Typ=${entry.materialtyp}, Dateiname=${en
 WICHTIG – Titelregeln:
 - "titel" = der tatsächliche Titel wie er auf dem Blatt gedruckt steht (z.B. "Wie entsteht Regen?", "M1: Zellatmung", "Station 3 – Fotosynthese")
 - Ist kein Drucktitel erkennbar: erstelle einen beschreibenden Kurztitel aus Thema + Aufgabentyp (z.B. "Fotosynthese – Lückentext", "Aggregatzustände – Stationenarbeit", "Zellatmung – Kreuzworträtsel")
-- NIEMALS den Dateinamen als Titel verwenden
+- Vermeide kryptische Dateinamen als Titel; übernimm den Dateinamen nur wenn er erkennbar dem Drucktitel entspricht
 - NIEMALS eine Rolle als Titel verwenden (also NICHT "Einführungsmaterial", "Vertiefungsaufgabe", "Erarbeitungsphase" o.ä.)
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion (z.B. "Einstieg in die Fotosynthese als Einzelarbeit")
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
@@ -862,7 +862,7 @@ Bekannt: Fach=${entry.fach?.join(',')}, Typ=${entry.materialtyp}, Dateiname=${en
 WICHTIG – Titelregeln:
 - "titel" = der tatsächliche Titel wie er auf dem Blatt gedruckt steht
 - Ist kein Drucktitel erkennbar: erstelle einen beschreibenden Kurztitel aus Thema + Aufgabentyp (z.B. "Fotosynthese – Lückentext", "Aggregatzustände – Stationenarbeit")
-- NIEMALS den Dateinamen als Titel verwenden
+- Vermeide kryptische Dateinamen als Titel; übernimm den Dateinamen nur wenn er erkennbar dem Drucktitel entspricht
 - NIEMALS eine Rolle als Titel verwenden
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
@@ -1819,7 +1819,12 @@ function viewMaterialien() {
   const phases = ['', ...new Set(MATDB.flatMap(m => m.unterrichtsphase || []).filter(Boolean))].sort();
   phases.forEach(p => { const o = document.createElement('option'); o.value = p; o.textContent = p || 'Alle Phasen'; phaseSel.appendChild(o); });
 
-  sb2.appendChild(si); sb2.appendChild(fachSel); sb2.appendChild(jgSel); sb2.appendChild(typSel); sb2.appendChild(phaseSel);
+  const sortSel = document.createElement('select'); sortSel.className = 'finp'; sortSel.style.width = 'auto';
+  [['neu', 'Neueste zuerst'], ['alt', 'Älteste zuerst'], ['az', 'A → Z']].forEach(([v, l]) => {
+    const o = document.createElement('option'); o.value = v; o.textContent = l; sortSel.appendChild(o);
+  });
+
+  sb2.appendChild(si); sb2.appendChild(fachSel); sb2.appendChild(jgSel); sb2.appendChild(typSel); sb2.appendChild(phaseSel); sb2.appendChild(sortSel);
   sf.appendChild(sb2);
   div.appendChild(sf);
 
@@ -1874,7 +1879,8 @@ function viewMaterialien() {
     const q = si.value.toLowerCase().trim();
     const fach = fachSel.value; const typ = typSel.value;
     const jg = jgSel.value;    const phase = phaseSel.value;
-    return MATDB.filter(m => {
+    const sort = sortSel.value;
+    const list = MATDB.filter(m => {
       if (fach  && !(m.fach || []).some(f => { const l = f.toLowerCase(); return l.includes(fach) || fach.includes(l); })) return false;
       if (typ   && m.materialtyp !== typ) return false;
       if (jg    && !(m.jahrgang || []).includes(jg)) return false;
@@ -1885,6 +1891,10 @@ function viewMaterialien() {
                !(m.rolleImKontext || '').toLowerCase().includes(q)) return false;
       return true;
     });
+    if (sort === 'az')  list.sort((a, b) => (a.titel || '').localeCompare(b.titel || '', 'de'));
+    else if (sort === 'alt') list.sort((a, b) => (a.importiertAm || '').localeCompare(b.importiertAm || ''));
+    else list.sort((a, b) => (b.importiertAm || '').localeCompare(a.importiertAm || '')); // neu = default
+    return list;
   }
 
   function renderCards() {
@@ -2004,7 +2014,7 @@ function viewMaterialien() {
   }
 
   si.oninput = renderCards; fachSel.onchange = renderCards;
-  typSel.onchange = renderCards; jgSel.onchange = renderCards; phaseSel.onchange = renderCards;
+  typSel.onchange = renderCards; jgSel.onchange = renderCards; phaseSel.onchange = renderCards; sortSel.onchange = renderCards;
   renderCards();
   return div;
 }
@@ -2461,7 +2471,7 @@ Bekannt: Fach=${(mat.fach||[]).join(',')}, Typ=${mat.materialtyp}, Dateiname=${m
 WICHTIG – Titelregeln:
 - "titel" = der tatsächliche Titel wie er auf dem Blatt gedruckt steht
 - Ist kein Drucktitel erkennbar: erstelle einen beschreibenden Kurztitel aus Thema + Aufgabentyp (z.B. "Fotosynthese – Lückentext", "Aggregatzustände – Stationenarbeit")
-- NIEMALS den Dateinamen als Titel verwenden
+- Vermeide kryptische Dateinamen als Titel; übernimm den Dateinamen nur wenn er erkennbar dem Drucktitel entspricht
 - NIEMALS eine Rolle als Titel verwenden (nicht "Einführungsmaterial" o.ä.)
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []

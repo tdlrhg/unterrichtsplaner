@@ -962,12 +962,25 @@ Antworte NUR mit JSON (kein Text davor/danach):
       body.appendChild(loaded);
     }
 
-    // ── Heft-Nr ermitteln ──
+    // ── Heft-Nr und Defaults ──
     const heftNr = S.zsSegments.length ? Math.max(...S.zsSegments.map(s=>s.heft))+1 : 1;
-    body.appendChild(tx('div','mat-import-section-title','Heft '+heftNr+' laden'));
+    const defaultTyp = heftNr === 1 ? 'kontext' : 'material';
+    const heftLabel = heftNr === 1 ? '📋 Kontext laden' : '📄 Material laden';
+    body.appendChild(tx('div','mat-import-section-title', heftLabel));
 
     const pageDataURLs=[]; let pdfBuf=null; let pdfDoc=null;
     const splitPoints=new Set(); const segNames={}; const segTypes={};
+
+    async function addMulti(files) {
+      zone.textContent='⏳ Verarbeite '+files.length+' Dateien…';
+      for(const f of files){
+        const buf=await f.arrayBuffer();
+        const blob=new Blob([buf],{type:'application/pdf'});
+        const name=f.name.replace(/\.pdf$/i,'');
+        S.zsSegments.push({id:uid(),name,type:defaultTyp,blob,heft:heftNr,thumb:null,r2Path:null});
+      }
+      goto(13);
+    }
 
     const zone=mk('div','mat-upload-drop'); zone.textContent='📄 PDF hierher ziehen oder klicken (mehrere möglich)';
     const pdfInp=document.createElement('input'); pdfInp.type='file'; pdfInp.accept='application/pdf'; pdfInp.multiple=true; pdfInp.style.display='none';
@@ -979,37 +992,37 @@ Antworte NUR mit JSON (kein Text davor/danach):
       const files=[...e.dataTransfer.files].filter(f=>f.type==='application/pdf');
       if(!files.length) return;
       if(files.length===1){ loadHeft(files[0]); return; }
-      // Mehrere PDFs: jede direkt als Segment anlegen
-      (async()=>{
-        zone.textContent='⏳ Verarbeite '+files.length+' Dateien…';
-        for(const f of files){
-          const buf=await f.arrayBuffer();
-          const blob=new Blob([buf],{type:'application/pdf'});
-          const name=f.name.replace(/\.pdf$/i,'');
-          S.zsSegments.push({id:uid(),name,type:'material',blob,heft:heftNr,thumb:null,r2Path:null});
-        }
-        goto(13);
-      })();
+      addMulti(files);
     };
     pdfInp.onchange=()=>{
       const files=[...pdfInp.files];
       if(!files.length) return;
       if(files.length===1){ loadHeft(files[0]); return; }
-      (async()=>{
-        zone.textContent='⏳ Verarbeite '+files.length+' Dateien…';
-        for(const f of files){
-          const buf=await f.arrayBuffer();
-          const blob=new Blob([buf],{type:'application/pdf'});
-          const name=f.name.replace(/\.pdf$/i,'');
-          S.zsSegments.push({id:uid(),name,type:'material',blob,heft:heftNr,thumb:null,r2Path:null});
-        }
-        goto(13);
-      })();
+      addMulti(files);
     };
     body.appendChild(zone); body.appendChild(pdfInp);
 
     const thumbsWrap=mk('div','mat-upload-thumbs'); body.appendChild(thumbsWrap);
-    const splitBtn=btn('✂ Aufteilen','btn btn-sec btn-sm'); splitBtn.disabled=true; splitBtn.style.marginTop='12px'; body.appendChild(splitBtn);
+    // Buttons nach dem Laden einer einzelnen PDF
+    const singleNav=mk('div',''); singleNav.style.cssText='display:flex;gap:8px;margin-top:12px;';
+    const splitBtn=btn('✂ Splitten','btn btn-sec btn-sm'); splitBtn.disabled=true;
+    const skipSplitBtn=btn('→ Direkt zum Matching','btn btn-ghost btn-sm'); skipSplitBtn.style.display='none';
+    skipSplitBtn.onclick=()=>{
+      // einzelne geladene PDF ohne Split als ein Segment anlegen
+      if(typeof PDFLib==='undefined'){ alert('pdf-lib nicht geladen.'); return; }
+      (async()=>{
+        const srcDoc=await PDFLib.PDFDocument.load(pdfBuf);
+        const newDoc=await PDFLib.PDFDocument.create();
+        const copied=await newDoc.copyPages(srcDoc,[...Array(srcDoc.getPageCount()).keys()]);
+        copied.forEach(pg=>newDoc.addPage(pg));
+        const blob=new Blob([await newDoc.save()],{type:'application/pdf'});
+        const name=zone.textContent.replace('✓ ','').replace(/\.pdf$/i,'');
+        S.zsSegments.push({id:uid(),name,type:defaultTyp,blob,heft:heftNr,thumb:null,r2Path:null});
+        goto(14);
+      })();
+    };
+    singleNav.appendChild(splitBtn); singleNav.appendChild(skipSplitBtn);
+    body.appendChild(singleNav);
     const splitArea=mk('div',''); body.appendChild(splitArea);
     const saveBtn=btn('💾 Segmente speichern','btn btn-pri btn-sm'); saveBtn.style.cssText='display:none;margin-top:16px;'; body.appendChild(saveBtn);
 
@@ -1033,6 +1046,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
           thumbsWrap.appendChild(thumb);
         }
         splitBtn.disabled=false;
+        skipSplitBtn.style.display='';
       } catch(e){
         thumbsWrap.innerHTML=`<div style="padding:12px;color:#dc2626;">⚠ ${e.message}</div>`;
       }
@@ -1117,9 +1131,19 @@ Antworte NUR mit JSON (kein Text davor/danach):
   function step14() {
     stepEl.textContent = 'Matching';
     const MATCH_COLORS=['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6','#0ea5e9'];
-    const kontextSegs=S.zsSegments.filter(s=>s.type==='kontext');
-    const materialSegs=S.zsSegments.filter(s=>s.type==='material');
-    const didaktikSegs=S.zsSegments.filter(s=>s.type==='didaktik');
+    let kontextSegs=S.zsSegments.filter(s=>s.type==='kontext');
+    let materialSegs=S.zsSegments.filter(s=>s.type==='material');
+    let didaktikSegs=S.zsSegments.filter(s=>s.type==='didaktik');
+
+    function refreshSegs(){
+      kontextSegs=S.zsSegments.filter(s=>s.type==='kontext');
+      materialSegs=S.zsSegments.filter(s=>s.type==='material');
+      didaktikSegs=S.zsSegments.filter(s=>s.type==='didaktik');
+      // Stale matches bereinigen
+      for(const [mid,kid] of matches){
+        if(!materialSegs.find(s=>s.id===mid)||!kontextSegs.find(s=>s.id===kid)) matches.delete(mid);
+      }
+    }
 
     // Ausgabe-Name
     const ausgabeWrap=mk('div',''); ausgabeWrap.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:16px;';
@@ -1143,9 +1167,9 @@ Antworte NUR mit JSON (kein Text davor/danach):
     // Zwei-Spalten-Layout
     const cols=mk('div',''); cols.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:16px;min-height:0;';
     const leftWrap=mk('div',''); const rightWrap=mk('div','');
-    const leftHdr=tx('div','',`📋 Kontext (${kontextSegs.length})`);
+    const leftHdr=tx('div','','📋 Kontext');
     leftHdr.style.cssText='font-weight:700;font-size:13px;margin-bottom:8px;color:var(--tx2);';
-    const rightHdr=tx('div','',`📄 Material (${materialSegs.length})`);
+    const rightHdr=tx('div','','📄 Material');
     rightHdr.style.cssText='font-weight:700;font-size:13px;margin-bottom:8px;color:var(--tx2);';
     leftWrap.appendChild(leftHdr); rightWrap.appendChild(rightHdr);
     const leftCards=mk('div',''); const rightCards=mk('div','');
@@ -1207,12 +1231,26 @@ Antworte NUR mit JSON (kein Text davor/danach):
         if(ktxSeg){ const badge=tx('span','',ktxSeg.name); badge.style.cssText=`background:${color};color:#fff;border-radius:4px;padding:1px 6px;font-size:11px;`; nameRow.appendChild(badge); }
       }
       card.appendChild(nameRow);
+      // Typ-Wechsel-Badge
+      const TYPE_CYCLE={kontext:'material',material:'didaktik',didaktik:'skip',skip:'kontext'};
+      const TYPE_ICON={kontext:'📋',material:'📄',didaktik:'🎓',skip:'⊘'};
+      const typBadge=tx('span','',TYPE_ICON[seg.type]+' '+seg.type);
+      typBadge.style.cssText='font-size:10px;color:var(--tx3);cursor:pointer;margin-top:2px;display:inline-block;';
+      typBadge.title='Klicken zum Ändern';
+      typBadge.onclick=e=>{
+        e.stopPropagation();
+        seg.type=TYPE_CYCLE[seg.type]||'kontext';
+        refreshSegs(); renderMatchCards();
+      };
+      card.appendChild(typBadge);
       card.onclick=()=>handleClick(seg.id,side);
       return card;
     }
 
     function renderMatchCards(){
       leftCards.innerHTML=''; rightCards.innerHTML='';
+      leftHdr.textContent=`📋 Kontext (${kontextSegs.length})`;
+      rightHdr.textContent=`📄 Material (${materialSegs.length})`;
       kontextSegs.forEach(seg=>leftCards.appendChild(makeCard(seg,'kontext')));
       materialSegs.forEach(seg=>rightCards.appendChild(makeCard(seg,'material')));
       statusEl.textContent=matches.size>0?matches.size+' Paar'+(matches.size>1?'e':'')+' verbunden':'';

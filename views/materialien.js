@@ -338,6 +338,7 @@ WICHTIG – Titelregeln:
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion (z.B. "Einstieg in die Fotosynthese als Einzelarbeit")
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
 - "fach" = erlaubte Werte: "Bio", "Ch", "M" — aus Inhalt, Themen und Fachsprache ermitteln
+- "themen" = fachspezifische Kernthemen des erkannten Fachs; bei fächerübergreifenden Materialien NUR die Themen des erkannten Fachs, nicht die des Kontexts
 
 Antworte NUR mit JSON (kein Text davor/danach):
 {"fach":["Bio"],"titel":"exakter Titel vom Blatt oder Dateiname","materialnummer":"M1","rolleImKontext":"1 Satz zur Funktion","beschreibung":"2-3 Sätze was SuS tun","themen":["..."],"jahrgang":["z.B. 7 oder EF – aus Material ermitteln"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
@@ -867,6 +868,7 @@ WICHTIG – Titelregeln:
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
 - "fach" = erlaubte Werte: "Bio", "Ch", "M" — aus Inhalt, Themen und Fachsprache ermitteln
+- "themen" = fachspezifische Kernthemen des erkannten Fachs; bei fächerübergreifenden Materialien NUR die Themen des erkannten Fachs, nicht die des Kontexts
 ${extraRules ? '\nZUSÄTZLICHE REGELN:\n' + extraRules : ''}
 Antworte NUR mit JSON (kein Text davor/danach):
 {"fach":["Bio"],"titel":"...","rolleImKontext":"...","beschreibung":"...","themen":[...],"jahrgang":["z.B. 7 oder EF – aus Material ermitteln"],"unterrichtsphase":[...],"sozialformenGeeignet":[],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}`});
@@ -2223,7 +2225,13 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
 
   // ── Methoden-Verknüpfungen (IDs aus METHDB) ───────────────────
   const methLinkRow = mk('div', 'mat-detail-row');
-  methLinkRow.appendChild(tx('span', 'mat-detail-label', 'Methoden-Links'));
+  const methLinkLbl = mk('div', '');
+  methLinkLbl.style.cssText = 'display:flex;flex-direction:column;gap:1px;min-width:120px;';
+  methLinkLbl.appendChild(tx('span', 'mat-detail-label', 'Methoden-Links'));
+  const methLinkHint = tx('span', '', 'via 🎯 Methoden-Check');
+  methLinkHint.style.cssText = 'font-size:10px;color:var(--tx3);';
+  methLinkLbl.appendChild(methLinkHint);
+  methLinkRow.appendChild(methLinkLbl);
   const methLinkVal = mk('div', '');
   methLinkVal.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;align-items:center;';
   function renderMethLinks() {
@@ -2476,6 +2484,7 @@ WICHTIG – Titelregeln:
 - "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — aus Aufgabenniveau und Thema ermitteln; wenn unklar: []
 - "fach" = erlaubte Werte: "Bio", "Ch", "M" — aus Inhalt, Themen und Fachsprache ermitteln
+- "themen" = fachspezifische Kernthemen des erkannten Fachs; bei fächerübergreifenden Materialien NUR die Themen des erkannten Fachs, nicht die des Kontexts
 
 Antworte NUR mit JSON (kein Text davor/danach):
 {"fach":["Bio"],"titel":"...","rolleImKontext":"...","beschreibung":"...","themen":[...],"jahrgang":["z.B. 7 oder EF – aus Material ermitteln"],"unterrichtsphase":[...],"sozialformenGeeignet":[...],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });

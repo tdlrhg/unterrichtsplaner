@@ -463,7 +463,7 @@ textarea::placeholder { color: #c4cdd6; }
 .mat-db-title { font-size: 13px; font-weight: 600; color: var(--tx); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mat-db-rolle { font-size: 11px; color: var(--tx3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 1; min-width: 0; }
 .mat-db-meta { font-size: 11px; color: var(--tx3); white-space: nowrap; flex-shrink: 0; }
-.mat-detail-delbar { display: flex; justify-content: flex-end; padding-bottom: 6px; margin-bottom: 4px; border-bottom: 1px solid var(--bord); }
+.mat-detail-delbar { display: flex; justify-content: flex-end; gap: 8px; padding-bottom: 6px; margin-bottom: 4px; border-bottom: 1px solid var(--bord); }
 
 .mat-db-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
 .mat-tag {

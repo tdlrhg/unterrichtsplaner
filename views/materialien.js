@@ -1073,21 +1073,30 @@ function buildImportAssistent(subTitle, renderCards) {
       renderMatchCards();
     }
 
-    // Thumbnails laden (höhere Auflösung)
+    // Thumbnails laden (höhere Auflösung) – sequenziell, mit createObjectURL + destroy
     async function loadThumbs(){
       for(const seg of S.zsSegments.filter(s=>s.type!=='skip'&&!s.thumb)){
+        let blobUrl=null; let doc=null;
         try{
-          const buf=await seg.blob.arrayBuffer();
-          const doc=await pdfjsLib.getDocument({data:buf}).promise;
+          blobUrl=URL.createObjectURL(seg.blob);
+          doc=await pdfjsLib.getDocument(blobUrl).promise;
           const page=await doc.getPage(1);
           const vp0=page.getViewport({scale:1});
           const cv=document.createElement('canvas');
           const vp=page.getViewport({scale:480/vp0.width});
           cv.width=vp.width; cv.height=vp.height;
           await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
-          seg.thumb=cv.toDataURL();
+          page.cleanup();
+          seg.thumb=cv.toDataURL('image/jpeg',0.85);
+          cv.width=0; cv.height=0;
+          await doc.destroy(); doc=null;
+          URL.revokeObjectURL(blobUrl); blobUrl=null;
           renderMatchCards();
-        }catch(e){seg.thumb='';}
+        }catch(e){
+          if(doc) doc.destroy().catch(()=>{});
+          if(blobUrl) URL.revokeObjectURL(blobUrl);
+          seg.thumb='';
+        }
       }
     }
 

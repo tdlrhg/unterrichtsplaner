@@ -692,7 +692,8 @@ function buildImportAssistent(subTitle, renderCards) {
       const wrap = mk('div','');
       wrap.appendChild(tx('div','mat-import-section-title', label));
 
-      let pdfBuf = null;
+      let pdfBuf = null;          // nur beim Splitten befüllt (lazy)
+      let currentFile = null;    // File-Referenz für lazy pdfBuf-Laden
       let pendingSegId = null;   // ID des auto-hinzugefügten ganzen PDFs (wird bei Split ersetzt)
       const pageDataURLs = [];
       const splitPoints = new Set();
@@ -727,14 +728,16 @@ function buildImportAssistent(subTitle, renderCards) {
       async function loadSingle(file) {
         // Altes auto-hinzugefügtes Segment entfernen
         if (pendingSegId) { S.zsSegments = S.zsSegments.filter(s => s.id !== pendingSegId); pendingSegId = null; }
-        pdfBuf = await file.arrayBuffer();
+        // File-Referenz merken; pdfBuf erst beim Splitten laden (spart eine vollständige Kopie)
+        currentFile = file; pdfBuf = null;
         pageDataURLs.length = 0; thumbsWrap.innerHTML = ''; splitArea.innerHTML = '';
         zone.textContent = '✓ ' + file.name;
         thumbsWrap.appendChild(tx('div','mat-upload-spin','⏳ Lade Vorschau…'));
-        let pdfDoc = null;
+        let pdfDoc = null; let blobUrl = null;
         try {
-          // Kein .slice() – kein zweiter ArrayBuffer-Klon
-          pdfDoc = await pdfjsLib.getDocument({data: pdfBuf}).promise;
+          // createObjectURL: kein ArrayBuffer-Klon, pdf.js streamt direkt aus dem File
+          blobUrl = URL.createObjectURL(file);
+          pdfDoc = await pdfjsLib.getDocument(blobUrl).promise;
           thumbsWrap.innerHTML = '';
           const total = pdfDoc.numPages;
           const MAX_THUMBS = 40;
@@ -745,12 +748,12 @@ function buildImportAssistent(subTitle, renderCards) {
             const vp = page.getViewport({scale: 110/vp0.width});
             cv.width=vp.width; cv.height=vp.height;
             await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
-            // JPEG spart ~70 % gegenüber PNG; danach Canvas-Pixel freigeben
+            // JPEG spart ~70 % gegenüber PNG; Canvas-Pixel sofort freigeben
             const dataURL = cv.toDataURL('image/jpeg', 0.75);
-            cv.width = 0; cv.height = 0;   // Pixel-Buffer sofort freigeben
+            cv.width = 0; cv.height = 0;
             page.cleanup();
             pageDataURLs.push(dataURL);
-            // <img> statt <canvas> im DOM – Canvas kann GC'd werden
+            // <img> statt <canvas> im DOM
             const img = document.createElement('img');
             img.src = dataURL; img.className = 'mat-split-thumb';
             const thumb = mk('div','mat-upload-thumb');
@@ -760,15 +763,16 @@ function buildImportAssistent(subTitle, renderCards) {
           if (total > MAX_THUMBS) {
             thumbsWrap.appendChild(tx('div','mat-upload-spin', `… ${total - MAX_THUMBS} weitere Seiten (werden beim Splitten berücksichtigt)`));
           }
-          // pdf.js-Dokument zerstören – gibt interne Puffer frei
           await pdfDoc.destroy(); pdfDoc = null;
-          // Sofort als ganzes PDF in S.zsSegments aufnehmen (wird bei Split ersetzt)
+          URL.revokeObjectURL(blobUrl); blobUrl = null;
+          // File IS a Blob – direkt als Segment eintragen, kein extra Speicher
           pendingSegId = uid();
-          S.zsSegments.push({id: pendingSegId, name: file.name.replace(/\.pdf$/i,''), type: defaultTyp, blob: new Blob([pdfBuf], {type:'application/pdf'}), heft: heftNr, thumb: null, r2Path: null});
+          S.zsSegments.push({id: pendingSegId, name: file.name.replace(/\.pdf$/i,''), type: defaultTyp, blob: file, heft: heftNr, thumb: null, r2Path: null});
           addBtn.style.display='none'; splitBtn.style.display='';
           renderSegments(); renderNav();
         } catch(e) {
-          if (pdfDoc) { pdfDoc.destroy().catch(()=>{}); pdfDoc = null; }
+          if (pdfDoc) { pdfDoc.destroy().catch(()=>{}); }
+          if (blobUrl) { URL.revokeObjectURL(blobUrl); }
           thumbsWrap.innerHTML = `<div style="padding:8px;color:#dc2626;">⚠ ${e.message}</div>`;
         }
       }
@@ -827,6 +831,8 @@ function buildImportAssistent(subTitle, renderCards) {
             saveSegBtn.disabled=true; saveSegBtn.textContent='⏳';
             // Auto-hinzugefügtes ganzes PDF durch die Split-Segmente ersetzen
             if (pendingSegId) { S.zsSegments = S.zsSegments.filter(s => s.id !== pendingSegId); pendingSegId = null; }
+            // pdfBuf lazy laden – erst jetzt wirklich benötigt
+            if (!pdfBuf && currentFile) { pdfBuf = await currentFile.arrayBuffer(); }
             const groups=getGroups();
             const srcDoc=await PDFLib.PDFDocument.load(pdfBuf);
             for(let gi2=0;gi2<groups.length;gi2++){

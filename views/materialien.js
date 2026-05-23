@@ -905,25 +905,6 @@ Antworte NUR mit JSON (kein Text davor/danach):
   }
 
   // ── Schritt 10: Zeitschrift ───────────────────────────────────
-  function step10() {
-    stepEl.textContent = 'Zeitschrift';
-    const note = mk('div', ''); note.style.cssText = 'max-width:600px;line-height:1.8;font-size:14px;color:var(--tx2);margin-bottom:24px;';
-    note.innerHTML = 'Zeitschriften liegen meist als <strong>Jahrgangsheft</strong> vor: mehrere Artikel hintereinander, jeder mit eigenem Kontext und Materialien.<br><br>' +
-      'Typischer Workflow:<br>' +
-      '<ol style="margin:8px 0 0 18px;line-height:2;">' +
-      '<li><strong>Kontext-Split</strong> — Zeitschrift in Artikel aufteilen und Kontext-PDFs in R2 ablegen</li>' +
-      '<li>Materialheft importieren (RAAbits oder Einzelblätter)</li>' +
-      '<li><strong>Matching</strong> — Materialien mit den passenden Kontext-Dateien verknüpfen</li>' +
-      '</ol>';
-    body.appendChild(note);
-    const btns = mk('div', ''); btns.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap;';
-    const goSplit = btn('✂ Kontext-Split', 'btn btn-pri btn-sm'); goSplit.onclick = () => goto(13);
-    const goMatch = btn('🔗 Matching', 'btn btn-ghost btn-sm'); goMatch.onclick = () => goto(14);
-    const backBtn2 = btn('← Zurück', 'btn btn-ghost btn-sm'); backBtn2.onclick = () => goto(0);
-    btns.appendChild(goSplit); btns.appendChild(goMatch); btns.appendChild(backBtn2);
-    body.appendChild(btns);
-  }
-
   function stepFooter(onBack) {
     const f = mk('div', 'mat-import-step-footer');
     const b = btn('← Zurück', 'btn btn-ghost btn-sm'); b.onclick = onBack; f.appendChild(b);
@@ -964,12 +945,19 @@ Antworte NUR mit JSON (kein Text davor/danach):
     if (S.zsSegments.length > 0) {
       const loaded = mk('div','');
       loaded.style.cssText='margin-bottom:20px;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--bord);font-size:13px;';
-      const byHeft={};
-      S.zsSegments.forEach(seg=>{ if(!byHeft[seg.heft]) byHeft[seg.heft]=[]; byHeft[seg.heft].push(seg); });
-      loaded.appendChild(tx('div','',`✓ ${S.zsSegments.length} Segmente gespeichert:`));
-      Object.entries(byHeft).forEach(([heft,segs])=>{
-        const line=tx('div','','Heft '+heft+': '+segs.map(s=>({kontext:'📋',material:'📄',skip:'⊘'})[s.type]+' '+s.name).join(', '));
-        line.style.cssText='color:var(--tx2);margin-top:4px;'; loaded.appendChild(line);
+      loaded.appendChild(tx('div','',`✓ ${S.zsSegments.length} Segmente – Typ anpassen:`));
+      S.zsSegments.forEach(seg=>{
+        const row=mk('div',''); row.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;';
+        row.appendChild(tx('span','',seg.name)); row.appendChild(tx('span','mat-split-range','Heft '+seg.heft));
+        TYPE_OPTS.forEach(opt=>{
+          const tb=btn(opt.label,'btn btn-xs '+(seg.type===opt.key?'btn-pri':'btn-ghost'));
+          tb.onclick=()=>{ seg.type=opt.key; goto(13); };
+          row.appendChild(tb);
+        });
+        const delB=btn('✕','btn btn-xs btn-ghost'); delB.style.color='#dc2626';
+        delB.onclick=()=>{ S.zsSegments=S.zsSegments.filter(s=>s.id!==seg.id); goto(13); };
+        row.appendChild(delB);
+        loaded.appendChild(row);
       });
       body.appendChild(loaded);
     }
@@ -1386,7 +1374,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
     };
   }
 
-  const STEPS = { 0: step0, 1: step1, 2: step2, 3: step3, 10: step10, 11: step11, 12: step12, 13: step13, 14: step14 };
+  const STEPS = { 0: step0, 1: step1, 2: step2, 3: step3, 11: step11, 12: step12, 13: step13, 14: step14 };
   goto(0);
   return ov;
 }

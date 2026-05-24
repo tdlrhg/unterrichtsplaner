@@ -2,6 +2,13 @@
 let _kontextFiles  = [];
 const MAT_ANALYSIS_LONG_EDGE = 1568;
 
+function materialAnalysisRulesBlock() {
+  const rules = (localStorage.getItem('mat_ki_regeln') || '').trim();
+  return rules
+    ? `\n\nZUSÄTZLICHE REGELN DER LEHRKRAFT (haben Vorrang, sofern sie nicht dem JSON-Format widersprechen):\n${rules}`
+    : '';
+}
+
 async function renderPdfPageDataURL(page, longEdge = MAT_ANALYSIS_LONG_EDGE, quality = 0.88) {
   const vp0 = page.getViewport({ scale: 1 });
   const scale = longEdge / Math.max(vp0.width, vp0.height);
@@ -24,6 +31,26 @@ function getBlockTitel(blockId) {
   }
   return null;
 }
+
+const PHASE_COLOR = {
+  'Einstieg':    { bg: '#ede9fe', tx: '#5b21b6' },
+  'Erarbeitung': { bg: '#dbeafe', tx: '#1e40af' },
+  'Sicherung':   { bg: '#dcfce7', tx: '#166534' },
+  'Vertiefung':  { bg: '#cffafe', tx: '#0e7490' },
+  'Übung':       { bg: '#fef3c7', tx: '#92400e' },
+  'Anwendung':   { bg: '#fce7f3', tx: '#9d174d' },
+  'Diagnose':    { bg: '#f3f4f6', tx: '#374151' },
+};
+const TYP_COLOR = {
+  'Arbeitsblatt':         { bg: '#eff6ff', tx: '#1d4ed8' },
+  'Schülerversuch':       { bg: '#fef0e7', tx: '#9a3412' },
+  'Informationsblatt':    { bg: '#f0fdf4', tx: '#15803d' },
+  'Übungsblatt':          { bg: '#fefce8', tx: '#854d0e' },
+  'Tafelbild':            { bg: '#fdf2f8', tx: '#86198f' },
+  'Lehrerhandreichung':   { bg: '#ede9fe', tx: '#5b21b6' },
+  'Selbsttest / Diagnosebogen / Kompetenzcheck': { bg: '#f0f9ff', tx: '#0369a1' },
+  'Faltheft / Merkheft / Lernhilfe': { bg: '#fef9ec', tx: '#92400e' },
+};
 
 function phaseChip(phase) {
   const c = PHASE_COLOR[phase] || { bg: 'var(--surf2)', tx: 'var(--tx2)' };
@@ -861,7 +888,7 @@ function buildScanPanel(subTitle, renderCards, onClose) {
       const kontextImgs = await Promise.all(kontextFiles.map(toImgContent));
       const matImgs     = await Promise.all(matFiles.map(toImgContent));
       const idBase = Date.now();
-      const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Du erhältst zwei Gruppen von Bildern.\n\nGRUPPE 1 – KONTEXT (${kontextFiles.length} Bild${kontextFiles.length !== 1 ? 'er' : ''}): Titelseite, Lehrerhandreichung, Erläuterungen und Lösungsseiten. Lese daraus: Lösungen, Erwartungshorizonte, methodische Hinweise, Zeitplanung, didaktische Tipps.\n\nGRUPPE 2 – SCHÜLERMATERIALIEN (${matFiles.length} Bild${matFiles.length !== 1 ? 'er' : ''}): M1, M2, M3 usw. – die eigentlichen Arbeitsblätter.\n\nSCHEMA:\n${schemaStr}\n\nREGELN:\n- Gib ein JSON-Array aus, kein Text davor/danach\n- id Format: mat_${idBase}_1, mat_${idBase}_2 usw.\n- Erkenne selbst welche Bilder zusammengehören (z.B. M1 Seite 1+2 → ein Eintrag)\n- Kein Unterrichtseinheit-Eintrag, nur Einzelmaterialien\n- Titel: "Einheitstitel – M1", Lehrerhandreichung: "Einheitstitel – LH"\n- SII/Oberstufe → immer ["SII"]\n- loesung, loesungHinweis, erlaeuterung vollständig aus Kontext übernehmen\n- schueleraktivitaeten, artDerGeistigenTaetigkeit, darstellungsformen: alle vollständig aufführen`;
+      const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Du erhältst zwei Gruppen von Bildern.\n\nGRUPPE 1 – KONTEXT (${kontextFiles.length} Bild${kontextFiles.length !== 1 ? 'er' : ''}): Titelseite, Lehrerhandreichung, Erläuterungen und Lösungsseiten. Lese daraus: Lösungen, Erwartungshorizonte, methodische Hinweise, Zeitplanung, didaktische Tipps.\n\nGRUPPE 2 – SCHÜLERMATERIALIEN (${matFiles.length} Bild${matFiles.length !== 1 ? 'er' : ''}): M1, M2, M3 usw. – die eigentlichen Arbeitsblätter.\n\nSCHEMA:\n${schemaStr}\n\nREGELN:\n- Gib ein JSON-Array aus, kein Text davor/danach\n- id Format: mat_${idBase}_1, mat_${idBase}_2 usw.\n- Erkenne selbst welche Bilder zusammengehören (z.B. M1 Seite 1+2 → ein Eintrag)\n- Kein Unterrichtseinheit-Eintrag, nur Einzelmaterialien\n- Titel: tatsächlichen Drucktitel verwenden; falls keiner erkennbar ist, Thema + Aufgabentyp bilden. Keine Rollen-Titel wie "Einführungsmaterial" oder "Erarbeitungsphase".\n- Jahrgang: zuerst explizite Angaben auf dem Material lesen ("Klasse 9/10", "Jg. 7"); nur sonst aus Niveau/Thema schätzen. SII/Oberstufe → immer ["SII"].\n- Fachwerte: "Bio", "Ch", "M"; wenn fachlich erkennbar, nie [] zurückgeben.\n- Themen stammen aus GRUPPE 2, nicht aus dem Kontext. Kontext darf Lösungen/Hinweise liefern, aber nicht die Themen des Materials überschreiben.\n- loesung, loesungHinweis, erlaeuterung vollständig aus Kontext übernehmen; wenn keine Lösung erkennbar ist: "".\n- schueleraktivitaeten, artDerGeistigenTaetigkeit, darstellungsformen: alle vollständig aufführen${materialAnalysisRulesBlock()}`;
       const contentParts = [{ type: 'text', text: prompt }];
       if (kontextImgs.length) { contentParts.push({ type: 'text', text: '=== GRUPPE 1: KONTEXT ===' }); contentParts.push(...kontextImgs); }
       contentParts.push({ type: 'text', text: '=== GRUPPE 2: SCHÜLERMATERIALIEN ===' });
@@ -1709,9 +1736,11 @@ WICHTIG – Titelregeln:
 - "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — ZUERST: steht auf dem Material eine explizite Klassen-/Jahrgangsangabe (z.B. "Klasse 9/10", "Jg. 7", "für die 8. Klasse")? Dann diese wörtlich übernehmen. NUR wenn keine explizite Angabe vorhanden: aus Aufgabenniveau und Thema schätzen. Bei "9/10" → ["9","10"], bei "7/8" → ["7","8"]. Wenn wirklich unklar: []
 - "fach" = erlaubte Werte: "Bio", "Ch", "M" — anhand von Fachsprache, Formeln, Konzepten und Inhalten bestimmen. Das Fach ist fast immer eindeutig erkennbar (Zellen/Ökologie → "Bio", Reaktionsgleichungen/Atome → "Ch", Geometrie/Algebra/Funktionen → "M"). Immer einen Wert angeben, nie []
 - "themen" = fachspezifische Kernthemen, die im MATERIAL-Teil behandelt werden — IGNORIERE den KONTEXT-Teil vollständig für die Themenbestimmung. Kritisches Beispiel: Wenn der Kontext ein Bio-Text über Korallenriffe ist und das Material eine Mathe-Aufgabe zum Beckenumfang, dann sind die Themen ["Umfang", "Rechteck"] — NICHT ["Ökologie", "Korallenriffe", "Biodiversität"]. Die Themen stammen immer aus dem MATERIAL, nie aus dem KONTEXT.
+- "loesung", "loesungHinweis", "erlaeuterung" nur aus KONTEXT/Lehrerhinweisen übernehmen. Wenn keine Lösung erkennbar ist: "".
+${materialAnalysisRulesBlock()}
 
 Antworte NUR mit JSON (kein Text davor/danach):
-{"fach":["Bio"],"titel":"...","rolleImKontext":"...","beschreibung":"...","themen":[...],"jahrgang":["z.B. 7 oder EF – aus Material ermitteln"],"unterrichtsphase":[...],"sozialformenGeeignet":[...],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
+{"fach":["Bio"],"titel":"exakter Titel vom Blatt","rolleImKontext":"1 Satz zur Funktion","beschreibung":"2-3 Sätze was SuS tun","themen":["Fotosynthese"],"jahrgang":["7"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
 
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',

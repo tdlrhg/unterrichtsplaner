@@ -90,20 +90,19 @@ function normalizeMaterialResult(raw) {
     if (typeof out[k] !== 'string') out[k] = out[k] != null ? String(out[k]) : '';
   });
 
-  // Fach normalisieren
+  // Fach normalisieren – ungültige Werte verwerfen (leeres Array ist besser als "Chemie" in der DB)
   const FACH_MAP = {
     'biologie':'Bio','bio':'Bio','biology':'Bio',
     'chemie':'Ch','ch':'Ch','chemistry':'Ch','chemi':'Ch',
     'mathematik':'M','mathe':'M','math':'M','m':'M','mathematics':'M',
   };
-  const normFach = out.fach.map(f => FACH_MAP[f.toLowerCase()] || f).filter(f => ['Bio','Ch','M'].includes(f));
-  if (normFach.length) out.fach = normFach; // nur überschreiben wenn valide Treffer
+  out.fach = out.fach.map(f => FACH_MAP[f.toLowerCase()] || null).filter(f => f !== null);
 
   // Unterrichtsphasen auf kanonische Werte mappen, Unbekanntes verwerfen
   out.unterrichtsphase = [...new Set(out.unterrichtsphase.map(mapToCanonicalPhase).filter(Boolean))];
 
   // Enum-Felder normalisieren
-  const LEVEL = { niedrig:'niedrig', low:'niedrig', gering:'niedrig', mittel:'mittel', medium:'mittel', hoch:'hoch', high:'hoch', hoch:'hoch' };
+  const LEVEL = { niedrig:'niedrig', low:'niedrig', gering:'niedrig', mittel:'mittel', medium:'mittel', hoch:'hoch', high:'hoch' };
   out.kognitiveBeanspruchung = LEVEL[(out.kognitiveBeanspruchung||'').toLowerCase()] || 'mittel';
   out.sprachlicheAnforderungen = LEVEL[(out.sprachlicheAnforderungen||'').toLowerCase()] || 'mittel';
   const LAUT = { leise:'leise', still:'leise', ruhig:'leise', mittel:'mittel', laut:'laut', lautstark:'laut' };

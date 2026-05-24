@@ -485,7 +485,10 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
           cv.width = vp.width; cv.height = vp.height;
           await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
           urls.push(cv.toDataURL('image/jpeg', 0.75));
+          cv.width = 0; cv.height = 0;
+          page.cleanup();
         }
+        await pdf.destroy();
         return urls;
       }
       function toImgC(dataURL) {

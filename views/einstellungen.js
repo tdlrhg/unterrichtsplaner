@@ -80,6 +80,44 @@ function viewEinstellungen() {
   const aib = mk('div', 'card-body');
   aib.appendChild(keyField('Anthropic API-Key (Claude)', 'ant_key', 'sk-ant-...', true, 'Wird nur lokal gespeichert – verlässt dieses Gerät nicht.'));
   aib.appendChild(keyField('OpenAI API-Key', 'oai_key', 'sk-proj-...', true, 'Wird nur lokal gespeichert – verlässt dieses Gerät nicht.'));
+
+  // Modell-Tester
+  const testRow = mk('div', ''); testRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap;';
+  const MODELS_TO_TEST = [
+    { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5' },
+    { id: 'claude-sonnet-4-6',         label: 'Sonnet 4.6' },
+  ];
+  const testStatus = tx('span', '', ''); testStatus.style.cssText = 'font-size:12px;color:var(--tx2);';
+  MODELS_TO_TEST.forEach(({ id, label }) => {
+    const b = btn('🔍 ' + label + ' testen', 'btn btn-ghost btn-sm');
+    b.onclick = async () => {
+      const key = localStorage.getItem('ant_key');
+      if (!key) { testStatus.textContent = '⚠ Kein API-Key hinterlegt.'; testStatus.style.color = '#d97706'; return; }
+      b.disabled = true; testStatus.textContent = '⏳ Teste ' + label + '…'; testStatus.style.color = 'var(--tx2)';
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: id, max_tokens: 16, messages: [{ role: 'user', content: 'Hi' }] }),
+        });
+        const d = await res.json();
+        if (res.ok) {
+          testStatus.textContent = '✓ ' + label + ' funktioniert.';
+          testStatus.style.color = 'var(--grn)';
+        } else {
+          testStatus.textContent = label + ': ' + res.status + ' – ' + (d.error?.message || d.error?.type || res.statusText);
+          testStatus.style.color = '#dc2626';
+        }
+      } catch(e) {
+        testStatus.textContent = label + ': Netzwerkfehler – ' + e.message;
+        testStatus.style.color = '#dc2626';
+      }
+      b.disabled = false;
+    };
+    testRow.appendChild(b);
+  });
+  testRow.appendChild(testStatus);
+  aib.appendChild(testRow);
   aiCard.appendChild(aib);
   div.appendChild(aiCard);
 

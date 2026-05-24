@@ -215,6 +215,7 @@ Antworte NUR als JSON-Array von Strings:
     const q = suchInp.value.toLowerCase().trim();
     const jg = jgFilter.value;
     let hits = MATDB.filter(mat => {
+      if (mat.materialtyp === 'Lehrerhandreichung') return false;
       if (mat.fach?.length) {
         const mf = mat.fach.map(f => FACH_NORM2[f.toLowerCase()] || f.toLowerCase());
         if (!mf.includes(fpFachNorm)) return false;

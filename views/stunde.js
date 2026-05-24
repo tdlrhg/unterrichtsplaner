@@ -207,19 +207,12 @@ Antworte NUR als JSON-Array von Strings:
   const selected = new Set();
   const kiBewertungen = new Map();
 
-  const FACH_NORM2 = { 'bio':'bio','biologie':'bio','ch':'ch','chemie':'ch','m':'m','mathe':'m','mathematik':'m' };
-  const fpFachNorm = FACH_NORM2[(fp.fach||'').toLowerCase()] || (fp.fach||'').toLowerCase();
-
   function renderErgebnisse() {
     ergebnisListe.innerHTML = '';
     const q = suchInp.value.toLowerCase().trim();
     const jg = jgFilter.value;
     let hits = MATDB.filter(mat => {
       if (mat.materialtyp === 'Lehrerhandreichung') return false;
-      if (mat.fach?.length) {
-        const mf = mat.fach.map(f => FACH_NORM2[f.toLowerCase()] || f.toLowerCase());
-        if (!mf.includes(fpFachNorm)) return false;
-      }
       if (jg && mat.jahrgang?.length && !mat.jahrgang.includes(jg)) return false;
       if (q.length >= 2) {
         const txt = [mat.titel||'', ...(mat.themen||[]), mat.beschreibung||''].join(' ').toLowerCase();

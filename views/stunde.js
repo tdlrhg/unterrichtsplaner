@@ -203,14 +203,67 @@ Antworte NUR als JSON-Array von Strings:
   const selected = new Set();
   const kiBewertungen = new Map();
 
+  function buildMatRow(mat) {
+    const row = mk('div', '');
+    row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-bottom:1px solid var(--bord);cursor:pointer;';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selected.has(mat.id);
+    cb.style.marginTop = '3px';
+    cb.onclick = e => e.stopPropagation();
+    cb.onchange = () => { if (cb.checked) selected.add(mat.id); else selected.delete(mat.id); kiBtn.disabled = selected.size === 0; kiBtn.textContent = `✨ KI bewertet (${selected.size})`; };
+    const info = mk('div', ''); info.style.flex = '1';
+    const titleEl = tx('span', '', mat.titel); titleEl.style.cssText = 'font-size:13px;font-weight:500;display:block;';
+    info.appendChild(titleEl);
+    if (mat.themen?.length) { const t = tx('div', '', mat.themen.slice(0,4).join(', ')); t.style.cssText = 'font-size:11px;color:var(--tx2);'; info.appendChild(t); }
+    const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:5px;margin-top:3px;align-items:center;flex-wrap:wrap;';
+    const fachIcons = (mat.fach||[]).map(fachIcon).join('');
+    if (fachIcons) { const fi = tx('span', '', fachIcons); fi.style.fontSize = '13px'; badgeRow.appendChild(fi); }
+    if (mat.jahrgang?.length) {
+      const jgBadge = tx('span', '', mat.jahrgang.join('/'));
+      jgBadge.style.cssText = 'font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#374151;';
+      badgeRow.appendChild(jgBadge);
+    }
+    if (mat.quelle) {
+      const qBadge = tx('span', '', mat.quelle);
+      qBadge.style.cssText = 'font-size:10px;color:var(--tx3);';
+      badgeRow.appendChild(qBadge);
+    }
+    info.appendChild(badgeRow);
+    if (kiBewertungen.has(mat.id)) {
+      const bew = kiBewertungen.get(mat.id);
+      const COL = { gut:'#166534', anpassung:'#92400e', ungeeignet:'#dc2626' };
+      const ICO = { gut:'✓ gut', anpassung:'⚠ Anpassung', ungeeignet:'✗ ungeeignet' };
+      const kiWrap = mk('div', ''); kiWrap.style.marginTop = '3px';
+      const badge = tx('span', '', ICO[bew.bewertung] || bew.bewertung);
+      badge.style.cssText = `font-size:11px;font-weight:600;color:${COL[bew.bewertung]||'var(--tx3)'};`;
+      kiWrap.appendChild(badge);
+      if (bew.hinweis) {
+        const hinweis = tx('span', '', ' – ' + bew.hinweis);
+        hinweis.style.cssText = 'font-size:11px;color:var(--tx2);font-style:italic;';
+        kiWrap.appendChild(hinweis);
+      }
+      info.appendChild(kiWrap);
+    }
+    const useBtn = btn('+ Zuweisen', 'btn btn-pri btn-xs');
+    useBtn.style.marginTop = '2px';
+    useBtn.onclick = e => {
+      e.stopPropagation();
+      if (!stunde.materialIds.includes(mat.id)) { stunde.materialIds.push(mat.id); scheduleSave(); renderZugewiesene(); }
+      useBtn.textContent = '✓'; useBtn.disabled = true;
+    };
+    if (stunde.materialIds.includes(mat.id)) { useBtn.textContent = '✓'; useBtn.disabled = true; }
+    row.onclick = () => { cb.checked = !cb.checked; cb.onchange(); };
+    row.appendChild(cb); row.appendChild(info); row.appendChild(useBtn);
+    return row;
+  }
+
   function renderErgebnisse() {
     ergebnisListe.innerHTML = '';
     const q = suchInp.value.toLowerCase().trim();
+    const EXCL = ['Lehrerhandreichung', 'Lösung'];
     let hits = MATDB.filter(mat => {
-      if (mat.materialtyp === 'Lehrerhandreichung') return false;
-      if (mat.materialtyp === 'Lösung') return false;
+      if (EXCL.includes(mat.materialtyp)) return false;
       if (q.length >= 2) {
-        const txt = [mat.titel||'', ...(mat.themen||[]), mat.beschreibung||''].join(' ').toLowerCase();
+        const txt = [mat.titel||'', ...(mat.themen||[]), mat.beschreibung||'', mat.rolleImKontext||''].join(' ').toLowerCase();
         if (!txt.includes(q)) return false;
       }
       return true;
@@ -220,55 +273,27 @@ Antworte NUR als JSON-Array von Strings:
       hint.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
       ergebnisListe.appendChild(hint); return;
     }
-    hits.slice(0, 30).forEach(mat => {
-      const row = mk('div', '');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--bord);cursor:pointer;';
-      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selected.has(mat.id);
-      cb.onclick = e => e.stopPropagation();
-      cb.onchange = () => { if (cb.checked) selected.add(mat.id); else selected.delete(mat.id); kiBtn.disabled = selected.size === 0; kiBtn.textContent = `✨ KI bewertet (${selected.size})`; };
-      const info = mk('div', ''); info.style.flex = '1';
-      const titleEl = tx('span', '', mat.titel); titleEl.style.cssText = 'font-size:13px;font-weight:500;display:block;';
-      info.appendChild(titleEl);
-      if (mat.themen?.length) { const t = tx('div', '', mat.themen.slice(0,4).join(', ')); t.style.cssText = 'font-size:11px;color:var(--tx2);'; info.appendChild(t); }
-      const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:5px;margin-top:3px;align-items:center;';
-      const fachIcons = (mat.fach||[]).map(fachIcon).join('');
-      if (fachIcons) {
-        const fi = tx('span', '', fachIcons); fi.style.fontSize = '13px';
-        badgeRow.appendChild(fi);
+    hits.slice(0, 30).forEach(mat => ergebnisListe.appendChild(buildMatRow(mat)));
+    if (hits.length > 30) {
+      const m = tx('div', '', `+ ${hits.length-30} weitere – Suche verfeinern`);
+      m.style.cssText = 'padding:8px 10px;font-size:11px;color:var(--tx3);';
+      ergebnisListe.appendChild(m);
+    }
+    // Geschwister: weitere Materialien aus derselben Quelle
+    const hitIds = new Set(hits.map(m => m.id));
+    const hitQuellen = new Set(hits.map(m => m.quelle).filter(Boolean));
+    if (hitQuellen.size) {
+      const siblings = MATDB.filter(mat =>
+        !hitIds.has(mat.id) && mat.quelle && hitQuellen.has(mat.quelle) && !EXCL.includes(mat.materialtyp)
+      );
+      if (siblings.length) {
+        const sep = mk('div', '');
+        sep.style.cssText = 'padding:6px 10px;font-size:11px;font-weight:600;color:var(--tx2);background:var(--bg2);border-top:1px solid var(--bord);border-bottom:1px solid var(--bord);';
+        sep.textContent = '↳ Weitere aus derselben Quelle';
+        ergebnisListe.appendChild(sep);
+        siblings.forEach(mat => ergebnisListe.appendChild(buildMatRow(mat)));
       }
-      if (mat.jahrgang?.length) {
-        const jgBadge = tx('span', '', mat.jahrgang.join('/'));
-        jgBadge.style.cssText = 'font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#374151;';
-        badgeRow.appendChild(jgBadge);
-      }
-      info.appendChild(badgeRow);
-      if (kiBewertungen.has(mat.id)) {
-        const bew = kiBewertungen.get(mat.id);
-        const COL = { gut:'#166534', anpassung:'#92400e', ungeeignet:'#dc2626' };
-        const ICO = { gut:'✓ gut', anpassung:'⚠ Anpassung', ungeeignet:'✗ ungeeignet' };
-        const kiWrap = mk('div', ''); kiWrap.style.marginTop = '3px';
-        const badge = tx('span', '', ICO[bew.bewertung] || bew.bewertung);
-        badge.style.cssText = `font-size:11px;font-weight:600;color:${COL[bew.bewertung]||'var(--tx3)'};`;
-        kiWrap.appendChild(badge);
-        if (bew.hinweis) {
-          const hinweis = tx('span', '', ' – ' + bew.hinweis);
-          hinweis.style.cssText = 'font-size:11px;color:var(--tx2);font-style:italic;';
-          kiWrap.appendChild(hinweis);
-        }
-        info.appendChild(kiWrap);
-      }
-      const useBtn = btn('+ Zuweisen', 'btn btn-pri btn-xs');
-      useBtn.onclick = e => {
-        e.stopPropagation();
-        if (!stunde.materialIds.includes(mat.id)) { stunde.materialIds.push(mat.id); scheduleSave(); renderZugewiesene(); }
-        useBtn.textContent = '✓'; useBtn.disabled = true;
-      };
-      if (stunde.materialIds.includes(mat.id)) { useBtn.textContent = '✓'; useBtn.disabled = true; }
-      row.onclick = () => { cb.checked = !cb.checked; cb.onchange(); };
-      row.appendChild(cb); row.appendChild(info); row.appendChild(useBtn);
-      ergebnisListe.appendChild(row);
-    });
-    if (hits.length > 30) { const m = tx('div','',`+ ${hits.length-30} weitere – Suche verfeinern`); m.style.cssText='padding:8px 10px;font-size:11px;color:var(--tx3);'; ergebnisListe.appendChild(m); }
+    }
   }
   sucheWrap.appendChild(ergebnisListe);
 

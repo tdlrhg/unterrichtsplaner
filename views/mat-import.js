@@ -10,6 +10,108 @@ function materialAnalysisRulesBlock() {
     : '';
 }
 
+// ── KI-Analyse: zentraler Prompt + Normalisierung ────────────────
+
+// Kanonische Unterrichtsphasen (müssen mit PHASE_COLOR in materialien.js übereinstimmen)
+const CANONICAL_PHASES = ['Einstieg','Erarbeitung','Sicherung','Vertiefung','Übung','Anwendung','Diagnose'];
+
+function mapToCanonicalPhase(raw) {
+  if (!raw) return null;
+  const lower = raw.toLowerCase().trim();
+  // Exakter Treffer (case-insensitive)
+  const exact = CANONICAL_PHASES.find(p => p.toLowerCase() === lower);
+  if (exact) return exact;
+  // Präfix-Treffer: "Erarbeitungsphase II" → "Erarbeitung"
+  for (const cp of CANONICAL_PHASES) {
+    if (lower.startsWith(cp.toLowerCase())) return cp;
+  }
+  // Bekannte Aliase
+  const ALIAS = {
+    'hinführung':'Einstieg','motivation':'Einstieg','problemstellung':'Einstieg',
+    'informationsphase':'Erarbeitung','inhaltliche erarbeitung':'Erarbeitung',
+    'ergebnissicherung':'Sicherung','zusammenfassung':'Sicherung',
+    'transfer':'Anwendung','anwendungsorientierung':'Anwendung','anwendung und transfer':'Anwendung',
+    'üben':'Übung','training':'Übung',
+    'leistungsüberprüfung':'Diagnose','selbstevaluation':'Diagnose','test':'Diagnose',
+  };
+  return ALIAS[lower] || null;
+}
+
+/**
+ * Zentraler Analyse-Prompt für ein einzelnes Unterrichtsmaterial.
+ * Wird von mat-overlay.js (Neu analysieren) verwendet.
+ */
+function buildMaterialAnalysisPrompt({ fach = [], materialtyp = '', titel = '', blockTitel = null } = {}) {
+  const known = `Bekannt: Fach=${fach.join(',') || '–'}, Typ=${materialtyp || '–'}, Dateiname=${titel || '–'}${blockTitel ? ', Themenblock="' + blockTitel + '"' : ''}`;
+  return `Analysiere dieses Unterrichtsmaterial für eine NRW-Gymnasiallehrerin.
+${known}
+
+SCHRITT 1 – JAHRGANG (vor allem anderen lesen!):
+Suche auf dem Material nach einer expliziten Klassen- oder Jahrgangsangabe: "Klasse 9/10", "Jg. 7", "für die 8.", "9./10. Schuljahr" o.ä.
+- Gefunden → exakt übernehmen, NICHT aufgrund von Thema oder Schwierigkeitsgrad überschreiben
+- "9/10" → ["9","10"] | "7/8" → ["7","8"] | "Klasse 9" → ["9"]
+- Nicht gefunden → aus Niveau/Thema schätzen | wirklich unklar → []
+
+FELDREGELN:
+- "titel" = der tatsächliche Titel wie er auf dem Blatt gedruckt steht; kein Drucktitel → Thema + Aufgabentyp (z.B. "Fotosynthese – Lückentext"). NIEMALS eine Rolle als Titel ("Einführungsmaterial", "Erarbeitungsphase" o.ä.)
+- "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
+- "fach" = erlaubte Werte: "Bio", "Ch", "M" — aus Fachsprache/Formeln/Konzepten bestimmen; fast immer eindeutig; immer einen Wert angeben, nie []
+- "themen" = fachspezifische Kernthemen aus dem MATERIAL — IGNORIERE den KONTEXT vollständig. Beispiel: Kontext=Korallenriffe, Material=Beckenumfang → ["Umfang","Rechteck"], nie ökologische Begriffe
+- "unterrichtsphase" = NUR diese Werte verwenden: "Einstieg","Erarbeitung","Sicherung","Vertiefung","Übung","Anwendung","Diagnose"
+- "kognitiveBeanspruchung" = genau "niedrig" | "mittel" | "hoch"
+- "sprachlicheAnforderungen" = genau "niedrig" | "mittel" | "hoch"
+- "lautstaerke" = genau "leise" | "mittel" | "laut"
+- "loesung", "loesungHinweis", "erlaeuterung" nur aus KONTEXT/Lehrerhinweisen; wenn keine Lösung erkennbar: ""
+${materialAnalysisRulesBlock()}
+Antworte NUR mit JSON (kein Text davor/danach):
+{"fach":["Bio"],"titel":"exakter Titel vom Blatt","rolleImKontext":"1 Satz zur Funktion","beschreibung":"2-3 Sätze was SuS tun","themen":["Fotosynthese"],"jahrgang":["7"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}`;
+}
+
+/**
+ * Validiert und normalisiert das KI-Analyseergebnis.
+ * Repariert falsche Typen, mappt Phasen auf kanonische Werte,
+ * normalisiert Fach-Kürzel und Enum-Felder.
+ */
+function normalizeMaterialResult(raw) {
+  const out = Object.assign({}, raw);
+
+  // Arrays sicherstellen
+  const ARR_FIELDS = ['fach','themen','jahrgang','unterrichtsphase','sozialformenGeeignet',
+    'methodenGeeignet','schueleraktivitaeten','artDerGeistigenTaetigkeit','darstellungsformen',
+    'voraussetzungenFachlich','voraussetzungenMethodisch','differenzierungsformen'];
+  ARR_FIELDS.forEach(k => {
+    if (!Array.isArray(out[k])) out[k] = out[k] ? [String(out[k])] : [];
+  });
+
+  // Strings sicherstellen
+  const STR_FIELDS = ['titel','rolleImKontext','beschreibung','kognitiveBeanspruchung',
+    'sprachlicheAnforderungen','lautstaerke','loesung','loesungHinweis','erlaeuterung'];
+  STR_FIELDS.forEach(k => {
+    if (typeof out[k] !== 'string') out[k] = out[k] != null ? String(out[k]) : '';
+  });
+
+  // Fach normalisieren
+  const FACH_MAP = {
+    'biologie':'Bio','bio':'Bio','biology':'Bio',
+    'chemie':'Ch','ch':'Ch','chemistry':'Ch','chemi':'Ch',
+    'mathematik':'M','mathe':'M','math':'M','m':'M','mathematics':'M',
+  };
+  const normFach = out.fach.map(f => FACH_MAP[f.toLowerCase()] || f).filter(f => ['Bio','Ch','M'].includes(f));
+  if (normFach.length) out.fach = normFach; // nur überschreiben wenn valide Treffer
+
+  // Unterrichtsphasen auf kanonische Werte mappen, Unbekanntes verwerfen
+  out.unterrichtsphase = [...new Set(out.unterrichtsphase.map(mapToCanonicalPhase).filter(Boolean))];
+
+  // Enum-Felder normalisieren
+  const LEVEL = { niedrig:'niedrig', low:'niedrig', gering:'niedrig', mittel:'mittel', medium:'mittel', hoch:'hoch', high:'hoch', hoch:'hoch' };
+  out.kognitiveBeanspruchung = LEVEL[(out.kognitiveBeanspruchung||'').toLowerCase()] || 'mittel';
+  out.sprachlicheAnforderungen = LEVEL[(out.sprachlicheAnforderungen||'').toLowerCase()] || 'mittel';
+  const LAUT = { leise:'leise', still:'leise', ruhig:'leise', mittel:'mittel', laut:'laut', lautstark:'laut' };
+  out.lautstaerke = LAUT[(out.lautstaerke||'').toLowerCase()] || 'mittel';
+
+  return out;
+}
+
 async function renderPdfPageDataURL(page, longEdge = MAT_ANALYSIS_LONG_EDGE, quality = 0.88) {
   const vp0 = page.getViewport({ scale: 1 });
   const scale = longEdge / Math.max(vp0.width, vp0.height);
@@ -863,10 +965,11 @@ function buildScanPanel(subTitle, renderCards, onClose) {
       const text2 = choice?.message?.content || '';
       const match = text2.match(/\[[\s\S]*\]/);
       if (!match) throw new Error('Kein JSON-Array in der Antwort gefunden.');
-      const entries = JSON.parse(match[0]);
-      if (!entries.length) throw new Error('Keine Einträge generiert.');
+      const rawEntries = JSON.parse(match[0]);
+      if (!rawEntries.length) throw new Error('Keine Einträge generiert.');
       const truncated = choice?.finish_reason === 'length';
       const now = new Date().toISOString();
+      const entries = rawEntries.map(e => normalizeMaterialResult(e));
       entries.forEach(e => {
         if (!e.id) e.id = 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
         if (!e.importiertAm) e.importiertAm = now;

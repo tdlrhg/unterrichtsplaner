@@ -424,23 +424,10 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
         matURLs.forEach(u => content.push(toImgContent(u)));
         if (weitereURLs.length) { content.push({ type: 'text', text: '=== WEITERES MATERIAL ===' }); weitereURLs.forEach(u => content.push(toImgContent(u))); }
         const blockTitelRe = getBlockTitel(mat.blockId);
-        content.push({ type: 'text', text: `Analysiere dieses Unterrichtsmaterial für eine NRW-Gymnasiallehrerin.
-Bekannt: Fach=${(mat.fach||[]).join(',')}, Typ=${mat.materialtyp}, Dateiname=${mat.titel}${blockTitelRe ? ', Themenblock="'+blockTitelRe+'"' : ''}
-
-WICHTIG – Titelregeln:
-- "titel" = der tatsächliche Titel wie er auf dem Blatt gedruckt steht
-- Ist kein Drucktitel erkennbar: erstelle einen beschreibenden Kurztitel aus Thema + Aufgabentyp (z.B. "Fotosynthese – Lückentext", "Aggregatzustände – Stationenarbeit")
-- Vermeide kryptische Dateinamen als Titel; übernimm den Dateinamen nur wenn er erkennbar dem Drucktitel entspricht
-- NIEMALS eine Rolle als Titel verwenden (nicht "Einführungsmaterial" o.ä.)
-- "rolleImKontext" = 1 kurzer Satz zur pädagogischen Funktion
-- "jahrgang" = erlaubte Werte: "5","6","7","8","9","10","EF","Q1","Q2" — ZUERST: steht auf dem Material eine explizite Klassen-/Jahrgangsangabe (z.B. "Klasse 9/10", "Jg. 7", "für die 8. Klasse")? Dann diese wörtlich übernehmen. NUR wenn keine explizite Angabe vorhanden: aus Aufgabenniveau und Thema schätzen. Bei "9/10" → ["9","10"], bei "7/8" → ["7","8"]. Wenn wirklich unklar: []
-- "fach" = erlaubte Werte: "Bio", "Ch", "M" — anhand von Fachsprache, Formeln, Konzepten und Inhalten bestimmen. Das Fach ist fast immer eindeutig erkennbar (Zellen/Ökologie → "Bio", Reaktionsgleichungen/Atome → "Ch", Geometrie/Algebra/Funktionen → "M"). Immer einen Wert angeben, nie []
-- "themen" = fachspezifische Kernthemen, die im MATERIAL-Teil behandelt werden — IGNORIERE den KONTEXT-Teil vollständig für die Themenbestimmung. Kritisches Beispiel: Wenn der Kontext ein Bio-Text über Korallenriffe ist und das Material eine Mathe-Aufgabe zum Beckenumfang, dann sind die Themen ["Umfang", "Rechteck"] — NICHT ["Ökologie", "Korallenriffe", "Biodiversität"]. Die Themen stammen immer aus dem MATERIAL, nie aus dem KONTEXT.
-- "loesung", "loesungHinweis", "erlaeuterung" nur aus KONTEXT/Lehrerhinweisen übernehmen. Wenn keine Lösung erkennbar ist: "".
-${materialAnalysisRulesBlock()}
-
-Antworte NUR mit JSON (kein Text davor/danach):
-{"fach":["Bio"],"titel":"exakter Titel vom Blatt","rolleImKontext":"1 Satz zur Funktion","beschreibung":"2-3 Sätze was SuS tun","themen":["Fotosynthese"],"jahrgang":["7"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}` });
+        content.push({ type: 'text', text: buildMaterialAnalysisPrompt({
+          fach: mat.fach || [], materialtyp: mat.materialtyp || '',
+          titel: mat.titel || '', blockTitel: blockTitelRe,
+        }) });
 
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
@@ -451,7 +438,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
         const d = await res.json();
         const match = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/);
         if (!match) throw new Error('Kein JSON in der KI-Antwort.');
-        const enriched = JSON.parse(match[0]);
+        const enriched = normalizeMaterialResult(JSON.parse(match[0]));
         const idx = MATDB.findIndex(m => m.id === mat.id);
         if (idx < 0) throw new Error('Materialeintrag nicht mehr gefunden.');
         const keep = (({ quelle, materialnummer, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id }) =>
@@ -493,7 +480,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
         for (let i = 1; i <= Math.min(pdf.numPages, 4); i++) {
           const page = await pdf.getPage(i);
           const vp0 = page.getViewport({ scale: 1 });
-          const vp = page.getViewport({ scale: 240 / vp0.width });
+          const vp = page.getViewport({ scale: 600 / vp0.width });
           const cv = document.createElement('canvas');
           cv.width = vp.width; cv.height = vp.height;
           await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;

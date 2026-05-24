@@ -246,10 +246,16 @@ Antworte NUR als JSON-Array von Strings:
         const bew = kiBewertungen.get(mat.id);
         const COL = { gut:'#166534', anpassung:'#92400e', ungeeignet:'#dc2626' };
         const ICO = { gut:'✓ gut', anpassung:'⚠ Anpassung', ungeeignet:'✗ ungeeignet' };
+        const kiWrap = mk('div', ''); kiWrap.style.marginTop = '3px';
         const badge = tx('span', '', ICO[bew.bewertung] || bew.bewertung);
-        badge.style.cssText = `font-size:11px;font-weight:600;color:${COL[bew.bewertung]||'var(--tx3)'};white-space:nowrap;`;
-        if (bew.hinweis) badge.title = bew.hinweis;
-        info.appendChild(badge);
+        badge.style.cssText = `font-size:11px;font-weight:600;color:${COL[bew.bewertung]||'var(--tx3)'};`;
+        kiWrap.appendChild(badge);
+        if (bew.hinweis) {
+          const hinweis = tx('span', '', ' – ' + bew.hinweis);
+          hinweis.style.cssText = 'font-size:11px;color:var(--tx2);font-style:italic;';
+          kiWrap.appendChild(hinweis);
+        }
+        info.appendChild(kiWrap);
       }
       const useBtn = btn('+ Zuweisen', 'btn btn-pri btn-xs');
       useBtn.onclick = e => {

@@ -1,0 +1,894 @@
+// ── mat-import.js – Import-Assistent, Scan-Panel, R2-Browser ──
+// ── Materialien-Datenbank ─────────────────────────────────────────
+let _kontextFiles  = [];
+const MAT_ANALYSIS_LONG_EDGE = 1568;
+
+function materialAnalysisRulesBlock() {
+  const rules = (localStorage.getItem('mat_ki_regeln') || '').trim();
+  return rules
+    ? `\n\nZUSÄTZLICHE REGELN DER LEHRKRAFT (haben Vorrang, sofern sie nicht dem JSON-Format widersprechen):\n${rules}`
+    : '';
+}
+
+async function renderPdfPageDataURL(page, longEdge = MAT_ANALYSIS_LONG_EDGE, quality = 0.88) {
+  const vp0 = page.getViewport({ scale: 1 });
+  const scale = longEdge / Math.max(vp0.width, vp0.height);
+  const vp = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(vp.width);
+  canvas.height = Math.round(vp.height);
+  await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+  const dataURL = canvas.toDataURL('image/jpeg', quality);
+  canvas.width = 0; canvas.height = 0;
+  page.cleanup();
+  return dataURL;
+}
+
+function buildR2Browser(subTitle, renderCards) {
+  const p = mk('div', 'mat-r2browser');
+
+  const hdr = mk('div', 'mat-upload-hdr');
+  hdr.appendChild(tx('span', 'mat-upload-title', '📂 R2-Dateien importieren'));
+  const closeP = btn('✕', 'btn btn-ghost btn-xs'); closeP.onclick = () => p.remove();
+  hdr.appendChild(closeP);
+  p.appendChild(hdr);
+
+  const status = tx('div', 'mat-r2-status', '⏳ Lade R2-Inhalte…');
+  p.appendChild(status);
+
+  const tree = mk('div', 'mat-r2-tree');
+  p.appendChild(tree);
+
+  async function renderFolder(prefix, container) {
+    container.innerHTML = '<span style="color:var(--tx3);font-size:12px">⏳ Lade…</span>';
+    try {
+      const { folders, files } = await r2List(prefix);
+      container.innerHTML = '';
+
+      folders.forEach(f => {
+        const name = f.slice(prefix.length).replace(/\/$/, '');
+        const row = mk('div', 'mat-r2-folder');
+        const toggle = tx('span', 'mat-r2-folder-name', '📁 ' + name);
+        const sub = mk('div', 'mat-r2-subfolder'); sub.style.display = 'none';
+        let loaded = false;
+        toggle.onclick = () => {
+          const open = sub.style.display !== 'none';
+          sub.style.display = open ? 'none' : 'block';
+          if (!loaded && !open) { loaded = true; renderFolder(f, sub); }
+        };
+        row.appendChild(toggle); row.appendChild(sub);
+        container.appendChild(row);
+      });
+
+      files.forEach(({ key, size }) => {
+        const name = key.slice(prefix.length);
+        if (!name || (!name.endsWith('.pdf') && !name.endsWith('.png') && !name.endsWith('.jpg'))) return;
+        const inDB = MATDB.some(m => m.r2key === key);
+        const row = mk('div', 'mat-r2-file' + (inDB ? ' mat-r2-file-exists' : ''));
+        const nameEl = tx('span', 'mat-r2-filename', (inDB ? '✓ ' : '') + name);
+        row.appendChild(nameEl);
+        row.appendChild(tx('span', 'mat-r2-size', Math.round(size / 1024) + ' KB'));
+        if (!inDB) {
+          const impBtn = btn('Importieren', 'btn btn-pri btn-xs');
+          impBtn.onclick = async () => {
+            impBtn.disabled = true; impBtn.textContent = '⏳';
+            const pub = (localStorage.getItem('r2_public_url') || '').replace(/\/$/, '');
+            const endpoint = (localStorage.getItem('r2_endpoint') || '').replace(/\/$/, '');
+            const bucket = localStorage.getItem('r2_bucket') || '';
+            const r2url = pub ? `${pub}/${key}` : `${endpoint}/${bucket}/${key}`;
+            const baseName = name.replace(/\.[^.]+$/, '');
+            const entry = {
+              id: 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,5),
+              titel: baseName,
+              r2key: key, r2url,
+              importiertAm: new Date().toISOString(),
+            };
+            MATDB.unshift(entry);
+            saveMatDB(); renderCards();
+            subTitle.textContent = MATDB.length + ' Einträge';
+            row.classList.add('mat-r2-file-exists');
+            nameEl.textContent = '✓ ' + name;
+            impBtn.remove();
+          };
+          row.appendChild(impBtn);
+        }
+        container.appendChild(row);
+      });
+
+      if (!folders.length && !files.length) {
+        container.appendChild(tx('span', '', 'Leer'));
+        container.style.cssText = 'color:var(--tx3);font-size:12px;padding:4px 0;';
+      }
+    } catch(e) {
+      container.innerHTML = '<span style="color:#dc2626;font-size:12px">⚠ ' + e.message + '</span>';
+    }
+  }
+
+  renderFolder('', tree).then(() => { status.remove(); }).catch(() => {});
+
+  return p;
+}
+
+// ── Import-Assistent ─────────────────────────────────────────────
+function buildImportAssistent(subTitle, renderCards) {
+  const ov = mk('div', 'mat-import-overlay');
+  document.body.appendChild(ov);
+  const dlg = mk('div', 'mat-import-dialog');
+  ov.appendChild(dlg);
+
+  document.body.style.overflow = 'hidden';
+  function close() { ov.remove(); document.body.style.overflow = ''; }
+  ov.onclick = e => { if (e.target === ov) close(); };
+  const _esc = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', _esc); } };
+  document.addEventListener('keydown', _esc);
+
+  // Header
+  const hdr = mk('div', 'mat-import-hdr');
+  const titleEl = tx('span', 'mat-import-title', '📥 Material importieren');
+  const stepEl = tx('span', 'mat-import-step', '');
+  const closeBtn = btn('✕', 'btn btn-ghost btn-sm'); closeBtn.onclick = close;
+  hdr.appendChild(titleEl); hdr.appendChild(stepEl); hdr.appendChild(closeBtn);
+  dlg.appendChild(hdr);
+
+  const body = mk('div', 'mat-import-body');
+  dlg.appendChild(body);
+
+  // Shared state across steps
+  const S = {
+    source: null,
+    meta: { fach: 'Chemie SI', unter: '', thema: '', quelle: '' },
+    types: [],
+    defaultType: 'material',
+    pageDataURLs: [],
+    pdfFile: null,
+    pdfDoc: null,
+    pdfArrayBuffer: null,
+    splitPoints: new Set(),
+    segTypes: {},
+    zsSegments: [],  // [{id,name,type,blob,heft,thumb,r2Path}]
+    zsAusgabe: '',
+  };
+
+  function goto(n) { step = n; body.innerHTML = ''; (STEPS[n] || (() => {}))(); }
+  let step = 0;
+
+  // ── Schritt 0: Quellauswahl ───────────────────────────────────
+  function step0() {
+    stepEl.textContent = '';
+    body.appendChild(tx('div', 'mat-import-section-title', 'Welche Art von Material möchtest du importieren?'));
+    const grid = mk('div', 'mat-import-sources');
+    [
+      { id: 'pdf',  icon: '📄', title: 'PDF importieren', quelle: '',
+        desc: 'Ein oder mehrere PDFs hochladen, aufteilen, als Kontext oder Material zuweisen und matchen',
+        target: 13 },
+      { id: 'r2',   icon: '📂', title: 'Aus R2',          quelle: '',
+        desc: 'Dateien die bereits in Cloudflare R2 liegen in die Datenbank eintragen',
+        target: 11 },
+      { id: 'bild', icon: '📸', title: 'Aus Bild',         quelle: '',
+        desc: 'Fotos von Arbeitsblättern per GPT-4o analysieren und importieren',
+        target: 12 },
+    ].forEach(src => {
+      const card = mk('div', 'mat-import-source-card');
+      card.appendChild(tx('div', 'mat-import-source-icon', src.icon));
+      card.appendChild(tx('div', 'mat-import-source-title', src.title));
+      card.appendChild(tx('div', 'mat-import-source-desc', src.desc));
+      card.onclick = () => {
+        S.source = src.id; S.meta.quelle = src.quelle; S.types = []; S.defaultType = 'material';
+        S.pageDataURLs.length = 0; S.splitPoints.clear(); S.segTypes = {}; S.pdfFile = null;
+        goto(src.target);
+      };
+      grid.appendChild(card);
+    });
+    body.appendChild(grid);
+  }
+
+  // ── Schritt 11: Aus R2 ────────────────────────────────────────
+  function step11() {
+    stepEl.textContent = 'Aus R2';
+    const panel = buildR2Browser(subTitle, renderCards);
+    const x = panel.querySelector('.btn-ghost.btn-xs'); if (x) x.onclick = () => goto(0);
+    body.appendChild(panel);
+  }
+
+  // ── Schritt 12: Aus Bild ──────────────────────────────────────
+  function step12() {
+    stepEl.textContent = 'Aus Bild';
+    const panel = buildScanPanel(subTitle, renderCards, () => goto(0));
+    body.appendChild(panel);
+  }
+
+  // ── Schritt 13: PDF laden + aufteilen ────────────────────────
+  function step13() {
+    stepEl.textContent = 'PDFs laden';
+    const SPLIT_COLORS = ['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6'];
+    const TYPE_OPTS = [{key:'kontext',label:'📋 Kontext'},{key:'material',label:'📄 Material'},{key:'didaktik',label:'🎓 Didaktik'},{key:'skip',label:'⊘ Skip'}];
+
+    // Ausgabe-Name
+    const ausgabeWrap = mk('div',''); ausgabeWrap.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:16px;';
+    const ausgabeInp = document.createElement('input'); ausgabeInp.type='text'; ausgabeInp.className='finp';
+    ausgabeInp.placeholder='Ausgabe / Ordnername  (z.B. Unterricht-Chemie-2024-1)';
+    ausgabeInp.style.cssText='flex:1;max-width:420px;'; ausgabeInp.value=S.zsAusgabe;
+    ausgabeInp.oninput=()=>{ S.zsAusgabe=ausgabeInp.value.trim(); };
+    ausgabeWrap.appendChild(tx('span','','Ausgabe:')); ausgabeWrap.appendChild(ausgabeInp);
+    body.appendChild(ausgabeWrap);
+
+    // ── Zwei permanente Dropzonen nebeneinander ──
+    const zonesRow = mk('div','');
+    zonesRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;';
+
+    // Hilfsfunktion: eine Zone bauen
+    function makeZone(heftNr, defaultTyp, label) {
+      const wrap = mk('div','');
+      wrap.appendChild(tx('div','mat-import-section-title', label));
+
+      let pdfBuf = null;          // nur beim Splitten befüllt (lazy)
+      let currentFile = null;    // File-Referenz für lazy pdfBuf-Laden
+      let pendingSegId = null;   // ID des auto-hinzugefügten ganzen PDFs (wird bei Split ersetzt)
+      const pageDataURLs = [];
+      const splitPoints = new Set();
+      const segNames = {}, segTypes = {};
+
+      const zone = mk('div','mat-upload-drop');
+      zone.textContent = '📄 PDF(s) hierher ziehen oder klicken';
+      const pdfInp = document.createElement('input');
+      pdfInp.type='file'; pdfInp.accept='application/pdf'; pdfInp.multiple=true; pdfInp.style.display='none';
+      zone.onclick = () => pdfInp.click();
+      zone.ondragover = e => { e.preventDefault(); zone.classList.add('drag-over'); };
+      zone.ondragleave = () => zone.classList.remove('drag-over');
+
+      const thumbsWrap = mk('div','mat-upload-thumbs');
+      const actionRow = mk('div',''); actionRow.style.cssText='display:flex;gap:8px;margin-top:8px;';
+      const addBtn = btn('+ Ganzes PDF hinzufügen','btn btn-ghost btn-sm'); addBtn.style.display='none';
+      const splitBtn = btn('✂ Splitten','btn btn-sec btn-sm'); splitBtn.style.display='none';
+      actionRow.appendChild(addBtn); actionRow.appendChild(splitBtn);
+      const splitArea = mk('div','');
+
+      function addMulti(files) {
+        if (pendingSegId) { S.zsSegments = S.zsSegments.filter(s => s.id !== pendingSegId); pendingSegId = null; }
+        // File IS a Blob – direkt verwenden, kein arrayBuffer()-Klon nötig
+        for (const f of files) {
+          S.zsSegments.push({id:uid(), name:f.name.replace(/\.pdf$/i,''), type:defaultTyp, blob:f, heft:heftNr, thumb:null, r2Path:null});
+        }
+        zone.textContent = '✓ ' + files.length + ' Datei(en) geladen – weitere möglich';
+        renderSegments(); renderNav();
+      }
+
+      async function loadSingle(file) {
+        // Altes auto-hinzugefügtes Segment entfernen
+        if (pendingSegId) { S.zsSegments = S.zsSegments.filter(s => s.id !== pendingSegId); pendingSegId = null; }
+        // File-Referenz merken; pdfBuf erst beim Splitten laden (spart eine vollständige Kopie)
+        currentFile = file; pdfBuf = null;
+        pageDataURLs.length = 0; thumbsWrap.innerHTML = ''; splitArea.innerHTML = '';
+        zone.textContent = '✓ ' + file.name;
+        thumbsWrap.appendChild(tx('div','mat-upload-spin','⏳ Lade Vorschau…'));
+        let pdfDoc = null; let blobUrl = null;
+        try {
+          // createObjectURL: kein ArrayBuffer-Klon, pdf.js streamt direkt aus dem File
+          blobUrl = URL.createObjectURL(file);
+          pdfDoc = await pdfjsLib.getDocument(blobUrl).promise;
+          thumbsWrap.innerHTML = '';
+          const total = pdfDoc.numPages;
+          for (let i=1; i<=total; i++) {
+            const page = await pdfDoc.getPage(i);
+            const vp0 = page.getViewport({scale:1});
+            const cv = document.createElement('canvas');
+            const vp = page.getViewport({scale: 110/vp0.width});
+            cv.width=vp.width; cv.height=vp.height;
+            await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+            // JPEG ~3–5 KB pro Seite; Canvas-Pixel sofort freigeben
+            const dataURL = cv.toDataURL('image/jpeg', 0.75);
+            cv.width = 0; cv.height = 0;
+            page.cleanup();
+            pageDataURLs.push(dataURL);
+            // <img> statt <canvas> im DOM
+            const img = document.createElement('img');
+            img.src = dataURL; img.className = 'mat-split-thumb';
+            const thumb = mk('div','mat-upload-thumb');
+            thumb.appendChild(img); thumb.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
+            thumbsWrap.appendChild(thumb);
+          }
+          await pdfDoc.destroy(); pdfDoc = null;
+          URL.revokeObjectURL(blobUrl); blobUrl = null;
+          // File IS a Blob – direkt als Segment eintragen, kein extra Speicher
+          pendingSegId = uid();
+          S.zsSegments.push({id: pendingSegId, name: file.name.replace(/\.pdf$/i,''), type: defaultTyp, blob: file, heft: heftNr, thumb: null, r2Path: null});
+          addBtn.style.display='none'; splitBtn.style.display='';
+          renderSegments(); renderNav();
+        } catch(e) {
+          if (pdfDoc) { pdfDoc.destroy().catch(()=>{}); }
+          if (blobUrl) { URL.revokeObjectURL(blobUrl); }
+          thumbsWrap.innerHTML = `<div style="padding:8px;color:#dc2626;">⚠ ${e.message}</div>`;
+        }
+      }
+
+      // addBtn wird durch loadSingle-Auto-Add nicht mehr benötigt, bleibt als Fallback
+      addBtn.onclick = async () => {
+        if (!pdfBuf || typeof PDFLib==='undefined') return;
+        // Kein Duplikat erzeugen – pendingSegId ist bereits in S.zsSegments
+        pdfBuf=null; thumbsWrap.innerHTML=''; splitArea.innerHTML='';
+        addBtn.style.display='none'; splitBtn.style.display='none';
+        zone.textContent='📄 PDF(s) hierher ziehen oder klicken';
+      };
+
+      function getGroups(){
+        const g=[]; let s=1;
+        for(const pt of [...splitPoints].sort((a,b)=>a-b)){g.push({start:s,end:pt});s=pt+1;}
+        g.push({start:s,end:pageDataURLs.length}); return g;
+      }
+
+      // Zentrale Save-Funktion – wird vom Button UND von renderNav verwendet
+      async function saveSplits(statusEl) {
+        if(typeof PDFLib==='undefined'){alert('pdf-lib nicht geladen.');return false;}
+        if (pendingSegId) { S.zsSegments = S.zsSegments.filter(s => s.id !== pendingSegId); pendingSegId = null; }
+        if (!pdfBuf && currentFile) { pdfBuf = await currentFile.arrayBuffer(); }
+        const groups=getGroups();
+        const srcDoc=await PDFLib.PDFDocument.load(pdfBuf);
+        for(let gi2=0;gi2<groups.length;gi2++){
+          const type2=segTypes[gi2]!==undefined?segTypes[gi2]:defaultTyp;
+          if(type2==='skip') continue;
+          const g2=groups[gi2];
+          const name2=(segNames[gi2]?.trim())||('Segment_'+(gi2+1));
+          const newDoc=await PDFLib.PDFDocument.create();
+          const idxs=[]; for(let pg=g2.start-1;pg<g2.end;pg++) idxs.push(pg);
+          const copied=await newDoc.copyPages(srcDoc,idxs); copied.forEach(pg=>newDoc.addPage(pg));
+          S.zsSegments.push({id:uid(),name:name2,type:type2,blob:new Blob([await newDoc.save()],{type:'application/pdf'}),heft:heftNr,thumb:null,r2Path:null});
+          if(statusEl) statusEl.textContent=`⏳ ${gi2+1}/${groups.length}…`;
+        }
+        pdfBuf=null; thumbsWrap.innerHTML=''; splitArea.innerHTML='';
+        addBtn.style.display='none'; splitBtn.style.display='none';
+        zone.textContent='📄 PDF(s) hierher ziehen oder klicken';
+        splitPoints.clear();
+        renderSegments(); renderNav();
+        return true;
+      }
+
+      function renderSplitGroups(){
+        splitArea.innerHTML='';
+        getGroups().forEach((g,gi)=>{
+          const color=SPLIT_COLORS[gi%SPLIT_COLORS.length];
+          const groupEl=mk('div','mat-split-group'); groupEl.style.borderColor=color;
+          const hdr=mk('div',''); hdr.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 8px;flex-wrap:wrap;';
+          const nameInp=document.createElement('input'); nameInp.type='text'; nameInp.className='finp'; nameInp.style.flex='1';
+          nameInp.placeholder='Name'; nameInp.value=segNames[gi]!==undefined?segNames[gi]:('Segment '+(gi+1));
+          nameInp.oninput=()=>{segNames[gi]=nameInp.value;};
+          hdr.appendChild(nameInp);
+          hdr.appendChild(tx('span','mat-split-range','S.'+g.start+(g.end>g.start?'–'+g.end:'')));
+          const typRow=mk('div',''); typRow.style.cssText='display:flex;gap:4px;flex-wrap:wrap;';
+          const curType=segTypes[gi]!==undefined?segTypes[gi]:defaultTyp;
+          TYPE_OPTS.forEach(opt=>{
+            const tb=btn(opt.label,'btn btn-xs '+(curType===opt.key?'btn-pri':'btn-ghost'));
+            tb.onclick=()=>{segTypes[gi]=opt.key;renderSplitGroups();};
+            typRow.appendChild(tb);
+          });
+          hdr.appendChild(typRow); groupEl.appendChild(hdr);
+          const pagesRow=mk('div','mat-split-pages-row');
+          for(let i=g.start;i<=g.end;i++){
+            const img=document.createElement('img'); img.src=pageDataURLs[i-1]; img.className='mat-split-thumb';
+            const tw=mk('div','mat-split-thumb-wrap'); tw.appendChild(img); tw.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
+            pagesRow.appendChild(tw);
+            if(i<pageDataURLs.length){
+              const divEl=mk('div','mat-split-divider'); divEl.dataset.page=String(i);
+              const icon=tx('span','mat-split-div-icon',splitPoints.has(i)?'✂':'+');
+              if(splitPoints.has(i)) divEl.classList.add('active'); divEl.appendChild(icon);
+              divEl.onclick=()=>{const pg=parseInt(divEl.dataset.page);if(splitPoints.has(pg))splitPoints.delete(pg);else splitPoints.add(pg);renderSplitGroups();};
+              pagesRow.appendChild(divEl);
+            }
+          }
+          groupEl.appendChild(pagesRow);
+          splitArea.appendChild(groupEl);
+        });
+        // Hinweis: Speichern passiert automatisch beim Klick auf "→ Zum Matching"
+        const hint=tx('div','',`✂ ${getGroups().length} Segment${getGroups().length!==1?'e':''} – einfach auf „→ Zum Matching" klicken`);
+        hint.style.cssText='margin-top:10px;font-size:12px;color:var(--tx3);text-align:center;';
+        splitArea.appendChild(hint);
+      }
+
+      splitBtn.onclick = () => { splitBtn.style.display='none'; addBtn.style.display='none'; renderSplitGroups(); };
+
+      zone.ondrop = e => {
+        e.preventDefault(); zone.classList.remove('drag-over');
+        const files=[...e.dataTransfer.files].filter(f=>f.type==='application/pdf');
+        if(!files.length) return;
+        splitArea.innerHTML=''; addBtn.style.display='none'; splitBtn.style.display='none';
+        if(files.length===1) loadSingle(files[0]); else addMulti(files);
+      };
+      pdfInp.onchange = () => {
+        const files=[...pdfInp.files]; if(!files.length) return;
+        splitArea.innerHTML=''; addBtn.style.display='none'; splitBtn.style.display='none';
+        if(files.length===1) loadSingle(files[0]); else addMulti(files);
+      };
+
+      wrap.appendChild(zone); wrap.appendChild(pdfInp);
+      wrap.appendChild(thumbsWrap); wrap.appendChild(actionRow); wrap.appendChild(splitArea);
+      // Expose saveSplits für renderNav (auto-save beim Navigieren)
+      wrap._saveSplitsIfOpen = async () => {
+        if (splitArea.children.length > 0) { await saveSplits(null); }
+      };
+      return wrap;
+    }
+
+    const zoneEl1 = makeZone(1, 'kontext',  '📋 Kontext');
+    const zoneEl2 = makeZone(2, 'material', '📄 Material');
+    zonesRow.appendChild(zoneEl1);
+    zonesRow.appendChild(zoneEl2);
+    body.appendChild(zonesRow);
+
+    // Segment-Liste
+    const segListWrap = mk('div',''); body.appendChild(segListWrap);
+    function renderSegments() {
+      segListWrap.innerHTML='';
+      if(!S.zsSegments.length) return;
+      const box=mk('div','');
+      box.style.cssText='margin-bottom:16px;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--bord);font-size:13px;';
+      box.appendChild(tx('div','',`✓ ${S.zsSegments.length} Segment${S.zsSegments.length!==1?'e':''} geladen:`));
+      S.zsSegments.forEach(seg=>{
+        const row=mk('div',''); row.style.cssText='display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;';
+        row.appendChild(tx('span','',seg.name));
+        row.appendChild(tx('span','mat-split-range',seg.heft===1?'Kontext':'Material'));
+        TYPE_OPTS.forEach(opt=>{
+          const tb=btn(opt.label,'btn btn-xs '+(seg.type===opt.key?'btn-pri':'btn-ghost'));
+          tb.onclick=()=>{ seg.type=opt.key; renderSegments(); };
+          row.appendChild(tb);
+        });
+        const delB=btn('✕','btn btn-xs btn-ghost'); delB.style.color='#dc2626';
+        delB.onclick=()=>{ S.zsSegments=S.zsSegments.filter(s=>s.id!==seg.id); renderSegments(); renderNav(); };
+        row.appendChild(delB); box.appendChild(row);
+      });
+      segListWrap.appendChild(box);
+    }
+    renderSegments();
+
+    // Navigation
+    const navWrap = mk('div',''); navWrap.style.cssText='display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;';
+    body.appendChild(navWrap);
+    function renderNav() {
+      navWrap.innerHTML='';
+      if(S.zsSegments.length>0){
+        const matchBtn=btn('→ Zum Matching','btn btn-pri btn-sm');
+        matchBtn.onclick=async()=>{
+          // Auto-save offene Split-Ansichten beider Zonen
+          matchBtn.disabled=true; matchBtn.textContent='⏳ Speichere…';
+          await zoneEl1._saveSplitsIfOpen();
+          await zoneEl2._saveSplitsIfOpen();
+          goto(14);
+        };
+        navWrap.appendChild(matchBtn);
+      }
+      const backBtn2=btn('← Zurück','btn btn-ghost btn-sm'); backBtn2.onclick=()=>{S.zsSegments=[];S.zsAusgabe='';goto(0);};
+      navWrap.appendChild(backBtn2);
+    }
+    renderNav();
+  }
+
+  // ── Schritt 14: Visuelles Matching ───────────────────────────
+  function step14() {
+    stepEl.textContent = 'Matching';
+    const MATCH_COLORS=['#6366f1','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#14b8a6','#0ea5e9'];
+    let kontextSegs=S.zsSegments.filter(s=>s.type==='kontext');
+    let materialSegs=S.zsSegments.filter(s=>s.type==='material');
+    let didaktikSegs=S.zsSegments.filter(s=>s.type==='didaktik');
+
+    function refreshSegs(){
+      kontextSegs=S.zsSegments.filter(s=>s.type==='kontext');
+      materialSegs=S.zsSegments.filter(s=>s.type==='material');
+      didaktikSegs=S.zsSegments.filter(s=>s.type==='didaktik');
+      // Stale matches bereinigen
+      for(const [mid,kid] of matches){
+        if(!materialSegs.find(s=>s.id===mid)||!kontextSegs.find(s=>s.id===kid)) matches.delete(mid);
+      }
+    }
+
+    // Ausgabe-Name
+    const ausgabeWrap=mk('div',''); ausgabeWrap.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:16px;';
+    const ausgabeInp=document.createElement('input'); ausgabeInp.type='text'; ausgabeInp.className='finp';
+    ausgabeInp.placeholder='Ausgabe / Ordnername'; ausgabeInp.value=S.zsAusgabe;
+    ausgabeInp.style.cssText='flex:1;max-width:400px;';
+    const ausgabeHint=tx('span','',''); ausgabeHint.style.cssText='font-size:11px;color:var(--tx3);white-space:nowrap;';
+    function updateAusgabeHint(){
+      const safe=r2safe(ausgabeInp.value.trim());
+      const raw=ausgabeInp.value.trim();
+      ausgabeHint.textContent = (raw && safe!==raw) ? '→ Ordner: '+safe : '';
+    }
+    ausgabeInp.oninput=()=>{S.zsAusgabe=ausgabeInp.value.trim();updateUploadBtn();updateAusgabeHint();};
+    updateAusgabeHint();
+    ausgabeWrap.appendChild(tx('span','','Ausgabe:')); ausgabeWrap.appendChild(ausgabeInp); ausgabeWrap.appendChild(ausgabeHint);
+    body.appendChild(ausgabeWrap);
+
+    // Matching-State
+    const matches=new Map(); // materialId → kontextId
+    const pairColors=new Map(); let colorIdx=0;
+    let selId=null, selSide=null;
+
+    function pairColor(kid){
+      if(!pairColors.has(kid)) pairColors.set(kid,MATCH_COLORS[colorIdx++%MATCH_COLORS.length]);
+      return pairColors.get(kid);
+    }
+
+    // Zwei-Spalten-Layout
+    const cols=mk('div',''); cols.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:16px;min-height:0;';
+    const leftWrap=mk('div',''); const rightWrap=mk('div','');
+    const leftHdr=tx('div','','📋 Kontext');
+    leftHdr.style.cssText='font-weight:700;font-size:13px;margin-bottom:8px;color:var(--tx2);';
+    const rightHdr=tx('div','','📄 Material');
+    rightHdr.style.cssText='font-weight:700;font-size:13px;margin-bottom:8px;color:var(--tx2);';
+    leftWrap.appendChild(leftHdr); rightWrap.appendChild(rightHdr);
+    const leftCards=mk('div',''); const rightCards=mk('div','');
+    leftWrap.appendChild(leftCards); rightWrap.appendChild(rightCards);
+    cols.appendChild(leftWrap); cols.appendChild(rightWrap);
+    body.appendChild(cols);
+
+    // Didaktik-Sektion
+    if(didaktikSegs.length>0){
+      const dSec=mk('div',''); dSec.style.cssText='margin-top:16px;padding:12px;border:1px solid var(--bord);border-radius:8px;background:var(--surf);';
+      const dHdr=tx('div','',`🎓 Didaktik-Artikel (${didaktikSegs.length}) – werden als Wissenstext gespeichert`);
+      dHdr.style.cssText='font-size:12px;font-weight:700;color:var(--tx2);margin-bottom:8px;';
+      dSec.appendChild(dHdr);
+      didaktikSegs.forEach(seg=>{
+        const row=tx('div','',seg.name); row.style.cssText='font-size:12px;color:var(--tx2);padding:2px 0;';
+        dSec.appendChild(row);
+      });
+      body.appendChild(dSec);
+    }
+
+    // Status + Buttons
+    const statusRow=mk('div',''); statusRow.style.cssText='display:flex;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap;';
+    const statusEl=tx('span','','');
+    const uploadBtn=btn('📤 Hochladen','btn btn-pri btn-sm'); uploadBtn.disabled=true;
+    const didaktikBtn=didaktikSegs.length>0?btn(`🎓 ${didaktikSegs.length} Didaktik hochladen`,'btn btn-ghost btn-sm'):null;
+    const restBtn=btn('📤 Restliche einzeln hochladen','btn btn-ghost btn-sm');
+    const backBtn3=btn('← Zurück','btn btn-ghost btn-sm'); backBtn3.onclick=()=>goto(13);
+    statusRow.appendChild(uploadBtn);
+    if(didaktikBtn) statusRow.appendChild(didaktikBtn);
+    statusRow.appendChild(restBtn); statusRow.appendChild(statusEl); statusRow.appendChild(backBtn3);
+    body.appendChild(statusRow);
+
+    function updateUploadBtn(){ updateUploadLabel(); }
+
+    function makeCard(seg, side) {
+      const isKtx=side==='kontext';
+      const kid=isKtx?seg.id:matches.get(seg.id);
+      const color=kid?pairColor(kid):null;
+      const isSel=selId===seg.id&&selSide===side;
+      const card=mk('div','');
+      card.style.cssText=`border:2px solid ${isSel?'#6366f1':color||'var(--bord)'};border-radius:8px;padding:8px;margin-bottom:12px;cursor:pointer;background:${isSel?'#ede9fe':'var(--surf)'};transition:border-color .15s;`;
+      if(seg.thumb){
+        const img=document.createElement('img'); img.src=seg.thumb;
+        img.style.cssText='width:100%;border-radius:4px;display:block;'; card.appendChild(img);
+      } else {
+        const ph=tx('div','','⏳'); ph.style.cssText='height:120px;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:24px;';
+        card.appendChild(ph);
+      }
+      const nameRow=mk('div',''); nameRow.style.cssText='font-size:12px;font-weight:600;margin-top:6px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;';
+      nameRow.appendChild(tx('span','',seg.name));
+      if(isKtx){
+        // alle gematchten Materialien anzeigen
+        [...matches.entries()].filter(([mid,k])=>k===seg.id).forEach(([mid])=>{
+          const ms=materialSegs.find(s=>s.id===mid);
+          if(ms){ const badge=tx('span','',ms.name); badge.style.cssText=`background:${color};color:#fff;border-radius:4px;padding:1px 6px;font-size:11px;`; nameRow.appendChild(badge); }
+        });
+      } else if(kid){
+        const ktxSeg=kontextSegs.find(s=>s.id===kid);
+        if(ktxSeg){ const badge=tx('span','',ktxSeg.name); badge.style.cssText=`background:${color};color:#fff;border-radius:4px;padding:1px 6px;font-size:11px;`; nameRow.appendChild(badge); }
+      }
+      card.appendChild(nameRow);
+      // Typ-Wechsel-Badge
+      const TYPE_CYCLE={kontext:'material',material:'didaktik',didaktik:'skip',skip:'kontext'};
+      const TYPE_ICON={kontext:'📋',material:'📄',didaktik:'🎓',skip:'⊘'};
+      const typBadge=tx('span','',TYPE_ICON[seg.type]+' '+seg.type);
+      typBadge.style.cssText='font-size:10px;color:var(--tx3);cursor:pointer;margin-top:2px;display:inline-block;';
+      typBadge.title='Klicken zum Ändern';
+      typBadge.onclick=e=>{
+        e.stopPropagation();
+        seg.type=TYPE_CYCLE[seg.type]||'kontext';
+        refreshSegs(); renderMatchCards();
+      };
+      card.appendChild(typBadge);
+      card.onclick=()=>handleClick(seg.id,side);
+      return card;
+    }
+
+    function renderMatchCards(){
+      leftCards.innerHTML=''; rightCards.innerHTML='';
+      leftHdr.textContent=`📋 Kontext (${kontextSegs.length})`;
+      rightHdr.textContent=`📄 Material (${materialSegs.length})`;
+      kontextSegs.forEach(seg=>leftCards.appendChild(makeCard(seg,'kontext')));
+      materialSegs.forEach(seg=>rightCards.appendChild(makeCard(seg,'material')));
+      statusEl.textContent=matches.size>0?matches.size+' Paar'+(matches.size>1?'e':'')+' verbunden':'';
+      updateUploadLabel();
+    }
+
+    function handleClick(id,side){
+      if(selId===null){ selId=id; selSide=side; }
+      else if(selId===id&&selSide===side){ selId=null; selSide=null; }
+      else if(selSide!==side){
+        const kid=side==='kontext'?id:selId;
+        const mid=side==='material'?id:selId;
+        if(matches.get(mid)===kid){ matches.delete(mid); selId=null; selSide=null; }
+        else { matches.delete(mid); matches.set(mid,kid); selId=kid; selSide='kontext'; }
+      } else { selId=id; selSide=side; }
+      renderMatchCards();
+    }
+
+    // Thumbnails laden (höhere Auflösung) – sequenziell, mit createObjectURL + destroy
+    async function loadThumbs(){
+      for(const seg of S.zsSegments.filter(s=>s.type!=='skip'&&!s.thumb)){
+        let blobUrl=null; let doc=null;
+        try{
+          blobUrl=URL.createObjectURL(seg.blob);
+          doc=await pdfjsLib.getDocument(blobUrl).promise;
+          const page=await doc.getPage(1);
+          const vp0=page.getViewport({scale:1});
+          const cv=document.createElement('canvas');
+          const vp=page.getViewport({scale:480/vp0.width});
+          cv.width=vp.width; cv.height=vp.height;
+          await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+          page.cleanup();
+          seg.thumb=cv.toDataURL('image/jpeg',0.85);
+          cv.width=0; cv.height=0;
+          await doc.destroy(); doc=null;
+          URL.revokeObjectURL(blobUrl); blobUrl=null;
+          renderMatchCards();
+        }catch(e){
+          if(doc) doc.destroy().catch(()=>{});
+          if(blobUrl) URL.revokeObjectURL(blobUrl);
+          seg.thumb='';
+        }
+      }
+    }
+
+    function updateUploadLabel(){
+      const n=matches.size;
+      uploadBtn.textContent=n>0?`📤 ${n} Paar${n>1?'e':''} hochladen`:'📤 Hochladen';
+      uploadBtn.disabled=n===0;
+    }
+
+    renderMatchCards();
+    loadThumbs();
+
+    // R2-sichere Pfadkomponente: nur Alphanumerisch, Bindestrich, Unterstrich, Punkt, Leerzeichen
+    // Apostrophe, !, (, ) etc. werden von encodeURIComponent nicht kodiert → Signaturfehler
+    function r2safe(s){ return s.replace(/[^a-zA-Z0-9äöüÄÖÜß\-_. ]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'').trim(); }
+
+    // Didaktik-Artikel hochladen
+    if(didaktikBtn) didaktikBtn.onclick=async()=>{
+      if(!S.zsAusgabe){ ausgabeInp.focus(); statusEl.textContent='⚠ Bitte zuerst den Ausgabe-Namen eingeben.'; statusEl.style.color='#dc2626'; return; }
+      didaktikBtn.disabled=true;
+      const folder=r2safe(S.zsAusgabe);
+      try{
+        const newEntries=[];
+        for(const seg of didaktikSegs){
+          statusEl.textContent='🎓 '+seg.name+'…';
+          if(!seg.r2Path){
+            seg.r2Path='didaktik/'+folder+'/'+r2safe(seg.name)+'.pdf';
+            await r2Upload(seg.r2Path,seg.blob,'application/pdf');
+          }
+          statusEl.textContent='🎓 Text extrahieren: '+seg.name+'…';
+          const text=await extractPdfText(seg.blob);
+          newEntries.push({id:uid(),titel:seg.name,themen:[],quelle:S.zsAusgabe,
+            dateipfad:seg.r2Path,text,importiertAm:new Date().toISOString()});
+        }
+        newEntries.forEach(e=>DIDARTDB.push(e));
+        await sbUpload('didaktik-artikel.json',DIDARTDB);
+        const didIds=new Set(didaktikSegs.map(s=>s.id));
+        S.zsSegments=S.zsSegments.filter(s=>!didIds.has(s.id));
+        statusEl.textContent='✓ '+newEntries.length+' Didaktik-Artikel gespeichert';
+        statusEl.style.color='var(--grn)';
+        goto(14);
+      }catch(e){ statusEl.textContent='✗ '+e.message; statusEl.style.color='#dc2626'; didaktikBtn.disabled=false; }
+    };
+
+    // Restliche (ungematchte) Segmente einzeln hochladen
+    restBtn.onclick=async()=>{
+      if(!S.zsAusgabe){ ausgabeInp.focus(); statusEl.textContent='⚠ Bitte zuerst den Ausgabe-Namen eingeben.'; statusEl.style.color='#dc2626'; return; }
+      const matchedIds=new Set([...matches.keys(),...matches.values()]);
+      const rest=S.zsSegments.filter(s=>s.type!=='skip'&&!matchedIds.has(s.id));
+      if(!rest.length){ statusEl.textContent='Keine ungematchten Segmente.'; return; }
+      restBtn.disabled=true;
+      const folder=r2safe(S.zsAusgabe);
+      try{
+        for(const seg of rest.filter(s=>!s.r2Path)){
+          const subdir=seg.type==='kontext'?'kontexte':'materialien';
+          seg.r2Path=subdir+'/'+folder+'/'+r2safe(seg.name)+'.pdf';
+          statusEl.textContent='Lade hoch: '+seg.name+'…';
+          await r2Upload(seg.r2Path,seg.blob,'application/pdf');
+        }
+        const newEntries=[];
+        for(const seg of rest.filter(s=>s.r2Path)){
+          newEntries.push({id:uid(),titel:seg.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
+            materialtyp:seg.type==='kontext'?'Kontext':'Arbeitsblatt',
+            quelle:S.zsAusgabe,dateipfad:seg.r2Path,kontextPfad:null,
+            importiertAm:new Date().toISOString(),
+            unterrichtsphase:[],sozialformenGeeignet:[],methodenGeeignet:[],blockId:null});
+        }
+        newEntries.forEach(e=>MATDB.push(e));
+        await sbUpload('materialien.json',MATDB);
+        const restIds=new Set(rest.map(s=>s.id));
+        S.zsSegments=S.zsSegments.filter(s=>!restIds.has(s.id));
+        statusEl.textContent='✓ '+newEntries.length+' Einträge angelegt';
+        statusEl.style.color='var(--grn)';
+        if(S.zsSegments.filter(s=>s.type!=='skip').length===0){ S.zsAusgabe=''; }
+        goto(14);
+      }catch(e){ statusEl.textContent='✗ '+e.message; statusEl.style.color='#dc2626'; restBtn.disabled=false; }
+    };
+
+    // Upload: gematchte Paare hochladen
+    uploadBtn.onclick=async()=>{
+      if(!S.zsAusgabe){
+        ausgabeInp.focus();
+        statusEl.textContent='⚠ Bitte zuerst den Ausgabe-Namen eingeben.';
+        statusEl.style.color='#dc2626';
+        return;
+      }
+      uploadBtn.disabled=true;
+      const folder=r2safe(S.zsAusgabe);
+      try{
+        // Nur die gematchten Segmente hochladen
+        const matchedMidSet=new Set(matches.keys());
+        const matchedKidSet=new Set(matches.values());
+        const matchedSegIds=new Set([...matchedMidSet,...matchedKidSet]);
+        const toUpload=S.zsSegments.filter(s=>matchedSegIds.has(s.id)&&!s.r2Path);
+        for(const seg of toUpload){
+          const subdir=seg.type==='kontext'?'kontexte':'materialien';
+          seg.r2Path=subdir+'/'+folder+'/'+r2safe(seg.name)+'.pdf';
+          statusEl.textContent='Lade hoch: '+seg.name+'…';
+          await r2Upload(seg.r2Path,seg.blob,'application/pdf');
+        }
+        // MATDB-Einträge: nach Kontext gruppieren → ein Eintrag pro Kontext
+        const byKid=new Map(); // kid → [matSeg, ...]
+        for(const [mid,kid] of matches){
+          const matSeg=materialSegs.find(s=>s.id===mid);
+          if(!byKid.has(kid)) byKid.set(kid,[]);
+          if(matSeg?.r2Path) byKid.get(kid).push(matSeg);
+        }
+        const newEntries=[];
+        for(const [kid,mats] of byKid){
+          const ktxSeg=kontextSegs.find(s=>s.id===kid);
+          const [first,...rest]=mats;
+          const entry={id:uid(),titel:first.name,beschreibung:'',themen:[],fach:[],jahrgang:[],
+            materialtyp:'Arbeitsblatt',quelle:S.zsAusgabe,dateipfad:first.r2Path,
+            kontextPfad:ktxSeg?.r2Path||null,importiertAm:new Date().toISOString(),
+            unterrichtsphase:[],sozialformenGeeignet:[],methodenGeeignet:[],blockId:null};
+          if(rest.length) entry.dateipfadeWeitere=rest.map(m=>m.r2Path);
+          newEntries.push(entry);
+        }
+        newEntries.forEach(e=>MATDB.push(e));
+        await sbUpload('materialien.json',MATDB);
+        // Gematchte Segmente entfernen (egal ob gerade oder schon früher hochgeladen)
+        S.zsSegments=S.zsSegments.filter(s=>!matchedSegIds.has(s.id));
+        matches.clear(); selId=null; selSide=null;
+        const restliche=S.zsSegments.filter(s=>s.type!=='skip').length;
+        statusEl.textContent='✓ '+newEntries.length+' Einträge angelegt'+(restliche?' · '+restliche+' gesichert, noch nicht gematcht':'');
+        statusEl.style.color='var(--grn)';
+        if(restliche===0){ S.zsAusgabe=''; uploadBtn.textContent='✓ Fertig'; }
+        else { goto(14); }
+      }catch(e){statusEl.textContent='✗ '+e.message;statusEl.style.color='#dc2626';uploadBtn.disabled=false;}
+    };
+  }
+
+  const STEPS = { 0: step0, 11: step11, 12: step12, 13: step13, 14: step14 };
+  goto(0);
+  return ov;
+}
+
+
+function buildScanPanel(subTitle, renderCards, onClose) {
+  const oaiKey = localStorage.getItem('oai_key');
+  const p = mk('div', 'mat-scan-panel');
+  if (!oaiKey) {
+    const warn = tx('div', '', '⚠ Bitte zuerst den OpenAI API-Key in den Einstellungen hinterlegen.');
+    warn.style.cssText = 'padding:16px;color:#d97706;';
+    p.appendChild(warn); return p;
+  }
+  function makeDropzone(label, hint, { initialFiles = [], onFilesChange = null, clearAllBtn: showClearAll = false } = {}) {
+    const wrap = mk('div', 'mat-scan-group');
+    const labelRow = mk('div', 'mat-scan-group-hdr');
+    labelRow.appendChild(tx('div', 'mat-scan-group-label', label));
+    let files = [...initialFiles];
+    function notifyChange() { if (onFilesChange) onFilesChange([...files]); }
+    function renderPreview() {
+      preview.innerHTML = '';
+      files.forEach((f, i) => {
+        const thumb = mk('div', 'mat-scan-thumb');
+        const img = document.createElement('img'); img.src = URL.createObjectURL(f); img.className = 'mat-scan-img';
+        const rm = mk('button', 'mat-scan-rm'); rm.textContent = '✕';
+        rm.onclick = () => { files.splice(i, 1); notifyChange(); renderPreview(); updateBtn(); };
+        thumb.appendChild(img); thumb.appendChild(rm); preview.appendChild(thumb);
+      });
+      zone.textContent = files.length ? '+ Weitere Bilder' : '📂 Bilder hierher ziehen oder klicken';
+      zone.style.padding = files.length ? '8px 14px' : '';
+    }
+    function addFiles(newFiles) { files = [...files, ...Array.from(newFiles)]; notifyChange(); renderPreview(); updateBtn(); }
+    function clearFiles() { files = []; notifyChange(); renderPreview(); updateBtn(); }
+    if (showClearAll) { const clrBtn = btn('Leeren', 'btn btn-ghost btn-xs'); clrBtn.onclick = clearFiles; labelRow.appendChild(clrBtn); }
+    wrap.appendChild(labelRow);
+    wrap.appendChild(tx('div', 'mat-scan-group-hint', hint));
+    const zone = mk('div', 'mat-scan-drop'); zone.textContent = '📂 Bilder hierher ziehen oder klicken';
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*,application/pdf'; inp.multiple = true; inp.style.display = 'none';
+    zone.onclick = () => inp.click();
+    zone.ondragover = e => { e.preventDefault(); zone.classList.add('drag-over'); };
+    zone.ondragleave = () => zone.classList.remove('drag-over');
+    zone.ondrop = e => { e.preventDefault(); zone.classList.remove('drag-over'); addFiles(e.dataTransfer.files); };
+    inp.onchange = () => addFiles(inp.files);
+    const preview = mk('div', 'mat-scan-preview');
+    wrap.appendChild(zone); wrap.appendChild(inp); wrap.appendChild(preview);
+    renderPreview();
+    return { wrap, getFiles: () => files, clearFiles };
+  }
+  const { wrap: w1, getFiles: getKontext } = makeDropzone('📋 Kontext', 'Titelseite, Lehrerhandreichung, Erläuterungen & Lösungsseiten', { initialFiles: _kontextFiles, onFilesChange: f => { _kontextFiles = f; }, clearAllBtn: true });
+  const { wrap: w2, getFiles: getSchuelermaterial, clearFiles: clearSchuelermaterial } = makeDropzone('📚 Schülermaterialien', 'M1, M2, M3 … – die eigentlichen Arbeitsblätter und Versuchsanleitungen');
+  const groupsWrap = mk('div', 'mat-scan-groups');
+  groupsWrap.appendChild(w1); groupsWrap.appendChild(w2);
+  p.appendChild(groupsWrap);
+  const statusRow = mk('div', ''); statusRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:12px;';
+  const analyzeBtn = btn('✨ Analysieren & Importieren', 'btn btn-pri btn-sm');
+  analyzeBtn.disabled = true;
+  const statusMsg = tx('span', 'mat-import-err', '');
+  const cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm');
+  cancelBtn.onclick = () => { if (onClose) onClose(); else p.remove(); };
+  statusRow.appendChild(analyzeBtn); statusRow.appendChild(cancelBtn); statusRow.appendChild(statusMsg);
+  p.appendChild(statusRow);
+  function updateBtn() { analyzeBtn.disabled = getSchuelermaterial().length === 0; }
+  analyzeBtn.onclick = async () => {
+    const kontextFiles = getKontext(); const matFiles = getSchuelermaterial();
+    if (!matFiles.length) return;
+    const totalFiles = kontextFiles.length + matFiles.length;
+    analyzeBtn.disabled = true; statusMsg.style.color = 'var(--tx3)';
+    let elapsed = 0;
+    const timer = setInterval(() => { elapsed++; statusMsg.textContent = '⏳ Analysiere ' + totalFiles + ' Bild(er)… ' + elapsed + ' Sek.'; }, 1000);
+    statusMsg.textContent = '⏳ Analysiere ' + totalFiles + ' Bild(er)… 0 Sek.';
+    try {
+      const schema = await sbDownload('schema.json');
+      const schemaStr = JSON.stringify(schema, null, 2);
+      const toImgContent = f => new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = e => res({ type: 'image_url', image_url: { url: e.target.result, detail: 'high' } });
+        reader.onerror = rej; reader.readAsDataURL(f);
+      });
+      const kontextImgs = await Promise.all(kontextFiles.map(toImgContent));
+      const matImgs     = await Promise.all(matFiles.map(toImgContent));
+      const idBase = Date.now();
+      const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Du erhältst zwei Gruppen von Bildern.\n\nGRUPPE 1 – KONTEXT (${kontextFiles.length} Bild${kontextFiles.length !== 1 ? 'er' : ''}): Titelseite, Lehrerhandreichung, Erläuterungen und Lösungsseiten. Lese daraus: Lösungen, Erwartungshorizonte, methodische Hinweise, Zeitplanung, didaktische Tipps.\n\nGRUPPE 2 – SCHÜLERMATERIALIEN (${matFiles.length} Bild${matFiles.length !== 1 ? 'er' : ''}): M1, M2, M3 usw. – die eigentlichen Arbeitsblätter.\n\nSCHEMA:\n${schemaStr}\n\nREGELN:\n- Gib ein JSON-Array aus, kein Text davor/danach\n- id Format: mat_${idBase}_1, mat_${idBase}_2 usw.\n- Erkenne selbst welche Bilder zusammengehören (z.B. M1 Seite 1+2 → ein Eintrag)\n- Kein Unterrichtseinheit-Eintrag, nur Einzelmaterialien\n- Titel: tatsächlichen Drucktitel verwenden; falls keiner erkennbar ist, Thema + Aufgabentyp bilden. Keine Rollen-Titel wie "Einführungsmaterial" oder "Erarbeitungsphase".\n- Jahrgang: zuerst explizite Angaben auf dem Material lesen ("Klasse 9/10", "Jg. 7"); nur sonst aus Niveau/Thema schätzen. SII/Oberstufe → immer ["SII"].\n- Fachwerte: "Bio", "Ch", "M"; wenn fachlich erkennbar, nie [] zurückgeben.\n- Themen stammen aus GRUPPE 2, nicht aus dem Kontext. Kontext darf Lösungen/Hinweise liefern, aber nicht die Themen des Materials überschreiben.\n- loesung, loesungHinweis, erlaeuterung vollständig aus Kontext übernehmen; wenn keine Lösung erkennbar ist: "".\n- schueleraktivitaeten, artDerGeistigenTaetigkeit, darstellungsformen: alle vollständig aufführen${materialAnalysisRulesBlock()}`;
+      const contentParts = [{ type: 'text', text: prompt }];
+      if (kontextImgs.length) { contentParts.push({ type: 'text', text: '=== GRUPPE 1: KONTEXT ===' }); contentParts.push(...kontextImgs); }
+      contentParts.push({ type: 'text', text: '=== GRUPPE 2: SCHÜLERMATERIALIEN ===' });
+      contentParts.push(...matImgs);
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + oaiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'gpt-4o', max_tokens: 16000, messages: [{ role: 'user', content: contentParts }] })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || 'OpenAI-Fehler');
+      const choice = data.choices?.[0];
+      const text2 = choice?.message?.content || '';
+      const match = text2.match(/\[[\s\S]*\]/);
+      if (!match) throw new Error('Kein JSON-Array in der Antwort gefunden.');
+      const entries = JSON.parse(match[0]);
+      if (!entries.length) throw new Error('Keine Einträge generiert.');
+      const truncated = choice?.finish_reason === 'length';
+      const now = new Date().toISOString();
+      entries.forEach(e => {
+        if (!e.id) e.id = 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
+        if (!e.importiertAm) e.importiertAm = now;
+        const idx = MATDB.findIndex(m => m.id === e.id);
+        if (idx >= 0) MATDB[idx] = e; else MATDB.unshift(e);
+      });
+      clearInterval(timer);
+      saveMatDB();
+      clearSchuelermaterial();
+      if (subTitle) subTitle.textContent = MATDB.length + ' Einträge';
+      if (renderCards) renderCards();
+      statusMsg.style.color = truncated ? '#d97706' : 'var(--grn)';
+      statusMsg.textContent = truncated
+        ? `⚠ Antwort abgeschnitten – ggf. nicht alle Materialien importiert.`
+        : `✓ ${entries.length} Material${entries.length !== 1 ? 'ien' : ''} importiert.`;
+      analyzeBtn.disabled = true;
+    } catch(e) {
+      clearInterval(timer);
+      statusMsg.style.color = '#dc2626'; statusMsg.textContent = 'Fehler: ' + e.message;
+      analyzeBtn.disabled = false;
+    }
+  };
+  return p;
+}
+

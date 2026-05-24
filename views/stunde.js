@@ -192,14 +192,10 @@ Antworte NUR als JSON-Array von Strings:
   // Suchbereich (toggle)
   const sucheWrap = mk('div', ''); sucheWrap.style.display = 'none';
 
-  const filterRow = mk('div', ''); filterRow.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;';
+  const filterRow = mk('div', ''); filterRow.style.marginBottom = '10px';
   const suchInp = document.createElement('input'); suchInp.type = 'text'; suchInp.className = 'finp';
-  suchInp.placeholder = 'Titel, Thema, Beschreibung…'; suchInp.style.flex = '1';
-  const jgFilter = document.createElement('select'); jgFilter.className = 'finp'; jgFilter.style.width = 'auto';
-  [['','Alle Jahrgänge'],['5','5'],['6','6'],['7','7'],['8','8'],['9','9'],['10','10'],['SII','SII']].forEach(([v,l]) => {
-    const o = document.createElement('option'); o.value = v; o.textContent = l; jgFilter.appendChild(o);
-  });
-  filterRow.appendChild(suchInp); filterRow.appendChild(jgFilter);
+  suchInp.placeholder = 'Titel, Thema, Beschreibung…'; suchInp.style.width = '100%';
+  filterRow.appendChild(suchInp);
   sucheWrap.appendChild(filterRow);
 
   const ergebnisListe = mk('div', '');
@@ -210,10 +206,9 @@ Antworte NUR als JSON-Array von Strings:
   function renderErgebnisse() {
     ergebnisListe.innerHTML = '';
     const q = suchInp.value.toLowerCase().trim();
-    const jg = jgFilter.value;
     let hits = MATDB.filter(mat => {
       if (mat.materialtyp === 'Lehrerhandreichung') return false;
-      if (jg && mat.jahrgang?.length && !mat.jahrgang.includes(jg)) return false;
+      if (mat.materialtyp === 'Lösung') return false;
       if (q.length >= 2) {
         const txt = [mat.titel||'', ...(mat.themen||[]), mat.beschreibung||''].join(' ').toLowerCase();
         if (!txt.includes(q)) return false;
@@ -235,9 +230,19 @@ Antworte NUR als JSON-Array von Strings:
       const titleEl = tx('span', '', mat.titel); titleEl.style.cssText = 'font-size:13px;font-weight:500;display:block;';
       info.appendChild(titleEl);
       if (mat.themen?.length) { const t = tx('div', '', mat.themen.slice(0,4).join(', ')); t.style.cssText = 'font-size:11px;color:var(--tx2);'; info.appendChild(t); }
-      const metaEl = tx('div', '', [(mat.fach||[]).join('/'), mat.jahrgang?.length ? 'Jg. '+(mat.jahrgang||[]).join('/') : '', mat.materialtyp].filter(Boolean).join(' · '));
-      metaEl.style.cssText = 'font-size:11px;color:var(--tx3);';
-      info.appendChild(metaEl);
+      const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;align-items:center;';
+      const FACH_C = { 'Bio':['#dcfce7','#166534'], 'Ch':['#fef9c3','#854d0e'], 'M':['#dbeafe','#1e40af'] };
+      (mat.fach||[]).forEach(f => {
+        const c = FACH_C[f] || ['#f3f4f6','#374151'];
+        const b = tx('span', '', f); b.style.cssText = `font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:${c[0]};color:${c[1]};`;
+        badgeRow.appendChild(b);
+      });
+      if (mat.jahrgang?.length) {
+        const jgBadge = tx('span', '', mat.jahrgang.join('/'));
+        jgBadge.style.cssText = 'font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#374151;';
+        badgeRow.appendChild(jgBadge);
+      }
+      info.appendChild(badgeRow);
       if (kiBewertungen.has(mat.id)) {
         const bew = kiBewertungen.get(mat.id);
         const COL = { gut:'#166534', anpassung:'#92400e', ungeeignet:'#dc2626' };
@@ -304,7 +309,6 @@ Antworte NUR als JSON-Array:
   sucheWrap.appendChild(kiBtn);
 
   suchInp.oninput = renderErgebnisse;
-  jgFilter.onchange = renderErgebnisse;
 
   matSucheBtn.onclick = () => {
     const open = sucheWrap.style.display !== 'none';

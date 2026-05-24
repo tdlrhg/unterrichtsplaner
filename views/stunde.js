@@ -230,13 +230,19 @@ Antworte NUR als JSON-Array von Strings:
       const titleEl = tx('span', '', mat.titel); titleEl.style.cssText = 'font-size:13px;font-weight:500;display:block;';
       info.appendChild(titleEl);
       if (mat.themen?.length) { const t = tx('div', '', mat.themen.slice(0,4).join(', ')); t.style.cssText = 'font-size:11px;color:var(--tx2);'; info.appendChild(t); }
-      const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;align-items:center;';
-      const FACH_C = { 'Bio':['#dcfce7','#166534'], 'Ch':['#fef9c3','#854d0e'], 'M':['#dbeafe','#1e40af'] };
-      (mat.fach||[]).forEach(f => {
-        const c = FACH_C[f] || ['#f3f4f6','#374151'];
-        const b = tx('span', '', f); b.style.cssText = `font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;background:${c[0]};color:${c[1]};`;
-        badgeRow.appendChild(b);
-      });
+      const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:5px;margin-top:3px;align-items:center;';
+      function matFachIcon(f) {
+        const l = (f||'').toLowerCase();
+        if (l.includes('bio')) return '🌿';
+        if (l.includes('chem') || l === 'ch') return '🧪';
+        if (l.includes('math') || l === 'mathe' || l === 'm') return '📐';
+        return f;
+      }
+      const fachIcons = (mat.fach||[]).map(matFachIcon).join('');
+      if (fachIcons) {
+        const fi = tx('span', '', fachIcons); fi.style.fontSize = '13px';
+        badgeRow.appendChild(fi);
+      }
       if (mat.jahrgang?.length) {
         const jgBadge = tx('span', '', mat.jahrgang.join('/'));
         jgBadge.style.cssText = 'font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#374151;';

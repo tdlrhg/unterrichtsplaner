@@ -1,3 +1,12 @@
+// ── Fach-Symbol ──────────────────────────────────────────────────
+function fachIcon(f) {
+  const l = (f || '').toLowerCase();
+  if (l.includes('bio')) return '🌿';
+  if (l.includes('chem') || l === 'ch') return '🧪';
+  if (l.includes('math') || l === 'mathe' || l === 'm') return '📐';
+  return '📚';
+}
+
 // ── DOM helpers ──────────────────────────────────────────────────
 function mk(tag, cls) {
   const e = document.createElement(tag);

@@ -300,14 +300,7 @@ function viewMaterialien() {
       if (mat.quelle) topRow.appendChild(tx('span', 'matc-quelle', mat.quelle));
       const fachArr = mat.fach || [];
       if (fachArr.length) {
-        function fachSymbol(f) {
-          const l = (f||'').toLowerCase();
-          if (l.includes('bio')) return '🌿';
-          if (l.includes('chem') || l === 'ch') return '🧪';
-          if (l.includes('math') || l === 'mathe' || l === 'm') return '📐';
-          return f;
-        }
-        const fachBadge = tx('span', 'matc-fach-prominent', fachArr.map(fachSymbol).join(' '));
+        const fachBadge = tx('span', 'matc-fach-prominent', fachArr.map(fachIcon).join(' '));
         topRow.appendChild(fachBadge);
       }
       if (topRow.children.length) card.appendChild(topRow);

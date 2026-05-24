@@ -231,14 +231,7 @@ Antworte NUR als JSON-Array von Strings:
       info.appendChild(titleEl);
       if (mat.themen?.length) { const t = tx('div', '', mat.themen.slice(0,4).join(', ')); t.style.cssText = 'font-size:11px;color:var(--tx2);'; info.appendChild(t); }
       const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:5px;margin-top:3px;align-items:center;';
-      function matFachIcon(f) {
-        const l = (f||'').toLowerCase();
-        if (l.includes('bio')) return '🌿';
-        if (l.includes('chem') || l === 'ch') return '🧪';
-        if (l.includes('math') || l === 'mathe' || l === 'm') return '📐';
-        return f;
-      }
-      const fachIcons = (mat.fach||[]).map(matFachIcon).join('');
+      const fachIcons = (mat.fach||[]).map(fachIcon).join('');
       if (fachIcons) {
         const fi = tx('span', '', fachIcons); fi.style.fontSize = '13px';
         badgeRow.appendChild(fi);

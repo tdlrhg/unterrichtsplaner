@@ -1,6 +1,4 @@
 // ── Sidebar ──────────────────────────────────────────────────────
-const FACH_ICONS = { 'M': '∑', 'Ch': '⚗', 'Bio': '🌿', 'Ch_GK': '⚗', 'Ch_LK': '⚗', 'Bio_GK': '🌿', 'Bio_LK': '🌿' };
-
 function buildSidebar() {
   const sb = mk('div', 'sidebar');
 
@@ -52,7 +50,7 @@ function buildSidebar() {
     const isActiveFach = planungen.some(lp => lp.id === S.aktFpId && S.view === 'fachplanung');
 
     const fachRow = mk('div', 'sb-fach' + (isActiveFach && !isOpen ? ' active' : ''));
-    const icon = tx('span', 'sb-fach-icon', FACH_ICONS[fach] || '📚');
+    const icon = tx('span', 'sb-fach-icon', fachIcon(fach));
     const label = tx('span', 'sb-fach-label', fachLabel(fach));
     const arrow = tx('span', 'sb-fach-arrow', isOpen ? '▾' : '›');
     fachRow.appendChild(icon);

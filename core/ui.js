@@ -312,30 +312,3 @@ function phasenTable(stunde) {
   return wrap;
 }
 
-// ── Material list ─────────────────────────────────────────────────
-function materialList(stunde) {
-  if (!stunde.material || !stunde.material.length) return gray('Noch kein Material.');
-  const list = mk('div', 'mat-list');
-  stunde.material.forEach((mat, i) => {
-    const item = mk('div', 'mat-item');
-    const ico = { 'Link': '🔗', 'Video': '🎬', 'Software': '💻' }[mat.typ] || '📄';
-    item.appendChild(tx('span', '', ico));
-    const info = mk('div', ''); info.style.flex = '1';
-    if (mat.url) {
-      const a = document.createElement('a');
-      a.href = mat.url; a.target = '_blank'; a.textContent = mat.name || mat.url;
-      info.appendChild(a);
-    } else {
-      info.appendChild(tx('span', '', mat.name || ''));
-    }
-    const sub = tx('div', '', mat.typ || '');
-    sub.style.cssText = 'font-size:11px;color:var(--tx3);';
-    info.appendChild(sub);
-    item.appendChild(info);
-    const db = mk('button', 'mat-del'); db.textContent = '✕';
-    db.onclick = () => { stunde.material.splice(i, 1); scheduleSave(); render(); };
-    item.appendChild(db);
-    list.appendChild(item);
-  });
-  return list;
-}

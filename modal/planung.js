@@ -75,27 +75,6 @@ function modalHandlerPlanung(type, data, m) {
     return true;
   }
 
-  if (type === 'addMat') {
-    m.appendChild(tx('div', 'modal-title', 'Material hinzufügen'));
-    m.appendChild(modalInput('mn', 'Name', 'z.B. AB Prozentrechnung'));
-    m.appendChild(modalSelect('mtyp', 'Typ', MATTYPEN.map(t => [t, t])));
-    m.appendChild(modalInput('mu', 'URL (optional)', 'https://...', '', 'url'));
-    const footer = mk('div', 'modal-footer');
-    footer.appendChild(cancelBtn());
-    const sv = btn('Hinzufügen', 'btn btn-pri');
-    sv.onclick = () => {
-      const n = document.getElementById('mn').value.trim();
-      if (!n) return;
-      const ty = document.getElementById('mtyp').value;
-      const u = document.getElementById('mu').value.trim();
-      if (!data.stunde.material) data.stunde.material = [];
-      data.stunde.material.push({ id: uid(), name: n, typ: ty, url: u });
-      S.modal = null; scheduleSave(); render();
-    };
-    footer.appendChild(sv); m.appendChild(footer);
-    return true;
-  }
-
   if (type === 'umbenennen') {
     const { obj, feld, label } = data;
     const istBlock = label === 'Themenblock';

@@ -3,7 +3,7 @@ function initStunde(stunde) {
   if (!stunde.klpInhalt) stunde.klpInhalt = [];
   if (!stunde.klpProzess) stunde.klpProzess = [];
   if (!stunde.phasen) stunde.phasen = [];
-  if (!stunde.material) stunde.material = [];
+  if (!stunde.materialIds) stunde.materialIds = [];
   if (!stunde.lernziele) stunde.lernziele = [];
   if (!stunde.planungsrahmen) stunde.planungsrahmen = {};
 }
@@ -151,6 +151,177 @@ Antworte NUR als JSON-Array von Strings:
   lzCard.appendChild(lzBody);
   lzCard.classList.add('card-half');
   grid.appendChild(lzCard);
+
+  // ── Material ───────────────────────────────────────────────────
+  const matCard = mk('div', 'card');
+  const matHdr = cardHdr('Material');
+  const matSucheBtn = btn('🔍 Suchen', 'btn btn-ghost btn-xs');
+  matHdr.appendChild(matSucheBtn);
+  matCard.appendChild(matHdr);
+  const matBody = mk('div', 'card-body');
+
+  // Zugewiesene Materialien (immer sichtbar)
+  const zugewiesenWrap = mk('div', ''); zugewiesenWrap.style.marginBottom = '8px';
+  function renderZugewiesene() {
+    zugewiesenWrap.innerHTML = '';
+    if (!stunde.materialIds.length) {
+      zugewiesenWrap.appendChild(tx('div', '', 'Noch kein Material zugewiesen.'));
+      zugewiesenWrap.querySelector('div').style.cssText = 'font-size:12px;color:var(--tx3);padding:2px 0;';
+      return;
+    }
+    stunde.materialIds.forEach(mid => {
+      const mat = MATDB.find(m => m.id === mid);
+      if (!mat) return;
+      const row = mk('div', ''); row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bord);';
+      row.appendChild(tx('span', '', '📄'));
+      const info = mk('div', ''); info.style.flex = '1';
+      info.appendChild(tx('span', '', mat.titel));
+      const meta = tx('div', '', [(mat.fach||[]).join('/'), mat.jahrgang?.length ? 'Jg. '+(mat.jahrgang||[]).join('/') : '', mat.materialtyp].filter(Boolean).join(' · '));
+      meta.style.cssText = 'font-size:11px;color:var(--tx3);';
+      info.appendChild(meta);
+      row.appendChild(info);
+      const del = btn('✕', 'btn btn-ghost btn-xs'); del.style.color = '#dc2626';
+      del.onclick = () => { stunde.materialIds = stunde.materialIds.filter(id => id !== mid); scheduleSave(); renderZugewiesene(); };
+      row.appendChild(del);
+      zugewiesenWrap.appendChild(row);
+    });
+  }
+  renderZugewiesene();
+  matBody.appendChild(zugewiesenWrap);
+
+  // Suchbereich (toggle)
+  const sucheWrap = mk('div', ''); sucheWrap.style.display = 'none';
+
+  const filterRow = mk('div', ''); filterRow.style.cssText = 'display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;';
+  const suchInp = document.createElement('input'); suchInp.type = 'text'; suchInp.className = 'finp';
+  suchInp.placeholder = 'Titel, Thema, Beschreibung…'; suchInp.style.flex = '1';
+  const jgFilter = document.createElement('select'); jgFilter.className = 'finp'; jgFilter.style.width = 'auto';
+  [['','Alle Jahrgänge'],['5','5'],['6','6'],['7','7'],['8','8'],['9','9'],['10','10'],['SII','SII']].forEach(([v,l]) => {
+    const o = document.createElement('option'); o.value = v; o.textContent = l; jgFilter.appendChild(o);
+  });
+  filterRow.appendChild(suchInp); filterRow.appendChild(jgFilter);
+  sucheWrap.appendChild(filterRow);
+
+  const ergebnisListe = mk('div', '');
+  ergebnisListe.style.cssText = 'max-height:300px;overflow-y:auto;border:1px solid var(--bord);border-radius:6px;';
+  const selected = new Set();
+  const kiBewertungen = new Map();
+
+  const FACH_NORM2 = { 'bio':'bio','biologie':'bio','ch':'ch','chemie':'ch','m':'m','mathe':'m','mathematik':'m' };
+  const fpFachNorm = FACH_NORM2[(fp.fach||'').toLowerCase()] || (fp.fach||'').toLowerCase();
+
+  function renderErgebnisse() {
+    ergebnisListe.innerHTML = '';
+    const q = suchInp.value.toLowerCase().trim();
+    const jg = jgFilter.value;
+    let hits = MATDB.filter(mat => {
+      if (mat.fach?.length) {
+        const mf = mat.fach.map(f => FACH_NORM2[f.toLowerCase()] || f.toLowerCase());
+        if (!mf.includes(fpFachNorm)) return false;
+      }
+      if (jg && mat.jahrgang?.length && !mat.jahrgang.includes(jg)) return false;
+      if (q.length >= 2) {
+        const txt = [mat.titel||'', ...(mat.themen||[]), mat.beschreibung||''].join(' ').toLowerCase();
+        if (!txt.includes(q)) return false;
+      }
+      return true;
+    });
+    if (!hits.length || q.length < 2) {
+      const hint = tx('div', '', hits.length === 0 ? 'Keine Treffer.' : 'Suchbegriff eingeben (mind. 2 Zeichen)…');
+      hint.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
+      ergebnisListe.appendChild(hint); return;
+    }
+    hits.slice(0, 30).forEach(mat => {
+      const row = mk('div', '');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--bord);cursor:pointer;';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selected.has(mat.id);
+      cb.onclick = e => e.stopPropagation();
+      cb.onchange = () => { if (cb.checked) selected.add(mat.id); else selected.delete(mat.id); kiBtn.disabled = selected.size === 0; kiBtn.textContent = `✨ KI bewertet (${selected.size})`; };
+      const info = mk('div', ''); info.style.flex = '1';
+      const titleEl = tx('span', '', mat.titel); titleEl.style.cssText = 'font-size:13px;font-weight:500;display:block;';
+      info.appendChild(titleEl);
+      if (mat.themen?.length) { const t = tx('div', '', mat.themen.slice(0,4).join(', ')); t.style.cssText = 'font-size:11px;color:var(--tx2);'; info.appendChild(t); }
+      const metaEl = tx('div', '', [(mat.fach||[]).join('/'), mat.jahrgang?.length ? 'Jg. '+(mat.jahrgang||[]).join('/') : '', mat.materialtyp].filter(Boolean).join(' · '));
+      metaEl.style.cssText = 'font-size:11px;color:var(--tx3);';
+      info.appendChild(metaEl);
+      if (kiBewertungen.has(mat.id)) {
+        const bew = kiBewertungen.get(mat.id);
+        const COL = { gut:'#166534', anpassung:'#92400e', ungeeignet:'#dc2626' };
+        const ICO = { gut:'✓ gut', anpassung:'⚠ Anpassung', ungeeignet:'✗ ungeeignet' };
+        const badge = tx('span', '', ICO[bew.bewertung] || bew.bewertung);
+        badge.style.cssText = `font-size:11px;font-weight:600;color:${COL[bew.bewertung]||'var(--tx3)'};white-space:nowrap;`;
+        if (bew.hinweis) badge.title = bew.hinweis;
+        info.appendChild(badge);
+      }
+      const useBtn = btn('+ Zuweisen', 'btn btn-pri btn-xs');
+      useBtn.onclick = e => {
+        e.stopPropagation();
+        if (!stunde.materialIds.includes(mat.id)) { stunde.materialIds.push(mat.id); scheduleSave(); renderZugewiesene(); }
+        useBtn.textContent = '✓'; useBtn.disabled = true;
+      };
+      if (stunde.materialIds.includes(mat.id)) { useBtn.textContent = '✓'; useBtn.disabled = true; }
+      row.onclick = () => { cb.checked = !cb.checked; cb.onchange(); };
+      row.appendChild(cb); row.appendChild(info); row.appendChild(useBtn);
+      ergebnisListe.appendChild(row);
+    });
+    if (hits.length > 30) { const m = tx('div','',`+ ${hits.length-30} weitere – Suche verfeinern`); m.style.cssText='padding:8px 10px;font-size:11px;color:var(--tx3);'; ergebnisListe.appendChild(m); }
+  }
+  sucheWrap.appendChild(ergebnisListe);
+
+  const kiBtn = btn('✨ KI bewertet (0)', 'btn btn-ghost btn-sm'); kiBtn.disabled = true;
+  kiBtn.style.cssText = 'margin-top:10px;';
+  kiBtn.onclick = async () => {
+    const antKey = localStorage.getItem('ant_key');
+    if (!antKey) { alert('Bitte API-Key in den Einstellungen hinterlegen.'); return; }
+    if (!selected.size) return;
+    kiBtn.disabled = true; kiBtn.textContent = '⏳ KI bewertet…';
+    const lernzieleText = (stunde.lernziele||[]).map(z=>z.text).join('\n') || '–';
+    const selMats = [...selected].map(id => MATDB.find(m=>m.id===id)).filter(Boolean);
+    const matListe = selMats.map((m,i) =>
+      `[${i+1}] id:"${m.id}" | Titel:"${m.titel}" | Themen:${(m.themen||[]).join(',')||'–'} | Typ:${m.materialtyp||'–'} | Jg:${(m.jahrgang||[]).join('/')||'–'} | Phase:${(m.unterrichtsphase||[]).join('/')||'–'}${m.beschreibung?' | Beschreibung:'+m.beschreibung.slice(0,120):''}`
+    ).join('\n');
+    const prompt = `Du hilfst einer NRW-Gymnasiallehrerin beim Planen einer Unterrichtsstunde.
+
+Stunde: Fach ${fp.fach||'–'}, Jahrgang ${fp.jahrgang||'–'}, ${stunde.dauer||45} Min
+Intention: ${stunde.intention||'–'}
+Lernziele: ${lernzieleText}
+
+Bewerte folgende Materialien aus der Datenbank für diese Stunde.
+WICHTIG: Geh davon aus, dass du aus fast jedem Material etwas machen kannst – vereinfachen, kürzen, nur Teile oder eine Abbildung verwenden, auf das Thema übertragen. "ungeeignet" nur wenn wirklich keinerlei Verbindung herstellbar ist.
+
+${matListe}
+
+Antworte NUR als JSON-Array:
+[{"id":"...","bewertung":"gut"|"anpassung"|"ungeeignet","hinweis":"ein Satz warum / wie anpassen"}]`;
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error?.message || res.statusText);
+      const results = JSON.parse((d.content?.[0]?.text||'[]').match(/\[[\s\S]*\]/)?.[0]||'[]');
+      results.forEach(r => { if (r.id) kiBewertungen.set(r.id, { bewertung: r.bewertung, hinweis: r.hinweis }); });
+      renderErgebnisse();
+    } catch(e) { alert('Fehler: ' + e.message); }
+    kiBtn.disabled = false; kiBtn.textContent = `✨ KI bewertet (${selected.size})`;
+  };
+  sucheWrap.appendChild(kiBtn);
+
+  suchInp.oninput = renderErgebnisse;
+  jgFilter.onchange = renderErgebnisse;
+
+  matSucheBtn.onclick = () => {
+    const open = sucheWrap.style.display !== 'none';
+    sucheWrap.style.display = open ? 'none' : 'block';
+    matSucheBtn.textContent = open ? '🔍 Suchen' : '▲ Schließen';
+    if (!open) { suchInp.focus(); renderErgebnisse(); }
+  };
+
+  matBody.appendChild(sucheWrap);
+  matCard.appendChild(matBody);
+  grid.appendChild(matCard);
 
   // ── Planungsrahmen ─────────────────────────────────────────────
   const pr = stunde.planungsrahmen;
@@ -468,18 +639,6 @@ Antworte NUR als JSON-Objekt. WICHTIG: Keine Zeilenumbrüche innerhalb von Strin
   tb.appendChild(tafel);
   tc.appendChild(tb);
   grid.appendChild(tc);
-
-  // ── Material ───────────────────────────────────────────────────
-  const mc = mk('div', 'card card-half');
-  const mhdr = cardHdr('Material & Links');
-  const amb = btn('+ Material', 'btn btn-pri btn-xs');
-  amb.onclick = () => { S.modal = { type: 'addMat', data: { stunde } }; render(); };
-  mhdr.appendChild(amb);
-  mc.appendChild(mhdr);
-  const mbd = mk('div', 'card-body');
-  mbd.appendChild(materialList(stunde));
-  mc.appendChild(mbd);
-  grid.appendChild(mc);
 
   // ── Lehrerkommentar ────────────────────────────────────────────
   const lc = mk('div', 'card');

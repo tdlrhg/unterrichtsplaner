@@ -203,7 +203,8 @@ Antworte NUR als JSON-Array von Strings:
     cb.onclick = e => e.stopPropagation();
     cb.onchange = () => { if (cb.checked) selected.add(mat.id); else selected.delete(mat.id); kiBtn.disabled = selected.size === 0; kiBtn.textContent = `✨ KI bewertet (${selected.size})`; };
     const info = mk('div', ''); info.style.flex = '1';
-    const titleEl = tx('span', '', mat.titel); titleEl.style.cssText = 'font-size:13px;font-weight:500;display:block;';
+    const titleEl = tx('span', '', mat.titel); titleEl.style.cssText = 'font-size:13px;font-weight:500;display:block;cursor:pointer;text-decoration:underline;text-underline-offset:2px;';
+    titleEl.onclick = e => { e.stopPropagation(); openMatOverlayStandalone(mat); };
     info.appendChild(titleEl);
     if (mat.themen?.length) { const t = tx('div', '', mat.themen.slice(0,4).join(', ')); t.style.cssText = 'font-size:11px;color:var(--tx2);'; info.appendChild(t); }
     const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:5px;margin-top:3px;align-items:center;flex-wrap:wrap;';

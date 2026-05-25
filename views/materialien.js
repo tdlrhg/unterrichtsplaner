@@ -342,12 +342,6 @@ function viewMaterialien() {
       }
       card.appendChild(metaRow);
 
-      // ─ Phasen ─
-      if ((mat.unterrichtsphase || []).length) {
-        const phRow = mk('div', 'matc-phases');
-        mat.unterrichtsphase.forEach(p => phRow.appendChild(phaseChip(p)));
-        card.appendChild(phRow);
-      }
 
       // ─ Footer: nur KLP-Anzahl ─
       const klpCount = (mat.kompetenzenKLP || []).length;

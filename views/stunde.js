@@ -147,7 +147,9 @@ Antworte NUR als JSON-Array von Strings:
   // ── Material ───────────────────────────────────────────────────
   const matCard = mk('div', 'card');
   const matHdr = cardHdr('Material');
+  const kiVorschlBtn = btn('✨ Vorschlagen', 'btn btn-ghost btn-xs');
   const matSucheBtn = btn('🔍 Suchen', 'btn btn-ghost btn-xs');
+  matHdr.appendChild(kiVorschlBtn);
   matHdr.appendChild(matSucheBtn);
   matCard.appendChild(matHdr);
   const matBody = mk('div', 'card-body');
@@ -189,6 +191,89 @@ Antworte NUR als JSON-Array von Strings:
   suchInp.placeholder = 'Titel, Thema, Beschreibung…'; suchInp.style.width = '100%';
   filterRow.appendChild(suchInp);
   sucheWrap.appendChild(filterRow);
+
+  // KI-Vorschläge (erscheint über der manuellen Suche)
+  const kiVorschlaegeListe = mk('div', '');
+  kiVorschlaegeListe.style.cssText = 'max-height:320px;overflow-y:auto;border:1px solid var(--bord);border-radius:6px;margin-bottom:10px;display:none;';
+  sucheWrap.insertBefore(kiVorschlaegeListe, filterRow);
+
+  kiVorschlBtn.onclick = async () => {
+    const antKey = localStorage.getItem('ant_key');
+    if (!antKey) { alert('Bitte API-Key in den Einstellungen hinterlegen.'); return; }
+    // sucheWrap öffnen
+    sucheWrap.style.display = 'block';
+    matSucheBtn.textContent = '▲ Schließen';
+    kiVorschlaegeListe.style.display = 'block';
+    kiVorschlaegeListe.innerHTML = '';
+    const spin = tx('div', '', '⏳ KI sucht passende Materialien…');
+    spin.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
+    kiVorschlaegeListe.appendChild(spin);
+    kiVorschlBtn.disabled = true; kiVorschlBtn.textContent = '⏳';
+
+    const EXCL = ['Lehrerhandreichung', 'Lösung'];
+    const matSummary = MATDB
+      .filter(m => !EXCL.includes(m.materialtyp))
+      .map(m => `id:${m.id}|${m.titel}|${(m.themen||[]).join(',')}|${(m.fach||[]).join(',')}|Jg:${(m.jahrgang||[]).join(',')}|${m.materialtyp||''}`)
+      .join('\n');
+
+    const lernziele = (stunde.lernziele||[]).map(z=>z.text).join(', ') || '–';
+    const prompt = `Du hilfst einer NRW-Gymnasiallehrerin beim Planen einer Unterrichtsstunde.
+
+Stunde: Fach ${fp.fach||'–'}, Jahrgang ${fp.jahrgang||'–'}, ${stunde.dauer||45} Min
+Thema/Intention: ${stunde.intention||'–'}
+Lernziele: ${lernziele}
+
+Wähle 5–8 passende Materialien aus der folgenden Datenbank. Bevorzuge Erarbeitungsmaterial. Gib für jedes eine kurze Begründung (1 Satz, z.B. was an dem Material für diese Stunde nützlich ist – auch wenn es Anpassung braucht).
+
+Antworte NUR als JSON:
+{"vorschlaege": [{"id": "mat_xxx", "grund": "ein Satz"}]}
+
+Materialdatenbank (id|Titel|Themen|Fach|Jahrgang|Typ):
+${matSummary}`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: prompt }] }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error?.message || res.statusText);
+      const raw = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/)?.[0];
+      if (!raw) throw new Error('Kein JSON erhalten');
+      const { vorschlaege } = JSON.parse(raw);
+      kiVorschlaegeListe.innerHTML = '';
+      const hdr = mk('div', '');
+      hdr.style.cssText = 'padding:6px 10px;font-size:11px;font-weight:600;color:var(--tx2);background:var(--bg2);border-bottom:1px solid var(--bord);display:flex;justify-content:space-between;align-items:center;';
+      hdr.appendChild(tx('span', '', `✨ ${vorschlaege?.length || 0} KI-Vorschläge`));
+      const closeKi = btn('✕', 'btn btn-ghost btn-xs');
+      closeKi.onclick = () => { kiVorschlaegeListe.style.display = 'none'; kiVorschlaegeListe.innerHTML = ''; };
+      hdr.appendChild(closeKi);
+      kiVorschlaegeListe.appendChild(hdr);
+      if (!vorschlaege?.length) {
+        const hint = tx('div', '', 'Keine Vorschläge – Thema/Intention der Stunde ergänzen?');
+        hint.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
+        kiVorschlaegeListe.appendChild(hint);
+      } else {
+        vorschlaege.forEach(v => {
+          const mat = MATDB.find(m => m.id === v.id);
+          if (!mat) return;
+          const row = buildMatRow(mat);
+          // Grund einblenden
+          const grundEl = tx('div', '', v.grund);
+          grundEl.style.cssText = 'font-size:11px;color:var(--tx2);font-style:italic;margin-top:2px;padding:0 10px 6px 10px;';
+          kiVorschlaegeListe.appendChild(row);
+          kiVorschlaegeListe.appendChild(grundEl);
+        });
+      }
+    } catch(e) {
+      kiVorschlaegeListe.innerHTML = '';
+      const err = tx('div', '', '⚠ Fehler: ' + e.message);
+      err.style.cssText = 'padding:12px;color:#dc2626;font-size:12px;';
+      kiVorschlaegeListe.appendChild(err);
+    }
+    kiVorschlBtn.disabled = false; kiVorschlBtn.textContent = '✨ Vorschlagen';
+  };
 
   const ergebnisListe = mk('div', '');
   ergebnisListe.style.cssText = 'max-height:300px;overflow-y:auto;border:1px solid var(--bord);border-radius:6px;';

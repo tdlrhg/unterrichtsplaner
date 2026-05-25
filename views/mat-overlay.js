@@ -1,4 +1,21 @@
 // ── mat-overlay.js – Detail-Overlay, KLP-Vorschlag ────────────
+
+function openMatOverlayStandalone(mat) {
+  const overlay = mk('div', 'matd-overlay open');
+  const panel = mk('div', 'matd-panel');
+  const panHdr = mk('div', 'matd-panel-hdr');
+  const panTitle = tx('span', 'matd-panel-title', mat.titel);
+  const closeBtn = btn('✕', 'btn btn-ghost btn-xs');
+  closeBtn.onclick = () => overlay.remove();
+  panHdr.appendChild(panTitle);
+  panHdr.appendChild(closeBtn);
+  panel.appendChild(panHdr);
+  overlay.appendChild(panel);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+  openMatOverlay(mat, null, overlay, panel, panTitle, () => {});
+}
+
 function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   panel.querySelector('.matd-panel-body')?.remove();
   panTitle.textContent = mat.titel;
@@ -203,6 +220,145 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
     reShortcut.onclick = () => { if (reBtnRef) reBtnRef.click(); };
     reWrap.appendChild(reShortcut);
     currentSection.appendChild(reWrap);
+  }
+
+  // ── KI befragen ─────────────────────────────────────────────
+  {
+    const kiChatWrap = mk('div', '');
+    kiChatWrap.style.cssText = 'margin-top:10px;border-top:1px solid var(--bord);padding-top:8px;';
+    const kiChatToggle = btn('💬 KI befragen', 'btn btn-ghost btn-sm');
+    kiChatToggle.style.marginBottom = '6px';
+    const kiChatBody = mk('div', ''); kiChatBody.style.display = 'none';
+
+    kiChatToggle.onclick = () => {
+      const open = kiChatBody.style.display !== 'none';
+      kiChatBody.style.display = open ? 'none' : '';
+      kiChatToggle.className = open ? 'btn btn-ghost btn-sm' : 'btn btn-sm btn-pri';
+      if (!open) kiChatInput.focus();
+    };
+
+    const kiChatHistory = mk('div', '');
+    kiChatHistory.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:8px;max-height:280px;overflow-y:auto;';
+
+    const kiChatInput = document.createElement('textarea');
+    kiChatInput.placeholder = 'Frage zum Material… (Enter = Senden, Shift+Enter = Zeilenumbruch)';
+    kiChatInput.className = 'finp';
+    kiChatInput.style.cssText = 'flex:1;min-height:38px;max-height:100px;resize:vertical;font-size:12px;';
+
+    const sendBtn = btn('Fragen', 'btn btn-pri btn-sm');
+
+    sendBtn.onclick = async () => {
+      const frage = kiChatInput.value.trim();
+      if (!frage) return;
+      const antKey = localStorage.getItem('ant_key');
+      if (!antKey) { alert('Kein API-Key in den Einstellungen.'); return; }
+
+      const userBubble = mk('div', '');
+      userBubble.style.cssText = 'background:var(--bg2);border-radius:6px;padding:6px 10px;font-size:12px;align-self:flex-end;max-width:90%;';
+      userBubble.textContent = frage;
+      kiChatHistory.appendChild(userBubble);
+      kiChatHistory.scrollTop = kiChatHistory.scrollHeight;
+      kiChatInput.value = '';
+      sendBtn.disabled = true; sendBtn.textContent = '…';
+
+      const matKontext = [
+        'Titel: ' + (mat.titel || '–'),
+        'Fach: ' + ((mat.fach||[]).join(', ') || '–'),
+        'Jahrgang: ' + ((mat.jahrgang||[]).join(', ') || '–'),
+        'Materialtyp: ' + (mat.materialtyp || '–'),
+        'Themen: ' + ((mat.themen||[]).join(', ') || '–'),
+        'Beschreibung: ' + (mat.beschreibung || '–'),
+        'Quelle: ' + (mat.quelle || '–'),
+        'Rolle im Kontext: ' + (mat.rolleImKontext || '–'),
+        'Anmerkungen: ' + (mat.persoenlicheAnmerkungen || '–'),
+      ].join('\n');
+
+      const prompt = `Du bist Assistentin einer Lehrerin an einem NRW-Gymnasium.
+
+Unterrichtsmaterial:
+${matKontext}
+
+Frage der Lehrerin: "${frage}"
+
+Beantworte kurz und präzise (2–4 Sätze). Wenn die Antwort sinnvoll in ein konkretes Feld des Materials eingetragen werden sollte, schlage das vor.
+
+Antworte NUR als JSON:
+{"antwort": "...", "feldUpdate": {"feld": "persoenlicheAnmerkungen", "wert": "..."}}
+oder falls kein Feld passt:
+{"antwort": "...", "feldUpdate": null}
+
+Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetrennte Liste), beschreibung, persoenlicheAnmerkungen, rolleImKontext`;
+
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
+        });
+        if (!res.ok) throw new Error('API ' + res.status);
+        const d = await res.json();
+        const raw = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/)?.[0];
+        if (!raw) throw new Error('Kein JSON in Antwort');
+        const sanitized = raw.replace(/[\x00-\x1F\x7F]/g, c => (c==='\n'||c==='\r'||c==='\t') ? ' ' : '');
+        const { antwort, feldUpdate } = JSON.parse(sanitized);
+
+        const aiBubble = mk('div', '');
+        aiBubble.style.cssText = 'background:var(--acc-faint,#eff6ff);border-left:3px solid var(--acc,#3b82f6);border-radius:0 6px 6px 0;padding:6px 10px;font-size:12px;';
+        aiBubble.appendChild(tx('div', '', antwort));
+
+        if (feldUpdate?.feld && feldUpdate?.wert) {
+          const FELD_LABELS = { jahrgang:'Jahrgang', themen:'Themen', beschreibung:'Beschreibung', persoenlicheAnmerkungen:'Anmerkungen', rolleImKontext:'Rolle im Kontext' };
+          const feldBar = mk('div', '');
+          feldBar.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap;';
+          const preview = feldUpdate.wert.slice(0,60) + (feldUpdate.wert.length>60?'…':'');
+          const hint = tx('span', '', '→ ' + (FELD_LABELS[feldUpdate.feld]||feldUpdate.feld) + ': „' + preview + '"');
+          hint.style.cssText = 'font-size:11px;color:var(--tx3);font-style:italic;flex:1;';
+          const uebBtn = btn('Übernehmen', 'btn btn-pri btn-xs');
+          uebBtn.onclick = () => {
+            if (['jahrgang','themen'].includes(feldUpdate.feld)) {
+              mat[feldUpdate.feld] = feldUpdate.wert.split(',').map(s=>s.trim()).filter(Boolean);
+            } else {
+              mat[feldUpdate.feld] = feldUpdate.wert;
+            }
+            saveMatDB(); renderCards();
+            uebBtn.textContent = '✓'; uebBtn.disabled = true;
+            hint.style.textDecoration = 'line-through';
+          };
+          const ignBtn = btn('Ignorieren', 'btn btn-ghost btn-xs');
+          ignBtn.onclick = () => feldBar.remove();
+          feldBar.appendChild(hint); feldBar.appendChild(uebBtn); feldBar.appendChild(ignBtn);
+          aiBubble.appendChild(feldBar);
+        } else {
+          const notizBar = mk('div', ''); notizBar.style.marginTop = '6px';
+          const notizBtn = btn('Als Anmerkung speichern', 'btn btn-ghost btn-xs');
+          notizBtn.onclick = () => {
+            const vor = mat.persoenlicheAnmerkungen ? mat.persoenlicheAnmerkungen + '\n\n' : '';
+            mat.persoenlicheAnmerkungen = vor + 'F: ' + frage + '\nA: ' + antwort;
+            saveMatDB(); renderCards();
+            notizBtn.textContent = '✓ Gespeichert'; notizBtn.disabled = true;
+          };
+          notizBar.appendChild(notizBtn);
+          aiBubble.appendChild(notizBar);
+        }
+
+        kiChatHistory.appendChild(aiBubble);
+        kiChatHistory.scrollTop = kiChatHistory.scrollHeight;
+      } catch(e2) {
+        const errBubble = tx('div', '', '⚠ ' + e2.message);
+        errBubble.style.cssText = 'font-size:12px;color:var(--red,#dc2626);';
+        kiChatHistory.appendChild(errBubble);
+      }
+      sendBtn.disabled = false; sendBtn.textContent = 'Fragen';
+    };
+
+    kiChatInput.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBtn.click(); } };
+
+    const kiChatInputRow = mk('div', '');
+    kiChatInputRow.style.cssText = 'display:flex;gap:6px;align-items:flex-end;';
+    kiChatInputRow.appendChild(kiChatInput); kiChatInputRow.appendChild(sendBtn);
+    kiChatBody.appendChild(kiChatHistory); kiChatBody.appendChild(kiChatInputRow);
+    kiChatWrap.appendChild(kiChatToggle); kiChatWrap.appendChild(kiChatBody);
+    currentSection.appendChild(kiChatWrap);
   }
 
   // ── Detailbereich ─────────────────────────────────────────────

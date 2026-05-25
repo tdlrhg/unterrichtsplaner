@@ -198,7 +198,8 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   // Neu analysieren – prominent in der Übersicht
   if (_matKey) {
     const reWrap = mk('div', ''); reWrap.style.cssText = 'padding:10px 0 4px 0;';
-    const reShortcut = btn('🔄 Neu analysieren', 'btn btn-pri btn-sm');
+    const schonAnalysiert = !!(mat.themen?.length || mat.beschreibung || mat.unterrichtsphase?.length);
+    const reShortcut = btn(schonAnalysiert ? '🔄 Neu analysieren' : '✨ Analysieren', 'btn btn-pri btn-sm');
     reShortcut.onclick = () => { btnDetails.click(); setTimeout(() => { if (reBtnRef) reBtnRef.click(); }, 50); };
     reWrap.appendChild(reShortcut);
     currentSection.appendChild(reWrap);

@@ -621,6 +621,116 @@ Antworte NUR mit JSON (kein Text davor/danach):
     delBar.appendChild(mchkBtn);
   }
 
+  // ── Methoden vorschlagen ──────────────────────────────────────
+  const mvorBtn = btn('📚 Methoden vorschlagen', 'btn btn-ghost btn-xs');
+  let mvorPanel = null;
+  mvorBtn.onclick = async () => {
+    const antKey = localStorage.getItem('ant_key');
+    if (!antKey) { alert('Bitte API-Key in den Einstellungen hinterlegen.'); return; }
+    if (!METHDB.length) { alert('Methodendatenbank ist leer.'); return; }
+    if (mvorPanel) { mvorPanel.remove(); mvorPanel = null; mvorBtn.textContent = '📚 Methoden vorschlagen'; return; }
+    mvorBtn.disabled = true; mvorBtn.textContent = '⏳ KI analysiert…';
+
+    const methListe = METHDB.map(m =>
+      `ID: ${m.id} | Name: ${m.name}${m.beschreibung ? ' | ' + m.beschreibung.slice(0, 100) : ''}${m.ziel ? ' | Ziel: ' + m.ziel.slice(0, 80) : ''}`
+    ).join('\n');
+
+    const matKontext = [
+      `Titel: ${mat.titel || '–'}`,
+      `Typ: ${mat.materialtyp || '–'}`,
+      `Themen: ${(mat.themen || []).join(', ') || '–'}`,
+      `Beschreibung: ${mat.beschreibung || '–'}`,
+      `Rolle im Kontext: ${mat.rolleImKontext || '–'}`,
+      `Unterrichtsphase: ${(mat.unterrichtsphase || []).join(', ') || '–'}`,
+      `Schüleraktivitäten: ${(mat.schueleraktivitaeten || []).join(', ') || '–'}`,
+    ].join('\n');
+
+    const prompt = `Du bist Didaktik-Expertin an einem NRW-Gymnasium.
+
+Material:
+${matKontext}
+
+Methodendatenbank (${METHDB.length} Einträge):
+${methListe}
+
+Aufgabe:
+1. Wähle 3–5 Methoden aus der Datenbank, die mit diesem Material gut funktionieren würden – auch unkonventionelle Zugänge. Begründe in einem Satz warum.
+2. Prüfe: Enthält das Material selbst eine Methode, die NICHT in der Datenbank steht? Falls ja, beschreibe sie kurz.
+
+Antworte NUR als JSON:
+{
+  "vorschlaege": [
+    {"id": "methdb-id", "grund": "ein Satz warum diese Methode passt"}
+  ],
+  "neueMethode": {"name": "...", "beschreibung": "Was tun SuS konkret (2–3 Sätze)", "ziel": "...", "hinweise": "..."} oder null
+}`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 800, messages: [{ role: 'user', content: prompt }] }),
+      });
+      if (!res.ok) throw new Error('API ' + res.status);
+      const d = await res.json();
+      const raw = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/)?.[0];
+      if (!raw) throw new Error('Kein JSON erhalten');
+      const { vorschlaege, neueMethode } = JSON.parse(raw);
+
+      mvorPanel = mk('div', '');
+      mvorPanel.style.cssText = 'margin:8px 0;padding:10px 12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;font-size:12px;display:flex;flex-direction:column;gap:8px;';
+
+      if (vorschlaege?.length) {
+        const titel = tx('div', '', '📚 Passende Methoden aus der Datenbank');
+        titel.style.cssText = 'font-weight:600;font-size:12px;';
+        mvorPanel.appendChild(titel);
+        vorschlaege.forEach(v => {
+          const entry = METHDB.find(m => m.id === v.id);
+          if (!entry) return;
+          const row = mk('div', '');
+          row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--bord);';
+          const info = mk('div', ''); info.style.flex = '1';
+          info.appendChild(tx('span', '', entry.name)).style && (info.firstChild.style.cssText = 'font-weight:600;');
+          const grund = tx('div', '', v.grund); grund.style.cssText = 'color:var(--tx2);font-size:11px;margin-top:2px;font-style:italic;';
+          info.appendChild(grund);
+          const lBtn = btn('🔗 Verknüpfen', 'btn btn-pri btn-xs');
+          lBtn.onclick = () => {
+            if (!mat.methodenIds) mat.methodenIds = [];
+            if (!mat.methodenIds.includes(entry.id)) { mat.methodenIds.push(entry.id); saveMatDB(); renderMethLinks(); }
+            lBtn.textContent = '✓'; lBtn.disabled = true;
+          };
+          if ((mat.methodenIds || []).includes(entry.id)) { lBtn.textContent = '✓'; lBtn.disabled = true; }
+          row.appendChild(info); row.appendChild(lBtn);
+          mvorPanel.appendChild(row);
+        });
+      }
+
+      if (neueMethode?.name) {
+        const neuHdr = tx('div', '', '✨ Neue Methode erkannt: ' + neueMethode.name);
+        neuHdr.style.cssText = 'font-weight:600;margin-top:4px;';
+        mvorPanel.appendChild(neuHdr);
+        const neuDesc = tx('div', '', neueMethode.beschreibung || '');
+        neuDesc.style.cssText = 'font-size:11px;color:var(--tx2);';
+        mvorPanel.appendChild(neuDesc);
+        const neuBtn = btn('✨ In Methodendatenbank aufnehmen', 'btn btn-pri btn-xs');
+        neuBtn.onclick = () => {
+          mvorPanel.remove(); mvorPanel = null;
+          S.view = 'methoden';
+          S._pendingNewMethod = { name: neueMethode.name, beschreibung: neueMethode.beschreibung || '', ziel: neueMethode.ziel || '', hinweise: neueMethode.hinweise || '', linkMatId: mat.id };
+          render();
+        };
+        mvorPanel.appendChild(neuBtn);
+      }
+
+      const schlBtn = btn('Schließen', 'btn btn-ghost btn-xs');
+      schlBtn.onclick = () => { mvorPanel.remove(); mvorPanel = null; mvorBtn.textContent = '📚 Methoden vorschlagen'; };
+      mvorPanel.appendChild(schlBtn);
+      body.insertBefore(mvorPanel, delBar);
+    } catch(e) { alert('Fehler: ' + e.message); }
+    mvorBtn.disabled = false; mvorBtn.textContent = '📚 Methoden vorschlagen';
+  };
+  delBar.appendChild(mvorBtn);
+
   const delBtn2 = btn('🗑 Eintrag löschen', 'btn btn-danger btn-xs');
   delBtn2.onclick = () => {
     if (!confirm('„' + mat.titel + '" aus der Datenbank löschen?\nDie zugehörigen Dateien in der Cloud werden ebenfalls gelöscht.')) return;

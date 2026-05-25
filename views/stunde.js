@@ -41,14 +41,6 @@ function renderStundenBody(div, stunde, fp) {
   gb.appendChild(prioFg);
 
   gb.appendChild(fieldArea('Stundenbeschreibung', stunde.lernziel || '', v => { stunde.lernziel = v; scheduleSave(); }, '', 'Inhaltliche Zusammenfassung – was passiert in dieser Stunde?'));
-  const dfg = mk('div', 'fg');
-  dfg.appendChild(tx('label', 'fl', 'Dauer (Minuten)'));
-  const di = document.createElement('input');
-  di.type = 'number'; di.value = stunde.dauer || 45; di.className = 'finp';
-  di.style.maxWidth = '120px';
-  di.oninput = e => { stunde.dauer = parseInt(e.target.value) || 45; scheduleSave(); };
-  dfg.appendChild(di);
-  gb.appendChild(dfg);
   gc.appendChild(gb);
   gc.classList.add('card-half');
   grid.appendChild(gc);
@@ -475,6 +467,16 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
     haWrap.appendChild(b);
   });
   prBody.appendChild(haWrap);
+
+  prSection('Dauer');
+  const dfg = mk('div', 'fg'); dfg.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+  const di = document.createElement('input');
+  di.type = 'number'; di.value = stunde.dauer || 45; di.className = 'finp';
+  di.style.maxWidth = '100px';
+  di.oninput = e => { stunde.dauer = parseInt(e.target.value) || 45; scheduleSave(); };
+  dfg.appendChild(di);
+  dfg.appendChild(tx('span', '', 'Minuten'));
+  prBody.appendChild(dfg);
 
   prSection('Besondere Hinweise');
   const hinweisTA = document.createElement('textarea');

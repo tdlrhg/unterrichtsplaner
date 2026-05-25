@@ -200,7 +200,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
     const reWrap = mk('div', ''); reWrap.style.cssText = 'padding:10px 0 4px 0;';
     const schonAnalysiert = !!(mat.themen?.length || mat.beschreibung || mat.unterrichtsphase?.length);
     const reShortcut = btn(schonAnalysiert ? '🔄 Neu analysieren' : '✨ Analysieren', 'btn btn-pri btn-sm');
-    reShortcut.onclick = () => { btnDetails.click(); setTimeout(() => { if (reBtnRef) reBtnRef.click(); }, 50); };
+    reShortcut.onclick = () => { if (reBtnRef) reBtnRef.click(); };
     reWrap.appendChild(reShortcut);
     currentSection.appendChild(reWrap);
   }

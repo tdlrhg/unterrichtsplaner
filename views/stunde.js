@@ -336,6 +336,7 @@ ${matSummary}`;
 
   function renderErgebnisse() {
     ergebnisListe.innerHTML = '';
+    alleCb.checked = false;
     const q = suchInp.value.toLowerCase().trim();
     const EXCL = ['Lehrerhandreichung', 'Lösung'];
     let hits = MATDB.filter(mat => {
@@ -378,8 +379,22 @@ ${matSummary}`;
   }
   sucheWrap.appendChild(ergebnisListe);
 
+  // Alle auswählen + KI-Bewertet-Zeile
+  const kiBtnRow = mk('div', '');
+  kiBtnRow.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;';
+
+  const alleLabel = mk('label', '');
+  alleLabel.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tx2);cursor:pointer;user-select:none;';
+  const alleCb = document.createElement('input'); alleCb.type = 'checkbox';
+  alleCb.onchange = () => {
+    const rows = ergebnisListe.querySelectorAll('input[type=checkbox]');
+    rows.forEach(cb => { if (cb.checked !== alleCb.checked) { cb.checked = alleCb.checked; cb.dispatchEvent(new Event('change')); } });
+  };
+  alleLabel.appendChild(alleCb);
+  alleLabel.appendChild(document.createTextNode('Alle'));
+  kiBtnRow.appendChild(alleLabel);
+
   const kiBtn = btn('✨ KI bewertet (0)', 'btn btn-ki btn-sm'); kiBtn.disabled = true;
-  kiBtn.style.cssText = 'margin-top:10px;';
   kiBtn.onclick = async () => {
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) { alert('Bitte API-Key in den Einstellungen hinterlegen.'); return; }
@@ -417,7 +432,8 @@ Antworte NUR als JSON-Array:
     } catch(e) { alert('Fehler: ' + e.message); }
     kiBtn.disabled = false; kiBtn.textContent = `✨ KI bewertet (${selected.size})`;
   };
-  sucheWrap.appendChild(kiBtn);
+  kiBtnRow.appendChild(kiBtn);
+  sucheWrap.appendChild(kiBtnRow);
 
   suchInp.oninput = renderErgebnisse;
 

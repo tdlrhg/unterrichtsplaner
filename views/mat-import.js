@@ -516,6 +516,125 @@ function buildImportAssistent(subTitle, renderCards) {
 
     // Segment-Liste
     const segListWrap = mk('div',''); body.appendChild(segListWrap);
+
+    // ── Segment nachträglich splitten ─────────────────────────────
+    async function buildSegSplitter(seg, onDone) {
+      const wrap = mk('div','');
+      wrap.style.cssText='border:1px solid var(--acc,#6366f1);border-radius:8px;padding:12px;margin-top:8px;background:var(--surf);';
+      const hdrEl=mk('div',''); hdrEl.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:600;';
+      hdrEl.appendChild(tx('span','','✂ '+seg.name+' aufteilen'));
+      const cancBtn=btn('Abbrechen','btn btn-ghost btn-xs'); cancBtn.onclick=()=>wrap.remove();
+      hdrEl.appendChild(cancBtn); wrap.appendChild(hdrEl);
+      const thumbsWrap=mk('div','mat-upload-thumbs');
+      thumbsWrap.appendChild(tx('div','mat-upload-spin','⏳ Lade Seiten…'));
+      wrap.appendChild(thumbsWrap);
+      const splitArea=mk('div',''); wrap.appendChild(splitArea);
+
+      const pageDataURLs2=[]; const splitPoints2=new Set();
+      const segNames2={}, segTypes2={};
+
+      let loadOk=false;
+      try {
+        const blobUrl=URL.createObjectURL(seg.blob);
+        const pdfDoc=await pdfjsLib.getDocument(blobUrl).promise;
+        thumbsWrap.innerHTML='';
+        for(let i=1;i<=pdfDoc.numPages;i++){
+          const page=await pdfDoc.getPage(i);
+          const vp0=page.getViewport({scale:1});
+          const cv=document.createElement('canvas');
+          const vp=page.getViewport({scale:110/vp0.width});
+          cv.width=vp.width; cv.height=vp.height;
+          await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+          const dataURL=cv.toDataURL('image/jpeg',0.75);
+          cv.width=0; cv.height=0; page.cleanup();
+          pageDataURLs2.push(dataURL);
+          const img=document.createElement('img'); img.src=dataURL; img.className='mat-split-thumb';
+          const thumb=mk('div','mat-upload-thumb');
+          thumb.appendChild(img); thumb.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
+          thumbsWrap.appendChild(thumb);
+        }
+        await pdfDoc.destroy(); URL.revokeObjectURL(blobUrl);
+        loadOk=true;
+      } catch(e) {
+        thumbsWrap.innerHTML=`<div style="color:#dc2626;font-size:12px;">⚠ ${e.message}</div>`;
+        return wrap;
+      }
+
+      if(!loadOk) return wrap;
+
+      function getGroups2(){
+        const g=[]; let s=1;
+        for(const pt of [...splitPoints2].sort((a,b)=>a-b)){g.push({start:s,end:pt});s=pt+1;}
+        g.push({start:s,end:pageDataURLs2.length}); return g;
+      }
+
+      function renderSplitUI2(){
+        splitArea.innerHTML='';
+        getGroups2().forEach((g,gi)=>{
+          const color=SPLIT_COLORS[gi%SPLIT_COLORS.length];
+          const groupEl=mk('div','mat-split-group'); groupEl.style.borderColor=color;
+          const ghdr=mk('div',''); ghdr.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 8px;flex-wrap:wrap;';
+          const nameInp=document.createElement('input'); nameInp.type='text'; nameInp.className='finp'; nameInp.style.flex='1';
+          nameInp.placeholder='Name';
+          nameInp.value=segNames2[gi]!==undefined?segNames2[gi]:(gi===0?seg.name:seg.name+'_'+(gi+1));
+          nameInp.oninput=()=>{segNames2[gi]=nameInp.value;};
+          ghdr.appendChild(nameInp);
+          ghdr.appendChild(tx('span','mat-split-range','S.'+g.start+(g.end>g.start?'–'+g.end:'')));
+          const typRow=mk('div',''); typRow.style.cssText='display:flex;gap:4px;flex-wrap:wrap;';
+          const curType=segTypes2[gi]!==undefined?segTypes2[gi]:seg.type;
+          TYPE_OPTS.forEach(opt=>{
+            const tb=btn(opt.label,'btn btn-xs '+(curType===opt.key?'btn-pri':'btn-ghost'));
+            tb.onclick=()=>{segTypes2[gi]=opt.key;renderSplitUI2();};
+            typRow.appendChild(tb);
+          });
+          ghdr.appendChild(typRow); groupEl.appendChild(ghdr);
+          const pagesRow=mk('div','mat-split-pages-row');
+          for(let i=g.start;i<=g.end;i++){
+            const img=document.createElement('img'); img.src=pageDataURLs2[i-1]; img.className='mat-split-thumb';
+            const tw=mk('div','mat-split-thumb-wrap'); tw.appendChild(img); tw.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
+            pagesRow.appendChild(tw);
+            if(i<pageDataURLs2.length){
+              const divEl=mk('div','mat-split-divider'); divEl.dataset.page=String(i);
+              const icon=tx('span','mat-split-div-icon',splitPoints2.has(i)?'✂':'+');
+              if(splitPoints2.has(i)) divEl.classList.add('active'); divEl.appendChild(icon);
+              divEl.onclick=()=>{const pg=parseInt(divEl.dataset.page);if(splitPoints2.has(pg))splitPoints2.delete(pg);else splitPoints2.add(pg);renderSplitUI2();};
+              pagesRow.appendChild(divEl);
+            }
+          }
+          groupEl.appendChild(pagesRow); splitArea.appendChild(groupEl);
+        });
+        const n=getGroups2().length;
+        const actRow=mk('div',''); actRow.style.cssText='display:flex;gap:8px;margin-top:10px;align-items:center;';
+        const saveBtn=btn(`✓ ${n} Segment${n!==1?'e':''} übernehmen`,'btn btn-pri btn-sm');
+        const saveStatus=tx('span','',''); saveStatus.style.cssText='font-size:12px;color:var(--tx3);';
+        saveBtn.onclick=async()=>{
+          if(typeof PDFLib==='undefined'){alert('pdf-lib nicht geladen.');return;}
+          saveBtn.disabled=true; saveBtn.textContent='⏳ Teile auf…';
+          try{
+            const pdfBuf2=await seg.blob.arrayBuffer();
+            const srcDoc=await PDFLib.PDFDocument.load(pdfBuf2);
+            const groups2=getGroups2(); const newSegs=[];
+            for(let gi=0;gi<groups2.length;gi++){
+              const type2=segTypes2[gi]!==undefined?segTypes2[gi]:seg.type;
+              if(type2==='skip') continue;
+              const g2=groups2[gi];
+              const name2=(segNames2[gi]?.trim())||(gi===0?seg.name:seg.name+'_'+(gi+1));
+              const newDoc=await PDFLib.PDFDocument.create();
+              const idxs=[]; for(let pg=g2.start-1;pg<g2.end;pg++) idxs.push(pg);
+              const copied=await newDoc.copyPages(srcDoc,idxs); copied.forEach(pg=>newDoc.addPage(pg));
+              newSegs.push({id:uid(),name:name2,type:type2,blob:new Blob([await newDoc.save()],{type:'application/pdf'}),heft:seg.heft,thumb:null,r2Path:null});
+            }
+            const idx=S.zsSegments.findIndex(s=>s.id===seg.id);
+            if(idx>=0) S.zsSegments.splice(idx,1,...newSegs); else S.zsSegments.push(...newSegs);
+            wrap.remove(); onDone();
+          }catch(e2){saveStatus.textContent='⚠ '+e2.message;saveBtn.disabled=false;saveBtn.textContent=`✓ ${n} Segment${n!==1?'e':''} übernehmen`;}
+        };
+        actRow.appendChild(saveBtn); actRow.appendChild(saveStatus); splitArea.appendChild(actRow);
+      }
+      renderSplitUI2();
+      return wrap;
+    }
+
     function renderSegments() {
       segListWrap.innerHTML='';
       if(!S.zsSegments.length) return;
@@ -531,6 +650,20 @@ function buildImportAssistent(subTitle, renderCards) {
           tb.onclick=()=>{ seg.type=opt.key; renderSegments(); };
           row.appendChild(tb);
         });
+        if(!seg.r2Path){
+          const splB=btn('✂','btn btn-xs btn-ghost'); splB.title='Aufteilen';
+          splB.onclick=async()=>{
+            // Bereits offenen Splitter für dieses Segment schließen?
+            const existing=box.querySelector('[data-splitter-id="'+seg.id+'"]');
+            if(existing){existing.remove();return;}
+            splB.disabled=true; splB.textContent='⏳';
+            const splitter=await buildSegSplitter(seg,()=>{renderSegments();renderNav();});
+            splitter.dataset.splitterId=seg.id;
+            row.insertAdjacentElement('afterend',splitter);
+            splB.disabled=false; splB.textContent='✂';
+          };
+          row.appendChild(splB);
+        }
         const delB=btn('✕','btn btn-xs btn-ghost'); delB.style.color='#dc2626';
         delB.onclick=()=>{ S.zsSegments=S.zsSegments.filter(s=>s.id!==seg.id); renderSegments(); renderNav(); };
         row.appendChild(delB); box.appendChild(row);

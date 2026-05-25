@@ -1054,7 +1054,7 @@ function buildScanPanel(subTitle, renderCards, onClose) {
   groupsWrap.appendChild(w1); groupsWrap.appendChild(w2);
   p.appendChild(groupsWrap);
   const statusRow = mk('div', ''); statusRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:12px;';
-  const analyzeBtn = btn('✨ Analysieren & Importieren', 'btn btn-pri btn-sm');
+  const analyzeBtn = btn('✨ Analysieren & Importieren', 'btn btn-ki btn-sm');
   analyzeBtn.disabled = true;
   const statusMsg = tx('span', 'mat-import-err', '');
   const cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm');

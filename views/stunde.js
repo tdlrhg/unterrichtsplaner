@@ -49,7 +49,7 @@ function renderStundenBody(div, stunde, fp) {
   const lzCard = mk('div', 'card');
   const lzHdr = cardHdr('Lernziele');
 
-  const lzKiBtn = btn('✨ KI → Lernziele ableiten', 'btn btn-ghost btn-xs');
+  const lzKiBtn = btn('✨ KI → Lernziele ableiten', 'btn btn-ki btn-xs');
   lzKiBtn.onclick = async () => {
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) { alert('Bitte zuerst Anthropic API-Key in den Einstellungen hinterlegen.'); return; }
@@ -147,7 +147,7 @@ Antworte NUR als JSON-Array von Strings:
   // ── Material ───────────────────────────────────────────────────
   const matCard = mk('div', 'card');
   const matHdr = cardHdr('Material');
-  const kiVorschlBtn = btn('✨ Vorschlagen', 'btn btn-ghost btn-xs');
+  const kiVorschlBtn = btn('✨ Vorschlagen', 'btn btn-ki btn-xs');
   const matSucheBtn = btn('🔍 Suchen', 'btn btn-ghost btn-xs');
   matHdr.appendChild(kiVorschlBtn);
   matHdr.appendChild(matSucheBtn);
@@ -378,7 +378,7 @@ ${matSummary}`;
   }
   sucheWrap.appendChild(ergebnisListe);
 
-  const kiBtn = btn('✨ KI bewertet (0)', 'btn btn-ghost btn-sm'); kiBtn.disabled = true;
+  const kiBtn = btn('✨ KI bewertet (0)', 'btn btn-ki btn-sm'); kiBtn.disabled = true;
   kiBtn.style.cssText = 'margin-top:10px;';
   kiBtn.onclick = async () => {
     const antKey = localStorage.getItem('ant_key');
@@ -440,7 +440,7 @@ Antworte NUR als JSON-Array:
   const prCard = mk('div', 'card');
   const prHdr = cardHdr('Planungsrahmen');
 
-  const prKiBtn = btn('✨ KI wählt', 'btn btn-ghost btn-xs');
+  const prKiBtn = btn('✨ KI wählt', 'btn btn-ki btn-xs');
   prKiBtn.onclick = async () => {
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) { alert('Bitte zuerst Anthropic API-Key hinterlegen.'); return; }
@@ -645,7 +645,7 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
 
   pc.appendChild(modellGrid);
 
-  const kiVorlageBtn = btn('✨ KI entscheidet', 'btn btn-ghost btn-xs');
+  const kiVorlageBtn = btn('✨ KI entscheidet', 'btn btn-ki btn-xs');
   kiVorlageBtn.onclick = async () => {
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) { alert('Bitte zuerst Anthropic API-Key in den Einstellungen hinterlegen.'); return; }

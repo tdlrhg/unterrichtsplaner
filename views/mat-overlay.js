@@ -216,7 +216,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   if (_matKey) {
     const reWrap = mk('div', ''); reWrap.style.cssText = 'padding:10px 0 4px 0;';
     const schonAnalysiert = !!(mat.themen?.length || mat.beschreibung || mat.unterrichtsphase?.length);
-    const reShortcut = btn(schonAnalysiert ? '🔄 Neu analysieren' : '✨ Analysieren', 'btn btn-pri btn-sm');
+    const reShortcut = btn(schonAnalysiert ? '🔄 Neu analysieren' : '✨ Analysieren', 'btn btn-ki btn-sm');
     reShortcut.onclick = () => { if (reBtnRef) reBtnRef.click(); };
     reWrap.appendChild(reShortcut);
     currentSection.appendChild(reWrap);
@@ -226,14 +226,14 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   {
     const kiChatWrap = mk('div', '');
     kiChatWrap.style.cssText = 'margin-top:10px;border-top:1px solid var(--bord);padding-top:8px;';
-    const kiChatToggle = btn('💬 KI befragen', 'btn btn-ghost btn-sm');
+    const kiChatToggle = btn('💬 KI befragen', 'btn btn-ki btn-sm');
     kiChatToggle.style.marginBottom = '6px';
     const kiChatBody = mk('div', ''); kiChatBody.style.display = 'none';
 
     kiChatToggle.onclick = () => {
       const open = kiChatBody.style.display !== 'none';
       kiChatBody.style.display = open ? 'none' : '';
-      kiChatToggle.className = open ? 'btn btn-ghost btn-sm' : 'btn btn-sm btn-pri';
+      kiChatToggle.className = open ? 'btn btn-ghost btn-sm' : 'btn btn-ki btn-sm';
       if (!open) kiChatInput.focus();
     };
 
@@ -570,7 +570,7 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
 
   // Neu analysieren
   if (_matKey) {
-    const reBtn = btn('🔄 Neu analysieren', 'btn btn-ghost btn-xs');
+    const reBtn = btn('🔄 Neu analysieren', 'btn btn-ki btn-xs');
     reBtnRef = reBtn;
     reBtn.onclick = async () => {
       const antKey = localStorage.getItem('ant_key');
@@ -660,7 +660,7 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
 
   // ── Methoden-Check ────────────────────────────────────────────
   if (_matKey) {
-    const mchkBtn = btn('🎯 Methoden-Check', 'btn btn-ghost btn-xs');
+    const mchkBtn = btn('🎯 Methoden-Check', 'btn btn-ki btn-xs');
     let mchkPanel = null;
     mchkBtn.onclick = async () => {
       const antKey = localStorage.getItem('ant_key');
@@ -817,7 +817,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
   }
 
   // ── Methoden vorschlagen ──────────────────────────────────────
-  const mvorBtn = btn('📚 Methoden vorschlagen', 'btn btn-ghost btn-xs');
+  const mvorBtn = btn('📚 Methoden vorschlagen', 'btn btn-ki btn-xs');
   let mvorPanel = null;
   mvorBtn.onclick = async () => {
     const antKey = localStorage.getItem('ant_key');
@@ -1040,7 +1040,7 @@ function klpRow(mat, detail, _row) {
     inp.onblur = () => setTimeout(() => { dd.style.display = 'none'; }, 150);
     wrap.appendChild(searchWrap);
 
-    const kiBtn = btn('✨ KI-Vorschlag', 'btn btn-ghost btn-xs klp-ki-btn');
+    const kiBtn = btn('✨ KI-Vorschlag', 'btn btn-ki btn-xs klp-ki-btn');
     kiBtn.onclick = async () => {
       kiBtn.textContent = '…'; kiBtn.disabled = true;
       try {

@@ -98,6 +98,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .btn-pri { background: var(--pri); color: #fff; } .btn-pri:hover { background: var(--pri2); }
 .btn-ghost { background: transparent; color: var(--tx2); border: 1px solid var(--bord); } .btn-ghost:hover { background: var(--surf2); }
 .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid #fecaca; } .btn-danger:hover { background: #fee2e2; }
+.btn-ki { background: #7c3aed; color: #fff; border: none; } .btn-ki:hover:not(:disabled) { background: #6d28d9; } .btn-ki:disabled { opacity: .5; }
 .btn-sm { padding: 5px 10px; font-size: 12px; } .btn-xs { padding: 3px 8px; font-size: 11px; }
 .btn-grp { display: flex; gap: 8px; flex-wrap: wrap; }
 

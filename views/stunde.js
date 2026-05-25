@@ -279,20 +279,23 @@ Antworte NUR als JSON-Array von Strings:
       m.style.cssText = 'padding:8px 10px;font-size:11px;color:var(--tx3);';
       ergebnisListe.appendChild(m);
     }
-    // Geschwister: weitere Materialien aus derselben Quelle
+    // Geschwister: gleiche Quelle oder gleicher Block
     const hitIds = new Set(hits.map(m => m.id));
     const hitQuellen = new Set(hits.map(m => m.quelle).filter(Boolean));
-    if (hitQuellen.size) {
-      const siblings = MATDB.filter(mat =>
-        !hitIds.has(mat.id) && mat.quelle && hitQuellen.has(mat.quelle) && !EXCL.includes(mat.materialtyp)
-      );
-      if (siblings.length) {
-        const sep = mk('div', '');
-        sep.style.cssText = 'padding:6px 10px;font-size:11px;font-weight:600;color:var(--tx2);background:var(--bg2);border-top:1px solid var(--bord);border-bottom:1px solid var(--bord);';
-        sep.textContent = '↳ Weitere aus derselben Quelle';
-        ergebnisListe.appendChild(sep);
-        siblings.forEach(mat => ergebnisListe.appendChild(buildMatRow(mat)));
-      }
+    const hitBlocks = new Set(hits.map(m => m.blockId).filter(Boolean));
+    const siblings = MATDB.filter(mat => {
+      if (hitIds.has(mat.id)) return false;
+      if (EXCL.includes(mat.materialtyp)) return false;
+      if (mat.quelle && hitQuellen.has(mat.quelle)) return true;
+      if (mat.blockId && hitBlocks.has(mat.blockId)) return true;
+      return false;
+    });
+    if (siblings.length) {
+      const sep = mk('div', '');
+      sep.style.cssText = 'padding:6px 10px;font-size:11px;font-weight:600;color:var(--tx2);background:var(--bg2);border-top:1px solid var(--bord);border-bottom:1px solid var(--bord);';
+      sep.textContent = '↳ Weitere aus derselben Quelle / demselben Block';
+      ergebnisListe.appendChild(sep);
+      siblings.forEach(mat => ergebnisListe.appendChild(buildMatRow(mat)));
     }
   }
   sucheWrap.appendChild(ergebnisListe);

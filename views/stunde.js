@@ -259,11 +259,14 @@ ${matSummary}`;
           const mat = MATDB.find(m => m.id === v.id);
           if (!mat) return;
           const row = buildMatRow(mat);
-          // Grund einblenden
+          row.style.borderBottom = 'none';
           const grundEl = tx('div', '', v.grund);
-          grundEl.style.cssText = 'font-size:11px;color:var(--tx2);font-style:italic;margin-top:2px;padding:0 10px 6px 10px;';
-          kiVorschlaegeListe.appendChild(row);
-          kiVorschlaegeListe.appendChild(grundEl);
+          grundEl.style.cssText = 'font-size:11px;color:var(--tx2);font-style:italic;padding:2px 10px 8px 36px;';
+          const wrap = mk('div', '');
+          wrap.style.borderBottom = '1px solid var(--bord)';
+          wrap.appendChild(row);
+          wrap.appendChild(grundEl);
+          kiVorschlaegeListe.appendChild(wrap);
         });
       }
     } catch(e) {

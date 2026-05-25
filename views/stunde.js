@@ -258,15 +258,70 @@ ${matSummary}`;
         vorschlaege.forEach(v => {
           const mat = MATDB.find(m => m.id === v.id);
           if (!mat) return;
-          const row = buildMatRow(mat);
-          row.style.borderBottom = 'none';
+
+          const card = mk('div', '');
+          card.style.cssText = 'border:1px solid var(--bord);border-radius:6px;padding:8px 10px;margin-bottom:6px;background:var(--surf);';
+
+          const inner = mk('div', '');
+          inner.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;';
+
+          // Linke Spalte: Checkbox + Titel + Themen + Badges
+          const left = mk('div', '');
+          const titleRow = mk('div', '');
+          titleRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:3px;';
+          const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selected.has(mat.id);
+          cb.onclick = e => e.stopPropagation();
+          cb.onchange = () => {
+            if (cb.checked) selected.add(mat.id); else selected.delete(mat.id);
+            kiBtn.disabled = selected.size === 0;
+            kiBtn.textContent = `✨ KI bewertet (${selected.size})`;
+          };
+          const titleEl = tx('span', '', mat.titel);
+          titleEl.style.cssText = 'font-size:13px;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:2px;';
+          titleEl.onclick = () => openMatOverlayStandalone(mat);
+          titleRow.appendChild(cb); titleRow.appendChild(titleEl);
+          left.appendChild(titleRow);
+
+          if (mat.themen?.length) {
+            const t = tx('div', '', mat.themen.slice(0,4).join(', '));
+            t.style.cssText = 'font-size:11px;color:var(--tx2);margin-bottom:3px;';
+            left.appendChild(t);
+          }
+          const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:5px;align-items:center;flex-wrap:wrap;';
+          const fi = (mat.fach||[]).map(fachIcon).join('');
+          if (fi) { const s = tx('span','',fi); s.style.fontSize='13px'; badgeRow.appendChild(s); }
+          if (mat.jahrgang?.length) {
+            const jg = tx('span','',mat.jahrgang.join('/'));
+            jg.style.cssText='font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#374151;';
+            badgeRow.appendChild(jg);
+          }
+          if (mat.quelle) {
+            const q = tx('span','',mat.quelle); q.style.cssText='font-size:10px;color:var(--tx3);';
+            badgeRow.appendChild(q);
+          }
+          left.appendChild(badgeRow);
+
+          // Rechte Spalte: KI-Kommentar
+          const right = mk('div', '');
           const grundEl = tx('div', '', v.grund);
-          grundEl.style.cssText = 'font-size:11px;color:var(--tx2);font-style:italic;padding:2px 10px 8px 36px;';
-          const wrap = mk('div', '');
-          wrap.style.borderBottom = '1px solid var(--bord)';
-          wrap.appendChild(row);
-          wrap.appendChild(grundEl);
-          kiVorschlaegeListe.appendChild(wrap);
+          grundEl.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;line-height:1.4;';
+          right.appendChild(grundEl);
+
+          inner.appendChild(left); inner.appendChild(right);
+          card.appendChild(inner);
+
+          // Zuweisen-Button
+          const foot = mk('div', ''); foot.style.cssText = 'display:flex;justify-content:flex-end;margin-top:6px;';
+          const useBtn = btn('+ Zuweisen', 'btn btn-pri btn-xs');
+          useBtn.onclick = () => {
+            if (!stunde.materialIds.includes(mat.id)) { stunde.materialIds.push(mat.id); scheduleSave(); renderZugewiesene(); }
+            useBtn.textContent = '✓'; useBtn.disabled = true;
+          };
+          if (stunde.materialIds.includes(mat.id)) { useBtn.textContent = '✓'; useBtn.disabled = true; }
+          foot.appendChild(useBtn);
+          card.appendChild(foot);
+
+          kiVorschlaegeListe.appendChild(card);
         });
       }
     } catch(e) {

@@ -476,7 +476,8 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
         const d = await res.json();
         const match = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/);
         if (!match) throw new Error('Kein JSON in der KI-Antwort.');
-        const enriched = normalizeMaterialResult(JSON.parse(match[0]));
+        const sanitized = match[0].replace(/[\x00-\x1F\x7F]/g, c => c === '\n' || c === '\r' || c === '\t' ? ' ' : '');
+        const enriched = normalizeMaterialResult(JSON.parse(sanitized));
         const idx = MATDB.findIndex(m => m.id === mat.id);
         if (idx < 0) throw new Error('Materialeintrag nicht mehr gefunden.');
         const keep = (({ quelle, materialnummer, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id }) =>

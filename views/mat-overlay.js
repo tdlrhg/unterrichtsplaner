@@ -20,6 +20,9 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
     body.appendChild(reviewBar);
   }
 
+  let currentSection = body; // zeigt auf overview oder detail section
+  let reBtnRef = null;      // forward-ref für Neu-analysieren-Shortcut
+
   function editRow(label, get, set, isArea, reviewKey) {
     const needsCheck = reviewKey && mat.review?.[reviewKey]?.needsReview;
     const r = mk('div', 'mat-detail-row' + (needsCheck ? ' needs-review' : ''));
@@ -45,11 +48,32 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
       inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); onSave(inp.value); inp.blur(); closePanel(); } };
       r.appendChild(inp);
     }
-    body.appendChild(r);
+    currentSection.appendChild(r);
   }
 
   function arrGet(key) { return (mat[key] || []).join(', '); }
   function arrSet(key) { return v => { mat[key] = v.split(',').map(s => s.trim()).filter(Boolean); }; }
+
+  // ── Modus-Toggle ─────────────────────────────────────────────
+  const overviewSection = mk('div', '');
+  const detailSection = mk('div', ''); detailSection.style.display = 'none';
+  const modeBar = mk('div', '');
+  modeBar.style.cssText = 'display:flex;gap:6px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--bord);';
+  const btnUebersicht = btn('Übersicht', 'btn btn-sm btn-pri');
+  const btnDetails = btn('Details', 'btn btn-sm');
+  btnUebersicht.onclick = () => {
+    overviewSection.style.display = ''; detailSection.style.display = 'none';
+    btnUebersicht.className = 'btn btn-sm btn-pri'; btnDetails.className = 'btn btn-sm';
+  };
+  btnDetails.onclick = () => {
+    overviewSection.style.display = 'none'; detailSection.style.display = '';
+    btnDetails.className = 'btn btn-sm btn-pri'; btnUebersicht.className = 'btn btn-sm';
+  };
+  modeBar.appendChild(btnUebersicht); modeBar.appendChild(btnDetails);
+  body.appendChild(modeBar);
+  body.appendChild(overviewSection);
+  body.appendChild(detailSection);
+  currentSection = overviewSection;
 
   // ── Materialvorschau ─────────────────────────────────────────
   const _matKey = mat.r2key || mat.dateipfad;
@@ -81,7 +105,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
     };
     prevWrap.appendChild(prevBtn);
     prevWrap.appendChild(prevPages);
-    body.appendChild(prevWrap);
+    currentSection.appendChild(prevWrap);
 
     // Weitere Dateien
     (mat.dateipfadeWeitere || []).forEach((wKey, i) => {
@@ -108,7 +132,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
         } catch(e2) { wBtn.textContent = '⚠ ' + e2.message; wBtn.disabled = false; }
       };
       wWrap.appendChild(wBtn); wWrap.appendChild(wPages);
-      body.appendChild(wWrap);
+      currentSection.appendChild(wWrap);
     });
   }
 
@@ -120,12 +144,11 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
       r.appendChild(tx('span', 'mat-detail-label', 'Teil von'));
       const link = tx('span', 'mat-einheit-link', '📦 ' + einheit.titel);
       link.onclick = () => openMatOverlay(einheit, null, overlay, panel, panTitle, renderCards);
-      r.appendChild(link); body.appendChild(r);
+      r.appendChild(link); currentSection.appendChild(r);
     }
   }
 
   editRow('Titel',                () => mat.titel || '',             v => { mat.titel = v; },           false, 'titel');
-  editRow('Quelle',               () => mat.quelle || '',            v => { mat.quelle = v; });
 
   // ── Reihe zuweisen ────────────────────────────────────────────
   const SII_JG2 = new Set(['ef','q1','q2','sii','q1/q2']);
@@ -160,20 +183,33 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
     saveMatDB(); renderCards();
   };
   blockRow.appendChild(blockSel);
-  body.appendChild(blockRow);
+  currentSection.appendChild(blockRow);
   editRow('Fach',                 () => arrGet('fach'),              arrSet('fach'),                    false, 'fach');
   editRow('Jahrgang',             () => arrGet('jahrgang'),          arrSet('jahrgang'),                false, 'jahrgang');
   editRow('Themen',               () => arrGet('themen'),            arrSet('themen'));
   editRow('Materialtyp',          () => mat.materialtyp || '',       v => { mat.materialtyp = v; });
-  editRow('Beschreibung',         () => mat.beschreibung || '',      v => { mat.beschreibung = v; },    true);
-  editRow('Materialnummer',       () => mat.materialnummer || '',    v => { mat.materialnummer = v; });
-  editRow('Rolle im Kontext',     () => mat.rolleImKontext || '',    v => { mat.rolleImKontext = v; });
 
   const optR = mk('div', 'mat-detail-row');
   optR.appendChild(tx('span', 'mat-detail-label', 'Optional'));
   const optChk = document.createElement('input'); optChk.type = 'checkbox'; optChk.checked = !!mat.optional; optChk.style.marginTop = '3px';
   optChk.onchange = () => { mat.optional = optChk.checked; saveMatDB(); renderCards(); };
-  optR.appendChild(optChk); body.appendChild(optR);
+  optR.appendChild(optChk); currentSection.appendChild(optR);
+
+  // Neu analysieren – prominent in der Übersicht
+  if (_matKey) {
+    const reWrap = mk('div', ''); reWrap.style.cssText = 'padding:10px 0 4px 0;';
+    const reShortcut = btn('🔄 Neu analysieren', 'btn btn-pri btn-sm');
+    reShortcut.onclick = () => { btnDetails.click(); setTimeout(() => { if (reBtnRef) reBtnRef.click(); }, 50); };
+    reWrap.appendChild(reShortcut);
+    currentSection.appendChild(reWrap);
+  }
+
+  // ── Detailbereich ─────────────────────────────────────────────
+  currentSection = detailSection;
+  editRow('Quelle',               () => mat.quelle || '',            v => { mat.quelle = v; });
+  editRow('Beschreibung',         () => mat.beschreibung || '',      v => { mat.beschreibung = v; },    true);
+  editRow('Materialnummer',       () => mat.materialnummer || '',    v => { mat.materialnummer = v; });
+  editRow('Rolle im Kontext',     () => mat.rolleImKontext || '',    v => { mat.rolleImKontext = v; });
 
   editRow('Unterrichtsphase',       () => arrGet('unterrichtsphase'),           arrSet('unterrichtsphase'),           false, 'unterrichtsphase');
   editRow('Sozialform geeignet',    () => arrGet('sozialformenGeeignet'),        arrSet('sozialformenGeeignet'));
@@ -212,14 +248,14 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   }
   renderMethLinks();
   methLinkRow.appendChild(methLinkVal);
-  body.appendChild(methLinkRow);
+  currentSection.appendChild(methLinkRow);
   editRow('Schüleraktivitäten',     () => arrGet('schueleraktivitaeten'),        arrSet('schueleraktivitaeten'));
   editRow('Art der Tätigkeit',      () => arrGet('artDerGeistigenTaetigkeit'),   arrSet('artDerGeistigenTaetigkeit'));
   editRow('Darstellungsformen',     () => arrGet('darstellungsformen'),          arrSet('darstellungsformen'));
   editRow('Fachliche Voraussetzung',() => arrGet('voraussetzungenFachlich'),     arrSet('voraussetzungenFachlich'));
   editRow('Method. Voraussetzung',  () => arrGet('voraussetzungenMethodisch'),   arrSet('voraussetzungenMethodisch'));
 
-  klpRow(mat, body, { querySelector: () => null });
+  klpRow(mat, currentSection, { querySelector: () => null });
 
   editRow('Kognit. Beanspruchung',  () => mat.kognitiveBeanspruchung || '',     v => { mat.kognitiveBeanspruchung = v; });
   editRow('Sprachl. Anforderungen', () => mat.sprachlicheAnforderungen || '',   v => { mat.sprachlicheAnforderungen = v; });
@@ -229,7 +265,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
 
   if (mat.materialtyp !== 'Unterrichtseinheit') {
     const loeHdr = mk('div', 'mat-loe-sec-hdr'); loeHdr.textContent = 'Lösung & Erläuterung';
-    body.appendChild(loeHdr);
+    currentSection.appendChild(loeHdr);
     editRow('Lösung (Text)',     () => mat.loesung || '',        v => { mat.loesung = v; },        true);
     editRow('Lösung (Verweis)', () => mat.loesungHinweis || '', v => { mat.loesungHinweis = v; }, false);
     editRow('Erläuterung',      () => mat.erlaeuterung || '',   v => { mat.erlaeuterung = v; },   true);
@@ -335,7 +371,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
       }
       renderKtxFolder('', ktxTree).catch(e => { ktxTree.innerHTML = '<span style="color:#dc2626;font-size:12px">⚠ ' + e.message + '</span>'; });
     };
-    body.appendChild(ktxSection);
+    currentSection.appendChild(ktxSection);
   }
 
   if (mat.materialtyp === 'Unterrichtseinheit') {
@@ -344,11 +380,11 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
     const secHdr = mk('div', 'mat-einheit-sec-hdr');
     secHdr.appendChild(tx('span', '', '📋 Enthaltene Materialien'));
     secHdr.appendChild(tx('span', 'mat-einheit-count', members.length + ' Einträge'));
-    body.appendChild(secHdr);
+    currentSection.appendChild(secHdr);
     if (!members.length) {
       const hint = tx('div', '', 'Noch keine Materialien mit dieser Einheit verknüpft.');
       hint.style.cssText = 'font-size:12px;color:var(--tx3);padding:6px 0;';
-      body.appendChild(hint);
+      currentSection.appendChild(hint);
     } else {
       const tbl = mk('div', 'mat-einheit-tbl');
       members.forEach(m => {
@@ -363,13 +399,13 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
         mRow.onclick = () => openMatOverlay(m, null, overlay, panel, panTitle, renderCards);
         tbl.appendChild(mRow);
       });
-      body.appendChild(tbl);
+      currentSection.appendChild(tbl);
     }
   }
 
   if (mat.importiertAm) {
     const ts = new Date(mat.importiertAm);
-    body.appendChild(tx('div', 'mat-detail-ts', 'Importiert am ' + ts.toLocaleDateString('de-DE') + ', ' + ts.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })));
+    currentSection.appendChild(tx('div', 'mat-detail-ts', 'Importiert am ' + ts.toLocaleDateString('de-DE') + ', ' + ts.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })));
   }
 
   // Aktionsleiste
@@ -378,6 +414,7 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
   // Neu analysieren
   if (_matKey) {
     const reBtn = btn('🔄 Neu analysieren', 'btn btn-ghost btn-xs');
+    reBtnRef = reBtn;
     reBtn.onclick = async () => {
       const antKey = localStorage.getItem('ant_key');
       if (!antKey) { alert('Kein Anthropic API-Key in den Einstellungen.'); return; }
@@ -753,7 +790,7 @@ Antworte NUR als JSON:
     // R2-Dateien im Hintergrund löschen
     keysToDelete.forEach(k => r2Delete(k).catch(e => console.warn('R2-Löschen fehlgeschlagen:', k, e)));
   };
-  delBar.appendChild(delBtn2); body.appendChild(delBar);
+  delBar.appendChild(delBtn2); currentSection.appendChild(delBar);
 
   panel.appendChild(body);
   overlay.classList.add('open');

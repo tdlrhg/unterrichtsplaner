@@ -2,13 +2,10 @@
 function viewEinstellungen() {
   const div = mk('div', '');
   const hdr = mk('div', 'c-hdr');
-  hdr.appendChild(tx('div', 'c-title', 'Einstellungen'));
+  hdr.appendChild(tx('div', 'c-title', 'Technische Einstellungen'));
   div.appendChild(hdr);
 
   // ── Technische Einstellungen ──────────────────────────────────
-  const techHdr = mk('div', 'einst-section-hdr');
-  techHdr.textContent = 'Technische Einstellungen';
-  div.appendChild(techHdr);
 
   function keyField(label, storageKey, placeholder, isSecret = true, hint = '') {
     const fg = mk('div', 'fg');

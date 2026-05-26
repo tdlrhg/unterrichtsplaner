@@ -75,29 +75,6 @@ function viewEinstellungen() {
   aiCard.appendChild(aib);
   div.appendChild(aiCard);
 
-  // Regeln für die Materialanalyse
-  const rulesCard = mk('div', 'card');
-  rulesCard.appendChild(cardHdr('Regeln für die Materialanalyse'));
-  const rulesBody = mk('div', 'card-body');
-  const rulesHint = tx('div', '', 'Diese Regeln werden bei jeder KI-Analyse im Import-Assistenten angehängt. Hier kannst du z.B. festlegen, wie Jahrgang, Thema oder Quelle ermittelt werden sollen.');
-  rulesHint.style.cssText = 'font-size:12px;color:var(--tx2);margin-bottom:10px;line-height:1.5;';
-  const rulesTA = document.createElement('textarea'); rulesTA.className = 'finp';
-  rulesTA.style.cssText = 'width:100%;min-height:100px;resize:vertical;font-size:13px;font-family:inherit;';
-  rulesTA.placeholder = 'z.B. Jahrgang immer aus dem Dateinamen ableiten. Bei fehlendem Jahrgang ["SII"] setzen. Quelle immer aus dem Cover-Bild lesen.';
-  rulesTA.value = localStorage.getItem('mat_ki_regeln') || '';
-  const rulesRow = mk('div', ''); rulesRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:8px;';
-  const rulesSave = btn('Speichern', 'btn btn-pri btn-sm');
-  const rulesMsg = tx('span', '', ''); rulesMsg.style.cssText = 'font-size:12px;color:var(--grn);';
-  rulesSave.onclick = () => {
-    const v = rulesTA.value.trim();
-    if (v) localStorage.setItem('mat_ki_regeln', v); else localStorage.removeItem('mat_ki_regeln');
-    rulesMsg.textContent = '✓ Gespeichert'; setTimeout(() => { rulesMsg.textContent = ''; }, 2000);
-  };
-  rulesRow.appendChild(rulesSave); rulesRow.appendChild(rulesMsg);
-  rulesBody.appendChild(rulesHint); rulesBody.appendChild(rulesTA); rulesBody.appendChild(rulesRow);
-  rulesCard.appendChild(rulesBody);
-  div.appendChild(rulesCard);
-
   // R2-Zugangsdaten
   const r2Card = mk('div', 'card');
   r2Card.appendChild(cardHdr('Cloudflare R2 – Materialspeicher'));

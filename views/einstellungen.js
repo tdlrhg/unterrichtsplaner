@@ -371,31 +371,49 @@ function viewKlp() {
     return div;
   }
 
-  const FACH_LABELS = { 'Bio': 'Biologie', 'Ch': 'Chemie', 'M': 'Mathematik' };
+  const FACH_LABELS  = { 'Bio': 'Biologie', 'Ch': 'Chemie', 'M': 'Mathematik' };
+  const FACH_COLOR   = { 'Bio': '#16a34a', 'Ch': '#d97706', 'M': '#2563eb' };
+  const FACH_BG      = { 'Bio': '#f0fdf4', 'Ch': '#fffbeb', 'M': '#eff6ff' };
+
+  function codeChip(code) {
+    const chip = tx('span', 'klp-code-chip', code);
+    const c = code[0].toUpperCase();
+    if (c === 'U') chip.style.cssText = 'background:#dbeafe;color:#1e40af;';
+    else if (c === 'E') chip.style.cssText = 'background:#d1fae5;color:#065f46;';
+    else if (c === 'K') chip.style.cssText = 'background:#fef3c7;color:#92400e;';
+    else if (c === 'B') chip.style.cssText = 'background:#ede9fe;color:#5b21b6;';
+    else chip.style.cssText = 'background:#f3f4f6;color:#374151;';
+    return chip;
+  }
+
   const klpFaecher = [...new Set(KLPDB.map(e => e.fach))].sort();
   let klpFach = null, klpJg = null;
 
-  const card = mk('div', 'card');
-  const body = mk('div', 'card-body');
+  // ── Filterleiste ─────────────────────────────────────────────
+  const filterBar = mk('div', 'klp-filter-bar');
 
-  const fachRow = mk('div', ''); fachRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;';
-  const jgRow   = mk('div', ''); jgRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;';
+  const fachRow = mk('div', 'klp-filter-row');
+  const jgRow   = mk('div', 'klp-filter-row');
   const searchInp = document.createElement('input');
   searchInp.type = 'text'; searchInp.className = 'finp';
-  searchInp.placeholder = 'Kompetenz oder Inhaltsfeld suchen…';
-  searchInp.style.cssText = 'width:100%;margin-bottom:10px;';
-  const list = mk('div', '');
+  searchInp.placeholder = '🔍 Kompetenz oder Inhaltsfeld suchen…';
+  searchInp.style.cssText = 'width:100%;';
 
-  body.appendChild(fachRow);
-  body.appendChild(jgRow);
-  body.appendChild(searchInp);
-  body.appendChild(list);
+  filterBar.appendChild(fachRow);
+  filterBar.appendChild(jgRow);
+  filterBar.appendChild(searchInp);
+  div.appendChild(filterBar);
+
+  const list = mk('div', 'klp-list');
+  div.appendChild(list);
 
   function renderJgRow() {
     jgRow.innerHTML = '';
     const jgs = [...new Set(KLPDB.filter(e => !klpFach || e.fach === klpFach).map(e => e.jahrgang))].sort();
+    if (!jgs.length) return;
+    jgRow.appendChild(tx('span', 'klp-filter-label', 'Jahrgang'));
     jgs.forEach(jg => {
-      const b = btn('Jg. ' + jg, 'btn btn-xs ' + (klpJg === jg ? 'btn-pri' : 'btn-ghost'));
+      const b = btn(jg, 'btn btn-xs ' + (klpJg === jg ? 'btn-pri' : 'btn-ghost'));
       b.onclick = () => { klpJg = klpJg === jg ? null : jg; renderJgRow(); renderList(); };
       jgRow.appendChild(b);
     });
@@ -427,38 +445,45 @@ function viewKlp() {
     });
 
     grouped.forEach(g => {
-      const ghdr = mk('div', '');
-      ghdr.style.cssText = 'display:flex;gap:8px;align-items:center;margin:14px 0 5px;';
+      const color = FACH_COLOR[g.fach] || 'var(--pri)';
+      const bg    = FACH_BG[g.fach]    || '#f8f8ff';
+
+      const section = mk('div', 'klp-section');
+      section.style.borderLeftColor = color;
+
+      const ghdr = mk('div', 'klp-section-hdr');
+      ghdr.style.background = bg;
       if (!klpFach) {
-        const fb = tx('span', '', FACH_LABELS[g.fach] || g.fach);
-        fb.style.cssText = 'font-size:10px;font-weight:700;background:var(--acc-dim,#ede9fe);color:var(--pri);border-radius:3px;padding:1px 6px;flex-shrink:0;';
+        const fb = tx('span', 'klp-fach-badge', FACH_LABELS[g.fach] || g.fach);
+        fb.style.cssText = 'background:' + color + ';color:#fff;';
         ghdr.appendChild(fb);
       }
-      const ifLabel = tx('span', '', (g.ifNr ? g.ifNr + ': ' : '') + g.if);
-      ifLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;';
-      ghdr.appendChild(ifLabel);
-      list.appendChild(ghdr);
+      const ifTitle = tx('span', 'klp-if-title', (g.ifNr ? 'IF ' + g.ifNr + ' · ' : '') + g.if);
+      const count = tx('span', 'klp-if-count', g.list.length + ' Kompetenz' + (g.list.length !== 1 ? 'en' : ''));
+      ghdr.appendChild(ifTitle);
+      ghdr.appendChild(count);
+      section.appendChild(ghdr);
 
       g.list.forEach(e => {
-        const row = mk('div', '');
-        row.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:4px;border-bottom:1px solid var(--bdr);';
-        const codes = tx('span', '', e.kompetenzcodes.join(' · '));
-        codes.style.cssText = 'font-size:10px;font-weight:700;color:var(--pri);white-space:nowrap;min-width:60px;flex-shrink:0;';
-        const desc = tx('span', '', e.beschreibung);
-        desc.style.cssText = 'font-size:12px;line-height:1.45;flex:1;';
-        row.appendChild(codes);
+        const row = mk('div', 'klp-entry');
+        const codesWrap = mk('div', 'klp-codes');
+        e.kompetenzcodes.forEach(c => codesWrap.appendChild(codeChip(c)));
+        const desc = tx('p', 'klp-desc', e.beschreibung);
+        row.appendChild(codesWrap);
         row.appendChild(desc);
         if (!klpJg) {
-          const jgTag = tx('span', '', 'Jg. ' + e.jahrgang);
-          jgTag.style.cssText = 'font-size:10px;color:var(--tx3);white-space:nowrap;flex-shrink:0;';
-          row.appendChild(jgTag);
+          const jgPill = tx('span', 'klp-jg-pill', e.jahrgang);
+          row.appendChild(jgPill);
         }
-        list.appendChild(row);
+        section.appendChild(row);
       });
+
+      list.appendChild(section);
     });
   }
 
   const fachBtns = {};
+  fachRow.appendChild(tx('span', 'klp-filter-label', 'Fach'));
   klpFaecher.forEach(f => {
     const b = btn(FACH_LABELS[f] || f, 'btn btn-xs btn-ghost');
     b.onclick = () => {
@@ -475,8 +500,5 @@ function viewKlp() {
   searchInp.oninput = () => renderList();
   renderJgRow();
   renderList();
-
-  card.appendChild(body);
-  div.appendChild(card);
   return div;
 }

@@ -624,11 +624,28 @@ textarea::placeholder { color: #c4cdd6; }
 .modell-ki-begr { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 6px; font-size: 12px; color: var(--tx2); padding: 6px 2px 2px; }
 .modell-ki-begr-icon { flex-shrink: 0; }
 
-/* ── Stunden 2-Spalten-Grid ── */
+/* ── Stunden 2-Spalten-Grid (legacy, kept for compat) ── */
 .stunden-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px; align-items: stretch; }
 .stunden-grid .card { margin: 0; }
 .stunden-grid .card.card-half { grid-column: span 1; }
 .stunden-grid .card:not(.card-half) { grid-column: 1 / -1; }
+
+/* ── Stunden-Akkordeon ── */
+.plan-sections { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.plan-sec { background: var(--surf); border: 1px solid var(--bord); border-radius: var(--r); box-shadow: var(--sh); overflow: hidden; }
+.plan-sec-hdr { display: flex; align-items: center; gap: 10px; padding: 11px 16px; cursor: pointer; user-select: none; transition: background .15s; }
+.plan-sec-hdr:hover { background: var(--bg2); }
+.plan-sec-num { min-width: 24px; height: 24px; border-radius: 50%; background: var(--pri); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.plan-sec-ttl { font-weight: 700; font-size: 14px; color: var(--tx1); flex: 1; }
+.plan-sec-st { font-size: 11px; color: var(--tx3); padding: 2px 8px; border-radius: 10px; background: var(--bg2); white-space: nowrap; }
+.plan-sec-st.fertig { color: #15803d; background: #f0fdf4; }
+.plan-sec-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.plan-sec-arr { font-size: 11px; color: var(--tx3); padding-left: 4px; flex-shrink: 0; }
+.plan-sec-body { padding: 16px; border-top: 1px solid var(--bord); }
+.s1-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.plan-below { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 0 16px 16px; }
+.plan-below .card { margin: 0; }
+@media (max-width: 860px) { .s1-grid { grid-template-columns: 1fr; } .plan-below { grid-template-columns: 1fr; } }
 
 /* ── Sidebar Drag & Drop ── */
 .sb-drag-grip { color: var(--tx3); font-size: 13px; cursor: grab; padding-right: 6px; flex-shrink: 0; }

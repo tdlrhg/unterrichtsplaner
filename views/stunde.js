@@ -22,26 +22,79 @@ function initStunde(stunde) {
 }
 
 function renderStundenBody(div, stunde, fp) {
-  const grid = mk('div', 'stunden-grid');
-  div.appendChild(grid);
+  if (!stunde._uiOpen) stunde._uiOpen = {};
+  const secs = mk('div', 'plan-sections');
+  div.appendChild(secs);
 
-  // ── Grunddaten ─────────────────────────────────────────────────
-  const gc = mk('div', 'card');
-  gc.appendChild(cardHdr('Grunddaten'));
-  const gb = mk('div', 'card-body');
-  gb.appendChild(fieldInput('Kurztitel', stunde.titel || '', v => { stunde.titel = v; scheduleSave(); }));
-  gb.appendChild(fieldInput('Langtitel', stunde.langtitel || '', v => { stunde.langtitel = v; scheduleSave(); }));
-  gb.appendChild(fieldArea('Intention', stunde.intention || '', v => { stunde.intention = v; scheduleSave(); }, '', 'Worum geht es in dieser Stunde? Worauf soll sie hinauslaufen?'));
+  // ── Accordion-Helper ───────────────────────────────────────────
+  function mkSec(num, title, key, statusText, fertig) {
+    const isOpen = stunde._uiOpen[key] !== false;
+    const sec = mk('div', 'plan-sec');
+    const hdr = mk('div', 'plan-sec-hdr');
+    hdr.appendChild(tx('div', 'plan-sec-num', String(num)));
+    hdr.appendChild(tx('div', 'plan-sec-ttl', title));
+    hdr.appendChild(tx('div', 'plan-sec-st' + (fertig ? ' fertig' : ''), statusText));
+    const acts = mk('div', 'plan-sec-actions');
+    hdr.appendChild(acts);
+    const arrEl = tx('div', 'plan-sec-arr', isOpen ? '▲' : '▼');
+    hdr.appendChild(arrEl);
+    const body = mk('div', 'plan-sec-body');
+    if (!isOpen) body.style.display = 'none';
+    hdr.onclick = e => {
+      if (e.target.closest('button,input,select,textarea,a,label')) return;
+      const nowOpen = body.style.display === 'none';
+      body.style.display = nowOpen ? '' : 'none';
+      arrEl.textContent = nowOpen ? '▲' : '▼';
+      stunde._uiOpen[key] = nowOpen;
+    };
+    sec.appendChild(hdr);
+    sec.appendChild(body);
+    secs.appendChild(sec);
+    return { body, acts };
+  }
+
+  // ── Status-Labels ──────────────────────────────────────────────
+  const gdFertig = !!stunde.intention;
+  const matAnz = (stunde.materialIds || []).length;
+  const matFertig = matAnz > 0;
+  if (!('methode' in stunde)) stunde.methode = null;
+  if (!('methodeKiVorschlag' in stunde)) stunde.methodeKiVorschlag = null;
+  if (!('methodeKiBewertung' in stunde)) stunde.methodeKiBewertung = null;
+  const methFertig = !!stunde.methode;
+  const pr = stunde.planungsrahmen;
+  if (!pr.sozialformen) pr.sozialformen = [];
+  if (!pr.kiGewählt) pr.kiGewählt = [];
+  const prFertig = !!(pr.sozialformen?.length || pr.schwerpunkt);
+  const phFertig = (stunde.phasen || []).length > 0;
+
+  // ══════════════════════════════════════════════════════════════════
+  // SEKTION 1: Grunddaten & Lernziele
+  // ══════════════════════════════════════════════════════════════════
+  const lzKiBtn  = btn('✨ KI → Lernziele', 'btn btn-ki btn-xs');
+  const lzAddBtn = btn('+ Manuell', 'btn btn-pri btn-xs');
+
+  const { body: s1body, acts: s1acts } = mkSec(1, 'Grunddaten & Lernziele', 'grunddaten',
+    gdFertig ? '✓ fertig' : 'offen', gdFertig);
+  s1acts.appendChild(lzKiBtn);
+  s1acts.appendChild(lzAddBtn);
+
+  const s1grid = mk('div', 's1-grid');
+
+  // Linke Spalte: Grunddaten
+  const s1left = mk('div', '');
+  s1left.appendChild(fieldInput('Kurztitel', stunde.titel || '', v => { stunde.titel = v; scheduleSave(); }));
+  s1left.appendChild(fieldInput('Langtitel', stunde.langtitel || '', v => { stunde.langtitel = v; scheduleSave(); }));
+  s1left.appendChild(fieldArea('Intention', stunde.intention || '', v => { stunde.intention = v; scheduleSave(); }, '', 'Worum geht es in dieser Stunde? Worauf soll sie hinauslaufen?'));
 
   const prioFg = mk('div', 'fg');
   prioFg.appendChild(tx('label', 'fl', 'Typ / Priorität'));
   const prioWrap = mk('div', 'prio-wrap');
   const PRIOS = [
-    { val: 'pflicht', label: '🟢 Pflicht', title: 'Muss gemacht werden' },
-    { val: 'optional', label: '🟡 Optional', title: 'Kann bei Zeitmangel entfallen' },
-    { val: 'puffer', label: '🔵 Puffer', title: 'Wiederholung / Reserve' },
-    { val: 'klassenarbeit', label: '📝 Klassenarbeit', title: 'Klassenarbeit' },
-    { val: 'rueckgabe', label: '📋 Rückgabe', title: 'Rückgabe / Besprechung' },
+    { val: 'pflicht',      label: '🟢 Pflicht',      title: 'Muss gemacht werden' },
+    { val: 'optional',     label: '🟡 Optional',     title: 'Kann bei Zeitmangel entfallen' },
+    { val: 'puffer',       label: '🔵 Puffer',       title: 'Wiederholung / Reserve' },
+    { val: 'klassenarbeit',label: '📝 Klassenarbeit',title: 'Klassenarbeit' },
+    { val: 'rueckgabe',    label: '📋 Rückgabe',     title: 'Rückgabe / Besprechung' },
   ];
   if (!stunde.prioritaet) stunde.prioritaet = 'pflicht';
   PRIOS.forEach(p => {
@@ -51,18 +104,45 @@ function renderStundenBody(div, stunde, fp) {
     prioWrap.appendChild(b);
   });
   prioFg.appendChild(prioWrap);
-  gb.appendChild(prioFg);
+  s1left.appendChild(prioFg);
+  s1left.appendChild(fieldArea('Stundenbeschreibung', stunde.lernziel || '', v => { stunde.lernziel = v; scheduleSave(); }, '', 'Inhaltliche Zusammenfassung – was passiert in dieser Stunde?'));
 
-  gb.appendChild(fieldArea('Stundenbeschreibung', stunde.lernziel || '', v => { stunde.lernziel = v; scheduleSave(); }, '', 'Inhaltliche Zusammenfassung – was passiert in dieser Stunde?'));
-  gc.appendChild(gb);
-  gc.classList.add('card-half');
-  grid.appendChild(gc);
+  // Rechte Spalte: Lernziele
+  const s1right = mk('div', '');
+  const lzBody = mk('div', '');
 
-  // ── Lernziele ──────────────────────────────────────────────────
-  const lzCard = mk('div', 'card');
-  const lzHdr = cardHdr('Lernziele');
+  function renderLzBody() {
+    lzBody.innerHTML = '';
+    if (stunde.lernziele.length === 0) {
+      lzBody.appendChild(tx('div', 'empty-hint', 'Noch keine Lernziele – KI ableiten oder manuell hinzufügen.'));
+    } else {
+      stunde.lernziele.forEach((lz, i) => {
+        const row = mk('div', 'lz-row');
+        row.appendChild(tx('div', 'lz-nr', (i + 1) + '.'));
+        const fields = mk('div', 'lz-fields');
+        const ta1 = document.createElement('textarea');
+        ta1.className = 'lz-text finp';
+        ta1.placeholder = 'Die SuS können/wissen … und zeigen dies, indem sie …';
+        ta1.value = lz.text;
+        ta1.rows = 1;
+        const autoResize = t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; };
+        ta1.oninput = e => { lz.text = e.target.value; scheduleSave(); autoResize(e.target); };
+        requestAnimationFrame(() => autoResize(ta1));
+        fields.appendChild(ta1);
+        row.appendChild(fields);
+        const delBtn = btn('🗑', 'btn btn-danger btn-xs lz-del');
+        delBtn.onclick = () => {
+          stunde.lernziele = stunde.lernziele.filter(z => z.id !== lz.id);
+          scheduleSave(); renderLzBody();
+        };
+        row.appendChild(delBtn);
+        lzBody.appendChild(row);
+      });
+    }
+  }
+  renderLzBody();
+  s1right.appendChild(lzBody);
 
-  const lzKiBtn = btn('✨ KI → Lernziele ableiten', 'btn btn-ki btn-xs');
   lzKiBtn.onclick = async () => {
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) { alert('Bitte zuerst Anthropic API-Key in den Einstellungen hinterlegen.'); return; }
@@ -103,83 +183,53 @@ Antworte NUR als JSON-Array von Strings:
       if (!parsed.length) throw new Error('Keine Lernziele erhalten');
       const neu = parsed.map(z => ({ id: uid(), text: typeof z === 'string' ? z : (z.text || '') }));
       if (stunde.lernziele.length > 0 && !confirm('Vorhandene Lernziele ersetzen?')) {
-        lzKiBtn.textContent = '✨ KI → Lernziele ableiten'; lzKiBtn.disabled = false; return;
+        lzKiBtn.textContent = '✨ KI → Lernziele'; lzKiBtn.disabled = false; return;
       }
       stunde.lernziele = neu;
-      scheduleSave(); render();
+      scheduleSave(); renderLzBody();
     } catch(e) {
       alert('Fehler: ' + e.message);
-      lzKiBtn.textContent = '✨ KI → Lernziele ableiten'; lzKiBtn.disabled = false;
     }
+    lzKiBtn.textContent = '✨ KI → Lernziele'; lzKiBtn.disabled = false;
   };
-  lzHdr.appendChild(lzKiBtn);
 
-  const lzAddBtn = btn('+ Manuell', 'btn btn-pri btn-xs');
   lzAddBtn.onclick = () => {
     stunde.lernziele.push({ id: uid(), text: '', indikator: '' });
-    scheduleSave(); render();
+    scheduleSave(); renderLzBody();
   };
-  lzHdr.appendChild(lzAddBtn);
-  lzCard.appendChild(lzHdr);
 
-  const lzBody = mk('div', 'card-body');
-  if (stunde.lernziele.length === 0) {
-    lzBody.appendChild(tx('div', 'empty-hint', 'Noch keine Lernziele – KI ableiten oder manuell hinzufügen.'));
-  } else {
-    stunde.lernziele.forEach((lz, i) => {
-      const row = mk('div', 'lz-row');
-      const nr = tx('div', 'lz-nr', (i + 1) + '.');
-      const fields = mk('div', 'lz-fields');
+  s1grid.appendChild(s1left);
+  s1grid.appendChild(s1right);
+  s1body.appendChild(s1grid);
 
-      const ta1 = document.createElement('textarea');
-      ta1.className = 'lz-text finp';
-      ta1.placeholder = 'Die SuS können/wissen … und zeigen dies, indem sie …';
-      ta1.value = lz.text;
-      ta1.rows = 1;
-      const autoResize = t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; };
-      ta1.oninput = e => { lz.text = e.target.value; scheduleSave(); autoResize(e.target); };
-      requestAnimationFrame(() => autoResize(ta1));
-      fields.appendChild(ta1);
-
-      const delBtn = btn('🗑', 'btn btn-danger btn-xs lz-del');
-      delBtn.onclick = () => {
-        stunde.lernziele = stunde.lernziele.filter(z => z.id !== lz.id);
-        scheduleSave(); render();
-      };
-
-      row.appendChild(nr);
-      row.appendChild(fields);
-      row.appendChild(delBtn);
-      lzBody.appendChild(row);
-    });
-  }
-  lzCard.appendChild(lzBody);
-  lzCard.classList.add('card-half');
-  grid.appendChild(lzCard);
-
-  // ── Material ───────────────────────────────────────────────────
-  const matCard = mk('div', 'card');
-  const matHdr = cardHdr('Material');
+  // ══════════════════════════════════════════════════════════════════
+  // SEKTION 2: Material
+  // ══════════════════════════════════════════════════════════════════
+  const matStatusText = matFertig
+    ? `✓ ${matAnz} Material${matAnz > 1 ? 'ien' : ''}`
+    : 'offen';
   const kiVorschlBtn = btn('✨ Vorschlagen', 'btn btn-ki btn-xs');
-  const matSucheBtn = btn('🔍 Suchen', 'btn btn-ghost btn-xs');
-  matHdr.appendChild(kiVorschlBtn);
-  matHdr.appendChild(matSucheBtn);
-  matCard.appendChild(matHdr);
-  const matBody = mk('div', 'card-body');
+  const matSucheBtn  = btn('🔍 Suchen', 'btn btn-ghost btn-xs');
 
-  // Zugewiesene Materialien (immer sichtbar)
+  const { body: s2body, acts: s2acts } = mkSec(2, 'Material', 'material', matStatusText, matFertig);
+  s2acts.appendChild(kiVorschlBtn);
+  s2acts.appendChild(matSucheBtn);
+
+  // Zugewiesene Materialien
   const zugewiesenWrap = mk('div', ''); zugewiesenWrap.style.marginBottom = '8px';
   function renderZugewiesene() {
     zugewiesenWrap.innerHTML = '';
     if (!stunde.materialIds.length) {
-      zugewiesenWrap.appendChild(tx('div', '', 'Noch kein Material zugewiesen.'));
-      zugewiesenWrap.querySelector('div').style.cssText = 'font-size:12px;color:var(--tx3);padding:2px 0;';
+      const hint = tx('div', '', 'Noch kein Material zugewiesen.');
+      hint.style.cssText = 'font-size:12px;color:var(--tx3);padding:2px 0;';
+      zugewiesenWrap.appendChild(hint);
       return;
     }
     stunde.materialIds.forEach(mid => {
       const mat = MATDB.find(m => m.id === mid);
       if (!mat) return;
-      const row = mk('div', ''); row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bord);';
+      const row = mk('div', '');
+      row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bord);';
       row.appendChild(tx('span', '', '📄'));
       const info = mk('div', ''); info.style.flex = '1';
       info.appendChild(tx('span', '', mat.titel));
@@ -194,170 +244,21 @@ Antworte NUR als JSON-Array von Strings:
     });
   }
   renderZugewiesene();
-  matBody.appendChild(zugewiesenWrap);
+  s2body.appendChild(zugewiesenWrap);
 
   // Suchbereich (toggle)
   const sucheWrap = mk('div', ''); sucheWrap.style.display = 'none';
+
+  // KI-Vorschläge (erscheint über der manuellen Suche)
+  const kiVorschlaegeListe = mk('div', '');
+  kiVorschlaegeListe.style.cssText = 'max-height:320px;overflow-y:auto;border:1px solid var(--bord);border-radius:6px;margin-bottom:10px;display:none;';
+  sucheWrap.appendChild(kiVorschlaegeListe);
 
   const filterRow = mk('div', ''); filterRow.style.marginBottom = '10px';
   const suchInp = document.createElement('input'); suchInp.type = 'text'; suchInp.className = 'finp';
   suchInp.placeholder = 'Titel, Thema, Beschreibung…'; suchInp.style.width = '100%';
   filterRow.appendChild(suchInp);
   sucheWrap.appendChild(filterRow);
-
-  // KI-Vorschläge (erscheint über der manuellen Suche)
-  const kiVorschlaegeListe = mk('div', '');
-  kiVorschlaegeListe.style.cssText = 'max-height:320px;overflow-y:auto;border:1px solid var(--bord);border-radius:6px;margin-bottom:10px;display:none;';
-  sucheWrap.insertBefore(kiVorschlaegeListe, filterRow);
-
-  kiVorschlBtn.onclick = async () => {
-    const antKey = localStorage.getItem('ant_key');
-    if (!antKey) { alert('Bitte API-Key in den Einstellungen hinterlegen.'); return; }
-    // sucheWrap öffnen
-    sucheWrap.style.display = 'block';
-    matSucheBtn.textContent = '▲ Schließen';
-    kiVorschlaegeListe.style.display = 'block';
-    kiVorschlaegeListe.innerHTML = '';
-    const spin = tx('div', '', '⏳ KI sucht passende Materialien…');
-    spin.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
-    kiVorschlaegeListe.appendChild(spin);
-    kiVorschlBtn.disabled = true; kiVorschlBtn.textContent = '⏳';
-
-    const EXCL = ['Lehrerhandreichung', 'Lösung'];
-    const safe = s => (s||'').replace(/[|\n\r\t]/g, ' ').trim();
-    const matSummary = MATDB
-      .filter(m => !EXCL.includes(m.materialtyp))
-      .map(m => `id:${m.id}|${safe(m.titel)}|${(m.themen||[]).map(safe).join(',')}|${(m.fach||[]).join(',')}|Jg:${(m.jahrgang||[]).join(',')}|${safe(m.materialtyp)}`)
-      .join('\n');
-
-    const lernziele = (stunde.lernziele||[]).map(z=>z.text).join(', ') || '–';
-    const prompt = `Du hilfst einer NRW-Gymnasiallehrerin beim Planen einer Unterrichtsstunde.
-
-Stunde: Fach ${fp.fach||'–'}, Jahrgang ${fp.jahrgang||'–'}, ${stunde.dauer||45} Min
-Thema/Intention: ${stunde.intention||'–'}
-Lernziele: ${lernziele}
-
-Wähle 5–8 passende Materialien aus der folgenden Datenbank. Bevorzuge Erarbeitungsmaterial. Gib für jedes eine kurze Begründung (1 Satz, z.B. was an dem Material für diese Stunde nützlich ist – auch wenn es Anpassung braucht).
-
-Antworte NUR als JSON:
-{"vorschlaege": [{"id": "mat_xxx", "grund": "ein Satz"}]}
-
-Materialdatenbank (id|Titel|Themen|Fach|Jahrgang|Typ):
-${matSummary}`;
-
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: prompt }] }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error?.message || res.statusText);
-      const raw = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/)?.[0];
-      if (!raw) throw new Error('Kein JSON erhalten');
-      const sanitized = raw.replace(/[\x00-\x1F\x7F]/g, c => (c==='\n'||c==='\r'||c==='\t') ? ' ' : '');
-      let vorschlaege;
-      try {
-        ({ vorschlaege } = JSON.parse(sanitized));
-      } catch(_) {
-        // Fallback: IDs per Regex extrahieren wenn JSON malformed
-        const ids = [...sanitized.matchAll(/"id"\s*:\s*"([^"]+)"/g)].map(m => m[1]);
-        const grounds = [...sanitized.matchAll(/"grund"\s*:\s*"([^"]*)"/g)].map(m => m[1]);
-        vorschlaege = ids.map((id, i) => ({ id, grund: grounds[i] || '' }));
-        if (!vorschlaege.length) throw new Error('JSON konnte nicht geparst werden');
-      }
-      kiVorschlaegeListe.innerHTML = '';
-      kiVorschlaegeListe.dataset.vorschlagIds = (vorschlaege||[]).map(v=>v.id).join(',');
-      const hdr = mk('div', '');
-      hdr.style.cssText = 'padding:6px 10px;font-size:11px;font-weight:600;color:var(--tx2);background:var(--bg2);border-bottom:1px solid var(--bord);display:flex;justify-content:space-between;align-items:center;';
-      hdr.appendChild(tx('span', '', `✨ ${vorschlaege?.length || 0} KI-Vorschläge`));
-      const closeKi = btn('✕', 'btn btn-ghost btn-xs');
-      closeKi.onclick = () => { kiVorschlaegeListe.style.display = 'none'; kiVorschlaegeListe.innerHTML = ''; };
-      hdr.appendChild(closeKi);
-      kiVorschlaegeListe.appendChild(hdr);
-      if (!vorschlaege?.length) {
-        const hint = tx('div', '', 'Keine Vorschläge – Thema/Intention der Stunde ergänzen?');
-        hint.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
-        kiVorschlaegeListe.appendChild(hint);
-      } else {
-        vorschlaege.forEach(v => {
-          const mat = MATDB.find(m => m.id === v.id);
-          if (!mat) return;
-
-          const card = mk('div', '');
-          card.style.cssText = 'border:1px solid var(--bord);border-radius:6px;padding:8px 10px;margin-bottom:6px;background:var(--surf);';
-
-          const inner = mk('div', '');
-          inner.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;';
-
-          // Linke Spalte: Checkbox + Titel + Themen + Badges
-          const left = mk('div', '');
-          const titleRow = mk('div', '');
-          titleRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:3px;';
-          const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selected.has(mat.id);
-          cb.dataset.matId = mat.id;
-          cb.onclick = e => e.stopPropagation();
-          cb.onchange = () => {
-            if (cb.checked) selected.add(mat.id); else selected.delete(mat.id);
-            kiBtn.disabled = selected.size === 0;
-            kiBtn.textContent = `✨ KI bewertet (${selected.size})`;
-          };
-          const titleEl = tx('span', '', mat.titel);
-          titleEl.style.cssText = 'font-size:13px;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:2px;';
-          titleEl.onclick = () => openMatOverlayStandalone(mat);
-          titleRow.appendChild(cb); titleRow.appendChild(titleEl);
-          left.appendChild(titleRow);
-
-          if (mat.themen?.length) {
-            const t = tx('div', '', mat.themen.slice(0,4).join(', '));
-            t.style.cssText = 'font-size:11px;color:var(--tx2);margin-bottom:3px;';
-            left.appendChild(t);
-          }
-          const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:5px;align-items:center;flex-wrap:wrap;';
-          const fi = (mat.fach||[]).map(fachIcon).join('');
-          if (fi) { const s = tx('span','',fi); s.style.fontSize='13px'; badgeRow.appendChild(s); }
-          if (mat.jahrgang?.length) {
-            const jg = tx('span','',mat.jahrgang.join('/'));
-            jg.style.cssText='font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#374151;';
-            badgeRow.appendChild(jg);
-          }
-          if (mat.quelle) {
-            const q = tx('span','',mat.quelle); q.style.cssText='font-size:10px;color:var(--tx3);';
-            badgeRow.appendChild(q);
-          }
-          left.appendChild(badgeRow);
-
-          // Rechte Spalte: KI-Kommentar
-          const right = mk('div', '');
-          const grundEl = tx('div', '', v.grund);
-          grundEl.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;line-height:1.4;';
-          right.appendChild(grundEl);
-
-          inner.appendChild(left); inner.appendChild(right);
-          card.appendChild(inner);
-
-          // Zuweisen-Button
-          const foot = mk('div', ''); foot.style.cssText = 'display:flex;justify-content:flex-end;margin-top:6px;';
-          const useBtn = btn('+ Zuweisen', 'btn btn-pri btn-xs');
-          useBtn.onclick = () => {
-            if (!stunde.materialIds.includes(mat.id)) { stunde.materialIds.push(mat.id); scheduleSave(); renderZugewiesene(); }
-            useBtn.textContent = '✓'; useBtn.disabled = true;
-          };
-          if (stunde.materialIds.includes(mat.id)) { useBtn.textContent = '✓'; useBtn.disabled = true; }
-          foot.appendChild(useBtn);
-          card.appendChild(foot);
-
-          kiVorschlaegeListe.appendChild(card);
-        });
-      }
-    } catch(e) {
-      kiVorschlaegeListe.innerHTML = '';
-      const err = tx('div', '', '⚠ Fehler: ' + e.message);
-      err.style.cssText = 'padding:12px;color:#dc2626;font-size:12px;';
-      kiVorschlaegeListe.appendChild(err);
-    }
-    kiVorschlBtn.disabled = false; kiVorschlBtn.textContent = '✨ Vorschlagen';
-  };
 
   const ergebnisListe = mk('div', '');
   ergebnisListe.style.cssText = 'max-height:300px;overflow-y:auto;border:1px solid var(--bord);border-radius:6px;';
@@ -366,10 +267,10 @@ ${matSummary}`;
 
   function buildMatRow(mat) {
     const bew = kiBewertungen.get(mat.id);
-    const BG    = { gut: '#f0fdf4', anpassung: '#fffbeb', ungeeignet: '#fef2f2' };
-    const BG_FAV= '#dcfce7';
-    const STAMP_COL = { gut: '#15803d', anpassung: '#b45309', ungeeignet: '#dc2626' };
-    const BORDER_COL= { gut: '#16a34a', anpassung: '#d97706', ungeeignet: '#dc2626' };
+    const BG     = { gut: '#f0fdf4', anpassung: '#fffbeb', ungeeignet: '#fef2f2' };
+    const BG_FAV = '#dcfce7';
+    const STAMP_COL  = { gut: '#15803d', anpassung: '#b45309', ungeeignet: '#dc2626' };
+    const BORDER_COL = { gut: '#16a34a', anpassung: '#d97706', ungeeignet: '#dc2626' };
 
     const row = mk('div', '');
     row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-bottom:1px solid var(--bord);cursor:pointer;position:relative;transition:background .15s;';
@@ -379,26 +280,32 @@ ${matSummary}`;
     }
 
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selected.has(mat.id);
-    cb.dataset.matId = mat.id;
-    cb.style.marginTop = '3px';
+    cb.dataset.matId = mat.id; cb.style.marginTop = '3px';
     cb.onclick = e => e.stopPropagation();
-    cb.onchange = () => { if (cb.checked) selected.add(mat.id); else selected.delete(mat.id); kiBtn.disabled = selected.size === 0; kiBtn.textContent = `✨ KI bewertet (${selected.size})`; };
+    cb.onchange = () => {
+      if (cb.checked) selected.add(mat.id); else selected.delete(mat.id);
+      kiBtn.disabled = selected.size === 0;
+      kiBtn.textContent = `✨ KI bewertet (${selected.size})`;
+    };
 
     const info = mk('div', ''); info.style.flex = '1';
-
     const titleLine = mk('div', ''); titleLine.style.cssText = 'display:flex;align-items:center;gap:5px;';
-    const titleEl = tx('span', '', mat.titel); titleEl.style.cssText = 'font-size:13px;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:2px;';
+    const titleEl = tx('span', '', mat.titel);
+    titleEl.style.cssText = 'font-size:13px;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:2px;';
     titleEl.onclick = e => { e.stopPropagation(); openMatOverlayStandalone(mat); };
     titleLine.appendChild(titleEl);
     if (bew?.favorit) {
       const star = tx('span', '', '★');
-      star.style.cssText = 'color:#15803d;font-size:14px;line-height:1;';
-      star.title = 'KI-Favorit';
+      star.style.cssText = 'color:#15803d;font-size:14px;line-height:1;'; star.title = 'KI-Favorit';
       titleLine.appendChild(star);
     }
     info.appendChild(titleLine);
 
-    if (mat.themen?.length) { const t = tx('div', '', mat.themen.slice(0,4).join(', ')); t.style.cssText = 'font-size:11px;color:var(--tx2);'; info.appendChild(t); }
+    if (mat.themen?.length) {
+      const t = tx('div', '', mat.themen.slice(0,4).join(', '));
+      t.style.cssText = 'font-size:11px;color:var(--tx2);';
+      info.appendChild(t);
+    }
     const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:5px;margin-top:3px;align-items:center;flex-wrap:wrap;';
     const fachIcons = (mat.fach||[]).map(fachIcon).join('');
     if (fachIcons) { const fi = tx('span', '', fachIcons); fi.style.fontSize = '13px'; badgeRow.appendChild(fi); }
@@ -414,8 +321,7 @@ ${matSummary}`;
     }
     info.appendChild(badgeRow);
 
-    const useBtn = btn('+ Zuweisen', 'btn btn-pri btn-xs');
-    useBtn.style.cssText = 'margin-top:2px;flex-shrink:0;';
+    const useBtn = btn('+ Zuweisen', 'btn btn-pri btn-xs'); useBtn.style.cssText = 'margin-top:2px;flex-shrink:0;';
     useBtn.onclick = e => {
       e.stopPropagation();
       if (!stunde.materialIds.includes(mat.id)) { stunde.materialIds.push(mat.id); scheduleSave(); renderZugewiesene(); }
@@ -432,7 +338,6 @@ ${matSummary}`;
       stamp.style.cssText = `position:absolute;right:68px;bottom:4px;max-width:210px;transform:rotate(-5deg);border:1.5px solid ${sc};border-radius:3px;padding:2px 7px;font-size:9.5px;font-weight:600;color:${sc};opacity:.65;pointer-events:none;background:white;line-height:1.4;letter-spacing:.2px;white-space:normal;word-break:break-word;`;
       row.appendChild(stamp);
     }
-
     return row;
   }
 
@@ -441,7 +346,7 @@ ${matSummary}`;
     alleCb.checked = false;
     const q = suchInp.value.toLowerCase().trim();
     const EXCL = ['Lehrerhandreichung', 'Lösung'];
-    let hits = MATDB.filter(mat => {
+    const hits = MATDB.filter(mat => {
       if (EXCL.includes(mat.materialtyp)) return false;
       if (q.length >= 2) {
         const txt = [mat.titel||'', ...(mat.themen||[]), mat.beschreibung||'', mat.rolleImKontext||''].join(' ').toLowerCase();
@@ -460,11 +365,10 @@ ${matSummary}`;
       m.style.cssText = 'padding:8px 10px;font-size:11px;color:var(--tx3);';
       ergebnisListe.appendChild(m);
     }
-    // Geschwister: gleiche Quelle oder gleicher Block
-    const hitIds = new Set(hits.map(m => m.id));
-    const hitQuellen = new Set(hits.map(m => m.quelle).filter(Boolean));
+    const hitIds    = new Set(hits.map(m => m.id));
+    const hitQuellen= new Set(hits.map(m => m.quelle).filter(Boolean));
     const hitBlocks = new Set(hits.map(m => m.blockId).filter(Boolean));
-    const siblings = MATDB.filter(mat => {
+    const siblings  = MATDB.filter(mat => {
       if (hitIds.has(mat.id)) return false;
       if (EXCL.includes(mat.materialtyp)) return false;
       if (mat.quelle && hitQuellen.has(mat.quelle)) return true;
@@ -561,7 +465,6 @@ mat_abc_2|anpassung|Nur Teilaufgabe 1 verwenden|nein`;
   };
   kiBtnRow.appendChild(kiBtn);
   sucheWrap.appendChild(kiBtnRow);
-
   suchInp.oninput = renderErgebnisse;
 
   matSucheBtn.onclick = () => {
@@ -571,25 +474,447 @@ mat_abc_2|anpassung|Nur Teilaufgabe 1 verwenden|nein`;
     if (!open) { suchInp.focus(); renderErgebnisse(); }
   };
 
-  matBody.appendChild(sucheWrap);
-  matCard.appendChild(matBody);
-  grid.appendChild(matCard);
+  kiVorschlBtn.onclick = async () => {
+    const antKey = localStorage.getItem('ant_key');
+    if (!antKey) { alert('Bitte API-Key in den Einstellungen hinterlegen.'); return; }
+    sucheWrap.style.display = 'block';
+    matSucheBtn.textContent = '▲ Schließen';
+    kiVorschlaegeListe.style.display = 'block';
+    kiVorschlaegeListe.innerHTML = '';
+    const spin = tx('div', '', '⏳ KI sucht passende Materialien…');
+    spin.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
+    kiVorschlaegeListe.appendChild(spin);
+    kiVorschlBtn.disabled = true; kiVorschlBtn.textContent = '⏳';
 
-  // ── Planungsrahmen ─────────────────────────────────────────────
-  const pr = stunde.planungsrahmen;
-  if (!pr.sozialformen) pr.sozialformen = [];
-  if (!pr.kiGewählt) pr.kiGewählt = [];
+    const EXCL = ['Lehrerhandreichung', 'Lösung'];
+    const safe = s => (s||'').replace(/[|\n\r\t]/g, ' ').trim();
+    const matSummary = MATDB
+      .filter(m => !EXCL.includes(m.materialtyp))
+      .map(m => `id:${m.id}|${safe(m.titel)}|${(m.themen||[]).map(safe).join(',')}|${(m.fach||[]).join(',')}|Jg:${(m.jahrgang||[]).join(',')}|${safe(m.materialtyp)}`)
+      .join('\n');
+    const lernziele = (stunde.lernziele||[]).map(z=>z.text).join(', ') || '–';
+    const prompt = `Du hilfst einer NRW-Gymnasiallehrerin beim Planen einer Unterrichtsstunde.
 
-  const prCard = mk('div', 'card');
-  const prHdr = cardHdr('Planungsrahmen');
+Stunde: Fach ${fp.fach||'–'}, Jahrgang ${fp.jahrgang||'–'}, ${stunde.dauer||45} Min
+Thema/Intention: ${stunde.intention||'–'}
+Lernziele: ${lernziele}
 
+Wähle 5–8 passende Materialien aus der folgenden Datenbank. Bevorzuge Erarbeitungsmaterial. Gib für jedes eine kurze Begründung (1 Satz, z.B. was an dem Material für diese Stunde nützlich ist – auch wenn es Anpassung braucht).
+
+Antworte NUR als JSON:
+{"vorschlaege": [{"id": "mat_xxx", "grund": "ein Satz"}]}
+
+Materialdatenbank (id|Titel|Themen|Fach|Jahrgang|Typ):
+${matSummary}`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: prompt }] }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error?.message || res.statusText);
+      const raw = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/)?.[0];
+      if (!raw) throw new Error('Kein JSON erhalten');
+      const sanitized = raw.replace(/[\x00-\x1F\x7F]/g, c => (c==='\n'||c==='\r'||c==='\t') ? ' ' : '');
+      let vorschlaege;
+      try {
+        ({ vorschlaege } = JSON.parse(sanitized));
+      } catch(_) {
+        const ids    = [...sanitized.matchAll(/"id"\s*:\s*"([^"]+)"/g)].map(m => m[1]);
+        const grounds= [...sanitized.matchAll(/"grund"\s*:\s*"([^"]*)"/g)].map(m => m[1]);
+        vorschlaege  = ids.map((id, i) => ({ id, grund: grounds[i] || '' }));
+        if (!vorschlaege.length) throw new Error('JSON konnte nicht geparst werden');
+      }
+      kiVorschlaegeListe.innerHTML = '';
+      kiVorschlaegeListe.dataset.vorschlagIds = (vorschlaege||[]).map(v=>v.id).join(',');
+      const hdr = mk('div', '');
+      hdr.style.cssText = 'padding:6px 10px;font-size:11px;font-weight:600;color:var(--tx2);background:var(--bg2);border-bottom:1px solid var(--bord);display:flex;justify-content:space-between;align-items:center;';
+      hdr.appendChild(tx('span', '', `✨ ${vorschlaege?.length || 0} KI-Vorschläge`));
+      const closeKi = btn('✕', 'btn btn-ghost btn-xs');
+      closeKi.onclick = () => { kiVorschlaegeListe.style.display = 'none'; kiVorschlaegeListe.innerHTML = ''; };
+      hdr.appendChild(closeKi);
+      kiVorschlaegeListe.appendChild(hdr);
+      if (!vorschlaege?.length) {
+        const hint = tx('div', '', 'Keine Vorschläge – Thema/Intention der Stunde ergänzen?');
+        hint.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
+        kiVorschlaegeListe.appendChild(hint);
+      } else {
+        vorschlaege.forEach(v => {
+          const mat = MATDB.find(m => m.id === v.id);
+          if (!mat) return;
+          const card = mk('div', '');
+          card.style.cssText = 'border:1px solid var(--bord);border-radius:6px;padding:8px 10px;margin-bottom:6px;background:var(--surf);';
+          const inner = mk('div', '');
+          inner.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;';
+          const left = mk('div', '');
+          const titleRow = mk('div', '');
+          titleRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:3px;';
+          const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selected.has(mat.id);
+          cb.dataset.matId = mat.id;
+          cb.onclick = e => e.stopPropagation();
+          cb.onchange = () => {
+            if (cb.checked) selected.add(mat.id); else selected.delete(mat.id);
+            kiBtn.disabled = selected.size === 0;
+            kiBtn.textContent = `✨ KI bewertet (${selected.size})`;
+          };
+          const titleEl = tx('span', '', mat.titel);
+          titleEl.style.cssText = 'font-size:13px;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:2px;';
+          titleEl.onclick = () => openMatOverlayStandalone(mat);
+          titleRow.appendChild(cb); titleRow.appendChild(titleEl);
+          left.appendChild(titleRow);
+          if (mat.themen?.length) {
+            const t = tx('div', '', mat.themen.slice(0,4).join(', '));
+            t.style.cssText = 'font-size:11px;color:var(--tx2);margin-bottom:3px;'; left.appendChild(t);
+          }
+          const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:5px;align-items:center;flex-wrap:wrap;';
+          const fi = (mat.fach||[]).map(fachIcon).join('');
+          if (fi) { const s = tx('span','',fi); s.style.fontSize='13px'; badgeRow.appendChild(s); }
+          if (mat.jahrgang?.length) {
+            const jg = tx('span','',mat.jahrgang.join('/'));
+            jg.style.cssText='font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#374151;';
+            badgeRow.appendChild(jg);
+          }
+          if (mat.quelle) { const q = tx('span','',mat.quelle); q.style.cssText='font-size:10px;color:var(--tx3);'; badgeRow.appendChild(q); }
+          left.appendChild(badgeRow);
+          const right = mk('div', '');
+          const grundEl = tx('div', '', v.grund);
+          grundEl.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;line-height:1.4;';
+          right.appendChild(grundEl);
+          inner.appendChild(left); inner.appendChild(right);
+          card.appendChild(inner);
+          const foot = mk('div', ''); foot.style.cssText = 'display:flex;justify-content:flex-end;margin-top:6px;';
+          const useBtn = btn('+ Zuweisen', 'btn btn-pri btn-xs');
+          useBtn.onclick = () => {
+            if (!stunde.materialIds.includes(mat.id)) { stunde.materialIds.push(mat.id); scheduleSave(); renderZugewiesene(); }
+            useBtn.textContent = '✓'; useBtn.disabled = true;
+          };
+          if (stunde.materialIds.includes(mat.id)) { useBtn.textContent = '✓'; useBtn.disabled = true; }
+          foot.appendChild(useBtn);
+          card.appendChild(foot);
+          kiVorschlaegeListe.appendChild(card);
+        });
+      }
+    } catch(e) {
+      kiVorschlaegeListe.innerHTML = '';
+      const err = tx('div', '', '⚠ Fehler: ' + e.message);
+      err.style.cssText = 'padding:12px;color:#dc2626;font-size:12px;';
+      kiVorschlaegeListe.appendChild(err);
+    }
+    kiVorschlBtn.disabled = false; kiVorschlBtn.textContent = '✨ Vorschlagen';
+  };
+
+  s2body.appendChild(sucheWrap);
+
+  // ══════════════════════════════════════════════════════════════════
+  // SEKTION 3: Methode
+  // ══════════════════════════════════════════════════════════════════
+  const methStatusText = methFertig ? '✓ ' + stunde.methode : 'offen';
+  const { body: s3body } = mkSec(3, 'Methode', 'methode', methStatusText, methFertig);
+
+  let methodeManModus = false;
+
+  function renderMethodeBody() {
+    s3body.innerHTML = '';
+    const hasMat = (stunde.materialIds||[]).length > 0;
+
+    // ── Methode gewählt ─────────────────────────────────────────────
+    if (stunde.methode) {
+      const selBox = mk('div', '');
+      selBox.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;margin-bottom:10px;';
+      selBox.appendChild(tx('span', '', '✅'));
+      const methName = tx('div', '', stunde.methode);
+      methName.style.cssText = 'font-weight:700;font-size:14px;color:#15803d;flex:1;';
+      selBox.appendChild(methName);
+      const aendernBtn = btn('Ändern', 'btn btn-ghost btn-xs');
+      aendernBtn.onclick = () => {
+        stunde.methode = null; stunde.methodeKiBewertung = null;
+        scheduleSave(); renderMethodeBody();
+      };
+      selBox.appendChild(aendernBtn);
+      s3body.appendChild(selBox);
+
+      if (stunde.methodeKiBewertung) {
+        const { bewertung, hinweis } = stunde.methodeKiBewertung;
+        const COL = { 'kann ich machen': '#15803d', 'schwierig': '#b45309', 'völlig ungeeignet': '#dc2626' };
+        const c = COL[bewertung] || '#555';
+        const bBox = mk('div', '');
+        bBox.style.cssText = `padding:8px 12px;border-left:3px solid ${c};background:#fafafa;border-radius:4px;font-size:12px;color:${c};`;
+        bBox.textContent = `KI: ${bewertung}${hinweis ? ' – ' + hinweis : ''}`;
+        s3body.appendChild(bBox);
+      }
+
+      // Methode-Info aus METHDB
+      const methInfo = METHDB.find(m => m.name === stunde.methode);
+      if (methInfo?.beschreibung) {
+        const infoBox = mk('div', '');
+        infoBox.style.cssText = 'margin-top:10px;padding:8px 12px;background:var(--bg2);border-radius:6px;font-size:12px;color:var(--tx2);line-height:1.5;';
+        infoBox.textContent = methInfo.beschreibung;
+        s3body.appendChild(infoBox);
+      }
+      return;
+    }
+
+    // ── Kein Material ───────────────────────────────────────────────
+    if (!hasMat) {
+      const hint = tx('div', '', '↑ Zuerst Material zuweisen (Abschnitt 2), damit die KI eine Methode vorschlagen kann.');
+      hint.style.cssText = 'color:var(--tx3);font-size:13px;line-height:1.6;';
+      s3body.appendChild(hint);
+      return;
+    }
+
+    // ── KI-Vorschlag anzeigen ───────────────────────────────────────
+    if (stunde.methodeKiVorschlag && !methodeManModus) {
+      const vorBox = mk('div', '');
+      vorBox.style.cssText = 'padding:12px 14px;border:1px solid var(--bord);border-radius:8px;background:var(--bg2);margin-bottom:12px;';
+      const vorTitel = tx('div', '', '✨ KI-Vorschlag');
+      vorTitel.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
+      vorBox.appendChild(vorTitel);
+      const vorName = tx('div', '', stunde.methodeKiVorschlag.name);
+      vorName.style.cssText = 'font-size:15px;font-weight:700;color:var(--pri);margin-bottom:4px;';
+      vorBox.appendChild(vorName);
+      if (stunde.methodeKiVorschlag.begruendung) {
+        const begr = tx('div', '', stunde.methodeKiVorschlag.begruendung);
+        begr.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;margin-bottom:10px;';
+        vorBox.appendChild(begr);
+      }
+      const actRow = mk('div', '');
+      actRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;align-items:center;';
+
+      const uebBtn = btn('✓ Übernehmen', 'btn btn-pri btn-sm');
+      uebBtn.onclick = () => { stunde.methode = stunde.methodeKiVorschlag.name; scheduleSave(); renderMethodeBody(); };
+      actRow.appendChild(uebBtn);
+
+      const altBtn = btn('↻ Alternativen', 'btn btn-ghost btn-sm');
+      altBtn.onclick = async () => {
+        const antKey = localStorage.getItem('ant_key');
+        if (!antKey) { alert('Bitte API-Key hinterlegen.'); return; }
+        altBtn.textContent = '⏳'; altBtn.disabled = true;
+        const matInfos = (stunde.materialIds||[]).map(id => MATDB.find(m=>m.id===id)).filter(Boolean);
+        const matTexte = matInfos.map(m => `${m.titel}: ${(m.beschreibung||'').slice(0,100)}`).join(' | ');
+        const methListe = METHDB.map(m => `${m.name}: ${m.beschreibung}`).join('\n');
+        const prompt = `Schlage 3 alternative Unterrichtsmethoden (nicht "${stunde.methodeKiVorschlag?.name}") für folgende Unterrichtsstunde vor.
+
+Fach ${fp.fach}, Jahrgang ${fp.jahrgang}, Intention: ${stunde.intention||'–'}
+Material: ${matTexte}
+
+Methoden (nur aus dieser Liste wählen):
+${methListe}
+
+Antworte NUR als JSON-Array (keine Zeilenumbrüche in Strings): [{"methode":"Name","begruendung":"Ein Satz"}]`;
+        try {
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500, messages: [{ role: 'user', content: prompt }] }),
+          });
+          const d = await res.json();
+          if (!res.ok) throw new Error(d.error?.message || res.statusText);
+          const text = d.content?.[0]?.text || '';
+          const alternativen = safeParseArray(text.match(/\[[\s\S]*\]/)?.[0] || '[]');
+          const existingAlt = s3body.querySelector('.methode-alts');
+          if (existingAlt) existingAlt.remove();
+          if (alternativen.length) {
+            const altContainer = mk('div', 'methode-alts');
+            altContainer.style.marginTop = '12px;';
+            const altTitle = tx('div', '', 'Alternativen:');
+            altTitle.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;';
+            altContainer.appendChild(altTitle);
+            alternativen.forEach(a => {
+              if (!a.methode) return;
+              const aRow = mk('div', '');
+              aRow.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--bord);';
+              const aInfo = mk('div', ''); aInfo.style.flex = '1';
+              const aN = tx('div', '', a.methode);
+              aN.style.cssText = 'font-weight:600;font-size:13px;margin-bottom:2px;';
+              aInfo.appendChild(aN);
+              if (a.begruendung) {
+                const aB = tx('div', '', a.begruendung);
+                aB.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;';
+                aInfo.appendChild(aB);
+              }
+              const waehlenBtn = btn('Wählen', 'btn btn-pri btn-xs');
+              waehlenBtn.onclick = () => { stunde.methode = a.methode; scheduleSave(); renderMethodeBody(); };
+              aRow.appendChild(aInfo); aRow.appendChild(waehlenBtn);
+              altContainer.appendChild(aRow);
+            });
+            s3body.appendChild(altContainer);
+          }
+        } catch(e) { alert('Fehler: ' + e.message); }
+        altBtn.textContent = '↻ Alternativen'; altBtn.disabled = false;
+      };
+      actRow.appendChild(altBtn);
+
+      const manBtn = btn('✏ Manuell', 'btn btn-ghost btn-sm');
+      manBtn.onclick = () => { methodeManModus = true; renderMethodeBody(); };
+      actRow.appendChild(manBtn);
+
+      const neueAnalBtn = btn('↺ Neu analysieren', 'btn btn-ghost btn-xs');
+      neueAnalBtn.style.marginLeft = 'auto';
+      neueAnalBtn.onclick = () => { stunde.methodeKiVorschlag = null; scheduleSave(); renderMethodeBody(); };
+      actRow.appendChild(neueAnalBtn);
+
+      vorBox.appendChild(actRow);
+      s3body.appendChild(vorBox);
+      return;
+    }
+
+    // ── Manueller Picker ────────────────────────────────────────────
+    if (methodeManModus) {
+      const manHdr = mk('div', '');
+      manHdr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;';
+      const manTitle = tx('div', '', 'Methode manuell wählen');
+      manTitle.style.cssText = 'font-weight:700;font-size:13px;';
+      const manClose = btn('✕', 'btn btn-ghost btn-xs');
+      manClose.onclick = () => { methodeManModus = false; renderMethodeBody(); };
+      manHdr.appendChild(manTitle); manHdr.appendChild(manClose);
+      s3body.appendChild(manHdr);
+
+      const manSuch = document.createElement('input'); manSuch.type = 'text'; manSuch.className = 'finp';
+      manSuch.placeholder = 'Methode suchen…'; manSuch.style.cssText = 'width:100%;margin-bottom:8px;';
+      s3body.appendChild(manSuch);
+
+      const manList = mk('div', '');
+      manList.style.cssText = 'max-height:260px;overflow-y:auto;border:1px solid var(--bord);border-radius:6px;';
+
+      async function waehleMethode(m) {
+        stunde.methode = m.name;
+        methodeManModus = false;
+        scheduleSave();
+        renderMethodeBody();
+        // KI bewertet im Hintergrund
+        const antKey = localStorage.getItem('ant_key');
+        if (!antKey || !(stunde.materialIds||[]).length) return;
+        try {
+          const matInfos = (stunde.materialIds||[]).map(id => MATDB.find(mm=>mm.id===id)).filter(Boolean);
+          const matTexte = matInfos.map(mm => `${mm.titel}: ${(mm.beschreibung||'').slice(0,100)}`).join(' | ');
+          const methDetail = `Beschreibung: ${m.beschreibung||''}. Ziel: ${m.ziel||''}`;
+          const prompt = `Beurteile, ob diese Unterrichtsmethode für die Stunde geeignet ist.
+
+Stunde: Fach ${fp.fach||'–'}, Jahrgang ${fp.jahrgang||'–'}
+Intention: ${stunde.intention||'–'}
+Material: ${matTexte}
+Gewählte Methode: ${m.name}
+${methDetail}
+
+Antworte als: BEWERTUNG|HINWEIS
+Bewertung = "kann ich machen" oder "schwierig" oder "völlig ungeeignet"
+Hinweis = ein kurzer Satz ohne Sonderzeichen`;
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 200, messages: [{ role: 'user', content: prompt }] }),
+          });
+          const d = await res.json();
+          const text = (d.content?.[0]?.text || '').trim();
+          const parts = text.split('|');
+          const bew = parts[0]?.trim().toLowerCase();
+          const validBews = ['kann ich machen', 'schwierig', 'völlig ungeeignet'];
+          if (validBews.includes(bew)) {
+            stunde.methodeKiBewertung = { bewertung: bew, hinweis: (parts[1]||'').trim() };
+            scheduleSave(); renderMethodeBody();
+          }
+        } catch(_) { /* KI-Bewertung optional */ }
+      }
+
+      function renderManList() {
+        manList.innerHTML = '';
+        const q = manSuch.value.toLowerCase().trim();
+        const hits = METHDB.filter(m => !q || m.name.toLowerCase().includes(q) || (m.beschreibung||'').toLowerCase().includes(q));
+        if (!hits.length) {
+          const no = tx('div', '', 'Keine Methoden gefunden.');
+          no.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
+          manList.appendChild(no); return;
+        }
+        hits.forEach(m => {
+          const mRow = mk('div', '');
+          mRow.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-bottom:1px solid var(--bord);';
+          const mInfo = mk('div', ''); mInfo.style.flex = '1';
+          const mN = tx('div', '', m.name); mN.style.cssText = 'font-weight:600;font-size:13px;margin-bottom:2px;';
+          mInfo.appendChild(mN);
+          if (m.beschreibung) {
+            const mB = tx('div', '', m.beschreibung.slice(0,120) + (m.beschreibung.length>120?'…':''));
+            mB.style.cssText = 'font-size:11px;color:var(--tx2);line-height:1.4;';
+            mInfo.appendChild(mB);
+          }
+          const waehlenBtn = btn('Wählen', 'btn btn-pri btn-xs');
+          waehlenBtn.onclick = () => waehleMethode(m);
+          mRow.appendChild(mInfo); mRow.appendChild(waehlenBtn);
+          manList.appendChild(mRow);
+        });
+      }
+      renderManList();
+      manSuch.oninput = renderManList;
+      s3body.appendChild(manList);
+      return;
+    }
+
+    // ── Analyse-Button ──────────────────────────────────────────────
+    const kiAnalBtn = btn('✨ KI analysiert Materialien', 'btn btn-ki btn-sm');
+    kiAnalBtn.style.marginBottom = '10px';
+    kiAnalBtn.onclick = async () => {
+      const antKey = localStorage.getItem('ant_key');
+      if (!antKey) { alert('Bitte API-Key hinterlegen.'); return; }
+      kiAnalBtn.textContent = '⏳ Analysiert…'; kiAnalBtn.disabled = true;
+      const matInfos = (stunde.materialIds||[]).map(id => MATDB.find(m=>m.id===id)).filter(Boolean);
+      const matTexte = matInfos.map(m => [
+        'Titel: ' + m.titel,
+        m.beschreibung ? 'Beschreibung: ' + m.beschreibung.slice(0,200) : '',
+        m.erlaeuterung ? 'Erläuterung: ' + m.erlaeuterung.slice(0,200) : '',
+        m.methode ? 'Methodenhinweis: ' + m.methode : '',
+      ].filter(Boolean).join('\n')).join('\n---\n');
+      const methNamen = METHDB.map(m=>m.name).join(', ');
+      const prompt = `Analysiere folgende Unterrichtsmaterialien und empfehle die passendste Unterrichtsmethode.
+
+Stunde: Fach ${fp.fach||'–'}, Jahrgang ${fp.jahrgang||'–'}
+Intention: ${stunde.intention||'–'}
+
+Materialien:
+${matTexte}
+
+Verfügbare Methoden: ${methNamen}
+
+Antworte NUR als JSON (keine Zeilenumbrüche in Strings):
+{"methode":"Methodenname","begruendung":"Ein Satz warum"}`;
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 300, messages: [{ role: 'user', content: prompt }] }),
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error?.message || res.statusText);
+        const text = d.content?.[0]?.text || '';
+        const parsed = JSON.parse(text.replace(/\r\n|\r|\n/g,' ').match(/\{[^{}]*\}/)?.[0] || '{}');
+        if (!parsed.methode) throw new Error('Keine Methode erhalten');
+        stunde.methodeKiVorschlag = { name: parsed.methode, begruendung: parsed.begruendung || '' };
+        scheduleSave(); renderMethodeBody();
+      } catch(e) {
+        alert('Fehler: ' + e.message);
+        kiAnalBtn.textContent = '✨ KI analysiert Materialien'; kiAnalBtn.disabled = false;
+      }
+    };
+    s3body.appendChild(kiAnalBtn);
+
+    const orManBtn = btn('✏ Direkt manuell wählen', 'btn btn-ghost btn-xs');
+    orManBtn.onclick = () => { methodeManModus = true; renderMethodeBody(); };
+    s3body.appendChild(orManBtn);
+  }
+  renderMethodeBody();
+
+  // ══════════════════════════════════════════════════════════════════
+  // SEKTION 4: Planungsrahmen
+  // ══════════════════════════════════════════════════════════════════
+  const prStatusText = prFertig ? '✓ fertig' : 'offen';
   const prKiBtn = btn('✨ KI wählt', 'btn btn-ki btn-xs');
+  const { body: s4body, acts: s4acts } = mkSec(4, 'Planungsrahmen', 'planungsrahmen', prStatusText, prFertig);
+  s4acts.appendChild(prKiBtn);
+
   prKiBtn.onclick = async () => {
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) { alert('Bitte zuerst Anthropic API-Key hinterlegen.'); return; }
     prKiBtn.textContent = '…'; prKiBtn.disabled = true;
-
-    // Kurs-Ressourcen ermitteln
     const kurs = (S.data.kurse || []).find(k => getFachplanung(k.fachplanungId)?.id === fp.id);
     const res = kurs?.ressourcen || {};
     const resText = [
@@ -601,9 +926,7 @@ mat_abc_2|anpassung|Nur Teilaufgabe 1 verwenden|nein`;
       res.elmo ? 'Elmo' : '',
       ...(res.apps || []),
     ].filter(Boolean).join(', ') || '–';
-
     const lernzieleText = (stunde.lernziele || []).map(z => z.text).join('\n') || '–';
-
     const prompt = `Du planst eine Unterrichtsstunde und wählst passende Planungsparameter.
 
 Stunde:
@@ -621,7 +944,6 @@ ${pr.hausaufgaben === undefined || pr.hausaufgaben === null ? '- hausaufgaben: t
 
 Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in Strings:
 {}`;
-
     try {
       const res2 = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -641,17 +963,12 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
     } catch(e) { alert('Fehler: ' + e.message); }
     prKiBtn.textContent = '✨ KI wählt'; prKiBtn.disabled = false;
   };
-  prHdr.appendChild(prKiBtn);
-  prCard.appendChild(prHdr);
-
-  const prBody = mk('div', 'card-body');
 
   function prSection(label) {
     const h = tx('div', '', label);
-    h.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;margin-top:4px;';
-    prBody.appendChild(h);
+    h.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;margin-top:12px;';
+    s4body.appendChild(h);
   }
-
   function prChips(key, options, multi) {
     const wrap = mk('div', 'pr-chip-wrap');
     const kiSet = (pr.kiGewählt || []).includes(key);
@@ -666,24 +983,20 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
         } else {
           pr[key] = pr[key] === opt ? null : opt;
         }
-        // Manuelle Änderung → nicht mehr als KI-gesetzt markieren
         pr.kiGewählt = (pr.kiGewählt || []).filter(k => k !== key);
         scheduleSave(); render();
       };
       wrap.appendChild(b);
     });
-    prBody.appendChild(wrap);
+    s4body.appendChild(wrap);
   }
 
   prSection('Sozialformen');
   prChips('sozialformen', ['Plenum', 'Partnerarbeit', 'Gruppenarbeit', 'Einzelarbeit'], true);
-
   prSection('Schwerpunkt');
   prChips('schwerpunkt', ['Einführung', 'Erarbeitung', 'Übung & Festigung', 'Sicherung', 'Experiment', 'Diskussion', 'Präsentation'], false);
-
   prSection('Differenzierung');
   prChips('differenzierung', ['Keine', 'Leicht (1 Niveau)', 'Stark (2+ Niveaus)'], false);
-
   prSection('Hausaufgaben');
   const haWrap = mk('div', 'pr-chip-wrap');
   const kiHa = (pr.kiGewählt || []).includes('hausaufgaben');
@@ -695,17 +1008,15 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
     b.onclick = () => { pr.hausaufgaben = isActive ? null : val; pr.kiGewählt = (pr.kiGewählt||[]).filter(k=>k!=='hausaufgaben'); scheduleSave(); render(); };
     haWrap.appendChild(b);
   });
-  prBody.appendChild(haWrap);
+  s4body.appendChild(haWrap);
 
   prSection('Dauer');
   const dfg = mk('div', 'fg'); dfg.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
   const di = document.createElement('input');
-  di.type = 'number'; di.value = stunde.dauer || 45; di.className = 'finp';
-  di.style.maxWidth = '100px';
+  di.type = 'number'; di.value = stunde.dauer || 45; di.className = 'finp'; di.style.maxWidth = '100px';
   di.oninput = e => { stunde.dauer = parseInt(e.target.value) || 45; scheduleSave(); };
-  dfg.appendChild(di);
-  dfg.appendChild(tx('span', '', 'Minuten'));
-  prBody.appendChild(dfg);
+  dfg.appendChild(di); dfg.appendChild(tx('span', '', 'Minuten'));
+  s4body.appendChild(dfg);
 
   prSection('Besondere Hinweise');
   const hinweisTA = document.createElement('textarea');
@@ -713,14 +1024,17 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
   hinweisTA.placeholder = 'z.B. Heute kein Beamer, Max fehlt, Raumwechsel…';
   hinweisTA.value = pr.hinweise || '';
   hinweisTA.oninput = e => { pr.hinweise = e.target.value; scheduleSave(); };
-  prBody.appendChild(hinweisTA);
+  s4body.appendChild(hinweisTA);
 
-  prCard.appendChild(prBody);
-  grid.appendChild(prCard);
-
-  // ── Phasen ─────────────────────────────────────────────────────
-  const pc = mk('div', 'card');
-  const phdr = cardHdr('Unterrichtsphasen');
+  // ══════════════════════════════════════════════════════════════════
+  // SEKTION 5: Phasen
+  // ══════════════════════════════════════════════════════════════════
+  const phStatusText = phFertig ? `✓ ${stunde.phasen.length} Phasen` : 'offen';
+  const kiVorlageBtn = btn('✨ KI entscheidet', 'btn btn-ki btn-xs');
+  const apb = btn('+ Phase', 'btn btn-pri btn-xs');
+  const { body: s5body, acts: s5acts } = mkSec(5, 'Phasen', 'phasen', phStatusText, phFertig);
+  s5acts.appendChild(kiVorlageBtn);
+  s5acts.appendChild(apb);
 
   const PHASEN_VORLAGEN = {
     '3-Phasen': [
@@ -747,14 +1061,12 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
       { titel: 'Auswertung & Schlussfolgerung', minuten: 10 },
     ],
   };
-
   const MODELL_META = {
     '3-Phasen':             { icon: '📐', phasen: 'Einstieg · Erarbeitung · Sicherung',                         hinweis: 'Klassisch, vielseitig' },
     'AVIVA':                { icon: '🔄', phasen: 'Ankommen · Vorwissen · Informieren · Verarbeiten · Auswerten', hinweis: 'Lernprozessorientiert' },
     'Direkte Instruktion':  { icon: '🎯', phasen: 'I do · We do · You do',                                       hinweis: 'Schrittweise Übergabe' },
     'Forschend-entdeckend': { icon: '🔬', phasen: 'Phänomen · Hypothese · Experiment · Auswertung',              hinweis: 'Entdeckendes Lernen' },
   };
-
   function applyVorlage(key, skipConfirm) {
     if (!skipConfirm && stunde.phasen.length > 0 && !confirm('Vorhandene Phasen ersetzen?')) return false;
     stunde.phasenModell = key;
@@ -765,7 +1077,6 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
     return true;
   }
 
-  // Modell-Kacheln
   const modellGrid = mk('div', 'modell-grid');
   Object.keys(MODELL_META).forEach(key => {
     const meta = MODELL_META[key];
@@ -777,18 +1088,14 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
     kachel.onclick = () => applyVorlage(key);
     modellGrid.appendChild(kachel);
   });
-
-  // KI-Begruendung anzeigen falls vorhanden
   if (stunde.phasenModellBegruendung) {
     const begr = mk('div', 'modell-ki-begr');
     begr.appendChild(tx('span', 'modell-ki-begr-icon', '✨'));
     begr.appendChild(tx('span', '', stunde.phasenModellBegruendung));
     modellGrid.appendChild(begr);
   }
+  s5body.appendChild(modellGrid);
 
-  pc.appendChild(modellGrid);
-
-  const kiVorlageBtn = btn('✨ KI entscheidet', 'btn btn-ki btn-xs');
   kiVorlageBtn.onclick = async () => {
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) { alert('Bitte zuerst Anthropic API-Key in den Einstellungen hinterlegen.'); return; }
@@ -797,11 +1104,9 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
       const wissenText = Object.keys(PHASEN_VORLAGEN).map(key =>
         `## ${key}\n${DIDAKTIKDB[key] || '(kein Hintergrundwissen hinterlegt)'}`
       ).join('\n\n');
-
       const lernzieleText = stunde.lernziele?.length
         ? stunde.lernziele.map((z, i) => `${i+1}. ${z.text}`).join('\n')
         : '–';
-
       const pr2 = stunde.planungsrahmen || {};
       const prText = [
         pr2.sozialformen?.length ? 'Sozialformen: ' + pr2.sozialformen.join(', ') : '',
@@ -810,7 +1115,6 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
         pr2.hausaufgaben != null ? 'Hausaufgaben: ' + (pr2.hausaufgaben ? 'Ja' : 'Nein') : '',
         pr2.hinweise ? 'Hinweise: ' + pr2.hinweise : '',
       ].filter(Boolean).join('\n') || '–';
-
       const prompt = `Du bist Didaktik-Experte für NRW-Gymnasien. Wähle für diese Unterrichtsstunde das passende Phasierungsmodell und befülle die Phasen konkret und sinnvoll.
 
 Stunde:
@@ -840,7 +1144,6 @@ Antworte NUR als JSON-Objekt. WICHTIG: Keine Zeilenumbrüche innerhalb von Strin
     { "titel": "Einstieg", "inhalt": "Konkrete Beschreibung in einem Satz ohne Zeilenumbruch", "methode": "z.B. Unterrichtsgespräch", "sozialform": "z.B. Plenum", "minuten": 10 }
   ]
 }`;
-
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -874,22 +1177,22 @@ Antworte NUR als JSON-Objekt. WICHTIG: Keine Zeilenumbrüche innerhalb von Strin
       kiVorlageBtn.textContent = '✨ KI entscheidet'; kiVorlageBtn.disabled = false;
     }
   };
-  phdr.appendChild(kiVorlageBtn);
 
-  const apb = btn('+ Phase', 'btn btn-pri btn-xs');
   apb.onclick = () => {
     stunde.phasen.push({ id: uid(), titel: '', inhalt: '', methode: '', sozialform: '', minuten: 0, materialIds: [] });
     scheduleSave(); render();
   };
-  phdr.appendChild(apb);
-  pc.appendChild(phdr);
-  const pb = mk('div', 'card-body');
-  pb.appendChild(phasenTable(stunde));
-  pc.appendChild(pb);
-  grid.appendChild(pc);
 
-  // ── Tafelbild ──────────────────────────────────────────────────
-  const tc = mk('div', 'card card-half');
+  const pb = mk('div', '');
+  pb.appendChild(phasenTable(stunde));
+  s5body.appendChild(pb);
+
+  // ══════════════════════════════════════════════════════════════════
+  // UNTERHALB DER SEKTIONEN: Tafelbild + Lehrerkommentar
+  // ══════════════════════════════════════════════════════════════════
+  const below = mk('div', 'plan-below');
+
+  const tc = mk('div', 'card');
   tc.appendChild(cardHdr('Tafelbild'));
   const tb = mk('div', 'card-body');
   const tafel = mk('div', 'tafel');
@@ -900,23 +1203,24 @@ Antworte NUR als JSON-Objekt. WICHTIG: Keine Zeilenumbrüche innerhalb von Strin
   tafel.appendChild(ta);
   tb.appendChild(tafel);
   tc.appendChild(tb);
-  grid.appendChild(tc);
+  below.appendChild(tc);
 
-  // ── Lehrerkommentar ────────────────────────────────────────────
   const lc = mk('div', 'card');
   lc.appendChild(cardHdr('Erläuterungen für die Lehrkraft'));
   const lb = mk('div', 'card-body');
   lb.appendChild(fieldArea('', stunde.lehrerkommentar || '',
     v => { stunde.lehrerkommentar = v; scheduleSave(); }, 'min-height:120px;'));
   lc.appendChild(lb);
-  grid.appendChild(lc);
+  below.appendChild(lc);
+
+  secs.appendChild(below);
 }
 
 function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
-  const fp = getFachplanung(fpId);
-  const block = findBlock(fpId, blockId);
-  const reihe = findReihe(fpId, blockId, reiheId);
-  const einheit = findEinheit(fpId, blockId, reiheId, einheitId);
+  const fp     = getFachplanung(fpId);
+  const block  = findBlock(fpId, blockId);
+  const reihe  = findReihe(fpId, blockId, reiheId);
+  const einheit= findEinheit(fpId, blockId, reiheId, einheitId);
   const stunde = findStunde(fpId, blockId, reiheId, einheitId, stundeId);
   if (!fp || !block || !reihe || !einheit || !stunde) {
     S.sel = null; render(); return mk('div', '');

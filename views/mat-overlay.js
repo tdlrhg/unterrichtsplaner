@@ -322,7 +322,17 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
         const raw = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/)?.[0];
         if (!raw) throw new Error('Kein JSON in Antwort');
         const sanitized = raw.replace(/[\x00-\x1F\x7F]/g, c => (c==='\n'||c==='\r'||c==='\t') ? ' ' : '');
-        const { antwort, feldUpdate } = JSON.parse(sanitized);
+        let antwort, feldUpdate;
+        try {
+          ({ antwort, feldUpdate } = JSON.parse(sanitized));
+        } catch(_) {
+          // Fallback: Felder per Regex extrahieren
+          antwort = (sanitized.match(/"antwort"\s*:\s*"((?:[^"\\]|\\.)*)"/)?.[1] || '').replace(/\\n/g,'\n').replace(/\\"/g,'"');
+          const feldMatch = sanitized.match(/"feld"\s*:\s*"([^"]+)"/);
+          const wertMatch = sanitized.match(/"wert"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+          feldUpdate = feldMatch && wertMatch ? { feld: feldMatch[1], wert: wertMatch[1] } : null;
+          if (!antwort) throw new Error('Antwort konnte nicht gelesen werden');
+        }
 
         const aiBubble = mk('div', '');
         aiBubble.style.cssText = 'background:var(--acc-faint,#eff6ff);border-left:3px solid var(--acc,#3b82f6);border-radius:0 6px 6px 0;padding:6px 10px;font-size:12px;';

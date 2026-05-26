@@ -41,6 +41,9 @@ function viewKursDetail(kursId) {
     (fp ? fachLabel(fp.fach) + ' · Jg. ' + fp.jahrgang + ' · ' : '') + schuljahr
   ));
   hdr.appendChild(left);
+  const einstellBtn = btn('⚙ Kurseinstellungen', 'btn btn-ghost btn-sm');
+  einstellBtn.onclick = () => { S.view = 'kursEinstellungen'; S.aktKursDetailId = kursId; render(); };
+  hdr.appendChild(einstellBtn);
   div.appendChild(hdr);
 
   // ── Klassenarbeiten ──────────────────────────────────────────

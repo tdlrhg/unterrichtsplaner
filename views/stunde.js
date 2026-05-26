@@ -211,9 +211,10 @@ Antworte NUR als JSON-Array von Strings:
     kiVorschlBtn.disabled = true; kiVorschlBtn.textContent = '⏳';
 
     const EXCL = ['Lehrerhandreichung', 'Lösung'];
+    const safe = s => (s||'').replace(/[|\n\r\t]/g, ' ').trim();
     const matSummary = MATDB
       .filter(m => !EXCL.includes(m.materialtyp))
-      .map(m => `id:${m.id}|${m.titel}|${(m.themen||[]).join(',')}|${(m.fach||[]).join(',')}|Jg:${(m.jahrgang||[]).join(',')}|${m.materialtyp||''}`)
+      .map(m => `id:${m.id}|${safe(m.titel)}|${(m.themen||[]).map(safe).join(',')}|${(m.fach||[]).join(',')}|Jg:${(m.jahrgang||[]).join(',')}|${safe(m.materialtyp)}`)
       .join('\n');
 
     const lernziele = (stunde.lernziele||[]).map(z=>z.text).join(', ') || '–';
@@ -241,7 +242,8 @@ ${matSummary}`;
       if (!res.ok) throw new Error(d.error?.message || res.statusText);
       const raw = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/)?.[0];
       if (!raw) throw new Error('Kein JSON erhalten');
-      const { vorschlaege } = JSON.parse(raw);
+      const sanitized = raw.replace(/[\x00-\x1F\x7F]/g, c => (c==='\n'||c==='\r'||c==='\t') ? ' ' : '');
+      const { vorschlaege } = JSON.parse(sanitized);
       kiVorschlaegeListe.innerHTML = '';
       const hdr = mk('div', '');
       hdr.style.cssText = 'padding:6px 10px;font-size:11px;font-weight:600;color:var(--tx2);background:var(--bg2);border-bottom:1px solid var(--bord);display:flex;justify-content:space-between;align-items:center;';

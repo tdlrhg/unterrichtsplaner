@@ -243,7 +243,16 @@ ${matSummary}`;
       const raw = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/)?.[0];
       if (!raw) throw new Error('Kein JSON erhalten');
       const sanitized = raw.replace(/[\x00-\x1F\x7F]/g, c => (c==='\n'||c==='\r'||c==='\t') ? ' ' : '');
-      const { vorschlaege } = JSON.parse(sanitized);
+      let vorschlaege;
+      try {
+        ({ vorschlaege } = JSON.parse(sanitized));
+      } catch(_) {
+        // Fallback: IDs per Regex extrahieren wenn JSON malformed
+        const ids = [...sanitized.matchAll(/"id"\s*:\s*"([^"]+)"/g)].map(m => m[1]);
+        const grounds = [...sanitized.matchAll(/"grund"\s*:\s*"([^"]*)"/g)].map(m => m[1]);
+        vorschlaege = ids.map((id, i) => ({ id, grund: grounds[i] || '' }));
+        if (!vorschlaege.length) throw new Error('JSON konnte nicht geparst werden');
+      }
       kiVorschlaegeListe.innerHTML = '';
       const hdr = mk('div', '');
       hdr.style.cssText = 'padding:6px 10px;font-size:11px;font-weight:600;color:var(--tx2);background:var(--bg2);border-bottom:1px solid var(--bord);display:flex;justify-content:space-between;align-items:center;';

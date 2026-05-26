@@ -276,7 +276,8 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
       const matFaecher = (mat.fach || []).map(f => f.toLowerCase());
       const matJahrgaenge = (mat.jahrgang || []).map(j => j.toLowerCase());
       const SII_JG = new Set(['sii','ef','q1','q2','q (gk)','q (lk)']);
-      const matIsSII = matJahrgaenge.some(j => SII_JG.has(j));
+      // matIsSII nur wenn ALLE Jahrgänge SII-Werte sind (nicht nur ein Teil)
+      const matIsSII = matJahrgaenge.length > 0 && matJahrgaenge.every(j => SII_JG.has(j));
       const klpKandidaten = KLPDB.filter(e => {
         if (matFaecher.length && !matFaecher.includes(e.fach.toLowerCase())) return false;
         const eJg = e.jahrgang.toLowerCase();

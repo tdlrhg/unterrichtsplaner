@@ -525,8 +525,12 @@ WICHTIG: Geh davon aus, dass du aus fast jedem Material etwas machen kannst – 
 
 ${matListe}
 
-Antworte NUR als JSON-Array. Markiere genau ein Material (das beste unter "gut") mit "favorit":true, alle anderen mit "favorit":false:
-[{"id":"...","bewertung":"gut"|"anpassung"|"ungeeignet","hinweis":"ein Satz ohne Anführungszeichen","favorit":false}]`;
+Antworte mit einer Zeile pro Material, kein JSON, kein Markdown:
+ID|bewertung|hinweis|favorit
+Wobei bewertung = gut, anpassung oder ungeeignet; favorit = ja oder nein (genau einmal "ja" für das beste "gut"-Material); hinweis = ein kurzer Satz ohne Sonderzeichen.
+Beispiel:
+mat_abc_1|gut|Passt direkt zum Thema Fotosynthese|ja
+mat_abc_2|anpassung|Nur Teilaufgabe 1 verwenden|nein`;
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -535,8 +539,12 @@ Antworte NUR als JSON-Array. Markiere genau ein Material (das beste unter "gut")
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error?.message || res.statusText);
-      const results = safeParseArray((d.content?.[0]?.text||'[]').match(/\[[\s\S]*\]/)?.[0]||'[]');
-      results.forEach(r => { if (r.id) kiBewertungen.set(r.id, { bewertung: r.bewertung, hinweis: r.hinweis, favorit: !!r.favorit }); });
+      const text = d.content?.[0]?.text || '';
+      const results = text.split('\n').map(l => l.trim()).filter(l => l.includes('|')).map(l => {
+        const parts = l.split('|');
+        return { id: parts[0]?.trim(), bewertung: parts[1]?.trim(), hinweis: parts[2]?.trim(), favorit: parts[3]?.trim() === 'ja' };
+      }).filter(r => r.id && r.bewertung);
+      results.forEach(r => { if (r.id) kiBewertungen.set(r.id, { bewertung: r.bewertung, hinweis: r.hinweis, favorit: r.favorit }); });
       // Vorschläge-Liste neu aufbauen damit Farben/Stempel erscheinen
       if (kiVorschlaegeListe.style.display !== 'none' && kiVorschlaegeListe.dataset.vorschlagIds) {
         const hdrEl = kiVorschlaegeListe.firstChild;

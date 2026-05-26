@@ -364,17 +364,39 @@ ${matSummary}`;
   const kiBewertungen = new Map();
 
   function buildMatRow(mat) {
+    const bew = kiBewertungen.get(mat.id);
+    const BG    = { gut: '#f0fdf4', anpassung: '#fffbeb', ungeeignet: '#fef2f2' };
+    const BG_FAV= '#dcfce7';
+    const STAMP_COL = { gut: '#15803d', anpassung: '#b45309', ungeeignet: '#dc2626' };
+    const BORDER_COL= { gut: '#16a34a', anpassung: '#d97706', ungeeignet: '#dc2626' };
+
     const row = mk('div', '');
-    row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-bottom:1px solid var(--bord);cursor:pointer;';
+    row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-bottom:1px solid var(--bord);cursor:pointer;position:relative;transition:background .15s;';
+    if (bew) {
+      row.style.background = bew.favorit ? BG_FAV : (BG[bew.bewertung] || '');
+      row.style.borderLeft = `4px solid ${BORDER_COL[bew.bewertung] || 'transparent'}`;
+    }
+
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selected.has(mat.id);
     cb.dataset.matId = mat.id;
     cb.style.marginTop = '3px';
     cb.onclick = e => e.stopPropagation();
     cb.onchange = () => { if (cb.checked) selected.add(mat.id); else selected.delete(mat.id); kiBtn.disabled = selected.size === 0; kiBtn.textContent = `✨ KI bewertet (${selected.size})`; };
+
     const info = mk('div', ''); info.style.flex = '1';
-    const titleEl = tx('span', '', mat.titel); titleEl.style.cssText = 'font-size:13px;font-weight:500;display:block;cursor:pointer;text-decoration:underline;text-underline-offset:2px;';
+
+    const titleLine = mk('div', ''); titleLine.style.cssText = 'display:flex;align-items:center;gap:5px;';
+    const titleEl = tx('span', '', mat.titel); titleEl.style.cssText = 'font-size:13px;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:2px;';
     titleEl.onclick = e => { e.stopPropagation(); openMatOverlayStandalone(mat); };
-    info.appendChild(titleEl);
+    titleLine.appendChild(titleEl);
+    if (bew?.favorit) {
+      const star = tx('span', '', '★');
+      star.style.cssText = 'color:#15803d;font-size:14px;line-height:1;';
+      star.title = 'KI-Favorit';
+      titleLine.appendChild(star);
+    }
+    info.appendChild(titleLine);
+
     if (mat.themen?.length) { const t = tx('div', '', mat.themen.slice(0,4).join(', ')); t.style.cssText = 'font-size:11px;color:var(--tx2);'; info.appendChild(t); }
     const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:5px;margin-top:3px;align-items:center;flex-wrap:wrap;';
     const fachIcons = (mat.fach||[]).map(fachIcon).join('');
@@ -390,23 +412,9 @@ ${matSummary}`;
       badgeRow.appendChild(qBadge);
     }
     info.appendChild(badgeRow);
-    if (kiBewertungen.has(mat.id)) {
-      const bew = kiBewertungen.get(mat.id);
-      const COL = { gut:'#166534', anpassung:'#92400e', ungeeignet:'#dc2626' };
-      const ICO = { gut:'✓ gut', anpassung:'⚠ Anpassung', ungeeignet:'✗ ungeeignet' };
-      const kiWrap = mk('div', ''); kiWrap.style.marginTop = '3px';
-      const badge = tx('span', '', ICO[bew.bewertung] || bew.bewertung);
-      badge.style.cssText = `font-size:11px;font-weight:600;color:${COL[bew.bewertung]||'var(--tx3)'};`;
-      kiWrap.appendChild(badge);
-      if (bew.hinweis) {
-        const hinweis = tx('span', '', ' – ' + bew.hinweis);
-        hinweis.style.cssText = 'font-size:11px;color:var(--tx2);font-style:italic;';
-        kiWrap.appendChild(hinweis);
-      }
-      info.appendChild(kiWrap);
-    }
+
     const useBtn = btn('+ Zuweisen', 'btn btn-pri btn-xs');
-    useBtn.style.marginTop = '2px';
+    useBtn.style.cssText = 'margin-top:2px;flex-shrink:0;';
     useBtn.onclick = e => {
       e.stopPropagation();
       if (!stunde.materialIds.includes(mat.id)) { stunde.materialIds.push(mat.id); scheduleSave(); renderZugewiesene(); }
@@ -415,6 +423,15 @@ ${matSummary}`;
     if (stunde.materialIds.includes(mat.id)) { useBtn.textContent = '✓'; useBtn.disabled = true; }
     row.onclick = () => { cb.checked = !cb.checked; cb.onchange(); };
     row.appendChild(cb); row.appendChild(info); row.appendChild(useBtn);
+
+    // Stempel schräg
+    if (bew?.hinweis) {
+      const stamp = tx('div', '', bew.hinweis);
+      const sc = STAMP_COL[bew.bewertung] || '#555';
+      stamp.style.cssText = `position:absolute;right:68px;bottom:6px;max-width:200px;transform:rotate(-5deg);border:1.5px solid ${sc};border-radius:3px;padding:1px 7px;font-size:9.5px;font-weight:600;color:${sc};opacity:.65;pointer-events:none;background:white;line-height:1.4;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`;
+      row.appendChild(stamp);
+    }
+
     return row;
   }
 
@@ -507,8 +524,8 @@ WICHTIG: Geh davon aus, dass du aus fast jedem Material etwas machen kannst – 
 
 ${matListe}
 
-Antworte NUR als JSON-Array:
-[{"id":"...","bewertung":"gut"|"anpassung"|"ungeeignet","hinweis":"ein Satz warum / wie anpassen"}]`;
+Antworte NUR als JSON-Array. Markiere genau ein Material (das beste unter "gut") mit "favorit":true, alle anderen mit "favorit":false:
+[{"id":"...","bewertung":"gut"|"anpassung"|"ungeeignet","hinweis":"ein Satz ohne Anführungszeichen","favorit":false}]`;
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -518,7 +535,7 @@ Antworte NUR als JSON-Array:
       const d = await res.json();
       if (!res.ok) throw new Error(d.error?.message || res.statusText);
       const results = safeParseArray((d.content?.[0]?.text||'[]').match(/\[[\s\S]*\]/)?.[0]||'[]');
-      results.forEach(r => { if (r.id) kiBewertungen.set(r.id, { bewertung: r.bewertung, hinweis: r.hinweis }); });
+      results.forEach(r => { if (r.id) kiBewertungen.set(r.id, { bewertung: r.bewertung, hinweis: r.hinweis, favorit: !!r.favorit }); });
       renderErgebnisse();
     } catch(e) { alert('Fehler: ' + e.message); }
     kiBtn.disabled = false; kiBtn.textContent = `✨ KI bewertet (${selected.size})`;

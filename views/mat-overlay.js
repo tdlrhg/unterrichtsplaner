@@ -302,7 +302,7 @@ ${matKontext}${klpKontext}
 
 Frage der Lehrerin: "${frage}"
 
-Beantworte kurz und präzise (2–4 Sätze). Für Aussagen zum NRW-Kernlehrplan stütze dich AUSSCHLIESSLICH auf die oben gelisteten KLP-Einträge – mache keine KLP-Aussagen aus eigenem Wissen. Falls keine KLP-Einträge vorhanden sind, weise darauf hin. Wenn die Antwort sinnvoll in ein konkretes Feld des Materials eingetragen werden sollte, schlage das vor.
+Beantworte kurz und präzise (2–4 Sätze). Verwende im antwort-Feld KEINE Anführungszeichen. Für Aussagen zum NRW-Kernlehrplan stütze dich AUSSCHLIESSLICH auf die oben gelisteten KLP-Einträge – mache keine KLP-Aussagen aus eigenem Wissen. Falls keine KLP-Einträge vorhanden sind, weise darauf hin. Wenn die Antwort sinnvoll in ein konkretes Feld des Materials eingetragen werden sollte, schlage das vor.
 
 Antworte NUR als JSON:
 {"antwort": "...", "feldUpdate": {"feld": "persoenlicheAnmerkungen", "wert": "..."}}

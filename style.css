@@ -110,7 +110,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
 .didaktik-ta { font-size: 12px; line-height: 1.5; resize: vertical; min-height: 120px; }
 .card-title { font-weight: 700; font-size: 14px; color: var(--pri); }
 .card-body { padding: 18px; }
-.einst-section-hdr { font-size: 11px; font-weight: 700; color: var(--tx2); text-transform: uppercase; letter-spacing: .8px; margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--bord); }
 
 /* ── Forms ── */
 .fg { margin-bottom: 14px; }
@@ -636,19 +635,6 @@ textarea::placeholder { color: #c4cdd6; }
 .sb-drag-src { opacity: .4; }
 .sb-drag-over { border-top: 2px solid var(--pri) !important; }
 
-/* ── Kurs-Kacheln (Einstellungen) ── */
-.kurs-kachel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-.kurs-kachel { position: relative; border: 1px solid var(--bord); border-radius: 10px; padding: 16px; cursor: pointer; background: var(--surf2); transition: border-color .15s, box-shadow .15s; }
-.kurs-kachel:hover { border-color: var(--pri); box-shadow: 0 2px 10px rgba(79,70,229,.1); }
-.kurs-kachel-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
-.kurs-kachel-name { font-size: 18px; font-weight: 800; color: var(--pri); }
-.kurs-kachel-sj { font-size: 11px; color: var(--tx3); }
-.kurs-kachel-fach { font-size: 12px; color: var(--tx2); margin-bottom: 10px; }
-.kurs-kachel-ind { display: flex; flex-wrap: wrap; gap: 4px; }
-.kurs-ind-chip { font-size: 10px; background: #ede9fe; color: var(--pri); border-radius: 10px; padding: 2px 7px; }
-.kurs-kachel-del { position: absolute; top: 8px; right: 8px; border: none; background: none; cursor: pointer; color: var(--tx3); font-size: 13px; opacity: 0; transition: opacity .15s; padding: 2px 5px; border-radius: 4px; }
-.kurs-kachel:hover .kurs-kachel-del { opacity: 1; }
-.kurs-kachel-del:hover { color: var(--red); background: var(--red-bg); }
 
 /* ── Materialdatenbank – Karten-Grid ── */
 .matc-count { font-size: 11px; color: var(--tx3); padding: 8px 2px 6px; }

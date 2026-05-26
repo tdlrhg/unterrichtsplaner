@@ -3,12 +3,6 @@
 let _kontextFiles  = [];
 const MAT_ANALYSIS_LONG_EDGE = 1568;
 
-function materialAnalysisRulesBlock() {
-  const rules = (localStorage.getItem('mat_ki_regeln') || '').trim();
-  return rules
-    ? `\n\nZUSÄTZLICHE REGELN DER LEHRKRAFT (haben Vorrang, sofern sie nicht dem JSON-Format widersprechen):\n${rules}`
-    : '';
-}
 
 // ── KI-Analyse: zentraler Prompt + Normalisierung ────────────────
 
@@ -62,7 +56,6 @@ FELDREGELN:
 - "sprachlicheAnforderungen" = genau "niedrig" | "mittel" | "hoch"
 - "lautstaerke" = genau "leise" | "mittel" | "laut"
 - "loesung", "loesungHinweis", "erlaeuterung" nur aus KONTEXT/Lehrerhinweisen; wenn keine Lösung erkennbar: ""
-${materialAnalysisRulesBlock()}
 Antworte NUR mit JSON (kein Text davor/danach):
 {"fach":["Bio"],"titel":"exakter Titel vom Blatt","rolleImKontext":"1 Satz zur Funktion","beschreibung":"2-3 Sätze was SuS tun","themen":["Fotosynthese"],"jahrgang":["7"],"unterrichtsphase":["Erarbeitung"],"sozialformenGeeignet":["Einzelarbeit"],"methodenGeeignet":[],"schueleraktivitaeten":[],"artDerGeistigenTaetigkeit":[],"darstellungsformen":[],"voraussetzungenFachlich":[],"voraussetzungenMethodisch":[],"kognitiveBeanspruchung":"mittel","sprachlicheAnforderungen":"mittel","lautstaerke":"leise","differenzierungsformen":[],"loesung":"","loesungHinweis":"","erlaeuterung":""}`;
 }
@@ -1081,7 +1074,7 @@ function buildScanPanel(subTitle, renderCards, onClose) {
       const kontextImgs = await Promise.all(kontextFiles.map(toImgContent));
       const matImgs     = await Promise.all(matFiles.map(toImgContent));
       const idBase = Date.now();
-      const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Du erhältst zwei Gruppen von Bildern.\n\nGRUPPE 1 – KONTEXT (${kontextFiles.length} Bild${kontextFiles.length !== 1 ? 'er' : ''}): Titelseite, Lehrerhandreichung, Erläuterungen und Lösungsseiten. Lese daraus: Lösungen, Erwartungshorizonte, methodische Hinweise, Zeitplanung, didaktische Tipps.\n\nGRUPPE 2 – SCHÜLERMATERIALIEN (${matFiles.length} Bild${matFiles.length !== 1 ? 'er' : ''}): M1, M2, M3 usw. – die eigentlichen Arbeitsblätter.\n\nSCHEMA:\n${schemaStr}\n\nREGELN:\n- Gib ein JSON-Array aus, kein Text davor/danach\n- id Format: mat_${idBase}_1, mat_${idBase}_2 usw.\n- Erkenne selbst welche Bilder zusammengehören (z.B. M1 Seite 1+2 → ein Eintrag)\n- Kein Unterrichtseinheit-Eintrag, nur Einzelmaterialien\n- Titel: tatsächlichen Drucktitel verwenden; falls keiner erkennbar ist, Thema + Aufgabentyp bilden. Keine Rollen-Titel wie "Einführungsmaterial" oder "Erarbeitungsphase".\n- Jahrgang: zuerst explizite Angaben auf dem Material lesen ("Klasse 9/10", "Jg. 7"); nur sonst aus Niveau/Thema schätzen. SII/Oberstufe → immer ["SII"].\n- Fachwerte: "Bio", "Ch", "M"; wenn fachlich erkennbar, nie [] zurückgeben.\n- Themen stammen aus GRUPPE 2, nicht aus dem Kontext. Kontext darf Lösungen/Hinweise liefern, aber nicht die Themen des Materials überschreiben.\n- loesung, loesungHinweis, erlaeuterung vollständig aus Kontext übernehmen; wenn keine Lösung erkennbar ist: "".\n- schueleraktivitaeten, artDerGeistigenTaetigkeit, darstellungsformen: alle vollständig aufführen${materialAnalysisRulesBlock()}`;
+      const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Du erhältst zwei Gruppen von Bildern.\n\nGRUPPE 1 – KONTEXT (${kontextFiles.length} Bild${kontextFiles.length !== 1 ? 'er' : ''}): Titelseite, Lehrerhandreichung, Erläuterungen und Lösungsseiten. Lese daraus: Lösungen, Erwartungshorizonte, methodische Hinweise, Zeitplanung, didaktische Tipps.\n\nGRUPPE 2 – SCHÜLERMATERIALIEN (${matFiles.length} Bild${matFiles.length !== 1 ? 'er' : ''}): M1, M2, M3 usw. – die eigentlichen Arbeitsblätter.\n\nSCHEMA:\n${schemaStr}\n\nREGELN:\n- Gib ein JSON-Array aus, kein Text davor/danach\n- id Format: mat_${idBase}_1, mat_${idBase}_2 usw.\n- Erkenne selbst welche Bilder zusammengehören (z.B. M1 Seite 1+2 → ein Eintrag)\n- Kein Unterrichtseinheit-Eintrag, nur Einzelmaterialien\n- Titel: tatsächlichen Drucktitel verwenden; falls keiner erkennbar ist, Thema + Aufgabentyp bilden. Keine Rollen-Titel wie "Einführungsmaterial" oder "Erarbeitungsphase".\n- Jahrgang: zuerst explizite Angaben auf dem Material lesen ("Klasse 9/10", "Jg. 7"); nur sonst aus Niveau/Thema schätzen. SII/Oberstufe → immer ["SII"].\n- Fachwerte: "Bio", "Ch", "M"; wenn fachlich erkennbar, nie [] zurückgeben.\n- Themen stammen aus GRUPPE 2, nicht aus dem Kontext. Kontext darf Lösungen/Hinweise liefern, aber nicht die Themen des Materials überschreiben.\n- loesung, loesungHinweis, erlaeuterung vollständig aus Kontext übernehmen; wenn keine Lösung erkennbar ist: "".\n- schueleraktivitaeten, artDerGeistigenTaetigkeit, darstellungsformen: alle vollständig aufführen`;
       const contentParts = [{ type: 'text', text: prompt }];
       if (kontextImgs.length) { contentParts.push({ type: 'text', text: '=== GRUPPE 1: KONTEXT ===' }); contentParts.push(...kontextImgs); }
       contentParts.push({ type: 'text', text: '=== GRUPPE 2: SCHÜLERMATERIALIEN ===' });

@@ -267,6 +267,7 @@ ${matSummary}`;
         if (!vorschlaege.length) throw new Error('JSON konnte nicht geparst werden');
       }
       kiVorschlaegeListe.innerHTML = '';
+      kiVorschlaegeListe.dataset.vorschlagIds = (vorschlaege||[]).map(v=>v.id).join(',');
       const hdr = mk('div', '');
       hdr.style.cssText = 'padding:6px 10px;font-size:11px;font-weight:600;color:var(--tx2);background:var(--bg2);border-bottom:1px solid var(--bord);display:flex;justify-content:space-between;align-items:center;';
       hdr.appendChild(tx('span', '', `✨ ${vorschlaege?.length || 0} KI-Vorschläge`));
@@ -536,6 +537,16 @@ Antworte NUR als JSON-Array. Markiere genau ein Material (das beste unter "gut")
       if (!res.ok) throw new Error(d.error?.message || res.statusText);
       const results = safeParseArray((d.content?.[0]?.text||'[]').match(/\[[\s\S]*\]/)?.[0]||'[]');
       results.forEach(r => { if (r.id) kiBewertungen.set(r.id, { bewertung: r.bewertung, hinweis: r.hinweis, favorit: !!r.favorit }); });
+      // Vorschläge-Liste neu aufbauen damit Farben/Stempel erscheinen
+      if (kiVorschlaegeListe.style.display !== 'none' && kiVorschlaegeListe.dataset.vorschlagIds) {
+        const hdrEl = kiVorschlaegeListe.firstChild;
+        kiVorschlaegeListe.innerHTML = '';
+        if (hdrEl) kiVorschlaegeListe.appendChild(hdrEl);
+        kiVorschlaegeListe.dataset.vorschlagIds.split(',').filter(Boolean).forEach(id => {
+          const mat = MATDB.find(m => m.id === id);
+          if (mat) kiVorschlaegeListe.appendChild(buildMatRow(mat));
+        });
+      }
       renderErgebnisse();
     } catch(e) { alert('Fehler: ' + e.message); }
     kiBtn.disabled = false; kiBtn.textContent = `✨ KI bewertet (${selected.size})`;

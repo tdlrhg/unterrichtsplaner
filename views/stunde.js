@@ -429,7 +429,7 @@ ${matSummary}`;
     if (bew?.hinweis) {
       const stamp = tx('div', '', bew.hinweis);
       const sc = STAMP_COL[bew.bewertung] || '#555';
-      stamp.style.cssText = `position:absolute;right:68px;bottom:6px;max-width:200px;transform:rotate(-5deg);border:1.5px solid ${sc};border-radius:3px;padding:1px 7px;font-size:9.5px;font-weight:600;color:${sc};opacity:.65;pointer-events:none;background:white;line-height:1.4;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`;
+      stamp.style.cssText = `position:absolute;right:68px;bottom:4px;max-width:210px;transform:rotate(-5deg);border:1.5px solid ${sc};border-radius:3px;padding:2px 7px;font-size:9.5px;font-weight:600;color:${sc};opacity:.65;pointer-events:none;background:white;line-height:1.4;letter-spacing:.2px;white-space:normal;word-break:break-word;`;
       row.appendChild(stamp);
     }
 

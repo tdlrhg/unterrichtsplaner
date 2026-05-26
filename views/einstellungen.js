@@ -48,6 +48,119 @@ function viewEinstellungen() {
   kCard.appendChild(kb);
   div.appendChild(kCard);
 
+  // ── Kernlehrpläne NRW ─────────────────────────────────────────
+  if (KLPDB.length > 0) {
+    const FACH_LABELS = { 'Bio': 'Biologie', 'Ch': 'Chemie', 'M': 'Mathematik' };
+    const klpFaecher = [...new Set(KLPDB.map(e => e.fach))].sort();
+    let klpFach = null, klpJg = null;
+
+    const klpCard = mk('div', 'card');
+    klpCard.appendChild(cardHdr('Kernlehrpläne NRW'));
+    const klpBody = mk('div', 'card-body');
+
+    const fachRow = mk('div', ''); fachRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;';
+    const jgRow   = mk('div', ''); jgRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;';
+    const klpSearchInp = document.createElement('input');
+    klpSearchInp.type = 'text'; klpSearchInp.className = 'finp';
+    klpSearchInp.placeholder = 'Kompetenz oder Inhaltsfeld suchen…';
+    klpSearchInp.style.cssText = 'width:100%;margin-bottom:10px;';
+    const klpList = mk('div', '');
+
+    klpBody.appendChild(fachRow);
+    klpBody.appendChild(jgRow);
+    klpBody.appendChild(klpSearchInp);
+    klpBody.appendChild(klpList);
+
+    function renderKlpJgRow() {
+      jgRow.innerHTML = '';
+      const jgs = [...new Set(KLPDB.filter(e => !klpFach || e.fach === klpFach).map(e => e.jahrgang))].sort();
+      jgs.forEach(jg => {
+        const b = btn('Jg. ' + jg, 'btn btn-xs ' + (klpJg === jg ? 'btn-pri' : 'btn-ghost'));
+        b.onclick = () => { klpJg = klpJg === jg ? null : jg; renderKlpJgRow(); renderKlpList(); };
+        jgRow.appendChild(b);
+      });
+    }
+
+    function renderKlpList() {
+      klpList.innerHTML = '';
+      const q = klpSearchInp.value.trim().toLowerCase();
+      if (!klpFach && !klpJg && !q) {
+        klpList.appendChild(tx('div', 'empty-hint', 'Fach wählen oder Suchbegriff eingeben.'));
+        return;
+      }
+      const entries = KLPDB.filter(e => {
+        if (klpFach && e.fach !== klpFach) return false;
+        if (klpJg  && e.jahrgang !== klpJg)  return false;
+        if (q) {
+          const txt = (e.beschreibung + ' ' + e.inhaltsfeld + ' ' + e.kompetenzcodes.join(' ')).toLowerCase();
+          if (!txt.includes(q)) return false;
+        }
+        return true;
+      });
+      if (!entries.length) { klpList.appendChild(tx('div', 'empty-hint', 'Keine Einträge gefunden.')); return; }
+
+      // Gruppe: Fach + Inhaltsfeld
+      const grouped = new Map();
+      entries.forEach(e => {
+        const key = e.fach + '|' + (e.inhaltsfeldNummer || e.inhaltsfeld);
+        if (!grouped.has(key)) grouped.set(key, { fach: e.fach, if: e.inhaltsfeld, ifNr: e.inhaltsfeldNummer || '', list: [] });
+        grouped.get(key).list.push(e);
+      });
+
+      grouped.forEach(g => {
+        const hdr = mk('div', '');
+        hdr.style.cssText = 'display:flex;gap:8px;align-items:center;margin:14px 0 5px;';
+        if (!klpFach) {
+          const fb = tx('span', '', FACH_LABELS[g.fach] || g.fach);
+          fb.style.cssText = 'font-size:10px;font-weight:700;background:var(--acc-dim,#ede9fe);color:var(--pri);border-radius:3px;padding:1px 6px;flex-shrink:0;';
+          hdr.appendChild(fb);
+        }
+        const ifLabel = tx('span', '', (g.ifNr ? g.ifNr + ': ' : '') + g.if);
+        ifLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;';
+        hdr.appendChild(ifLabel);
+        klpList.appendChild(hdr);
+
+        g.list.forEach(e => {
+          const row = mk('div', '');
+          row.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:4px 4px;border-bottom:1px solid var(--bdr);';
+          const codes = tx('span', '', e.kompetenzcodes.join(' · '));
+          codes.style.cssText = 'font-size:10px;font-weight:700;color:var(--pri);white-space:nowrap;min-width:60px;flex-shrink:0;';
+          const desc = tx('span', '', e.beschreibung);
+          desc.style.cssText = 'font-size:12px;line-height:1.45;flex:1;';
+          row.appendChild(codes);
+          row.appendChild(desc);
+          if (!klpJg) {
+            const jgTag = tx('span', '', 'Jg. ' + e.jahrgang);
+            jgTag.style.cssText = 'font-size:10px;color:var(--tx3);white-space:nowrap;flex-shrink:0;';
+            row.appendChild(jgTag);
+          }
+          klpList.appendChild(row);
+        });
+      });
+    }
+
+    const klpFachBtns = {};
+    klpFaecher.forEach(f => {
+      const b = btn(FACH_LABELS[f] || f, 'btn btn-xs btn-ghost');
+      b.onclick = () => {
+        klpFach = klpFach === f ? null : f;
+        klpJg = null;
+        klpFaecher.forEach(x => { klpFachBtns[x].className = 'btn btn-xs ' + (klpFach === x ? 'btn-pri' : 'btn-ghost'); });
+        renderKlpJgRow();
+        renderKlpList();
+      };
+      klpFachBtns[f] = b;
+      fachRow.appendChild(b);
+    });
+
+    klpSearchInp.oninput = () => renderKlpList();
+    renderKlpJgRow();
+    renderKlpList();
+
+    klpCard.appendChild(klpBody);
+    div.appendChild(klpCard);
+  }
+
   // ── Technische Einstellungen ──────────────────────────────────
   const techHdr = mk('div', 'einst-section-hdr');
   techHdr.textContent = 'Technische Einstellungen';

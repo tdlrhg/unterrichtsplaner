@@ -152,14 +152,14 @@ function buildSidebar() {
     () => { S.view = 'kalender'; S.sel = null; render(); }
   ));
   sb.appendChild(sbRow(
-    'Technisch', null,
-    S.view === 'einstellungen' || S.view === 'kursEinstellungen',
-    () => { S.view = 'einstellungen'; S.aktKursDetailId = null; S.sel = null; render(); }
-  ));
-  sb.appendChild(sbRow(
     'KLP', null,
     S.view === 'klp',
     () => { S.view = 'klp'; S.sel = null; render(); }
+  ));
+  sb.appendChild(sbRow(
+    'Technisch', null,
+    S.view === 'einstellungen' || S.view === 'kursEinstellungen',
+    () => { S.view = 'einstellungen'; S.aktKursDetailId = null; S.sel = null; render(); }
   ));
 
   // ── Resize-Anfasser ───────────────────────────────────────────

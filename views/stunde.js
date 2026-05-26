@@ -1,3 +1,16 @@
+// ── Hilfsfunktionen ──────────────────────────────────────────────
+function safeParseArray(jsonStr) {
+  try { return JSON.parse(jsonStr); } catch(_) {}
+  // Fallback: Objekte per Regex aus malformed JSON extrahieren
+  const items = [];
+  const re = /\{[^{}]*\}/g;
+  let m;
+  while ((m = re.exec(jsonStr)) !== null) {
+    try { items.push(JSON.parse(m[0])); } catch(_) {}
+  }
+  return items;
+}
+
 // ── Stunden-Ansicht ──────────────────────────────────────────────
 function initStunde(stunde) {
   if (!stunde.klpInhalt) stunde.klpInhalt = [];
@@ -86,7 +99,7 @@ Antworte NUR als JSON-Array von Strings:
       });
       const data = await res.json();
       const text = data.content?.[0]?.text || '';
-      const parsed = JSON.parse(text.match(/\[[\s\S]*\]/)?.[0] || '[]');
+      const parsed = safeParseArray(text.match(/\[[\s\S]*\]/)?.[0] || '[]');
       if (!parsed.length) throw new Error('Keine Lernziele erhalten');
       const neu = parsed.map(z => ({ id: uid(), text: typeof z === 'string' ? z : (z.text || '') }));
       if (stunde.lernziele.length > 0 && !confirm('Vorhandene Lernziele ersetzen?')) {
@@ -504,7 +517,7 @@ Antworte NUR als JSON-Array:
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error?.message || res.statusText);
-      const results = JSON.parse((d.content?.[0]?.text||'[]').match(/\[[\s\S]*\]/)?.[0]||'[]');
+      const results = safeParseArray((d.content?.[0]?.text||'[]').match(/\[[\s\S]*\]/)?.[0]||'[]');
       results.forEach(r => { if (r.id) kiBewertungen.set(r.id, { bewertung: r.bewertung, hinweis: r.hinweis }); });
       renderErgebnisse();
     } catch(e) { alert('Fehler: ' + e.message); }

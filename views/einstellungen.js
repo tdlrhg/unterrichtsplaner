@@ -5,49 +5,6 @@ function viewEinstellungen() {
   hdr.appendChild(tx('div', 'c-title', 'Einstellungen'));
   div.appendChild(hdr);
 
-  // ── Kurse als Kacheln ─────────────────────────────────────────
-  const kCard = mk('div', 'card');
-  const kHdr = cardHdr('Meine Kurse');
-  const addKBtn = btn('+ Neuer Kurs', 'btn btn-pri btn-xs');
-  addKBtn.onclick = () => { S.modal = { type: 'newKurs' }; render(); };
-  kHdr.appendChild(addKBtn);
-  kCard.appendChild(kHdr);
-  const kb = mk('div', 'card-body');
-
-  const kurse = S.data.kurse || [];
-  if (kurse.length === 0) {
-    kb.appendChild(tx('div', 'empty-hint', 'Noch keine Kurse angelegt.'));
-  } else {
-    const grid = mk('div', 'kurs-kachel-grid');
-    kurse.forEach(kurs => {
-      const fp = getFachplanung(kurs.fachplanungId);
-      const kachel = mk('div', 'kurs-kachel');
-      const top = mk('div', 'kurs-kachel-top');
-      top.appendChild(tx('div', 'kurs-kachel-name', kurs.klasse));
-      top.appendChild(tx('div', 'kurs-kachel-sj', kurs.schuljahr || ''));
-      kachel.appendChild(top);
-      if (fp) kachel.appendChild(tx('div', 'kurs-kachel-fach', fachLabel(fp.fach) + ' · Jg. ' + fp.jahrgang));
-      const indicators = mk('div', 'kurs-kachel-ind');
-      const hasRes = kurs.ressourcen && Object.keys(kurs.ressourcen).length > 0;
-      const hasLg  = kurs.lerngruppe && Object.keys(kurs.lerngruppe).some(k => kurs.lerngruppe[k]);
-      if (hasRes) indicators.appendChild(tx('span', 'kurs-ind-chip', '📦 Ressourcen'));
-      if (hasLg)  indicators.appendChild(tx('span', 'kurs-ind-chip', '👥 Lerngruppe'));
-      kachel.appendChild(indicators);
-      kachel.onclick = () => { S.view = 'kursEinstellungen'; S.aktKursDetailId = kurs.id; render(); };
-      const delBtn = mk('button', 'kurs-kachel-del');
-      delBtn.textContent = '✕'; delBtn.title = 'Kurs löschen';
-      delBtn.onclick = e => {
-        e.stopPropagation();
-        if (confirm('Kurs "' + kurs.klasse + '" löschen?')) { S.data.kurse = S.data.kurse.filter(k => k.id !== kurs.id); scheduleSave(); render(); }
-      };
-      kachel.appendChild(delBtn);
-      grid.appendChild(kachel);
-    });
-    kb.appendChild(grid);
-  }
-  kCard.appendChild(kb);
-  div.appendChild(kCard);
-
   // ── Technische Einstellungen ──────────────────────────────────
   const techHdr = mk('div', 'einst-section-hdr');
   techHdr.textContent = 'Technische Einstellungen';

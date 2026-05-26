@@ -68,7 +68,10 @@ function buildTopbar() {
     const label = d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'2-digit' })
       + ' ' + d.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
     const indicator = VERSION_STATUS === 'current' ? ' ✓' : VERSION_STATUS === 'deploying' ? ' ⏳' : '';
-    right.appendChild(tx('span', 'topbar-version', label + indicator));
+    const vSpan = tx('span', 'topbar-version', label + indicator);
+    vSpan.title = 'Klicken zum Neu laden'; vSpan.style.cursor = 'pointer';
+    vSpan.onclick = () => location.reload(true);
+    right.appendChild(vSpan);
   }
   bar.appendChild(right);
   return bar;

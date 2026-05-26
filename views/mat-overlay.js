@@ -288,9 +288,9 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
         return true;
       });
       const klpKontext = klpKandidaten.length
-        ? '\n\nRelevante Kompetenzerwartungen aus dem NRW-Kernlehrplan:\n' +
+        ? '\n\nRelevante Kompetenzerwartungen aus dem NRW-Kernlehrplan (nur diese sind verlässlich – verwende ausschließlich diese Einträge für KLP-Aussagen):\n' +
           klpKandidaten.map(e => `[${e.kompetenzcodes.join(', ')}] Jg. ${e.jahrgang} – ${e.inhaltsfeld}: ${e.beschreibung}`).join('\n')
-        : '';
+        : '\n\n[KLP-Kontext: Für Fach/Jahrgang dieses Materials liegen keine passenden Kernlehrplan-Einträge im System vor.]';
 
       const prompt = `Du bist Assistentin einer Lehrerin an einem NRW-Gymnasium.
 
@@ -299,7 +299,7 @@ ${matKontext}${klpKontext}
 
 Frage der Lehrerin: "${frage}"
 
-Beantworte kurz und präzise (2–4 Sätze), stütze dich dabei auf die Kernlehrplan-Angaben wenn relevant. Wenn die Antwort sinnvoll in ein konkretes Feld des Materials eingetragen werden sollte, schlage das vor.
+Beantworte kurz und präzise (2–4 Sätze). Für Aussagen zum NRW-Kernlehrplan stütze dich AUSSCHLIESSLICH auf die oben gelisteten KLP-Einträge – mache keine KLP-Aussagen aus eigenem Wissen. Falls keine KLP-Einträge vorhanden sind, weise darauf hin. Wenn die Antwort sinnvoll in ein konkretes Feld des Materials eingetragen werden sollte, schlage das vor.
 
 Antworte NUR als JSON:
 {"antwort": "...", "feldUpdate": {"feld": "persoenlicheAnmerkungen", "wert": "..."}}

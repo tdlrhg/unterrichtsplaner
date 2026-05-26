@@ -94,18 +94,27 @@ function buildSetup() {
 // ── Init ─────────────────────────────────────────────────────────
 (async () => {
   render();
-  Promise.all([
-    fetch('version.json?t=' + Date.now()).then(r => r.json()).catch(() => null),
-    fetch('https://api.github.com/repos/tdlrhg/unterrichtsplaner/commits/main',
-      { headers: { 'Accept': 'application/vnd.github.v3+json' } }).then(r => r.json()).catch(() => null)
-  ]).then(([v, gh]) => {
+  let _ghDate = null;
+
+  async function checkVersion() {
+    const v = await fetch('version.json', { cache: 'no-store' }).then(r => r.json()).catch(() => null);
     if (!v) return;
     VERSION = v.built;
-    if (gh?.commit?.committer?.date) {
-      VERSION_STATUS = new Date(v.built) >= new Date(gh.commit.committer.date) ? 'current' : 'deploying';
+    if (_ghDate) {
+      VERSION_STATUS = new Date(v.built) >= new Date(_ghDate) ? 'current' : 'deploying';
     }
     refreshTopbar();
-  });
+    // Solange noch am Deployen: alle 30s erneut prüfen
+    if (VERSION_STATUS === 'deploying') setTimeout(checkVersion, 30000);
+  }
+
+  fetch('https://api.github.com/repos/tdlrhg/unterrichtsplaner/commits/main',
+    { headers: { 'Accept': 'application/vnd.github.v3+json' } })
+    .then(r => r.json()).catch(() => null)
+    .then(gh => {
+      if (gh?.commit?.committer?.date) _ghDate = gh.commit.committer.date;
+      checkVersion();
+    });
 
   const [loaded, matdb, klpdb, didaktik, methdb, didart] = await Promise.all([
     sbDownload('data.json').catch(() => null),

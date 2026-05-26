@@ -119,7 +119,7 @@ function buildSetup() {
   const [loaded, matdb, klpdb, didaktik, methdb, didart] = await Promise.all([
     sbDownload('data.json').catch(() => null),
     sbDownload('materialien.json').catch(() => []),
-    sbDownload('klp.json').catch(() => []),
+    fetch('klp.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
     sbDownload('didaktik.json').catch(() => ({})),
     sbDownload('methoden.json').catch(() => []),
     sbDownload('didaktik-artikel.json').catch(() => []),

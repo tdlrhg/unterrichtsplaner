@@ -130,12 +130,14 @@ function buildSetup() {
   DIDAKTIKDB = (didaktik && typeof didaktik === 'object' && !Array.isArray(didaktik)) ? didaktik : {};
   DIDARTDB = Array.isArray(didart) ? didart : [];
 
-  // ── Migration: EF/Q1/Q2 → SII ────────────────────────────────
-  const SII_OLD = new Set(['EF', 'Q1', 'Q2']);
+  // ── Migration: alle SII-Varianten → 'SII' ────────────────────
+  const SII_NORM = new Set(['EF','Q1','Q2','Q (GK)','Q (LK)','Q-Phase','Oberstufe','Einführungsphase']);
+  const SII_NUM_RE = /^(10\/11|11\/12|12\/13|11|12|13)$/;
   let migrated = false;
   MATDB.forEach(m => {
-    if (Array.isArray(m.jahrgang) && m.jahrgang.some(j => SII_OLD.has(j))) {
-      m.jahrgang = [...new Set(m.jahrgang.map(j => SII_OLD.has(j) ? 'SII' : j))];
+    if (!Array.isArray(m.jahrgang)) return;
+    if (m.jahrgang.some(j => SII_NORM.has(j) || SII_NUM_RE.test(j))) {
+      m.jahrgang = [...new Set(m.jahrgang.map(j => (SII_NORM.has(j) || SII_NUM_RE.test(j)) ? 'SII' : j))];
       migrated = true;
     }
   });

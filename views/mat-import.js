@@ -91,6 +91,15 @@ function normalizeMaterialResult(raw) {
   };
   out.fach = out.fach.map(f => FACH_MAP[f.toLowerCase()] || null).filter(f => f !== null);
 
+  // Jahrgang normalisieren – alle SII-Varianten → 'SII'
+  const SII_JG = new Set(['sii','ef','q1','q2','q (gk)','q (lk)','q-phase','oberstufe','einführungsphase','einfuhrungsphase']);
+  const SII_NUM = /^(10\/11|11\/12|12\/13|11|12|13)$/;
+  out.jahrgang = [...new Set(out.jahrgang.map(j => {
+    const jl = (j || '').toLowerCase().trim();
+    if (SII_JG.has(jl) || SII_NUM.test(jl)) return 'SII';
+    return j;
+  }))];
+
   // Unterrichtsphasen auf kanonische Werte mappen, Unbekanntes verwerfen
   out.unterrichtsphase = [...new Set(out.unterrichtsphase.map(mapToCanonicalPhase).filter(Boolean))];
 

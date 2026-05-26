@@ -444,15 +444,26 @@ function viewKlp() {
       grouped.get(key).list.push(e);
     });
 
+    // Bei Suche alles aufklappen, sonst zugeklappt starten
+    const expandAll = !!q;
+
     grouped.forEach(g => {
       const color = FACH_COLOR[g.fach] || 'var(--pri)';
       const bg    = FACH_BG[g.fach]    || '#f8f8ff';
+      let open = expandAll;
 
       const section = mk('div', 'klp-section');
       section.style.borderLeftColor = color;
 
+      // ── Header ──
       const ghdr = mk('div', 'klp-section-hdr');
       ghdr.style.background = bg;
+      ghdr.style.cursor = 'pointer';
+
+      const arrow = tx('span', 'klp-arrow', open ? '▾' : '›');
+      arrow.style.color = color;
+      ghdr.appendChild(arrow);
+
       if (!klpFach) {
         const fb = tx('span', 'klp-fach-badge', FACH_LABELS[g.fach] || g.fach);
         fb.style.cssText = 'background:' + color + ';color:#fff;';
@@ -463,6 +474,10 @@ function viewKlp() {
       ghdr.appendChild(ifTitle);
       ghdr.appendChild(count);
       section.appendChild(ghdr);
+
+      // ── Einträge ──
+      const body = mk('div', 'klp-section-body');
+      body.style.display = open ? '' : 'none';
 
       g.list.forEach(e => {
         const row = mk('div', 'klp-entry');
@@ -475,9 +490,16 @@ function viewKlp() {
           const jgPill = tx('span', 'klp-jg-pill', e.jahrgang);
           row.appendChild(jgPill);
         }
-        section.appendChild(row);
+        body.appendChild(row);
       });
 
+      ghdr.onclick = () => {
+        open = !open;
+        body.style.display = open ? '' : 'none';
+        arrow.textContent = open ? '▾' : '›';
+      };
+
+      section.appendChild(body);
       list.appendChild(section);
     });
   }

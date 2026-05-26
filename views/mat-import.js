@@ -1055,6 +1055,32 @@ function buildScanPanel(subTitle, renderCards, onClose) {
   const groupsWrap = mk('div', 'mat-scan-groups');
   groupsWrap.appendChild(w1); groupsWrap.appendChild(w2);
   p.appendChild(groupsWrap);
+
+  // ── Standard-Fach wählen ─────────────────────────────────────
+  const fachRow = mk('div', '');
+  fachRow.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;';
+  const fachLabel = tx('span', '', 'Fach:');
+  fachLabel.style.cssText = 'font-size:13px;font-weight:600;color:var(--tx2);min-width:34px;';
+  fachRow.appendChild(fachLabel);
+  let defaultFach = null; // null = KI entscheidet
+  const FACH_OPTS = [
+    { val: null,  label: 'Auto (KI)' },
+    { val: 'Bio', label: '🌿 Bio' },
+    { val: 'Ch',  label: '⚗️ Ch' },
+    { val: 'M',   label: '📐 M' },
+  ];
+  const fachBtns = FACH_OPTS.map(o => {
+    const b = mk('button', 'btn btn-xs pr-chip' + (defaultFach === o.val ? ' active' : ''));
+    b.textContent = o.label;
+    b.onclick = () => {
+      defaultFach = o.val;
+      fachBtns.forEach((fb, i) => fb.className = 'btn btn-xs pr-chip' + (FACH_OPTS[i].val === defaultFach ? ' active' : ''));
+    };
+    fachRow.appendChild(b);
+    return b;
+  });
+  p.appendChild(fachRow);
+
   const statusRow = mk('div', ''); statusRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:12px;';
   const analyzeBtn = btn('✨ Analysieren & Importieren', 'btn btn-ki btn-sm');
   analyzeBtn.disabled = true;
@@ -1083,7 +1109,10 @@ function buildScanPanel(subTitle, renderCards, onClose) {
       const kontextImgs = await Promise.all(kontextFiles.map(toImgContent));
       const matImgs     = await Promise.all(matFiles.map(toImgContent));
       const idBase = Date.now();
-      const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Du erhältst zwei Gruppen von Bildern.\n\nGRUPPE 1 – KONTEXT (${kontextFiles.length} Bild${kontextFiles.length !== 1 ? 'er' : ''}): Titelseite, Lehrerhandreichung, Erläuterungen und Lösungsseiten. Lese daraus: Lösungen, Erwartungshorizonte, methodische Hinweise, Zeitplanung, didaktische Tipps.\n\nGRUPPE 2 – SCHÜLERMATERIALIEN (${matFiles.length} Bild${matFiles.length !== 1 ? 'er' : ''}): M1, M2, M3 usw. – die eigentlichen Arbeitsblätter.\n\nSCHEMA:\n${schemaStr}\n\nREGELN:\n- Gib ein JSON-Array aus, kein Text davor/danach\n- id Format: mat_${idBase}_1, mat_${idBase}_2 usw.\n- Erkenne selbst welche Bilder zusammengehören (z.B. M1 Seite 1+2 → ein Eintrag)\n- Kein Unterrichtseinheit-Eintrag, nur Einzelmaterialien\n- Titel: tatsächlichen Drucktitel verwenden; falls keiner erkennbar ist, Thema + Aufgabentyp bilden. Keine Rollen-Titel wie "Einführungsmaterial" oder "Erarbeitungsphase".\n- Jahrgang: zuerst explizite Angaben auf dem Material lesen ("Klasse 9/10", "Jg. 7"); nur sonst aus Niveau/Thema schätzen. SII/Oberstufe → immer ["SII"].\n- Fachwerte: "Bio", "Ch", "M"; wenn fachlich erkennbar, nie [] zurückgeben.\n- Themen stammen aus GRUPPE 2, nicht aus dem Kontext. Kontext darf Lösungen/Hinweise liefern, aber nicht die Themen des Materials überschreiben.\n- loesung, loesungHinweis, erlaeuterung vollständig aus Kontext übernehmen; wenn keine Lösung erkennbar ist: "".\n- schueleraktivitaeten, artDerGeistigenTaetigkeit, darstellungsformen: alle vollständig aufführen`;
+      const fachHinweis = defaultFach
+        ? `- Fach wurde von der Lehrerin auf "${defaultFach}" voreingestellt → setze "fach": ["${defaultFach}"] für alle Einträge\n`
+        : `- Fachwerte: "Bio", "Ch", "M"; wenn fachlich erkennbar, nie [] zurückgeben\n`;
+      const prompt = `Du bist Assistent für eine Lehrerin an einem deutschen Gymnasium (NRW). Du erhältst zwei Gruppen von Bildern.\n\nGRUPPE 1 – KONTEXT (${kontextFiles.length} Bild${kontextFiles.length !== 1 ? 'er' : ''}): Titelseite, Lehrerhandreichung, Erläuterungen und Lösungsseiten. Lese daraus: Lösungen, Erwartungshorizonte, methodische Hinweise, Zeitplanung, didaktische Tipps.\n\nGRUPPE 2 – SCHÜLERMATERIALIEN (${matFiles.length} Bild${matFiles.length !== 1 ? 'er' : ''}): M1, M2, M3 usw. – die eigentlichen Arbeitsblätter.\n\nSCHEMA:\n${schemaStr}\n\nREGELN:\n- Gib ein JSON-Array aus, kein Text davor/danach\n- id Format: mat_${idBase}_1, mat_${idBase}_2 usw.\n- Erkenne selbst welche Bilder zusammengehören (z.B. M1 Seite 1+2 → ein Eintrag)\n- Kein Unterrichtseinheit-Eintrag, nur Einzelmaterialien\n- Titel: tatsächlichen Drucktitel verwenden; falls keiner erkennbar ist, Thema + Aufgabentyp bilden. Keine Rollen-Titel wie "Einführungsmaterial" oder "Erarbeitungsphase".\n- Jahrgang: zuerst explizite Angaben auf dem Material lesen ("Klasse 9/10", "Jg. 7"); nur sonst aus Niveau/Thema schätzen. SII/Oberstufe → immer ["SII"].\n${fachHinweis}- Themen stammen aus GRUPPE 2, nicht aus dem Kontext. Kontext darf Lösungen/Hinweise liefern, aber nicht die Themen des Materials überschreiben.\n- loesung, loesungHinweis, erlaeuterung vollständig aus Kontext übernehmen; wenn keine Lösung erkennbar ist: "".\n- schueleraktivitaeten, artDerGeistigenTaetigkeit, darstellungsformen: alle vollständig aufführen`;
       const contentParts = [{ type: 'text', text: prompt }];
       if (kontextImgs.length) { contentParts.push({ type: 'text', text: '=== GRUPPE 1: KONTEXT ===' }); contentParts.push(...kontextImgs); }
       contentParts.push({ type: 'text', text: '=== GRUPPE 2: SCHÜLERMATERIALIEN ===' });
@@ -1099,11 +1128,31 @@ function buildScanPanel(subTitle, renderCards, onClose) {
       const text2 = choice?.message?.content || '';
       const match = text2.match(/\[[\s\S]*\]/);
       if (!match) throw new Error('Kein JSON-Array in der Antwort gefunden.');
-      const rawEntries = JSON.parse(match[0]);
+      // Robust parse: sanitize + fallback
+      let rawEntries;
+      try {
+        rawEntries = JSON.parse(match[0].replace(/[\x00-\x1F\x7F]/g, c => (c==='\n'||c==='\r'||c==='\t') ? ' ' : ''));
+      } catch(_) {
+        // Fallback: einzelne Objekte per Regex extrahieren
+        rawEntries = [];
+        const re = /\{[^{}]*(?:\{[^{}]*\}[^{}]*)?\}/g;
+        let m2;
+        while ((m2 = re.exec(match[0])) !== null) {
+          try { rawEntries.push(JSON.parse(m2[0])); } catch(_2) {}
+        }
+        if (!rawEntries.length) throw new Error('JSON-Array konnte nicht gelesen werden – bitte erneut versuchen');
+      }
       if (!rawEntries.length) throw new Error('Keine Einträge generiert.');
       const truncated = choice?.finish_reason === 'length';
       const now = new Date().toISOString();
-      const entries = rawEntries.map(e => normalizeMaterialResult(e));
+      const entries = rawEntries.map(e => {
+        const normalized = normalizeMaterialResult(e);
+        // Default-Fach anwenden wenn leer und Lehrerin hat eines vorgewählt
+        if (defaultFach && (!normalized.fach || !normalized.fach.length)) {
+          normalized.fach = [defaultFach];
+        }
+        return normalized;
+      });
       entries.forEach(e => {
         if (!e.id) e.id = 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
         if (!e.importiertAm) e.importiertAm = now;

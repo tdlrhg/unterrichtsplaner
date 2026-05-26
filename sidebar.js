@@ -156,6 +156,11 @@ function buildSidebar() {
     S.view === 'einstellungen' || S.view === 'kursEinstellungen',
     () => { S.view = 'einstellungen'; S.aktKursDetailId = null; S.sel = null; render(); }
   ));
+  sb.appendChild(sbRow(
+    'KLP', null,
+    S.view === 'klp',
+    () => { S.view = 'klp'; S.sel = null; render(); }
+  ));
 
   // ── Resize-Anfasser ───────────────────────────────────────────
   const handle = mk('div', 'sb-resize-handle');

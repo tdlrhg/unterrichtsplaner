@@ -3,6 +3,7 @@ function buildContent() {
   const c = mk('div', 'content');
   if (S.view === 'kalender') { c.appendChild(viewKalender()); return c; }
   if (S.view === 'einstellungen') { c.appendChild(viewEinstellungen()); return c; }
+  if (S.view === 'klp') { c.appendChild(viewKlp()); return c; }
   if (S.view === 'materialien') { c.appendChild(viewMaterialien()); return c; }
   if (S.view === 'methoden') { c.appendChild(viewMethoden()); return c; }
   if (S.view === 'didaktik') { c.appendChild(viewDidaktik()); return c; }

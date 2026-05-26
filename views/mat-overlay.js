@@ -273,14 +273,33 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
         'Anmerkungen: ' + (mat.persoenlicheAnmerkungen || '–'),
       ].join('\n');
 
+      const matFaecher = (mat.fach || []).map(f => f.toLowerCase());
+      const matJahrgaenge = (mat.jahrgang || []).map(j => j.toLowerCase());
+      const SII_JG = new Set(['sii','ef','q1','q2','q (gk)','q (lk)']);
+      const matIsSII = matJahrgaenge.some(j => SII_JG.has(j));
+      const klpKandidaten = KLPDB.filter(e => {
+        if (matFaecher.length && !matFaecher.includes(e.fach.toLowerCase())) return false;
+        const eJg = e.jahrgang.toLowerCase();
+        if (matJahrgaenge.length) {
+          const eIsSII = SII_JG.has(eJg);
+          if (matIsSII && !eIsSII) return false;
+          if (!matIsSII && eIsSII) return false;
+        }
+        return true;
+      });
+      const klpKontext = klpKandidaten.length
+        ? '\n\nRelevante Kompetenzerwartungen aus dem NRW-Kernlehrplan:\n' +
+          klpKandidaten.map(e => `[${e.kompetenzcodes.join(', ')}] Jg. ${e.jahrgang} – ${e.inhaltsfeld}: ${e.beschreibung}`).join('\n')
+        : '';
+
       const prompt = `Du bist Assistentin einer Lehrerin an einem NRW-Gymnasium.
 
 Unterrichtsmaterial:
-${matKontext}
+${matKontext}${klpKontext}
 
 Frage der Lehrerin: "${frage}"
 
-Beantworte kurz und präzise (2–4 Sätze). Wenn die Antwort sinnvoll in ein konkretes Feld des Materials eingetragen werden sollte, schlage das vor.
+Beantworte kurz und präzise (2–4 Sätze), stütze dich dabei auf die Kernlehrplan-Angaben wenn relevant. Wenn die Antwort sinnvoll in ein konkretes Feld des Materials eingetragen werden sollte, schlage das vor.
 
 Antworte NUR als JSON:
 {"antwort": "...", "feldUpdate": {"feld": "persoenlicheAnmerkungen", "wert": "..."}}

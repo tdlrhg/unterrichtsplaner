@@ -1,5 +1,31 @@
 // ── mat-overlay.js – Detail-Overlay, KLP-Vorschlag ────────────
 
+// Robusteres JSON-Parsing: versucht mehrere Strategien
+function robustParseObj(text) {
+  // Strategie 1: direkt parsen
+  try { return JSON.parse(text); } catch(_) {}
+  // Strategie 2: Steuerzeichen aggressiv entfernen
+  const c2 = text.replace(/[\x00-\x1F\x7F]/g, ' ');
+  try { return JSON.parse(c2); } catch(_) {}
+  // Strategie 3: erstes vollständiges JSON-Objekt per Klammer-Zähler extrahieren
+  let depth = 0, inStr = false, esc = false, start = -1;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (esc) { esc = false; continue; }
+    if (ch === '\\' && inStr) { esc = true; continue; }
+    if (ch === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (ch === '{') { if (depth++ === 0) start = i; }
+    else if (ch === '}') {
+      if (--depth === 0 && start >= 0) {
+        try { return JSON.parse(text.slice(start, i + 1)); } catch(_) {}
+        break;
+      }
+    }
+  }
+  throw new Error('KI-Antwort konnte nicht als JSON gelesen werden');
+}
+
 function openMatOverlayStandalone(mat) {
   const overlay = mk('div', 'matd-overlay open');
   const panel = mk('div', 'matd-panel');
@@ -99,6 +125,13 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
     const prevBtn = btn('👁 Vorschau laden', 'btn btn-ghost btn-xs');
     const prevPages = mk('div', 'mat-detail-preview-pages');
     prevBtn.onclick = async () => {
+      // Wenn bereits geladen: Toggle Sichtbarkeit
+      if (prevPages.childElementCount > 0) {
+        const hidden = prevPages.style.display === 'none';
+        prevPages.style.display = hidden ? '' : 'none';
+        prevBtn.textContent = hidden ? '🙈 Vorschau ausblenden' : '👁 Vorschau einblenden';
+        return;
+      }
       prevBtn.disabled = true; prevBtn.textContent = '⏳ Lade…';
       try {
         const buf = await r2Download(_matKey);
@@ -115,7 +148,8 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
           cv.className = 'mat-detail-preview-thumb';
           prevPages.appendChild(cv);
         }
-        prevBtn.remove();
+        prevBtn.textContent = '🙈 Vorschau ausblenden';
+        prevBtn.disabled = false;
       } catch(e2) {
         prevBtn.textContent = '⚠ ' + e2.message; prevBtn.disabled = false;
       }
@@ -130,6 +164,12 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
       const wBtn = btn(`👁 Datei ${i + 2} laden`, 'btn btn-ghost btn-xs');
       const wPages = mk('div', 'mat-detail-preview-pages');
       wBtn.onclick = async () => {
+        if (wPages.childElementCount > 0) {
+          const hidden = wPages.style.display === 'none';
+          wPages.style.display = hidden ? '' : 'none';
+          wBtn.textContent = hidden ? '🙈 Datei ' + (i + 2) + ' ausblenden' : '👁 Datei ' + (i + 2) + ' einblenden';
+          return;
+        }
         wBtn.disabled = true; wBtn.textContent = '⏳ Lade…';
         try {
           const buf = await r2Download(wKey);
@@ -145,7 +185,8 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
             cv.className = 'mat-detail-preview-thumb';
             wPages.appendChild(cv);
           }
-          wBtn.remove();
+          wBtn.textContent = '🙈 Datei ' + (i + 2) + ' ausblenden';
+          wBtn.disabled = false;
         } catch(e2) { wBtn.textContent = '⚠ ' + e2.message; wBtn.disabled = false; }
       };
       wWrap.appendChild(wBtn); wWrap.appendChild(wPages);
@@ -665,7 +706,7 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
         const match = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/);
         if (!match) throw new Error('Kein JSON in der KI-Antwort.');
         const sanitized = match[0].replace(/[\x00-\x1F\x7F]/g, c => c === '\n' || c === '\r' || c === '\t' ? ' ' : '');
-        const enriched = normalizeMaterialResult(JSON.parse(sanitized));
+        const enriched = normalizeMaterialResult(robustParseObj(sanitized));
         const idx = MATDB.findIndex(m => m.id === mat.id);
         if (idx < 0) throw new Error('Materialeintrag nicht mehr gefunden.');
         const keep = (({ quelle, materialnummer, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id }) =>
@@ -769,7 +810,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
         const d1 = await r1.json();
         const j1 = (d1.content?.[0]?.text || '').match(/\{[\s\S]*\}/);
         if (!j1) throw new Error('Kein JSON in Antwort');
-        const { method } = JSON.parse(j1[0]);
+        const { method } = robustParseObj(j1[0]);
 
         if (!method) {
           const noM = tx('div', '', 'Kein übertragbares Methodenpotenzial erkannt.');
@@ -791,7 +832,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
         if (!r2.ok) throw new Error('API ' + r2.status);
         const d2 = await r2.json();
         const j2 = (d2.content?.[0]?.text || '').match(/\{[\s\S]*\}/);
-        const { matchId, matchName } = j2 ? JSON.parse(j2[0]) : { matchId: null, matchName: null };
+        const { matchId, matchName } = j2 ? robustParseObj(j2[0]) : { matchId: null, matchName: null };
         const matchEntry = matchId && METHDB.find(x => x.id === matchId);
 
         // Ergebnis-UI aufbauen
@@ -902,7 +943,7 @@ Antworte NUR als JSON:
       const d = await res.json();
       const raw = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/)?.[0];
       if (!raw) throw new Error('Kein JSON erhalten');
-      const { vorschlaege, neueMethode } = JSON.parse(raw);
+      const { vorschlaege, neueMethode } = robustParseObj(raw);
 
       mvorPanel = mk('div', '');
       mvorPanel.style.cssText = 'margin:8px 0;padding:10px 12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;font-size:12px;display:flex;flex-direction:column;gap:8px;';
@@ -1004,7 +1045,10 @@ async function klpKiVorschlag(mat, onResult) {
   if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
   const data = await res.json();
   const text = data.content?.[0]?.text || '[]';
-  const ids = JSON.parse(text.match(/\[.*\]/s)?.[0] || '[]');
+  let ids = [];
+  try { ids = JSON.parse(text.match(/\[[\s\S]*\]/)?.[0] || '[]'); } catch(_) {
+    ids = [...text.matchAll(/"([^"]+)"/g)].map(m => m[1]);
+  }
   onResult(ids.filter(id => KLPDB.some(e => e.id === id) && !(mat.kompetenzenKLP || []).includes(id)));
 }
 

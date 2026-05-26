@@ -342,6 +342,7 @@ ${matSummary}`;
     const row = mk('div', '');
     row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-bottom:1px solid var(--bord);cursor:pointer;';
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selected.has(mat.id);
+    cb.dataset.matId = mat.id;
     cb.style.marginTop = '3px';
     cb.onclick = e => e.stopPropagation();
     cb.onchange = () => { if (cb.checked) selected.add(mat.id); else selected.delete(mat.id); kiBtn.disabled = selected.size === 0; kiBtn.textContent = `✨ KI bewertet (${selected.size})`; };
@@ -445,8 +446,14 @@ ${matSummary}`;
   alleLabel.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:12px;color:var(--tx2);cursor:pointer;user-select:none;';
   const alleCb = document.createElement('input'); alleCb.type = 'checkbox';
   alleCb.onchange = () => {
-    const rows = ergebnisListe.querySelectorAll('input[type=checkbox]');
-    rows.forEach(cb => { if (cb.checked !== alleCb.checked) { cb.checked = alleCb.checked; cb.dispatchEvent(new Event('change')); } });
+    const rows = ergebnisListe.querySelectorAll('input[type=checkbox][data-mat-id]');
+    if (!alleCb.checked) selected.clear();
+    rows.forEach(cb => {
+      cb.checked = alleCb.checked;
+      if (alleCb.checked && cb.dataset.matId) selected.add(cb.dataset.matId);
+    });
+    kiBtn.disabled = selected.size === 0;
+    kiBtn.textContent = `✨ KI bewertet (${selected.size})`;
   };
   alleLabel.appendChild(alleCb);
   alleLabel.appendChild(document.createTextNode('Alle'));

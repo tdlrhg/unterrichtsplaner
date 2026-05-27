@@ -539,6 +539,36 @@ async function kiPlanung(lp, obj, typ, nta, resultDiv, { selBlock, selReihe, sel
   if (selReihe)   pfad.push('Reihe: ' + selReihe.titel);
   if (selEinheit) pfad.push('Einheit: ' + selEinheit.titel);
 
+  // Geschwister-Kontext: andere Reihen im selben Block / andere Einheiten in derselben Reihe
+  let geschwisterHinweis = '';
+  if (typ === 'reihe' && selBlock) {
+    const andereReihen = (selBlock.reihen || []).filter(r => r.id !== obj.id);
+    if (andereReihen.length) {
+      geschwisterHinweis = `\nWICHTIG – Andere Reihen im selben Block (bereits geplant, NICHT abdecken):\n` +
+        andereReihen.map((r, i) => {
+          const eins = (r.einheiten || []).map(e => e.titel).join(', ');
+          return `- ${r.titel}` + (eins ? ` (Einheiten: ${eins})` : '');
+        }).join('\n') +
+        `\nDiese Themen sind in anderen Reihen bereits vorgesehen. Plane nur, was zur aktuellen Reihe "${obj.titel}" gehört.\n`;
+    }
+  }
+  if (typ === 'einheit' && selReihe) {
+    const andereEinheiten = (selReihe.einheiten || []).filter(e => e.id !== obj.id);
+    if (andereEinheiten.length) {
+      geschwisterHinweis = `\nWICHTIG – Andere Einheiten in derselben Reihe (bereits geplant, NICHT abdecken):\n` +
+        andereEinheiten.map(e => `- ${e.titel}`).join('\n') +
+        `\nDiese Themen sind in anderen Einheiten bereits vorgesehen. Plane nur, was zur aktuellen Einheit "${obj.titel}" gehört.\n`;
+    }
+  }
+  if (typ === 'block' && lp) {
+    const andereBlöcke = (lp.blocks || []).filter(b => b.id !== obj.id);
+    if (andereBlöcke.length) {
+      geschwisterHinweis = `\nWICHTIG – Andere Themenblöcke im Kurs (bereits geplant, NICHT abdecken):\n` +
+        andereBlöcke.map(b => `- ${b.titel}`).join('\n') +
+        `\nDiese Themen sind in anderen Blöcken bereits vorgesehen.\n`;
+    }
+  }
+
   // Aufgabe und Ausgabeformat je nach Ebene
   const AUFGABEN = {
     block: {
@@ -613,7 +643,7 @@ TITEL: Kurz und prägnant – ein Oberbegriff, kein vollständiger Satz. Beispie
 
 KONTEXT: ${pfad.join(' › ')}
 KURS: ${fachName}, ${lp.fach.includes('GK') ? 'Grundkurs' : lp.fach.includes('LK') ? 'Leistungskurs' : 'Kurs'}, Jahrgang ${lp.jahrgang}
-
+${geschwisterHinweis}
 NOTIZEN DER LEHRERIN:
 ${notizen}
 

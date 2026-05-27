@@ -934,3 +934,34 @@ textarea::placeholder { color: #c4cdd6; }
   cursor: pointer; width: calc(100% - 28px); text-align: left;
 }
 .fp-tree-add-top:hover { border-color: var(--pri); color: var(--pri); background: #eff6ff; }
+
+/* ── Gruppentrennzeile ── */
+.fp-gruppe-divider {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 10px 4px 16px; margin: 6px 6px 2px;
+  border-radius: 5px; background: var(--surf2);
+}
+.fp-gruppe-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.fp-gruppe-label {
+  font-size: 11px; font-weight: 700; color: var(--tx2);
+  text-transform: uppercase; letter-spacing: .5px; flex: 1;
+}
+.fp-gruppe-actions { display: none; align-items: center; gap: 1px; }
+.fp-gruppe-divider:hover .fp-gruppe-actions { display: flex; }
+
+/* Farbige linke Kante bei Stunden innerhalb einer Gruppe */
+.fp-tree-row[style*="--row-accent"] {
+  border-left: 3px solid var(--row-accent, transparent);
+  padding-left: calc(var(--stunden-indent, 0px) - 3px);
+}
+
+/* "+ Gruppe" Button innerhalb einer Reihe */
+.fp-tree-add-gruppe {
+  display: block; background: none; border: none;
+  color: var(--tx3); font-size: 11px; cursor: pointer;
+  padding: 3px 0; margin: 2px 0 4px;
+  text-align: left;
+}
+.fp-tree-add-gruppe:hover { color: var(--pri); }

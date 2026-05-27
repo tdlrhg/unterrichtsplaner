@@ -48,14 +48,16 @@ function findReihe(fpId, blockId, reiheId) {
   return block && (block.reihen || []).find(r => r.id === reiheId);
 }
 
+// Gruppe (ehem. Einheit) – nur noch Metadaten, keine stunden[] mehr
 function findEinheit(fpId, blockId, reiheId, einheitId) {
   const reihe = findReihe(fpId, blockId, reiheId);
   return reihe && (reihe.einheiten || []).find(e => e.id === einheitId);
 }
 
-function findStunde(fpId, blockId, reiheId, einheitId, stundeId) {
-  const einheit = findEinheit(fpId, blockId, reiheId, einheitId);
-  return einheit && (einheit.stunden || []).find(s => s.id === stundeId);
+// Stunden liegen direkt in reihe.stunden[], mit optionalem einheitId-Feld
+function findStunde(fpId, blockId, reiheId, stundeId) {
+  const reihe = findReihe(fpId, blockId, reiheId);
+  return reihe && (reihe.stunden || []).find(s => s.id === stundeId);
 }
 
 function getAlleStunden(fpId) {
@@ -64,12 +66,28 @@ function getAlleStunden(fpId) {
   const alle = [];
   (lp.blocks || []).forEach(b =>
     (b.reihen || []).forEach(r =>
-      (r.einheiten || []).forEach(e =>
-        (e.stunden || []).forEach(s => alle.push(s))
-      )
+      (r.stunden || []).forEach(s => alle.push(s))
     )
   );
   return alle;
+}
+
+// ── Migration: altes Format (einheit.stunden[]) → flach (reihe.stunden[]) ──
+function migrateToFlatStunden(lp) {
+  (lp.blocks || []).forEach(block => {
+    (block.reihen || []).forEach(reihe => {
+      if (!reihe.stunden) reihe.stunden = [];
+      (reihe.einheiten || []).forEach(einheit => {
+        if (Array.isArray(einheit.stunden) && einheit.stunden.length > 0) {
+          einheit.stunden.forEach(s => {
+            s.einheitId = einheit.id;
+            reihe.stunden.push(s);
+          });
+          delete einheit.stunden;
+        }
+      });
+    });
+  });
 }
 
 // ── Persistence ──────────────────────────────────────────────────

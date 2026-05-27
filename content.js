@@ -17,7 +17,7 @@ function buildContent() {
     c.appendChild(viewFreieStunde(fpId, stundeId));
   } else if (type === 'stunde') {
     const ids = S.sel.ids;
-    c.appendChild(viewStunde(ids[0], ids[1], ids[2], ids[3], ids[4]));
+    c.appendChild(viewStunde(ids[0], ids[1], ids[2], ids[3]));
   } else {
     c.appendChild(viewFachplanung());
   }

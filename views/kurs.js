@@ -73,14 +73,17 @@ function makeColItem(title, sub, isActive, onSelect, onUp, onDown, onDelete, isF
 
 // ── Fachplanung-Baum ────────────────────────────────────────────────
 function buildFpTree(lp, sel) {
+  // Migration: altes Format (einheit.stunden[]) → flach (reihe.stunden[])
+  migrateToFlatStunden(lp);
+
   if (!S._treeOffen) S._treeOffen = {};
   const isOpen = key => S._treeOffen[key] === true; // default: closed
   const toggleOpen = key => { S._treeOffen[key] = !isOpen(key); render(); };
 
-  const selBlockId   = sel.ids && sel.ids[1];
-  const selReiheId   = sel.ids && sel.ids[2];
-  const selEinheitId = sel.ids && sel.ids[3];
-  const selStundeId  = sel.ids && sel.ids[4];
+  const selBlockId  = sel.ids && sel.ids[1];
+  const selReiheId  = sel.ids && sel.ids[2];
+  // ids[3] ist jetzt stundeId (kein Einheit-Level mehr in der Navigation)
+  const selStundeId = sel.type === 'stunde' && sel.ids && sel.ids[3];
 
   const tree = mk('div', 'fp-tree');
 
@@ -104,11 +107,12 @@ function buildFpTree(lp, sel) {
   function makeRow(opts) {
     const { level, title, sub, isActive, hasChildren, openKey, onSelect,
             dragPayload, dropType, onDrop, onEdit, onUp, onDown, onDelete,
-            isFirst, isLast, onAdd, addLabel } = opts;
+            isFirst, isLast, onAdd, addLabel, accentColor } = opts;
     const open = openKey ? isOpen(openKey) : false;
 
     const row = mk('div', 'fp-tree-row fp-tree-level-' + level + (isActive ? ' active' : ''));
     row.style.paddingLeft = (16 + level * 32) + 'px';
+    if (accentColor) row.style.setProperty('--row-accent', accentColor);
 
     // Toggle
     const tog = mk('span', 'fp-tree-toggle');
@@ -116,9 +120,8 @@ function buildFpTree(lp, sel) {
       tog.textContent = open ? '▾' : '▸';
       tog.onclick = e => { e.stopPropagation(); toggleOpen(openKey); };
     } else {
-      tog.textContent = hasChildren ? '▸' : '';
-      tog.style.opacity = '0';
-      tog.style.pointerEvents = 'none';
+      tog.textContent = '';
+      tog.style.opacity = '0'; tog.style.pointerEvents = 'none';
     }
     row.appendChild(tog);
 
@@ -162,7 +165,7 @@ function buildFpTree(lp, sel) {
     }
     row.appendChild(actions);
 
-    // Drag (Quelle)
+    // Drag
     if (dragPayload) {
       row.draggable = true;
       row.ondragstart = e => {
@@ -172,10 +175,44 @@ function buildFpTree(lp, sel) {
       };
       row.ondragend = () => row.classList.remove('fp-tree-row-dragging');
     }
-    // Drop (Ziel)
     if (dropType && onDrop) makeDrop(row, dropType, onDrop);
 
     return { row, open };
+  }
+
+  // Farbige Gruppentrennzeile (nicht anklickbar, kein Toggle)
+  function makeGruppenDivider(gruppe, reihe, gi, fpId, blockId) {
+    const farbe = gruppe.farbe || '#94a3b8';
+    const div = mk('div', 'fp-gruppe-divider');
+    div.style.paddingLeft = (16 + 2 * 32) + 'px';
+
+    const dot = mk('span', 'fp-gruppe-dot');
+    dot.style.background = farbe;
+    div.appendChild(dot);
+
+    div.appendChild(tx('span', 'fp-gruppe-label', gruppe.titel));
+
+    const acts = mk('div', 'fp-gruppe-actions');
+    const addS = mk('button', 'fp-tree-act-btn fp-tree-add');
+    addS.textContent = '+ Stunde'; addS.title = 'Stunde in dieser Gruppe anlegen';
+    addS.onclick = () => { S.modal = { type: 'newStunde', data: { fpId, blockId, reiheId: reihe.id, einheitId: gruppe.id } }; render(); };
+    acts.appendChild(addS);
+    const ren = mk('button', 'fp-tree-act-btn');
+    ren.textContent = '✏'; ren.title = 'Umbenennen';
+    ren.onclick = () => { S.modal = { type: 'umbenennen', data: { obj: gruppe, feld: 'titel', label: 'Gruppe' } }; render(); };
+    acts.appendChild(ren);
+    const del = mk('button', 'fp-tree-act-btn danger');
+    del.textContent = '✕'; del.title = 'Gruppe löschen (Stunden bleiben ungroupiert)';
+    del.onclick = () => {
+      if (confirm('Gruppe "' + gruppe.titel + '" löschen? Die Stunden bleiben erhalten, verlieren aber ihre Gruppe.')) {
+        (reihe.stunden || []).forEach(s => { if (s.einheitId === gruppe.id) delete s.einheitId; });
+        reihe.einheiten = reihe.einheiten.filter(e => e.id !== gruppe.id);
+        scheduleSave(); render();
+      }
+    };
+    acts.appendChild(del);
+    div.appendChild(acts);
+    return div;
   }
 
   // ── Blöcke ────────────────────────────────────────────────────────
@@ -186,7 +223,7 @@ function buildFpTree(lp, sel) {
   (lp.blocks || []).forEach((block, bi) => {
     const bKey = 'b_' + block.id;
     const rn = (block.reihen || []).length;
-    const angelegte = (block.reihen || []).reduce((s,r) => (r.einheiten||[]).reduce((s2,e) => s2+(e.stunden||[]).length, s), 0);
+    const angelegte = (block.reihen || []).reduce((s, r) => s + (r.stunden || []).length, 0);
     const geplant = block.stundenGesamt ? parseInt(block.stundenGesamt) : null;
     const bSub = rn + ' Reihe' + (rn !== 1 ? 'n' : '') +
       (geplant ? ' · ' + angelegte + '/' + geplant + ' Std.' : (angelegte > 0 ? ' · ' + angelegte + ' Std.' : ''));
@@ -197,7 +234,7 @@ function buildFpTree(lp, sel) {
       hasChildren: rn > 0, openKey: bKey,
       onSelect: () => {
         S.sel = { type: 'block', ids: [lp.id, block.id] };
-        if (!isOpen(bKey)) { S._treeOffen[bKey] = true; }
+        if (!isOpen(bKey)) S._treeOffen[bKey] = true;
         render();
       },
       dropType: 'reihe',
@@ -238,30 +275,20 @@ function buildFpTree(lp, sel) {
 
     (block.reihen || []).forEach((reihe, ri) => {
       const rKey = 'r_' + reihe.id;
-      const en = (reihe.einheiten || []).length;
+      const sn = (reihe.stunden || []).length;
+      const gn = (reihe.einheiten || []).length;
+      const rSub = sn + ' Stunde' + (sn !== 1 ? 'n' : '') + (gn > 0 ? ' · ' + gn + ' Gruppe' + (gn !== 1 ? 'n' : '') : '');
 
       const { row: rRow, open: rOpen } = makeRow({
-        level: 1, title: reihe.titel, sub: en + ' Einheit' + (en !== 1 ? 'en' : ''),
-        isActive: selReiheId === reihe.id && !selEinheitId,
-        hasChildren: en > 0, openKey: rKey,
+        level: 1, title: reihe.titel, sub: rSub,
+        isActive: selReiheId === reihe.id && !selStundeId,
+        hasChildren: sn > 0, openKey: rKey,
         onSelect: () => {
           S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
-          if (!isOpen(rKey)) { S._treeOffen[rKey] = true; }
+          if (!isOpen(rKey)) S._treeOffen[rKey] = true;
           render();
         },
         dragPayload: { type: 'reihe', srcBlockId: block.id, reiheId: reihe.id },
-        dropType: 'einheit',
-        onDrop: p => {
-          if (p.srcReiheId === reihe.id) return;
-          const srcReihe = (block.reihen||[]).find(r => r.id === p.srcReiheId);
-          const einheit = srcReihe && (srcReihe.einheiten||[]).find(e => e.id === p.einheitId);
-          if (!einheit) return;
-          srcReihe.einheiten = srcReihe.einheiten.filter(e => e.id !== p.einheitId);
-          if (!reihe.einheiten) reihe.einheiten = [];
-          reihe.einheiten.push(einheit);
-          S.sel = { type: 'einheit', ids: [lp.id, block.id, reihe.id, einheit.id] };
-          scheduleSave(); render();
-        },
         onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: reihe, feld: 'titel', label: 'Unterrichtsreihe' } }; render(); },
         onUp: () => { swap(block.reihen, ri, ri-1); scheduleSave(); render(); },
         onDown: () => { swap(block.reihen, ri, ri+1); scheduleSave(); render(); },
@@ -273,87 +300,103 @@ function buildFpTree(lp, sel) {
             scheduleSave(); render();
           }
         },
-        onAdd: () => { S.modal = { type: 'newEinheit', data: { fpId: lp.id, blockId: block.id, reiheId: reihe.id } }; render(); },
-        addLabel: '+ Einheit',
+        onAdd: () => { S.modal = { type: 'newStunde', data: { fpId: lp.id, blockId: block.id, reiheId: reihe.id } }; render(); },
+        addLabel: '+ Stunde',
       });
       tree.appendChild(rRow);
       if (!rOpen) return;
 
-      // ── Einheiten ────────────────────────────────────────────────
-      if (!(reihe.einheiten || []).length) {
-        const emp = tx('div', 'fp-tree-empty', 'Keine Einheiten.');
+      // ── Stunden (flach, mit Gruppentrennern) ─────────────────────
+      if (!(reihe.stunden || []).length) {
+        const emp = tx('div', 'fp-tree-empty', 'Noch keine Stunden.');
         emp.style.paddingLeft = (16 + 2 * 32) + 'px';
         tree.appendChild(emp);
-      }
+      } else {
+        // Stunden nach Gruppen ordnen: erst alle pro Gruppe, dann ungroupiert
+        const gruppenMap = {};
+        (reihe.einheiten || []).forEach(e => { gruppenMap[e.id] = e; });
 
-      (reihe.einheiten || []).forEach((einheit, ei) => {
-        const eKey = 'e_' + einheit.id;
-        const sn = (einheit.stunden || []).length;
+        // Gruppen-Reihenfolge: wie in reihe.einheiten definiert
+        const gruppenIds = (reihe.einheiten || []).map(e => e.id);
+        const stundenProGruppe = {}; // einheitId → stunden[]
+        const ungrouped = [];
+        gruppenIds.forEach(id => { stundenProGruppe[id] = []; });
 
-        const { row: eRow, open: eOpen } = makeRow({
-          level: 2, title: einheit.titel, sub: sn + ' Stunde' + (sn !== 1 ? 'n' : ''),
-          isActive: selEinheitId === einheit.id && !selStundeId,
-          hasChildren: sn > 0, openKey: eKey,
-          onSelect: () => {
-            S.sel = { type: 'einheit', ids: [lp.id, block.id, reihe.id, einheit.id] };
-            if (!isOpen(eKey)) { S._treeOffen[eKey] = true; }
-            render();
-          },
-          dragPayload: { type: 'einheit', srcReiheId: reihe.id, einheitId: einheit.id },
-          dropType: 'stunde',
-          onDrop: p => {
-            if (p.srcEinheitId === einheit.id) return;
-            const srcEinheit = (reihe.einheiten||[]).find(e => e.id === p.srcEinheitId);
-            const stunde = srcEinheit && (srcEinheit.stunden||[]).find(s => s.id === p.stundeId);
-            if (!stunde) return;
-            srcEinheit.stunden = srcEinheit.stunden.filter(s => s.id !== p.stundeId);
-            if (!einheit.stunden) einheit.stunden = [];
-            einheit.stunden.push(stunde);
-            S.sel = { type: 'stunde', ids: [lp.id, block.id, reihe.id, einheit.id, stunde.id] };
-            scheduleSave(); render();
-          },
-          onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: einheit, feld: 'titel', label: 'Unterrichtseinheit' } }; render(); },
-          onUp: () => { swap(reihe.einheiten, ei, ei-1); scheduleSave(); render(); },
-          onDown: () => { swap(reihe.einheiten, ei, ei+1); scheduleSave(); render(); },
-          isFirst: ei === 0, isLast: ei === reihe.einheiten.length-1,
-          onDelete: () => {
-            if (confirm('Einheit löschen?')) {
-              reihe.einheiten = reihe.einheiten.filter(e => e.id !== einheit.id);
-              if (selEinheitId === einheit.id) S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
-              scheduleSave(); render();
-            }
-          },
-          onAdd: () => { S.modal = { type: 'newStunde', data: { fpId: lp.id, blockId: block.id, reiheId: reihe.id, einheitId: einheit.id } }; render(); },
-          addLabel: '+ Stunde',
+        (reihe.stunden || []).forEach(s => {
+          if (s.einheitId && stundenProGruppe[s.einheitId]) {
+            stundenProGruppe[s.einheitId].push(s);
+          } else {
+            ungrouped.push(s);
+          }
         });
-        tree.appendChild(eRow);
-        if (!eOpen) return;
 
-        // ── Stunden ────────────────────────────────────────────────
-        (einheit.stunden || []).forEach((stunde, si) => {
+        // Gruppen mit ihren Stunden
+        gruppenIds.forEach((gId, gi) => {
+          const gruppe = gruppenMap[gId];
+          const gStunden = stundenProGruppe[gId];
+          tree.appendChild(makeGruppenDivider(gruppe, reihe, gi, lp.id, block.id));
+
+          gStunden.forEach((stunde, si) => {
+            const farbe = gruppe.farbe || '#94a3b8';
+            const prioIcon = { pflicht:'🟢', optional:'🟡', puffer:'🔵', klassenarbeit:'📝', rueckgabe:'📋' }[stunde.prioritaet||'pflicht'] || '🟢';
+            const { row: sRow } = makeRow({
+              level: 2, title: prioIcon + ' ' + (stunde.titel || '(ohne Titel)'),
+              sub: stunde.lernziel ? stunde.lernziel.slice(0, 55) + '…' : null,
+              isActive: selStundeId === stunde.id,
+              hasChildren: false, accentColor: farbe,
+              onSelect: () => { S.sel = { type: 'stunde', ids: [lp.id, block.id, reihe.id, stunde.id] }; render(); },
+              dragPayload: { type: 'stunde', srcReiheId: reihe.id, stundeId: stunde.id },
+              onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: stunde, feld: 'titel', label: 'Stunde' } }; render(); },
+              onUp: () => { const arr = reihe.stunden; swap(arr, arr.indexOf(stunde), arr.indexOf(stunde)-1); scheduleSave(); render(); },
+              onDown: () => { const arr = reihe.stunden; swap(arr, arr.indexOf(stunde), arr.indexOf(stunde)+1); scheduleSave(); render(); },
+              isFirst: si === 0, isLast: si === gStunden.length-1,
+              onDelete: () => {
+                if (confirm('Stunde löschen?')) {
+                  reihe.stunden = reihe.stunden.filter(s => s.id !== stunde.id);
+                  if (selStundeId === stunde.id) S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
+                  scheduleSave(); render();
+                }
+              },
+            });
+            sRow.style.borderLeft = '3px solid ' + farbe;
+            tree.appendChild(sRow);
+          });
+        });
+
+        // Ungroupierte Stunden
+        ungrouped.forEach((stunde, si) => {
           const prioIcon = { pflicht:'🟢', optional:'🟡', puffer:'🔵', klassenarbeit:'📝', rueckgabe:'📋' }[stunde.prioritaet||'pflicht'] || '🟢';
           const { row: sRow } = makeRow({
-            level: 3, title: prioIcon + ' ' + (stunde.titel || '(ohne Titel)'),
+            level: 2, title: prioIcon + ' ' + (stunde.titel || '(ohne Titel)'),
             sub: stunde.lernziel ? stunde.lernziel.slice(0, 55) + '…' : null,
             isActive: selStundeId === stunde.id,
             hasChildren: false,
-            onSelect: () => { S.sel = { type: 'stunde', ids: [lp.id, block.id, reihe.id, einheit.id, stunde.id] }; render(); },
-            dragPayload: { type: 'stunde', srcEinheitId: einheit.id, stundeId: stunde.id },
+            onSelect: () => { S.sel = { type: 'stunde', ids: [lp.id, block.id, reihe.id, stunde.id] }; render(); },
+            dragPayload: { type: 'stunde', srcReiheId: reihe.id, stundeId: stunde.id },
             onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: stunde, feld: 'titel', label: 'Stunde' } }; render(); },
-            onUp: () => { swap(einheit.stunden, si, si-1); scheduleSave(); render(); },
-            onDown: () => { swap(einheit.stunden, si, si+1); scheduleSave(); render(); },
-            isFirst: si === 0, isLast: si === einheit.stunden.length-1,
+            onUp: () => { const arr = reihe.stunden; swap(arr, arr.indexOf(stunde), arr.indexOf(stunde)-1); scheduleSave(); render(); },
+            onDown: () => { const arr = reihe.stunden; swap(arr, arr.indexOf(stunde), arr.indexOf(stunde)+1); scheduleSave(); render(); },
+            isFirst: si === 0, isLast: si === ungrouped.length-1,
             onDelete: () => {
               if (confirm('Stunde löschen?')) {
-                einheit.stunden = einheit.stunden.filter(s => s.id !== stunde.id);
-                if (selStundeId === stunde.id) S.sel = { type: 'einheit', ids: [lp.id, block.id, reihe.id, einheit.id] };
+                reihe.stunden = reihe.stunden.filter(s => s.id !== stunde.id);
+                if (selStundeId === stunde.id) S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
                 scheduleSave(); render();
               }
             },
           });
           tree.appendChild(sRow);
         });
-      });
+      }
+
+      // "+ Gruppe" Button am Ende der Reihe
+      if (rOpen) {
+        const addGrpBtn = mk('button', 'fp-tree-add-gruppe');
+        addGrpBtn.textContent = '+ Gruppe anlegen';
+        addGrpBtn.style.paddingLeft = (16 + 2 * 32) + 'px';
+        addGrpBtn.onclick = () => { S.modal = { type: 'newGruppe', data: { fpId: lp.id, blockId: block.id, reiheId: reihe.id } }; render(); };
+        tree.appendChild(addGrpBtn);
+      }
     });
   });
 
@@ -397,12 +440,10 @@ function viewFachplanung() {
   div.appendChild(hdr);
 
   const sel = S.sel || {};
-  const selBlockId   = sel.ids && sel.ids[1];
-  const selReiheId   = sel.ids && sel.ids[2];
-  const selEinheitId = sel.ids && sel.ids[3];
-  const selBlock   = selBlockId   && (lp.blocks || []).find(b => b.id === selBlockId);
-  const selReihe   = selBlock     && (selBlock.reihen || []).find(r => r.id === selReiheId);
-  const selEinheit = selReihe     && (selReihe.einheiten || []).find(e => e.id === selEinheitId);
+  const selBlockId  = sel.ids && sel.ids[1];
+  const selReiheId  = sel.ids && sel.ids[2];
+  const selBlock  = selBlockId  && (lp.blocks || []).find(b => b.id === selBlockId);
+  const selReihe  = selBlock    && (selBlock.reihen || []).find(r => r.id === selReiheId);
 
   const treePanel = mk('div', 'fp-tree-panel');
   treePanel.appendChild(buildFpTree(lp, sel));
@@ -410,12 +451,11 @@ function viewFachplanung() {
 
   // ── Notizen zur ausgewählten Ebene ────────────────────────────
   const KI_EBENEN = {
-    block:   { label: 'Reihen',   childKey: 'reihen',   childLabel: 'Reihe' },
-    reihe:   { label: 'Einheiten',childKey: 'einheiten',childLabel: 'Einheit' },
-    einheit: { label: 'Stunden',  childKey: 'stunden',  childLabel: 'Stunde' },
+    block: { label: 'Reihen',  childKey: 'reihen',  childLabel: 'Reihe' },
+    reihe: { label: 'Stunden', childKey: 'stunden', childLabel: 'Stunde' },
   };
-  const notizObj = selEinheit || selReihe || selBlock;
-  const notizTyp = selEinheit ? 'einheit' : selReihe ? 'reihe' : selBlock ? 'block' : null;
+  const notizObj = selReihe || selBlock;
+  const notizTyp = selReihe ? 'reihe' : selBlock ? 'block' : null;
   const notizLabel = notizObj ? 'Notizen · ' + notizObj.titel : null;
 
   if (notizObj && notizTyp) {
@@ -425,7 +465,7 @@ function viewFachplanung() {
     const ebene = KI_EBENEN[notizTyp];
     const kiBtn = btn('✨ KI → ' + ebene.label + ' vorschlagen', 'btn btn-ghost btn-xs');
     kiBtn.onclick = () => kiPlanung(lp, notizObj, notizTyp, nta, kiResultDiv, {
-      selBlock, selReihe, selEinheit
+      selBlock, selReihe
     });
     nhdr.appendChild(kiBtn);
     nc.appendChild(nhdr);

@@ -486,12 +486,15 @@ mat_abc_2|anpassung|Nur Teilaufgabe 1 verwenden|nein`;
     const EXCL = ['Lehrerhandreichung', 'Lösung'];
     const safe = s => (s||'').replace(/[|\n\r\t]/g, ' ').trim();
 
-    // Kontext aus aktueller Selektion
+    // Kontext aus aktueller Selektion (ids: [fpId, blockId, reiheId, stundeId])
     const selIds = S.sel?.ids || [];
-    const selEinheitId = selIds[3] || null;
     const selReiheId   = selIds[2] || null;
+    const selStundeId  = selIds[3] || null;
+    // Gruppe der aktuellen Stunde als Proxy für "Einheit"-Filter
+    const selStunde    = selStundeId && selReiheId ? findStunde(selIds[0], selIds[1], selReiheId, selStundeId) : null;
+    const selEinheitId = selStunde?.einheitId || null;
 
-    // Vorgemerkte Materialien (Einheit > Reihe)
+    // Vorgemerkte Materialien (Gruppe > Reihe)
     const vorgemEinheit = selEinheitId ? MATDB.filter(m => m.einheitId === selEinheitId) : [];
     const vorgemReihe   = selReiheId   ? MATDB.filter(m => !m.einheitId && m.reiheId === selReiheId) : [];
     const vorgemIds     = new Set([...vorgemEinheit, ...vorgemReihe].map(m => m.id));
@@ -1217,39 +1220,41 @@ Antworte NUR als JSON-Objekt. WICHTIG: Keine Zeilenumbrüche innerhalb von Strin
   secs.appendChild(below);
 }
 
-function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
+function viewStunde(fpId, blockId, reiheId, stundeId) {
   const fp     = getFachplanung(fpId);
   const block  = findBlock(fpId, blockId);
   const reihe  = findReihe(fpId, blockId, reiheId);
-  const einheit= findEinheit(fpId, blockId, reiheId, einheitId);
-  const stunde = findStunde(fpId, blockId, reiheId, einheitId, stundeId);
-  if (!fp || !block || !reihe || !einheit || !stunde) {
+  const stunde = findStunde(fpId, blockId, reiheId, stundeId);
+  if (!fp || !block || !reihe || !stunde) {
     S.sel = null; render(); return mk('div', '');
   }
   initStunde(stunde);
+
+  // Gruppe (falls vorhanden)
+  const gruppe = stunde.einheitId ? findEinheit(fpId, blockId, reiheId, stunde.einheitId) : null;
 
   const div = mk('div', '');
   div.appendChild(breadcrumb([
     { label: fachLabel(fp.fach) + ' ' + fp.jahrgang, action: () => { S.sel = null; render(); } },
     { label: block.titel, action: () => { S.sel = { type: 'block', ids: [fpId, blockId] }; render(); } },
     { label: reihe.titel, action: () => { S.sel = { type: 'reihe', ids: [fpId, blockId, reiheId] }; render(); } },
-    { label: einheit.titel, action: () => { S.sel = { type: 'einheit', ids: [fpId, blockId, reiheId, einheitId] }; render(); } },
   ]));
 
   const hdr = mk('div', 'c-hdr');
   const left = mk('div', '');
   left.appendChild(tx('div', 'c-title', stunde.titel || 'Stunde'));
-  left.appendChild(tx('div', 'c-sub', 'Unterrichtsstunde · ' + einheit.titel));
+  const subTxt = 'Unterrichtsstunde' + (gruppe ? ' · ' + gruppe.titel : '');
+  left.appendChild(tx('div', 'c-sub', subTxt));
   hdr.appendChild(left);
   const hdrBtns = mk('div', 'btn-grp');
   const mvb = btn('↗ Verschieben', 'btn btn-ghost btn-sm');
-  mvb.onclick = () => { S.modal = { type: 'moveStunde', data: { fpId, blockId, reiheId, einheitId, stundeId } }; render(); };
+  mvb.onclick = () => { S.modal = { type: 'moveStunde', data: { fpId, blockId, reiheId, stundeId } }; render(); };
   hdrBtns.appendChild(mvb);
   const db = btn('🗑 Löschen', 'btn btn-danger btn-sm');
   db.onclick = () => {
     if (confirm('Stunde löschen?')) {
-      einheit.stunden = einheit.stunden.filter(s => s.id !== stundeId);
-      S.sel = { type: 'einheit', ids: [fpId, blockId, reiheId, einheitId] };
+      reihe.stunden = (reihe.stunden || []).filter(s => s.id !== stundeId);
+      S.sel = { type: 'reihe', ids: [fpId, blockId, reiheId] };
       scheduleSave(); render();
     }
   };

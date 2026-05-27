@@ -1,4 +1,6 @@
 // ── Modal: Fachplanung & Inhalte ──────────────────────────────────
+const GRUPPEN_FARBEN = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899'];
+
 function modalHandlerPlanung(type, data, m) {
   if (type === 'newBlock') {
     m.appendChild(tx('div', 'modal-title', 'Neuer Themenblock'));
@@ -30,16 +32,19 @@ function modalHandlerPlanung(type, data, m) {
       if (!t) return;
       const block = findBlock(data.fpId, data.blockId);
       if (!block.reihen) block.reihen = [];
-      block.reihen.push({ id: uid(), titel: t, einheiten: [] });
+      block.reihen.push({ id: uid(), titel: t, einheiten: [], stunden: [] });
       S.modal = null; scheduleSave(); render();
     };
     footer.appendChild(sv); m.appendChild(footer);
     return true;
   }
 
-  if (type === 'newEinheit') {
-    m.appendChild(tx('div', 'modal-title', 'Neue Unterrichtseinheit'));
-    m.appendChild(modalInput('mt', 'Titel', ''));
+  // Neue Gruppe (ehem. Einheit) – nur noch Metadaten, keine stunden[]
+  if (type === 'newGruppe') {
+    m.appendChild(tx('div', 'modal-title', 'Neue Gruppe'));
+    const hint = tx('div', 'modal-hint', 'Gruppen fassen Stunden einer Reihe thematisch zusammen.');
+    m.appendChild(hint);
+    m.appendChild(modalInput('mt', 'Name der Gruppe', 'z.B. Einführung, Vertiefung …'));
     const footer = mk('div', 'modal-footer');
     footer.appendChild(cancelBtn());
     const sv = btn('Anlegen', 'btn btn-pri');
@@ -48,7 +53,10 @@ function modalHandlerPlanung(type, data, m) {
       if (!t) return;
       const reihe = findReihe(data.fpId, data.blockId, data.reiheId);
       if (!reihe.einheiten) reihe.einheiten = [];
-      reihe.einheiten.push({ id: uid(), titel: t, stunden: [] });
+      // Nächste freie Farbe wählen
+      const usedColors = new Set((reihe.einheiten || []).map(e => e.farbe));
+      const farbe = GRUPPEN_FARBEN.find(c => !usedColors.has(c)) || GRUPPEN_FARBEN[reihe.einheiten.length % GRUPPEN_FARBEN.length];
+      reihe.einheiten.push({ id: uid(), titel: t, farbe });
       S.modal = null; scheduleSave(); render();
     };
     footer.appendChild(sv); m.appendChild(footer);
@@ -63,12 +71,14 @@ function modalHandlerPlanung(type, data, m) {
     const sv = btn('Anlegen & öffnen', 'btn btn-pri');
     sv.onclick = () => {
       const t = document.getElementById('mt').value.trim();
-      const einheit = findEinheit(data.fpId, data.blockId, data.reiheId, data.einheitId);
-      if (!einheit.stunden) einheit.stunden = [];
+      const reihe = findReihe(data.fpId, data.blockId, data.reiheId);
+      if (!reihe) return;
+      if (!reihe.stunden) reihe.stunden = [];
       const ns = { id: uid(), titel: t, lernziel: '', dauer: 45, phasen: [], klpInhalt: [], klpProzess: [], material: [], tafelbild: '', lehrerkommentar: '' };
-      einheit.stunden.push(ns);
+      if (data.einheitId) ns.einheitId = data.einheitId; // optionale Gruppen-Zuweisung
+      reihe.stunden.push(ns);
       S.modal = null;
-      S.sel = { type: 'stunde', ids: [data.fpId, data.blockId, data.reiheId, data.einheitId, ns.id] };
+      S.sel = { type: 'stunde', ids: [data.fpId, data.blockId, data.reiheId, ns.id] };
       scheduleSave(); render();
     };
     footer.appendChild(sv); m.appendChild(footer);
@@ -139,63 +149,42 @@ function modalHandlerPlanung(type, data, m) {
   }
 
   if (type === 'moveStunde') {
-    const { fpId, blockId, reiheId, einheitId, stundeId } = data;
+    const { fpId, blockId, reiheId, stundeId } = data;
     const fp = getFachplanung(fpId);
-    const srcEinheit = findEinheit(fpId, blockId, reiheId, einheitId);
-    const stunde = findStunde(fpId, blockId, reiheId, einheitId, stundeId);
-    if (!fp || !srcEinheit || !stunde) return false;
+    const srcReihe = findReihe(fpId, blockId, reiheId);
+    const stunde = findStunde(fpId, blockId, reiheId, stundeId);
+    if (!fp || !srcReihe || !stunde) return false;
 
     m.appendChild(tx('div', 'modal-title', '↗ Stunde verschieben'));
-    m.appendChild(tx('div', 'modal-hint', '"' + (stunde.titel || 'Stunde') + '" in eine andere Einheit verschieben'));
+    m.appendChild(tx('div', 'modal-hint', '"' + (stunde.titel || 'Stunde') + '" in eine andere Reihe verschieben'));
 
-    // Alle Reihen+Einheiten sammeln (außer der Quelle)
+    // Alle Reihen sammeln (außer der Quelle)
     const reiheOpts = [['', '— Reihe wählen —']];
-    const einheitOptsMap = {}; // reiheKey → [[val,lbl]]
     (fp.blocks || []).forEach(bl => {
       (bl.reihen || []).forEach(r => {
-        const rKey = bl.id + '|' + r.id;
-        reiheOpts.push([rKey, bl.titel + ' › ' + r.titel]);
-        einheitOptsMap[rKey] = [['', '— Einheit wählen —']];
-        (r.einheiten || []).forEach(e => {
-          // Quelle ausschließen
-          if (bl.id === blockId && r.id === reiheId && e.id === einheitId) return;
-          einheitOptsMap[rKey].push([e.id, e.titel]);
-        });
+        if (bl.id === blockId && r.id === reiheId) return; // Quelle ausschließen
+        reiheOpts.push([bl.id + '|' + r.id, bl.titel + ' › ' + r.titel]);
       });
     });
 
     const rSel = modalSelect('ms-reihe', 'Ziel-Reihe', reiheOpts, '');
-    const eSel = modalSelect('ms-einheit', 'Ziel-Einheit', [['', '— erst Reihe wählen —']], '');
     m.appendChild(rSel);
-    m.appendChild(eSel);
-
-    // Einheit-Select dynamisch befüllen wenn Reihe gewählt
-    const rEl = rSel.querySelector('select');
-    const eEl = eSel.querySelector('select');
-    rEl.onchange = () => {
-      eEl.innerHTML = '';
-      const opts = einheitOptsMap[rEl.value] || [['', '— keine Einheiten —']];
-      opts.forEach(([v, l]) => {
-        const o = document.createElement('option');
-        o.value = v; o.textContent = l; eEl.appendChild(o);
-      });
-    };
 
     const footer = mk('div', 'modal-footer');
     const okb = btn('Verschieben', 'btn btn-pri');
     okb.onclick = () => {
-      const rKey = rEl.value;
-      const tgtEinheitId = eEl.value;
-      if (!rKey || !tgtEinheitId) { alert('Bitte Reihe und Einheit auswählen.'); return; }
+      const rKey = rSel.querySelector('select').value;
+      if (!rKey) { alert('Bitte Ziel-Reihe wählen.'); return; }
       const [tgtBlockId, tgtReiheId] = rKey.split('|');
-      const tgtEinheit = findEinheit(fpId, tgtBlockId, tgtReiheId, tgtEinheitId);
-      if (!tgtEinheit) return;
-      // Verschieben
-      srcEinheit.stunden = srcEinheit.stunden.filter(s => s.id !== stundeId);
-      if (!tgtEinheit.stunden) tgtEinheit.stunden = [];
-      tgtEinheit.stunden.push(stunde);
+      const tgtReihe = findReihe(fpId, tgtBlockId, tgtReiheId);
+      if (!tgtReihe) return;
+      srcReihe.stunden = (srcReihe.stunden || []).filter(s => s.id !== stundeId);
+      if (!tgtReihe.stunden) tgtReihe.stunden = [];
+      // Gruppe aufheben beim Verschieben (Gruppe gilt nur innerhalb der Reihe)
+      delete stunde.einheitId;
+      tgtReihe.stunden.push(stunde);
       S.modal = null;
-      S.sel = { type: 'stunde', ids: [fpId, tgtBlockId, tgtReiheId, tgtEinheitId, stundeId] };
+      S.sel = { type: 'stunde', ids: [fpId, tgtBlockId, tgtReiheId, stundeId] };
       scheduleSave(); render();
     };
     footer.appendChild(cancelBtn());

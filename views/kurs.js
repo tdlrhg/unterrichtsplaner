@@ -74,7 +74,7 @@ function makeColItem(title, sub, isActive, onSelect, onUp, onDown, onDelete, isF
 // ── Fachplanung-Baum ────────────────────────────────────────────────
 function buildFpTree(lp, sel) {
   if (!S._treeOffen) S._treeOffen = {};
-  const isOpen = key => S._treeOffen[key] !== false; // default: open
+  const isOpen = key => S._treeOffen[key] === true; // default: closed
   const toggleOpen = key => { S._treeOffen[key] = !isOpen(key); render(); };
 
   const selBlockId   = sel.ids && sel.ids[1];

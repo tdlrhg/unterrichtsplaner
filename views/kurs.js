@@ -569,6 +569,28 @@ async function kiPlanung(lp, obj, typ, nta, resultDiv, { selBlock, selReihe, sel
     }
   }
 
+  // Bereits vorhandene Kinder: Aufbau-Kontext für Fortsetzungsplanung
+  if (typ === 'einheit' && (obj.stunden || []).length > 0) {
+    const bereitsGeplant = obj.stunden.map((s, i) => {
+      let zeile = `  Stunde ${i + 1}: "${s.titel}"`;
+      if (s.lernziel) zeile += `\n    Lernziel: ${s.lernziel}`;
+      if (s.intention) zeile += `\n    Intention: ${s.intention}`;
+      return zeile;
+    }).join('\n');
+    geschwisterHinweis += `\nBEREITS GEPLANTE STUNDEN in dieser Einheit (baue darauf auf):\n${bereitsGeplant}\n` +
+      `Die neuen Stunden sollen inhaltlich und didaktisch an Stunde ${obj.stunden.length} anknüpfen.\n`;
+  }
+  if (typ === 'reihe' && (obj.einheiten || []).length > 0) {
+    const bereitsGeplant = obj.einheiten.map((e, i) => {
+      let zeile = `  Einheit ${i + 1}: "${e.titel}"`;
+      const stundenTitel = (e.stunden || []).map(s => s.titel).filter(Boolean);
+      if (stundenTitel.length) zeile += ` (Stunden: ${stundenTitel.join(', ')})`;
+      return zeile;
+    }).join('\n');
+    geschwisterHinweis += `\nBEREITS GEPLANTE EINHEITEN in dieser Reihe (baue darauf auf):\n${bereitsGeplant}\n` +
+      `Die neuen Einheiten sollen an Einheit ${obj.einheiten.length} anknüpfen.\n`;
+  }
+
   // Aufgabe und Ausgabeformat je nach Ebene
   const AUFGABEN = {
     block: {

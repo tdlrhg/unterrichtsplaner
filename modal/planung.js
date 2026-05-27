@@ -138,5 +138,71 @@ function modalHandlerPlanung(type, data, m) {
     return true;
   }
 
+  if (type === 'moveStunde') {
+    const { fpId, blockId, reiheId, einheitId, stundeId } = data;
+    const fp = getFachplanung(fpId);
+    const srcEinheit = findEinheit(fpId, blockId, reiheId, einheitId);
+    const stunde = findStunde(fpId, blockId, reiheId, einheitId, stundeId);
+    if (!fp || !srcEinheit || !stunde) return false;
+
+    m.appendChild(tx('div', 'modal-title', '↗ Stunde verschieben'));
+    m.appendChild(tx('div', 'modal-hint', '"' + (stunde.titel || 'Stunde') + '" in eine andere Einheit verschieben'));
+
+    // Alle Reihen+Einheiten sammeln (außer der Quelle)
+    const reiheOpts = [['', '— Reihe wählen —']];
+    const einheitOptsMap = {}; // reiheKey → [[val,lbl]]
+    (fp.blocks || []).forEach(bl => {
+      (bl.reihen || []).forEach(r => {
+        const rKey = bl.id + '|' + r.id;
+        reiheOpts.push([rKey, bl.titel + ' › ' + r.titel]);
+        einheitOptsMap[rKey] = [['', '— Einheit wählen —']];
+        (r.einheiten || []).forEach(e => {
+          // Quelle ausschließen
+          if (bl.id === blockId && r.id === reiheId && e.id === einheitId) return;
+          einheitOptsMap[rKey].push([e.id, e.titel]);
+        });
+      });
+    });
+
+    const rSel = modalSelect('ms-reihe', 'Ziel-Reihe', reiheOpts, '');
+    const eSel = modalSelect('ms-einheit', 'Ziel-Einheit', [['', '— erst Reihe wählen —']], '');
+    m.appendChild(rSel);
+    m.appendChild(eSel);
+
+    // Einheit-Select dynamisch befüllen wenn Reihe gewählt
+    const rEl = rSel.querySelector('select');
+    const eEl = eSel.querySelector('select');
+    rEl.onchange = () => {
+      eEl.innerHTML = '';
+      const opts = einheitOptsMap[rEl.value] || [['', '— keine Einheiten —']];
+      opts.forEach(([v, l]) => {
+        const o = document.createElement('option');
+        o.value = v; o.textContent = l; eEl.appendChild(o);
+      });
+    };
+
+    const footer = mk('div', 'modal-footer');
+    const okb = btn('Verschieben', 'btn btn-pri');
+    okb.onclick = () => {
+      const rKey = rEl.value;
+      const tgtEinheitId = eEl.value;
+      if (!rKey || !tgtEinheitId) { alert('Bitte Reihe und Einheit auswählen.'); return; }
+      const [tgtBlockId, tgtReiheId] = rKey.split('|');
+      const tgtEinheit = findEinheit(fpId, tgtBlockId, tgtReiheId, tgtEinheitId);
+      if (!tgtEinheit) return;
+      // Verschieben
+      srcEinheit.stunden = srcEinheit.stunden.filter(s => s.id !== stundeId);
+      if (!tgtEinheit.stunden) tgtEinheit.stunden = [];
+      tgtEinheit.stunden.push(stunde);
+      S.modal = null;
+      S.sel = { type: 'stunde', ids: [fpId, tgtBlockId, tgtReiheId, tgtEinheitId, stundeId] };
+      scheduleSave(); render();
+    };
+    footer.appendChild(cancelBtn());
+    footer.appendChild(okb);
+    m.appendChild(footer);
+    return true;
+  }
+
   return false;
 }

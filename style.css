@@ -217,6 +217,7 @@ textarea::placeholder { color: #c4cdd6; }
 .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 200; }
 .modal { background: #fff; border-radius: 10px; padding: 24px; width: 500px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,.2); }
 .modal-title { font-size: 18px; font-weight: 800; color: var(--pri); margin-bottom: 16px; }
+.modal-hint { font-size: 13px; color: var(--tx3); margin-top: -10px; margin-bottom: 16px; }
 .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
 
 /* ── Kurs items ── */

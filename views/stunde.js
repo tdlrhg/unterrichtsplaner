@@ -1240,6 +1240,10 @@ function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
   left.appendChild(tx('div', 'c-title', stunde.titel || 'Stunde'));
   left.appendChild(tx('div', 'c-sub', 'Unterrichtsstunde · ' + einheit.titel));
   hdr.appendChild(left);
+  const hdrBtns = mk('div', 'btn-grp');
+  const mvb = btn('↗ Verschieben', 'btn btn-ghost btn-sm');
+  mvb.onclick = () => { S.modal = { type: 'moveStunde', data: { fpId, blockId, reiheId, einheitId, stundeId } }; render(); };
+  hdrBtns.appendChild(mvb);
   const db = btn('🗑 Löschen', 'btn btn-danger btn-sm');
   db.onclick = () => {
     if (confirm('Stunde löschen?')) {
@@ -1248,7 +1252,8 @@ function viewStunde(fpId, blockId, reiheId, einheitId, stundeId) {
       scheduleSave(); render();
     }
   };
-  hdr.appendChild(db);
+  hdrBtns.appendChild(db);
+  hdr.appendChild(hdrBtns);
   div.appendChild(hdr);
 
   renderStundenBody(div, stunde, fp);

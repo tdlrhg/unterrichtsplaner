@@ -314,6 +314,10 @@ textarea::placeholder { color: #c4cdd6; }
 
 .col-item:hover { border-color: var(--pri); box-shadow: 0 1px 4px rgba(79,70,229,.1); }
 .col-item.active { background: #ede9fe; border-color: #3b82f6; }
+.col-item[draggable="true"] { cursor: grab; }
+.col-item[draggable="true"]:active { cursor: grabbing; }
+.col-item.col-item-dragging { opacity: .35; }
+.col-item.col-item-drop { background: #eff6ff; border-color: var(--pri); box-shadow: 0 0 0 2px rgba(79,70,229,.3); }
 
 .col-item-label {
   flex: 1;

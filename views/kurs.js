@@ -15,7 +15,7 @@ function makeCol(title, onAdd) {
   return { col, body };
 }
 
-function makeColItem(title, sub, isActive, onSelect, onUp, onDown, onDelete, isFirst, isLast, onEdit) {
+function makeColItem(title, sub, isActive, onSelect, onUp, onDown, onDelete, isFirst, isLast, onEdit, dragPayload, onDrop) {
   const item = mk('div', 'col-item' + (isActive ? ' active' : ''));
   const label = mk('div', 'col-item-label');
   label.appendChild(tx('div', 'col-item-title', title));
@@ -41,6 +41,33 @@ function makeColItem(title, sub, isActive, onSelect, onUp, onDown, onDelete, isF
   delBtn.onclick = e => { e.stopPropagation(); onDelete(); };
   actions.appendChild(upBtn); actions.appendChild(downBtn); actions.appendChild(delBtn);
   item.appendChild(actions);
+
+  // Drag (Quelle)
+  if (dragPayload) {
+    item.draggable = true;
+    item.ondragstart = e => {
+      e.dataTransfer.setData('application/x-fp-item', JSON.stringify(dragPayload));
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => item.classList.add('col-item-dragging'), 0);
+    };
+    item.ondragend = () => item.classList.remove('col-item-dragging');
+  }
+
+  // Drop (Ziel)
+  if (onDrop) {
+    item.ondragover = e => {
+      if (e.dataTransfer.types.includes('application/x-fp-item')) {
+        e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+        item.classList.add('col-item-drop');
+      }
+    };
+    item.ondragleave = e => { if (!item.contains(e.relatedTarget)) item.classList.remove('col-item-drop'); };
+    item.ondrop = e => {
+      e.preventDefault(); item.classList.remove('col-item-drop');
+      try { onDrop(JSON.parse(e.dataTransfer.getData('application/x-fp-item'))); } catch(_) {}
+    };
+  }
+
   return item;
 }
 
@@ -105,7 +132,20 @@ function viewFachplanung() {
           () => { swap(lp.blocks, i, i+1); scheduleSave(); render(); },
           () => { if(confirm('Block "'+block.titel+'" löschen?')){ lp.blocks=lp.blocks.filter(b=>b.id!==block.id); if(selBlockId===block.id)S.sel=null; scheduleSave(); render(); }},
           i===0, i===lp.blocks.length-1,
-          () => { S.modal={type:'umbenennen',data:{obj:block,feld:'titel',label:'Themenblock'}}; render(); }
+          () => { S.modal={type:'umbenennen',data:{obj:block,feld:'titel',label:'Themenblock'}}; render(); },
+          null, // Blöcke werden nicht gezogen
+          p => { // Drop: Reihe in diesen Block verschieben
+            if (p.type !== 'reihe' || p.srcBlockId === block.id) return;
+            const src = (lp.blocks||[]).find(b=>b.id===p.srcBlockId);
+            if (!src) return;
+            const reihe = (src.reihen||[]).find(r=>r.id===p.reiheId);
+            if (!reihe) return;
+            src.reihen = src.reihen.filter(r=>r.id!==p.reiheId);
+            if (!block.reihen) block.reihen = [];
+            block.reihen.push(reihe);
+            S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
+            scheduleSave(); render();
+          }
         ));
       });
   cols.appendChild(c1);
@@ -127,7 +167,20 @@ function viewFachplanung() {
             () => { swap(selBlock.reihen, i, i+1); scheduleSave(); render(); },
             () => { if(confirm('Reihe löschen?')){ selBlock.reihen=selBlock.reihen.filter(r=>r.id!==reihe.id); if(selReiheId===reihe.id)S.sel={type:'block',ids:[lp.id,selBlock.id]}; scheduleSave(); render(); }},
             i===0, i===selBlock.reihen.length-1,
-            () => { S.modal={type:'umbenennen',data:{obj:reihe,feld:'titel',label:'Unterrichtsreihe'}}; render(); }
+            () => { S.modal={type:'umbenennen',data:{obj:reihe,feld:'titel',label:'Unterrichtsreihe'}}; render(); },
+            { type: 'reihe', srcBlockId: selBlock.id, reiheId: reihe.id }, // ziehbar
+            p => { // Drop: Einheit in diese Reihe verschieben
+              if (p.type !== 'einheit' || p.srcReiheId === reihe.id) return;
+              const srcReihe = (selBlock.reihen||[]).find(r=>r.id===p.srcReiheId);
+              if (!srcReihe) return;
+              const einheit = (srcReihe.einheiten||[]).find(e=>e.id===p.einheitId);
+              if (!einheit) return;
+              srcReihe.einheiten = srcReihe.einheiten.filter(e=>e.id!==p.einheitId);
+              if (!reihe.einheiten) reihe.einheiten = [];
+              reihe.einheiten.push(einheit);
+              S.sel = { type: 'einheit', ids: [lp.id, selBlock.id, reihe.id, einheit.id] };
+              scheduleSave(); render();
+            }
           ));
         });
     cols.appendChild(c2);
@@ -150,7 +203,20 @@ function viewFachplanung() {
             () => { swap(selReihe.einheiten, i, i+1); scheduleSave(); render(); },
             () => { if(confirm('Einheit löschen?')){ selReihe.einheiten=selReihe.einheiten.filter(e=>e.id!==einheit.id); if(selEinheitId===einheit.id)S.sel={type:'reihe',ids:[lp.id,selBlock.id,selReihe.id]}; scheduleSave(); render(); }},
             i===0, i===selReihe.einheiten.length-1,
-            () => { S.modal={type:'umbenennen',data:{obj:einheit,feld:'titel',label:'Unterrichtseinheit'}}; render(); }
+            () => { S.modal={type:'umbenennen',data:{obj:einheit,feld:'titel',label:'Unterrichtseinheit'}}; render(); },
+            { type: 'einheit', srcReiheId: selReihe.id, einheitId: einheit.id }, // ziehbar
+            p => { // Drop: Stunde in diese Einheit verschieben
+              if (p.type !== 'stunde' || p.srcEinheitId === einheit.id) return;
+              const srcEinheit = (selReihe.einheiten||[]).find(e=>e.id===p.srcEinheitId);
+              if (!srcEinheit) return;
+              const stunde = (srcEinheit.stunden||[]).find(s=>s.id===p.stundeId);
+              if (!stunde) return;
+              srcEinheit.stunden = srcEinheit.stunden.filter(s=>s.id!==p.stundeId);
+              if (!einheit.stunden) einheit.stunden = [];
+              einheit.stunden.push(stunde);
+              S.sel = { type: 'stunde', ids: [lp.id, selBlock.id, selReihe.id, einheit.id, stunde.id] };
+              scheduleSave(); render();
+            }
           ));
         });
     cols.appendChild(c3);
@@ -175,7 +241,9 @@ function viewFachplanung() {
             () => { swap(selEinheit.stunden, i, i+1); scheduleSave(); render(); },
             () => { if(confirm('Stunde löschen?')){ selEinheit.stunden=selEinheit.stunden.filter(s=>s.id!==stunde.id); if(sel.ids&&sel.ids[4]===stunde.id)S.sel={type:'einheit',ids:[lp.id,selBlock.id,selReihe.id,selEinheit.id]}; scheduleSave(); render(); }},
             i===0, i===selEinheit.stunden.length-1,
-            () => { S.modal={type:'umbenennen',data:{obj:stunde,feld:'titel',label:'Stunde'}}; render(); }
+            () => { S.modal={type:'umbenennen',data:{obj:stunde,feld:'titel',label:'Stunde'}}; render(); },
+            { type: 'stunde', srcEinheitId: selEinheit.id, stundeId: stunde.id }, // ziehbar
+            null // Stunden sind kein Drop-Ziel
           ));
         });
     cols.appendChild(c4);

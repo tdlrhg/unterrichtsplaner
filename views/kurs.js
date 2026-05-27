@@ -71,7 +71,301 @@ function makeColItem(title, sub, isActive, onSelect, onUp, onDown, onDelete, isF
   return item;
 }
 
-// ── Fachplanung-Ansicht (Spalten) ────────────────────────────────────
+// ── Fachplanung-Baum ────────────────────────────────────────────────
+function buildFpTree(lp, sel) {
+  if (!S._treeOffen) S._treeOffen = {};
+  const isOpen = key => S._treeOffen[key] !== false; // default: open
+  const toggleOpen = key => { S._treeOffen[key] = !isOpen(key); render(); };
+
+  const selBlockId   = sel.ids && sel.ids[1];
+  const selReiheId   = sel.ids && sel.ids[2];
+  const selEinheitId = sel.ids && sel.ids[3];
+  const selStundeId  = sel.ids && sel.ids[4];
+
+  const tree = mk('div', 'fp-tree');
+
+  function makeDrop(row, acceptType, onDropFn) {
+    row.ondragover = e => {
+      if (e.dataTransfer.types.includes('application/x-fp-item')) {
+        e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+        row.classList.add('fp-tree-row-drop');
+      }
+    };
+    row.ondragleave = e => { if (!row.contains(e.relatedTarget)) row.classList.remove('fp-tree-row-drop'); };
+    row.ondrop = e => {
+      e.preventDefault(); row.classList.remove('fp-tree-row-drop');
+      try {
+        const p = JSON.parse(e.dataTransfer.getData('application/x-fp-item'));
+        if (p.type === acceptType) onDropFn(p);
+      } catch(_) {}
+    };
+  }
+
+  function makeRow(opts) {
+    const { level, title, sub, isActive, hasChildren, openKey, onSelect,
+            dragPayload, dropType, onDrop, onEdit, onUp, onDown, onDelete,
+            isFirst, isLast, onAdd, addLabel } = opts;
+    const open = openKey ? isOpen(openKey) : false;
+
+    const row = mk('div', 'fp-tree-row fp-tree-level-' + level + (isActive ? ' active' : ''));
+    row.style.paddingLeft = (16 + level * 20) + 'px';
+
+    // Toggle
+    const tog = mk('span', 'fp-tree-toggle');
+    if (hasChildren && openKey) {
+      tog.textContent = open ? '▾' : '▸';
+      tog.onclick = e => { e.stopPropagation(); toggleOpen(openKey); };
+    } else {
+      tog.textContent = hasChildren ? '▸' : '';
+      tog.style.opacity = '0';
+      tog.style.pointerEvents = 'none';
+    }
+    row.appendChild(tog);
+
+    // Label
+    const label = mk('div', 'fp-tree-label');
+    label.appendChild(tx('span', 'fp-tree-title', title));
+    if (sub) label.appendChild(tx('span', 'fp-tree-sub', sub));
+    label.onclick = e => { e.stopPropagation(); onSelect && onSelect(); };
+    row.appendChild(label);
+
+    // Actions
+    const actions = mk('div', 'fp-tree-actions');
+    if (onAdd) {
+      const ab = mk('button', 'fp-tree-act-btn fp-tree-add');
+      ab.textContent = addLabel || '+ Neu'; ab.title = 'Anlegen';
+      ab.onclick = e => { e.stopPropagation(); onAdd(); };
+      actions.appendChild(ab);
+    }
+    if (onEdit) {
+      const eb = mk('button', 'fp-tree-act-btn');
+      eb.textContent = '✏'; eb.title = 'Umbenennen';
+      eb.onclick = e => { e.stopPropagation(); onEdit(); };
+      actions.appendChild(eb);
+    }
+    if (onUp !== undefined) {
+      const ub = mk('button', 'fp-tree-act-btn'); ub.textContent = '↑'; ub.title = 'Nach oben';
+      if (isFirst) ub.disabled = true;
+      ub.onclick = e => { e.stopPropagation(); onUp(); };
+      actions.appendChild(ub);
+    }
+    if (onDown !== undefined) {
+      const db = mk('button', 'fp-tree-act-btn'); db.textContent = '↓'; db.title = 'Nach unten';
+      if (isLast) db.disabled = true;
+      db.onclick = e => { e.stopPropagation(); onDown(); };
+      actions.appendChild(db);
+    }
+    if (onDelete) {
+      const dlb = mk('button', 'fp-tree-act-btn danger'); dlb.textContent = '✕'; dlb.title = 'Löschen';
+      dlb.onclick = e => { e.stopPropagation(); onDelete(); };
+      actions.appendChild(dlb);
+    }
+    row.appendChild(actions);
+
+    // Drag (Quelle)
+    if (dragPayload) {
+      row.draggable = true;
+      row.ondragstart = e => {
+        e.dataTransfer.setData('application/x-fp-item', JSON.stringify(dragPayload));
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => row.classList.add('fp-tree-row-dragging'), 0);
+      };
+      row.ondragend = () => row.classList.remove('fp-tree-row-dragging');
+    }
+    // Drop (Ziel)
+    if (dropType && onDrop) makeDrop(row, dropType, onDrop);
+
+    return { row, open };
+  }
+
+  // ── Blöcke ────────────────────────────────────────────────────────
+  if (!(lp.blocks || []).length) {
+    tree.appendChild(tx('div', 'fp-tree-empty', 'Noch keine Blöcke angelegt.'));
+  }
+
+  (lp.blocks || []).forEach((block, bi) => {
+    const bKey = 'b_' + block.id;
+    const rn = (block.reihen || []).length;
+    const angelegte = (block.reihen || []).reduce((s,r) => (r.einheiten||[]).reduce((s2,e) => s2+(e.stunden||[]).length, s), 0);
+    const geplant = block.stundenGesamt ? parseInt(block.stundenGesamt) : null;
+    const bSub = rn + ' Reihe' + (rn !== 1 ? 'n' : '') +
+      (geplant ? ' · ' + angelegte + '/' + geplant + ' Std.' : (angelegte > 0 ? ' · ' + angelegte + ' Std.' : ''));
+
+    const { row: bRow, open: bOpen } = makeRow({
+      level: 0, title: block.titel, sub: bSub,
+      isActive: selBlockId === block.id && !selReiheId,
+      hasChildren: rn > 0, openKey: bKey,
+      onSelect: () => {
+        S.sel = { type: 'block', ids: [lp.id, block.id] };
+        if (!isOpen(bKey)) { S._treeOffen[bKey] = true; }
+        render();
+      },
+      dropType: 'reihe',
+      onDrop: p => {
+        if (p.srcBlockId === block.id) return;
+        const src = (lp.blocks||[]).find(b => b.id === p.srcBlockId);
+        const reihe = src && (src.reihen||[]).find(r => r.id === p.reiheId);
+        if (!reihe) return;
+        src.reihen = src.reihen.filter(r => r.id !== p.reiheId);
+        if (!block.reihen) block.reihen = [];
+        block.reihen.push(reihe);
+        S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
+        scheduleSave(); render();
+      },
+      onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: block, feld: 'titel', label: 'Themenblock' } }; render(); },
+      onUp: () => { swap(lp.blocks, bi, bi-1); scheduleSave(); render(); },
+      onDown: () => { swap(lp.blocks, bi, bi+1); scheduleSave(); render(); },
+      isFirst: bi === 0, isLast: bi === lp.blocks.length-1,
+      onDelete: () => {
+        if (confirm('Block "' + block.titel + '" löschen?')) {
+          lp.blocks = lp.blocks.filter(b => b.id !== block.id);
+          if (selBlockId === block.id) S.sel = null;
+          scheduleSave(); render();
+        }
+      },
+      onAdd: () => { S.modal = { type: 'newReihe', data: { fpId: lp.id, blockId: block.id } }; render(); },
+      addLabel: '+ Reihe',
+    });
+    tree.appendChild(bRow);
+    if (!bOpen) return;
+
+    // ── Reihen ──────────────────────────────────────────────────────
+    if (!(block.reihen || []).length) {
+      const emp = tx('div', 'fp-tree-empty', 'Keine Reihen.');
+      emp.style.paddingLeft = (16 + 1 * 20) + 'px';
+      tree.appendChild(emp);
+    }
+
+    (block.reihen || []).forEach((reihe, ri) => {
+      const rKey = 'r_' + reihe.id;
+      const en = (reihe.einheiten || []).length;
+
+      const { row: rRow, open: rOpen } = makeRow({
+        level: 1, title: reihe.titel, sub: en + ' Einheit' + (en !== 1 ? 'en' : ''),
+        isActive: selReiheId === reihe.id && !selEinheitId,
+        hasChildren: en > 0, openKey: rKey,
+        onSelect: () => {
+          S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
+          if (!isOpen(rKey)) { S._treeOffen[rKey] = true; }
+          render();
+        },
+        dragPayload: { type: 'reihe', srcBlockId: block.id, reiheId: reihe.id },
+        dropType: 'einheit',
+        onDrop: p => {
+          if (p.srcReiheId === reihe.id) return;
+          const srcReihe = (block.reihen||[]).find(r => r.id === p.srcReiheId);
+          const einheit = srcReihe && (srcReihe.einheiten||[]).find(e => e.id === p.einheitId);
+          if (!einheit) return;
+          srcReihe.einheiten = srcReihe.einheiten.filter(e => e.id !== p.einheitId);
+          if (!reihe.einheiten) reihe.einheiten = [];
+          reihe.einheiten.push(einheit);
+          S.sel = { type: 'einheit', ids: [lp.id, block.id, reihe.id, einheit.id] };
+          scheduleSave(); render();
+        },
+        onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: reihe, feld: 'titel', label: 'Unterrichtsreihe' } }; render(); },
+        onUp: () => { swap(block.reihen, ri, ri-1); scheduleSave(); render(); },
+        onDown: () => { swap(block.reihen, ri, ri+1); scheduleSave(); render(); },
+        isFirst: ri === 0, isLast: ri === block.reihen.length-1,
+        onDelete: () => {
+          if (confirm('Reihe löschen?')) {
+            block.reihen = block.reihen.filter(r => r.id !== reihe.id);
+            if (selReiheId === reihe.id) S.sel = { type: 'block', ids: [lp.id, block.id] };
+            scheduleSave(); render();
+          }
+        },
+        onAdd: () => { S.modal = { type: 'newEinheit', data: { fpId: lp.id, blockId: block.id, reiheId: reihe.id } }; render(); },
+        addLabel: '+ Einheit',
+      });
+      tree.appendChild(rRow);
+      if (!rOpen) return;
+
+      // ── Einheiten ────────────────────────────────────────────────
+      if (!(reihe.einheiten || []).length) {
+        const emp = tx('div', 'fp-tree-empty', 'Keine Einheiten.');
+        emp.style.paddingLeft = (16 + 2 * 20) + 'px';
+        tree.appendChild(emp);
+      }
+
+      (reihe.einheiten || []).forEach((einheit, ei) => {
+        const eKey = 'e_' + einheit.id;
+        const sn = (einheit.stunden || []).length;
+
+        const { row: eRow, open: eOpen } = makeRow({
+          level: 2, title: einheit.titel, sub: sn + ' Stunde' + (sn !== 1 ? 'n' : ''),
+          isActive: selEinheitId === einheit.id && !selStundeId,
+          hasChildren: sn > 0, openKey: eKey,
+          onSelect: () => {
+            S.sel = { type: 'einheit', ids: [lp.id, block.id, reihe.id, einheit.id] };
+            if (!isOpen(eKey)) { S._treeOffen[eKey] = true; }
+            render();
+          },
+          dragPayload: { type: 'einheit', srcReiheId: reihe.id, einheitId: einheit.id },
+          dropType: 'stunde',
+          onDrop: p => {
+            if (p.srcEinheitId === einheit.id) return;
+            const srcEinheit = (reihe.einheiten||[]).find(e => e.id === p.srcEinheitId);
+            const stunde = srcEinheit && (srcEinheit.stunden||[]).find(s => s.id === p.stundeId);
+            if (!stunde) return;
+            srcEinheit.stunden = srcEinheit.stunden.filter(s => s.id !== p.stundeId);
+            if (!einheit.stunden) einheit.stunden = [];
+            einheit.stunden.push(stunde);
+            S.sel = { type: 'stunde', ids: [lp.id, block.id, reihe.id, einheit.id, stunde.id] };
+            scheduleSave(); render();
+          },
+          onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: einheit, feld: 'titel', label: 'Unterrichtseinheit' } }; render(); },
+          onUp: () => { swap(reihe.einheiten, ei, ei-1); scheduleSave(); render(); },
+          onDown: () => { swap(reihe.einheiten, ei, ei+1); scheduleSave(); render(); },
+          isFirst: ei === 0, isLast: ei === reihe.einheiten.length-1,
+          onDelete: () => {
+            if (confirm('Einheit löschen?')) {
+              reihe.einheiten = reihe.einheiten.filter(e => e.id !== einheit.id);
+              if (selEinheitId === einheit.id) S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
+              scheduleSave(); render();
+            }
+          },
+          onAdd: () => { S.modal = { type: 'newStunde', data: { fpId: lp.id, blockId: block.id, reiheId: reihe.id, einheitId: einheit.id } }; render(); },
+          addLabel: '+ Stunde',
+        });
+        tree.appendChild(eRow);
+        if (!eOpen) return;
+
+        // ── Stunden ────────────────────────────────────────────────
+        (einheit.stunden || []).forEach((stunde, si) => {
+          const prioIcon = { pflicht:'🟢', optional:'🟡', puffer:'🔵', klassenarbeit:'📝', rueckgabe:'📋' }[stunde.prioritaet||'pflicht'] || '🟢';
+          const { row: sRow } = makeRow({
+            level: 3, title: prioIcon + ' ' + (stunde.titel || '(ohne Titel)'),
+            sub: stunde.lernziel ? stunde.lernziel.slice(0, 55) + '…' : null,
+            isActive: selStundeId === stunde.id,
+            hasChildren: false,
+            onSelect: () => { S.sel = { type: 'stunde', ids: [lp.id, block.id, reihe.id, einheit.id, stunde.id] }; render(); },
+            dragPayload: { type: 'stunde', srcEinheitId: einheit.id, stundeId: stunde.id },
+            onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: stunde, feld: 'titel', label: 'Stunde' } }; render(); },
+            onUp: () => { swap(einheit.stunden, si, si-1); scheduleSave(); render(); },
+            onDown: () => { swap(einheit.stunden, si, si+1); scheduleSave(); render(); },
+            isFirst: si === 0, isLast: si === einheit.stunden.length-1,
+            onDelete: () => {
+              if (confirm('Stunde löschen?')) {
+                einheit.stunden = einheit.stunden.filter(s => s.id !== stunde.id);
+                if (selStundeId === stunde.id) S.sel = { type: 'einheit', ids: [lp.id, block.id, reihe.id, einheit.id] };
+                scheduleSave(); render();
+              }
+            },
+          });
+          tree.appendChild(sRow);
+        });
+      });
+    });
+  });
+
+  const addBlockBtn = mk('button', 'fp-tree-add-top');
+  addBlockBtn.textContent = '+ Themenblock anlegen';
+  addBlockBtn.onclick = () => { S.modal = { type: 'newBlock', data: { fpId: lp.id } }; render(); };
+  tree.appendChild(addBlockBtn);
+
+  return tree;
+}
+
+// ── Fachplanung-Ansicht ───────────────────────────────────────────────
 function viewFachplanung() {
   const lp = getFachplanung(S.aktFpId);
   if (!lp) {
@@ -110,146 +404,9 @@ function viewFachplanung() {
   const selReihe   = selBlock     && (selBlock.reihen || []).find(r => r.id === selReiheId);
   const selEinheit = selReihe     && (selReihe.einheiten || []).find(e => e.id === selEinheitId);
 
-  const cols = mk('div', 'col-layout');
-
-  // Spalte 1: Blöcke
-  const { col: c1, body: b1 } = makeCol('Themenblöcke', () => {
-    S.modal = { type: 'newBlock', data: { fpId: lp.id } }; render();
-  });
-  (lp.blocks || []).length === 0
-    ? b1.appendChild(gray('Noch keine Blöcke.'))
-    : (lp.blocks || []).forEach((block, i) => {
-        const rn = (block.reihen || []).length;
-        const angelegte = (block.reihen || []).reduce((s,r)=>(r.einheiten||[]).reduce((s2,e)=>s2+(e.stunden||[]).length,s),0);
-        const geplant = block.stundenGesamt ? parseInt(block.stundenGesamt) : null;
-        const subLabel = rn + ' Reihe' + (rn !== 1 ? 'n' : '') +
-          (geplant ? ' · ' + angelegte + '/' + geplant + ' Std.' : (angelegte > 0 ? ' · ' + angelegte + ' Std.' : ''));
-        b1.appendChild(makeColItem(
-          block.titel, subLabel,
-          selBlockId === block.id,
-          () => { S.sel = { type: 'block', ids: [lp.id, block.id] }; render(); },
-          () => { swap(lp.blocks, i, i-1); scheduleSave(); render(); },
-          () => { swap(lp.blocks, i, i+1); scheduleSave(); render(); },
-          () => { if(confirm('Block "'+block.titel+'" löschen?')){ lp.blocks=lp.blocks.filter(b=>b.id!==block.id); if(selBlockId===block.id)S.sel=null; scheduleSave(); render(); }},
-          i===0, i===lp.blocks.length-1,
-          () => { S.modal={type:'umbenennen',data:{obj:block,feld:'titel',label:'Themenblock'}}; render(); },
-          null, // Blöcke werden nicht gezogen
-          p => { // Drop: Reihe in diesen Block verschieben
-            if (p.type !== 'reihe' || p.srcBlockId === block.id) return;
-            const src = (lp.blocks||[]).find(b=>b.id===p.srcBlockId);
-            if (!src) return;
-            const reihe = (src.reihen||[]).find(r=>r.id===p.reiheId);
-            if (!reihe) return;
-            src.reihen = src.reihen.filter(r=>r.id!==p.reiheId);
-            if (!block.reihen) block.reihen = [];
-            block.reihen.push(reihe);
-            S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
-            scheduleSave(); render();
-          }
-        ));
-      });
-  cols.appendChild(c1);
-
-  // Spalte 2: Reihen
-  if (selBlock) {
-    const { col: c2, body: b2 } = makeCol(selBlock.titel, () => {
-      S.modal = { type: 'newReihe', data: { fpId: lp.id, blockId: selBlock.id } }; render();
-    });
-    (selBlock.reihen || []).length === 0
-      ? b2.appendChild(gray('Noch keine Reihen.'))
-      : (selBlock.reihen || []).forEach((reihe, i) => {
-          const en = (reihe.einheiten || []).length;
-          b2.appendChild(makeColItem(
-            reihe.titel, en + ' Einheit' + (en !== 1 ? 'en' : ''),
-            selReiheId === reihe.id,
-            () => { S.sel = { type: 'reihe', ids: [lp.id, selBlock.id, reihe.id] }; render(); },
-            () => { swap(selBlock.reihen, i, i-1); scheduleSave(); render(); },
-            () => { swap(selBlock.reihen, i, i+1); scheduleSave(); render(); },
-            () => { if(confirm('Reihe löschen?')){ selBlock.reihen=selBlock.reihen.filter(r=>r.id!==reihe.id); if(selReiheId===reihe.id)S.sel={type:'block',ids:[lp.id,selBlock.id]}; scheduleSave(); render(); }},
-            i===0, i===selBlock.reihen.length-1,
-            () => { S.modal={type:'umbenennen',data:{obj:reihe,feld:'titel',label:'Unterrichtsreihe'}}; render(); },
-            { type: 'reihe', srcBlockId: selBlock.id, reiheId: reihe.id }, // ziehbar
-            p => { // Drop: Einheit in diese Reihe verschieben
-              if (p.type !== 'einheit' || p.srcReiheId === reihe.id) return;
-              const srcReihe = (selBlock.reihen||[]).find(r=>r.id===p.srcReiheId);
-              if (!srcReihe) return;
-              const einheit = (srcReihe.einheiten||[]).find(e=>e.id===p.einheitId);
-              if (!einheit) return;
-              srcReihe.einheiten = srcReihe.einheiten.filter(e=>e.id!==p.einheitId);
-              if (!reihe.einheiten) reihe.einheiten = [];
-              reihe.einheiten.push(einheit);
-              S.sel = { type: 'einheit', ids: [lp.id, selBlock.id, reihe.id, einheit.id] };
-              scheduleSave(); render();
-            }
-          ));
-        });
-    cols.appendChild(c2);
-  }
-
-  // Spalte 3: Einheiten
-  if (selReihe) {
-    const { col: c3, body: b3 } = makeCol(selReihe.titel, () => {
-      S.modal = { type: 'newEinheit', data: { fpId: lp.id, blockId: selBlock.id, reiheId: selReihe.id } }; render();
-    });
-    (selReihe.einheiten || []).length === 0
-      ? b3.appendChild(gray('Noch keine Einheiten.'))
-      : (selReihe.einheiten || []).forEach((einheit, i) => {
-          const sn = (einheit.stunden || []).length;
-          b3.appendChild(makeColItem(
-            einheit.titel, sn + ' Stunde' + (sn !== 1 ? 'n' : ''),
-            selEinheitId === einheit.id,
-            () => { S.sel = { type: 'einheit', ids: [lp.id, selBlock.id, selReihe.id, einheit.id] }; render(); },
-            () => { swap(selReihe.einheiten, i, i-1); scheduleSave(); render(); },
-            () => { swap(selReihe.einheiten, i, i+1); scheduleSave(); render(); },
-            () => { if(confirm('Einheit löschen?')){ selReihe.einheiten=selReihe.einheiten.filter(e=>e.id!==einheit.id); if(selEinheitId===einheit.id)S.sel={type:'reihe',ids:[lp.id,selBlock.id,selReihe.id]}; scheduleSave(); render(); }},
-            i===0, i===selReihe.einheiten.length-1,
-            () => { S.modal={type:'umbenennen',data:{obj:einheit,feld:'titel',label:'Unterrichtseinheit'}}; render(); },
-            { type: 'einheit', srcReiheId: selReihe.id, einheitId: einheit.id }, // ziehbar
-            p => { // Drop: Stunde in diese Einheit verschieben
-              if (p.type !== 'stunde' || p.srcEinheitId === einheit.id) return;
-              const srcEinheit = (selReihe.einheiten||[]).find(e=>e.id===p.srcEinheitId);
-              if (!srcEinheit) return;
-              const stunde = (srcEinheit.stunden||[]).find(s=>s.id===p.stundeId);
-              if (!stunde) return;
-              srcEinheit.stunden = srcEinheit.stunden.filter(s=>s.id!==p.stundeId);
-              if (!einheit.stunden) einheit.stunden = [];
-              einheit.stunden.push(stunde);
-              S.sel = { type: 'stunde', ids: [lp.id, selBlock.id, selReihe.id, einheit.id, stunde.id] };
-              scheduleSave(); render();
-            }
-          ));
-        });
-    cols.appendChild(c3);
-  }
-
-  // Spalte 4: Stunden
-  if (selEinheit) {
-    const { col: c4, body: b4 } = makeCol(selEinheit.titel, () => {
-      S.modal = { type: 'newStunde', data: { fpId: lp.id, blockId: selBlock.id, reiheId: selReihe.id, einheitId: selEinheit.id } }; render();
-    });
-    (selEinheit.stunden || []).length === 0
-      ? b4.appendChild(gray('Noch keine Stunden.'))
-      : (selEinheit.stunden || []).forEach((stunde, i) => {
-          const isAct = sel.ids && sel.ids[4] === stunde.id;
-          const prioIcon = {pflicht:'🟢',optional:'🟡',puffer:'🔵',klassenarbeit:'📝',rueckgabe:'📋'}[stunde.prioritaet||'pflicht']||'🟢';
-          b4.appendChild(makeColItem(
-            prioIcon + ' ' + (stunde.titel || '(ohne Titel)'),
-            stunde.lernziel ? stunde.lernziel.slice(0,50)+'…' : null,
-            isAct,
-            () => { S.sel = { type: 'stunde', ids: [lp.id, selBlock.id, selReihe.id, selEinheit.id, stunde.id] }; render(); },
-            () => { swap(selEinheit.stunden, i, i-1); scheduleSave(); render(); },
-            () => { swap(selEinheit.stunden, i, i+1); scheduleSave(); render(); },
-            () => { if(confirm('Stunde löschen?')){ selEinheit.stunden=selEinheit.stunden.filter(s=>s.id!==stunde.id); if(sel.ids&&sel.ids[4]===stunde.id)S.sel={type:'einheit',ids:[lp.id,selBlock.id,selReihe.id,selEinheit.id]}; scheduleSave(); render(); }},
-            i===0, i===selEinheit.stunden.length-1,
-            () => { S.modal={type:'umbenennen',data:{obj:stunde,feld:'titel',label:'Stunde'}}; render(); },
-            { type: 'stunde', srcEinheitId: selEinheit.id, stundeId: stunde.id }, // ziehbar
-            null // Stunden sind kein Drop-Ziel
-          ));
-        });
-    cols.appendChild(c4);
-  }
-
-  div.appendChild(cols);
+  const treePanel = mk('div', 'fp-tree-panel');
+  treePanel.appendChild(buildFpTree(lp, sel));
+  div.appendChild(treePanel);
 
   // ── Notizen zur ausgewählten Ebene ────────────────────────────
   const KI_EBENEN = {

@@ -227,21 +227,143 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
       blockOptionen.push({ value: block.id, label });
     });
   });
+  // ── Zuordnung: Block → Reihe (opt.) → Einheit (opt.) ──────────
+  function getBlockCtx(blockId) {
+    for (const fp of (S.data.fachplanungen || []))
+      for (const bl of (fp.blocks || []))
+        if (bl.id === blockId) return { fp, block: bl };
+    return null;
+  }
+
+  // Block-Zeile
   const blockRow = mk('div', 'mat-detail-row');
   blockRow.appendChild(tx('span', 'mat-detail-label', 'Block'));
   const blockSel = document.createElement('select'); blockSel.className = 'finp';
-  blockSel.style.cssText = 'font-size:12px;padding:3px 6px;max-width:320px;';
+  blockSel.style.cssText = 'font-size:12px;padding:3px 6px;max-width:280px;';
   blockOptionen.forEach(o => {
     const opt = document.createElement('option'); opt.value = o.value; opt.textContent = o.label;
     if (mat.blockId && mat.blockId === o.value) opt.selected = true;
     blockSel.appendChild(opt);
   });
-  blockSel.onchange = () => {
-    mat.blockId = blockSel.value || null;
-    saveMatDB(); renderCards();
-  };
   blockRow.appendChild(blockSel);
   currentSection.appendChild(blockRow);
+
+  // Reihe-Zeile
+  const reiheRow = mk('div', 'mat-detail-row');
+  reiheRow.appendChild(tx('span', 'mat-detail-label', 'Reihe'));
+  const reiheSel = document.createElement('select'); reiheSel.className = 'finp';
+  reiheSel.style.cssText = 'font-size:12px;padding:3px 6px;max-width:280px;';
+  reiheRow.appendChild(reiheSel);
+  currentSection.appendChild(reiheRow);
+
+  // Einheit-Zeile
+  const einheitRow = mk('div', 'mat-detail-row');
+  einheitRow.appendChild(tx('span', 'mat-detail-label', 'Einheit'));
+  const einheitSel = document.createElement('select'); einheitSel.className = 'finp';
+  einheitSel.style.cssText = 'font-size:12px;padding:3px 6px;max-width:220px;';
+  einheitRow.appendChild(einheitSel);
+  const kiZuordBtn = btn('💡 KI fragen', 'btn btn-ki btn-xs');
+  kiZuordBtn.style.marginLeft = '6px';
+  einheitRow.appendChild(kiZuordBtn);
+  currentSection.appendChild(einheitRow);
+
+  // KI-Antwort
+  const kiZuordResult = mk('div', 'ki-zuord-result');
+  kiZuordResult.style.display = 'none';
+  currentSection.appendChild(kiZuordResult);
+
+  // Reihen-Dropdown befüllen
+  function fillReihen(blockId) {
+    reiheSel.innerHTML = '';
+    const ctx = getBlockCtx(blockId);
+    const reihen = ctx ? (ctx.block.reihen || []) : [];
+    [{ id: '', titel: '– keine –' }, ...reihen].forEach(r => {
+      const o = document.createElement('option'); o.value = r.id; o.textContent = r.titel;
+      if (mat.reiheId === r.id) o.selected = true;
+      reiheSel.appendChild(o);
+    });
+    reiheRow.style.display = reihen.length ? '' : 'none';
+  }
+
+  // Einheiten-Dropdown befüllen
+  function fillEinheiten(blockId, reiheId) {
+    einheitSel.innerHTML = '';
+    const ctx = getBlockCtx(blockId);
+    const reihe = ctx && reiheId ? (ctx.block.reihen || []).find(r => r.id === reiheId) : null;
+    const einheiten = reihe ? (reihe.einheiten || []) : [];
+    [{ id: '', titel: '– keine –' }, ...einheiten].forEach(e => {
+      const o = document.createElement('option'); o.value = e.id; o.textContent = e.titel;
+      if (mat.einheitId === e.id) o.selected = true;
+      einheitSel.appendChild(o);
+    });
+    einheitRow.style.display = einheiten.length ? '' : 'none';
+  }
+
+  // Init
+  fillReihen(mat.blockId || '');
+  fillEinheiten(mat.blockId || '', mat.reiheId || '');
+
+  // Events
+  blockSel.onchange = () => {
+    mat.blockId = blockSel.value || null;
+    mat.reiheId = null; mat.einheitId = null;
+    fillReihen(mat.blockId || '');
+    fillEinheiten(mat.blockId || '', '');
+    kiZuordResult.style.display = 'none';
+    saveMatDB(); renderCards();
+  };
+  reiheSel.onchange = () => {
+    mat.reiheId = reiheSel.value || null;
+    mat.einheitId = null;
+    fillEinheiten(mat.blockId || '', mat.reiheId || '');
+    kiZuordResult.style.display = 'none';
+    saveMatDB(); renderCards();
+  };
+  einheitSel.onchange = () => {
+    mat.einheitId = einheitSel.value || null;
+    kiZuordResult.style.display = 'none';
+    saveMatDB(); renderCards();
+  };
+
+  // KI-Check
+  kiZuordBtn.onclick = async () => {
+    const antKey = localStorage.getItem('ant_key');
+    if (!antKey) { alert('Bitte API-Key in Einstellungen hinterlegen.'); return; }
+    const ctx = mat.blockId ? getBlockCtx(mat.blockId) : null;
+    if (!ctx) { kiZuordResult.textContent = 'Bitte zuerst einen Block auswählen.'; kiZuordResult.style.display = ''; return; }
+    const reihe = mat.reiheId ? (ctx.block.reihen || []).find(r => r.id === mat.reiheId) : null;
+    const einheit = reihe && mat.einheitId ? (reihe.einheiten || []).find(e => e.id === mat.einheitId) : null;
+    const andereReihen = (ctx.block.reihen || []).filter(r => r.id !== mat.reiheId).map(r => r.titel);
+    const andereEinheiten = reihe ? (reihe.einheiten || []).filter(e => e.id !== mat.einheitId).map(e => e.titel) : [];
+    let ziel = ctx.block.titel;
+    if (reihe) ziel += ' › ' + reihe.titel;
+    if (einheit) ziel += ' › ' + einheit.titel;
+    const prompt = `Du bist Didaktik-Expertin für NRW-Gymnasien.
+
+MATERIAL: "${mat.titel || '–'}"
+Fach: ${(mat.fach || []).join(', ') || '–'} · Jahrgang: ${(mat.jahrgang || []).join(', ') || '–'}
+Themen: ${(mat.themen || []).join(', ') || '–'}
+Beschreibung: ${mat.beschreibung || '–'}
+
+GEPLANTE ZUORDNUNG: ${ziel}
+${andereReihen.length ? 'Andere Reihen im Block: ' + andereReihen.join(', ') : ''}
+${andereEinheiten.length ? 'Andere Einheiten in der Reihe: ' + andereEinheiten.join(', ') : ''}
+
+Ist diese Zuordnung didaktisch sinnvoll? 2–3 Sätze: Ja/Nein + Begründung. Falls nein, wo besser?`;
+    kiZuordBtn.textContent = '⏳'; kiZuordBtn.disabled = true;
+    kiZuordResult.style.display = 'none';
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 250, messages: [{ role: 'user', content: prompt }] }),
+      });
+      const d = await res.json();
+      kiZuordResult.textContent = '💡 ' + (d.content?.[0]?.text || 'Keine Antwort.');
+    } catch(e) { kiZuordResult.textContent = 'Fehler: ' + e.message; }
+    kiZuordResult.style.display = '';
+    kiZuordBtn.textContent = '💡 KI fragen'; kiZuordBtn.disabled = false;
+  };
   editRow('Fach',                 () => arrGet('fach'),              arrSet('fach'),                    false, 'fach');
   editRow('Jahrgang',             () => arrGet('jahrgang'),          arrSet('jahrgang'),                false, 'jahrgang');
   editRow('Themen',               () => arrGet('themen'),            arrSet('themen'));

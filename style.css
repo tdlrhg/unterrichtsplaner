@@ -280,6 +280,7 @@ textarea::placeholder { color: #c4cdd6; }
 .fp-notizen { width: 100%; min-height: 90px; resize: vertical; font-size: 13px; }
 .ki-plan-status { padding: 10px 0; color: var(--tx3); font-size: 13px; }
 .ki-plan-result { border-top: 1px solid var(--bord); margin-top: 12px; padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.ki-zuord-result { font-size: 12px; color: var(--tx2); background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 8px 10px; margin: 2px 0 4px 0; line-height: 1.5; }
 .ki-plan-begr { font-size: 13px; color: var(--tx2); background: #eff6ff; border-radius: 6px; padding: 8px 10px; }
 .ki-plan-row { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--bord); border-radius: 6px; background: var(--surf2); }
 .ki-plan-nr { font-weight: 700; color: var(--tx3); min-width: 20px; padding-top: 1px; }

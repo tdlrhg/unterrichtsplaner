@@ -1247,6 +1247,9 @@ function viewStunde(fpId, blockId, reiheId, stundeId) {
   left.appendChild(tx('div', 'c-sub', subTxt));
   hdr.appendChild(left);
   const hdrBtns = mk('div', 'btn-grp');
+  const nextBtn = btn('✨ Nächste Stunde', 'btn btn-ghost btn-sm');
+  nextBtn.onclick = () => kiNaechsteStunde(fp, block, reihe, stunde, gruppe, nextBtn);
+  hdrBtns.appendChild(nextBtn);
   const mvb = btn('↗ Verschieben', 'btn btn-ghost btn-sm');
   mvb.onclick = () => { S.modal = { type: 'moveStunde', data: { fpId, blockId, reiheId, stundeId } }; render(); };
   hdrBtns.appendChild(mvb);
@@ -1264,6 +1267,149 @@ function viewStunde(fpId, blockId, reiheId, stundeId) {
 
   renderStundenBody(div, stunde, fp);
   return div;
+}
+
+// ── KI: Nächste Stunde planen ─────────────────────────────────────
+async function kiNaechsteStunde(fp, block, reihe, aktStunde, gruppe, triggerBtn) {
+  const antKey = localStorage.getItem('ant_key');
+  if (!antKey) { alert('Bitte zuerst Anthropic API-Key in den Einstellungen hinterlegen.'); return; }
+
+  triggerBtn.disabled = true;
+  triggerBtn.textContent = '⏳ KI denkt…';
+
+  try {
+    const fachNameMap = { M:'Mathematik', Ch:'Chemie', Bio:'Biologie', Ch_GK:'Chemie', Ch_LK:'Chemie', Bio_GK:'Biologie', Bio_LK:'Biologie' };
+    const fachName = fachNameMap[fp.fach] || fp.fach;
+
+    // ── Aktuelle Stunde ──────────────────────────────────────────
+    const aktPhasen = (aktStunde.phasen || []).map(p =>
+      `  - ${p.bezeichnung || p.typ || ''}${p.dauer ? ' (' + p.dauer + ' min)' : ''}: ${p.inhalt || ''}`
+    ).join('\n');
+
+    // ── Alle Stunden in der Reihe (Kontext) ─────────────────────
+    const alleStunden = (reihe.stunden || []);
+    const aktIdx = alleStunden.findIndex(s => s.id === aktStunde.id);
+    const bisherGeplant = alleStunden.slice(0, aktIdx + 1).map((s, i) => {
+      let z = `  Stunde ${i + 1}: "${s.titel || '(ohne Titel)'}"`;
+      if (s.lernziel) z += `\n    Lernziel: ${s.lernziel}`;
+      return z;
+    }).join('\n');
+
+    // ── Verfügbares Material im Bucket ──────────────────────────
+    const relMat = MATDB.filter(m =>
+      m.reiheId === reihe.id ||
+      (gruppe && m.einheitId === gruppe.id) ||
+      (!m.reiheId && !m.einheitId) // allgemeines Material
+    ).slice(0, 30); // max 30 Einträge
+
+    const matText = relMat.length
+      ? relMat.map(m =>
+          `  [${m.id?.slice(0,6) || '?'}] ${m.titel}` +
+          (m.materialtyp ? ' (' + m.materialtyp + ')' : '') +
+          (m.beschreibung ? ' – ' + m.beschreibung.slice(0, 80) : '')
+        ).join('\n')
+      : '  (keine Materialien vorhanden)';
+
+    // ── KLP-Kontext ──────────────────────────────────────────────
+    const isSII = ['EF','Q1','Q2','SII'].includes(fp.jahrgang);
+    const isGK = fp.fach.includes('GK'), isLK = fp.fach.includes('LK');
+    const klpHits = KLPDB.filter(e => {
+      if (e.fach !== fachName) return false;
+      const eIsSII = e.stufe === 'SII' || e.id?.toUpperCase().includes('SII');
+      if (isSII !== eIsSII) return false;
+      if (isSII && isGK && e.id?.toUpperCase().includes('LK')) return false;
+      if (isSII && isLK && e.id?.toUpperCase().includes('GK')) return false;
+      return true;
+    }).slice(0, 40);
+    const klpText = klpHits.length
+      ? klpHits.map(e => `  [${e.id}] ${e.kompetenzcodes.join(',')} ${e.inhaltsfeld}: ${e.beschreibung.slice(0,100)}`).join('\n')
+      : '  (kein KLP geladen)';
+
+    const prompt = `Du bist Fachlehrerin für ${fachName} (Jahrgang ${fp.jahrgang}) an einem Gymnasium in NRW.
+
+AKTUELLE STUNDE (die gerade abgeschlossene/bearbeitete):
+Titel: "${aktStunde.titel || '(ohne Titel)'}"
+Lernziel: "${aktStunde.lernziel || '(kein Lernziel)'}"
+Dauer: ${aktStunde.dauer || 45} Minuten
+${aktPhasen ? 'Phasen:\n' + aktPhasen : ''}
+${aktStunde.lehrerkommentar ? 'Lehrerkommentar: ' + aktStunde.lehrerkommentar : ''}
+
+REIHE: "${reihe.titel}"${block ? ' (Block: ' + block.titel + ')' : ''}
+${gruppe ? 'Gruppe: "' + gruppe.titel + '"' : ''}
+
+BISHERIGE STUNDEN IN DIESER REIHE:
+${bisherGeplant || '  (keine)'}
+
+VERFÜGBARES MATERIAL IM BUCKET:
+${matText}
+
+KLP-KOMPETENZERWARTUNGEN (NRW):
+${klpText}
+
+Plane jetzt die NÄCHSTE sinnvolle Unterrichtsstunde in dieser Reihe.
+Berücksichtige dabei:
+- Was wurde bisher erarbeitet? Was fehlt noch?
+- Welches verfügbare Material passt zur nächsten Stunde?
+- Welche Kompetenzerwartungen werden adressiert?
+
+Antworte NUR mit diesem JSON (kein Text davor oder danach):
+{
+  "titel": "Titel der nächsten Stunde",
+  "lernziel": "Die SuS können … (vollständige Lernzielformulierung)",
+  "dauer": 45,
+  "intention": "2-3 Sätze: Warum diese Stunde als nächstes? Welchen didaktischen Schritt macht sie?",
+  "material": ["Titel von Material 1 aus dem Bucket", "Titel von Material 2"],
+  "klpIds": ["ID1", "ID2"]
+}`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': antKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 800,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+    const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    if (!parsed.titel) throw new Error('Kein Vorschlag erhalten.');
+
+    // ── Neue Stunde anlegen ──────────────────────────────────────
+    const ns = {
+      id: uid(),
+      titel: parsed.titel,
+      lernziel: parsed.lernziel || '',
+      dauer: parsed.dauer || 45,
+      phasen: [],
+      klpInhalt: parsed.klpIds || [],
+      klpProzess: [],
+      material: [],
+      tafelbild: '',
+      lehrerkommentar: parsed.intention || '',
+    };
+    if (aktStunde.einheitId) ns.einheitId = aktStunde.einheitId; // selbe Gruppe
+
+    // Nach der aktuellen Stunde einfügen
+    const arr = reihe.stunden || [];
+    const idx = arr.findIndex(s => s.id === aktStunde.id);
+    arr.splice(idx + 1, 0, ns);
+
+    S.sel = { type: 'stunde', ids: [fp.id, block.id, reihe.id, ns.id] };
+    scheduleSave(); render();
+
+  } catch (e) {
+    alert('Fehler: ' + e.message);
+    triggerBtn.disabled = false;
+    triggerBtn.textContent = '✨ Nächste Stunde';
+  }
 }
 
 function viewFreieStunde(fpId, stundeId) {

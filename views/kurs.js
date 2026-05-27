@@ -108,7 +108,7 @@ function buildFpTree(lp, sel) {
     const open = openKey ? isOpen(openKey) : false;
 
     const row = mk('div', 'fp-tree-row fp-tree-level-' + level + (isActive ? ' active' : ''));
-    row.style.paddingLeft = (16 + level * 20) + 'px';
+    row.style.paddingLeft = (16 + level * 32) + 'px';
 
     // Toggle
     const tog = mk('span', 'fp-tree-toggle');
@@ -232,7 +232,7 @@ function buildFpTree(lp, sel) {
     // ── Reihen ──────────────────────────────────────────────────────
     if (!(block.reihen || []).length) {
       const emp = tx('div', 'fp-tree-empty', 'Keine Reihen.');
-      emp.style.paddingLeft = (16 + 1 * 20) + 'px';
+      emp.style.paddingLeft = (16 + 1 * 32) + 'px';
       tree.appendChild(emp);
     }
 
@@ -282,7 +282,7 @@ function buildFpTree(lp, sel) {
       // ── Einheiten ────────────────────────────────────────────────
       if (!(reihe.einheiten || []).length) {
         const emp = tx('div', 'fp-tree-empty', 'Keine Einheiten.');
-        emp.style.paddingLeft = (16 + 2 * 20) + 'px';
+        emp.style.paddingLeft = (16 + 2 * 32) + 'px';
         tree.appendChild(emp);
       }
 

@@ -111,7 +111,7 @@ function buildFpTree(lp, sel) {
     const open = openKey ? isOpen(openKey) : false;
 
     const row = mk('div', 'fp-tree-row fp-tree-level-' + level + (isActive ? ' active' : ''));
-    row.style.paddingLeft = (16 + level * 32) + 'px';
+    row.style.paddingLeft = (16 + level * 44) + 'px';
     if (accentColor) row.style.setProperty('--row-accent', accentColor);
 
     // Toggle
@@ -184,7 +184,7 @@ function buildFpTree(lp, sel) {
   function makeGruppenDivider(gruppe, reihe, gi, fpId, blockId) {
     const farbe = gruppe.farbe || '#94a3b8';
     const div = mk('div', 'fp-gruppe-divider');
-    div.style.paddingLeft = (16 + 2 * 32) + 'px';
+    div.style.paddingLeft = (16 + 2 * 44) + 'px';
 
     const dot = mk('span', 'fp-gruppe-dot');
     dot.style.background = farbe;
@@ -269,7 +269,7 @@ function buildFpTree(lp, sel) {
     // ── Reihen ──────────────────────────────────────────────────────
     if (!(block.reihen || []).length) {
       const emp = tx('div', 'fp-tree-empty', 'Keine Reihen.');
-      emp.style.paddingLeft = (16 + 1 * 32) + 'px';
+      emp.style.paddingLeft = (16 + 1 * 44) + 'px';
       tree.appendChild(emp);
     }
 
@@ -309,7 +309,7 @@ function buildFpTree(lp, sel) {
       // ── Stunden (flach, mit Gruppentrennern) ─────────────────────
       if (!(reihe.stunden || []).length) {
         const emp = tx('div', 'fp-tree-empty', 'Noch keine Stunden.');
-        emp.style.paddingLeft = (16 + 2 * 32) + 'px';
+        emp.style.paddingLeft = (16 + 2 * 44) + 'px';
         tree.appendChild(emp);
       } else {
         // Stunden nach Gruppen ordnen: erst alle pro Gruppe, dann ungroupiert
@@ -393,7 +393,7 @@ function buildFpTree(lp, sel) {
       if (rOpen) {
         const addGrpBtn = mk('button', 'fp-tree-add-gruppe');
         addGrpBtn.textContent = '+ Gruppe anlegen';
-        addGrpBtn.style.paddingLeft = (16 + 2 * 32) + 'px';
+        addGrpBtn.style.paddingLeft = (16 + 2 * 44) + 'px';
         addGrpBtn.onclick = () => { S.modal = { type: 'newGruppe', data: { fpId: lp.id, blockId: block.id, reiheId: reihe.id } }; render(); };
         tree.appendChild(addGrpBtn);
       }

@@ -893,7 +893,7 @@ textarea::placeholder { color: #c4cdd6; }
 .fp-tree-row.fp-tree-row-drop { background: #eff6ff; outline: 2px solid var(--pri); border-radius: 6px; }
 .fp-tree-row.fp-tree-row-dragging { opacity: .35; }
 
-.fp-tree-level-0 .fp-tree-title { font-weight: 700; font-size: 13.5px; }
+.fp-tree-level-0 .fp-tree-title { font-weight: 700; font-size: 15px; }
 .fp-tree-level-1 .fp-tree-title { font-weight: 600; font-size: 13px; }
 .fp-tree-level-2 .fp-tree-title { font-size: 13px; }
 .fp-tree-level-3 .fp-tree-title { font-size: 12.5px; color: var(--tx2); }

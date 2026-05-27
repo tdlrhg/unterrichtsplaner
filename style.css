@@ -900,7 +900,7 @@ textarea::placeholder { color: #c4cdd6; }
 .fp-tree-row.active .fp-tree-title { color: var(--tx); }
 
 .fp-tree-toggle {
-  font-size: 10px; color: var(--tx3); min-width: 14px; width: 14px;
+  font-size: 13px; color: var(--tx3); min-width: 18px; width: 18px;
   text-align: center; flex-shrink: 0; user-select: none;
   border-radius: 3px; padding: 1px 0;
 }

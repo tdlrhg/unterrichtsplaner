@@ -481,25 +481,87 @@ mat_abc_2|anpassung|Nur Teilaufgabe 1 verwenden|nein`;
     matSucheBtn.textContent = '▲ Schließen';
     kiVorschlaegeListe.style.display = 'block';
     kiVorschlaegeListe.innerHTML = '';
-    const spin = tx('div', '', '⏳ KI sucht passende Materialien…');
-    spin.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
-    kiVorschlaegeListe.appendChild(spin);
     kiVorschlBtn.disabled = true; kiVorschlBtn.textContent = '⏳';
 
     const EXCL = ['Lehrerhandreichung', 'Lösung'];
     const safe = s => (s||'').replace(/[|\n\r\t]/g, ' ').trim();
-    const matSummary = MATDB
-      .filter(m => !EXCL.includes(m.materialtyp))
-      .map(m => `id:${m.id}|${safe(m.titel)}|${(m.themen||[]).map(safe).join(',')}|${(m.fach||[]).join(',')}|Jg:${(m.jahrgang||[]).join(',')}|${safe(m.materialtyp)}`)
-      .join('\n');
+
+    // Kontext aus aktueller Selektion
+    const selIds = S.sel?.ids || [];
+    const selEinheitId = selIds[3] || null;
+    const selReiheId   = selIds[2] || null;
+
+    // Vorgemerkte Materialien (Einheit > Reihe)
+    const vorgemEinheit = selEinheitId ? MATDB.filter(m => m.einheitId === selEinheitId) : [];
+    const vorgemReihe   = selReiheId   ? MATDB.filter(m => !m.einheitId && m.reiheId === selReiheId) : [];
+    const vorgemIds     = new Set([...vorgemEinheit, ...vorgemReihe].map(m => m.id));
+
+    // Rest-Pool für KI (alle außer vorgemerkten)
+    const pool = MATDB.filter(m => !EXCL.includes(m.materialtyp) && !vorgemIds.has(m.id));
+
+    // ── Card-Helfer ──────────────────────────────────────────────
+    function renderMatCard(mat, grund, badge) {
+      const card = mk('div', '');
+      card.style.cssText = 'border:1px solid var(--bord);border-radius:6px;padding:8px 10px;margin-bottom:6px;background:var(--surf);';
+      const inner = mk('div', ''); inner.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;';
+      const left = mk('div', '');
+      const titleRow = mk('div', ''); titleRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selected.has(mat.id);
+      cb.onclick = e => e.stopPropagation();
+      cb.onchange = () => { if (cb.checked) selected.add(mat.id); else selected.delete(mat.id); kiBtn.disabled = selected.size === 0; kiBtn.textContent = `✨ KI bewertet (${selected.size})`; };
+      titleRow.appendChild(cb);
+      if (badge) { const b = tx('span', '', badge); b.style.cssText = 'font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#dcfce7;color:#15803d;white-space:nowrap;'; titleRow.appendChild(b); }
+      const titleEl = tx('span', '', mat.titel); titleEl.style.cssText = 'font-size:13px;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:2px;';
+      titleEl.onclick = () => openMatOverlayStandalone(mat);
+      titleRow.appendChild(titleEl);
+      left.appendChild(titleRow);
+      if (mat.themen?.length) { const t = tx('div', '', mat.themen.slice(0,4).join(', ')); t.style.cssText = 'font-size:11px;color:var(--tx2);margin-bottom:3px;'; left.appendChild(t); }
+      const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:5px;align-items:center;flex-wrap:wrap;';
+      const fi = (mat.fach||[]).map(fachIcon).join(''); if (fi) { const s = tx('span','',fi); s.style.fontSize='13px'; badgeRow.appendChild(s); }
+      if (mat.jahrgang?.length) { const jg = tx('span','',mat.jahrgang.join('/')); jg.style.cssText='font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#374151;'; badgeRow.appendChild(jg); }
+      if (mat.quelle) { const q = tx('span','',mat.quelle); q.style.cssText='font-size:10px;color:var(--tx3);'; badgeRow.appendChild(q); }
+      left.appendChild(badgeRow);
+      const right = mk('div', '');
+      if (grund) { const g = tx('div', '', grund); g.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;line-height:1.4;'; right.appendChild(g); }
+      inner.appendChild(left); inner.appendChild(right); card.appendChild(inner);
+      const foot = mk('div', ''); foot.style.cssText = 'display:flex;justify-content:flex-end;margin-top:6px;';
+      const useBtn = btn('+ Zuweisen', 'btn btn-pri btn-xs');
+      useBtn.onclick = () => { if (!stunde.materialIds.includes(mat.id)) { stunde.materialIds.push(mat.id); scheduleSave(); renderZugewiesene(); } useBtn.textContent = '✓'; useBtn.disabled = true; };
+      if (stunde.materialIds.includes(mat.id)) { useBtn.textContent = '✓'; useBtn.disabled = true; }
+      foot.appendChild(useBtn); card.appendChild(foot);
+      return card;
+    }
+
+    function sectionHdr(label, withClose) {
+      const h = mk('div', ''); h.style.cssText = 'padding:6px 10px;font-size:11px;font-weight:600;color:var(--tx2);background:var(--bg2);border-bottom:1px solid var(--bord);display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;';
+      h.appendChild(tx('span', '', label));
+      if (withClose) { const x = btn('✕', 'btn btn-ghost btn-xs'); x.onclick = () => { kiVorschlaegeListe.style.display = 'none'; kiVorschlaegeListe.innerHTML = ''; }; h.appendChild(x); }
+      return h;
+    }
+
+    // ── 1. Vorgemerkte sofort anzeigen ───────────────────────────
+    const hatVorgem = vorgemEinheit.length + vorgemReihe.length > 0;
+    if (hatVorgem) {
+      kiVorschlaegeListe.appendChild(sectionHdr(`📌 Vorgemerkt (${vorgemEinheit.length + vorgemReihe.length})`, false));
+      vorgemEinheit.forEach(m => kiVorschlaegeListe.appendChild(renderMatCard(m, null, '📌 Einheit')));
+      vorgemReihe.forEach(m => kiVorschlaegeListe.appendChild(renderMatCard(m, null, '📌 Reihe')));
+    }
+
+    // ── 2. KI durchsucht den Rest ────────────────────────────────
+    const kiSpin = tx('div', '', '⏳ KI durchsucht den Rest…');
+    kiSpin.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
+    kiVorschlaegeListe.appendChild(kiSpin);
+
     const lernziele = (stunde.lernziele||[]).map(z=>z.text).join(', ') || '–';
+    const matSummary = pool.map(m => `id:${m.id}|${safe(m.titel)}|${(m.themen||[]).map(safe).join(',')}|${(m.fach||[]).join(',')}|Jg:${(m.jahrgang||[]).join(',')}|${safe(m.materialtyp)}`).join('\n');
+
     const prompt = `Du hilfst einer NRW-Gymnasiallehrerin beim Planen einer Unterrichtsstunde.
 
 Stunde: Fach ${fp.fach||'–'}, Jahrgang ${fp.jahrgang||'–'}, ${stunde.dauer||45} Min
 Thema/Intention: ${stunde.intention||'–'}
 Lernziele: ${lernziele}
 
-Wähle 5–8 passende Materialien aus der folgenden Datenbank. Bevorzuge Erarbeitungsmaterial. Gib für jedes eine kurze Begründung (1 Satz, z.B. was an dem Material für diese Stunde nützlich ist – auch wenn es Anpassung braucht).
+Wähle 5–8 passende Materialien aus der folgenden Datenbank. Bevorzuge Erarbeitungsmaterial. Gib für jedes eine kurze Begründung (1 Satz). Auch wenn ein Material Anpassung braucht ist es wertvoll. "ungeeignet" nur wenn wirklich kein Bezug.
 
 Antworte NUR als JSON:
 {"vorschlaege": [{"id": "mat_xxx", "grund": "ein Satz"}]}
@@ -519,87 +581,26 @@ ${matSummary}`;
       if (!raw) throw new Error('Kein JSON erhalten');
       const sanitized = raw.replace(/[\x00-\x1F\x7F]/g, c => (c==='\n'||c==='\r'||c==='\t') ? ' ' : '');
       let vorschlaege;
-      try {
-        ({ vorschlaege } = JSON.parse(sanitized));
-      } catch(_) {
-        const ids    = [...sanitized.matchAll(/"id"\s*:\s*"([^"]+)"/g)].map(m => m[1]);
-        const grounds= [...sanitized.matchAll(/"grund"\s*:\s*"([^"]*)"/g)].map(m => m[1]);
-        vorschlaege  = ids.map((id, i) => ({ id, grund: grounds[i] || '' }));
+      try { ({ vorschlaege } = JSON.parse(sanitized)); }
+      catch(_) {
+        const ids = [...sanitized.matchAll(/"id"\s*:\s*"([^"]+)"/g)].map(m => m[1]);
+        const grounds = [...sanitized.matchAll(/"grund"\s*:\s*"([^"]*)"/g)].map(m => m[1]);
+        vorschlaege = ids.map((id, i) => ({ id, grund: grounds[i] || '' }));
         if (!vorschlaege.length) throw new Error('JSON konnte nicht geparst werden');
       }
-      kiVorschlaegeListe.innerHTML = '';
+      kiSpin.remove();
       kiVorschlaegeListe.dataset.vorschlagIds = (vorschlaege||[]).map(v=>v.id).join(',');
-      const hdr = mk('div', '');
-      hdr.style.cssText = 'padding:6px 10px;font-size:11px;font-weight:600;color:var(--tx2);background:var(--bg2);border-bottom:1px solid var(--bord);display:flex;justify-content:space-between;align-items:center;';
-      hdr.appendChild(tx('span', '', `✨ ${vorschlaege?.length || 0} KI-Vorschläge`));
-      const closeKi = btn('✕', 'btn btn-ghost btn-xs');
-      closeKi.onclick = () => { kiVorschlaegeListe.style.display = 'none'; kiVorschlaegeListe.innerHTML = ''; };
-      hdr.appendChild(closeKi);
-      kiVorschlaegeListe.appendChild(hdr);
+      kiVorschlaegeListe.appendChild(sectionHdr(`✨ KI-Vorschläge aus dem Rest (${vorschlaege?.length || 0})`, true));
       if (!vorschlaege?.length) {
-        const hint = tx('div', '', 'Keine Vorschläge – Thema/Intention der Stunde ergänzen?');
+        const hint = tx('div', '', 'Keine weiteren Vorschläge – Thema/Intention der Stunde ergänzen?');
         hint.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
         kiVorschlaegeListe.appendChild(hint);
       } else {
-        vorschlaege.forEach(v => {
-          const mat = MATDB.find(m => m.id === v.id);
-          if (!mat) return;
-          const card = mk('div', '');
-          card.style.cssText = 'border:1px solid var(--bord);border-radius:6px;padding:8px 10px;margin-bottom:6px;background:var(--surf);';
-          const inner = mk('div', '');
-          inner.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;';
-          const left = mk('div', '');
-          const titleRow = mk('div', '');
-          titleRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:3px;';
-          const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = selected.has(mat.id);
-          cb.dataset.matId = mat.id;
-          cb.onclick = e => e.stopPropagation();
-          cb.onchange = () => {
-            if (cb.checked) selected.add(mat.id); else selected.delete(mat.id);
-            kiBtn.disabled = selected.size === 0;
-            kiBtn.textContent = `✨ KI bewertet (${selected.size})`;
-          };
-          const titleEl = tx('span', '', mat.titel);
-          titleEl.style.cssText = 'font-size:13px;font-weight:500;cursor:pointer;text-decoration:underline;text-underline-offset:2px;';
-          titleEl.onclick = () => openMatOverlayStandalone(mat);
-          titleRow.appendChild(cb); titleRow.appendChild(titleEl);
-          left.appendChild(titleRow);
-          if (mat.themen?.length) {
-            const t = tx('div', '', mat.themen.slice(0,4).join(', '));
-            t.style.cssText = 'font-size:11px;color:var(--tx2);margin-bottom:3px;'; left.appendChild(t);
-          }
-          const badgeRow = mk('div', ''); badgeRow.style.cssText = 'display:flex;gap:5px;align-items:center;flex-wrap:wrap;';
-          const fi = (mat.fach||[]).map(fachIcon).join('');
-          if (fi) { const s = tx('span','',fi); s.style.fontSize='13px'; badgeRow.appendChild(s); }
-          if (mat.jahrgang?.length) {
-            const jg = tx('span','',mat.jahrgang.join('/'));
-            jg.style.cssText='font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#374151;';
-            badgeRow.appendChild(jg);
-          }
-          if (mat.quelle) { const q = tx('span','',mat.quelle); q.style.cssText='font-size:10px;color:var(--tx3);'; badgeRow.appendChild(q); }
-          left.appendChild(badgeRow);
-          const right = mk('div', '');
-          const grundEl = tx('div', '', v.grund);
-          grundEl.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;line-height:1.4;';
-          right.appendChild(grundEl);
-          inner.appendChild(left); inner.appendChild(right);
-          card.appendChild(inner);
-          const foot = mk('div', ''); foot.style.cssText = 'display:flex;justify-content:flex-end;margin-top:6px;';
-          const useBtn = btn('+ Zuweisen', 'btn btn-pri btn-xs');
-          useBtn.onclick = () => {
-            if (!stunde.materialIds.includes(mat.id)) { stunde.materialIds.push(mat.id); scheduleSave(); renderZugewiesene(); }
-            useBtn.textContent = '✓'; useBtn.disabled = true;
-          };
-          if (stunde.materialIds.includes(mat.id)) { useBtn.textContent = '✓'; useBtn.disabled = true; }
-          foot.appendChild(useBtn);
-          card.appendChild(foot);
-          kiVorschlaegeListe.appendChild(card);
-        });
+        vorschlaege.forEach(v => { const mat = MATDB.find(m => m.id === v.id); if (mat) kiVorschlaegeListe.appendChild(renderMatCard(mat, v.grund, null)); });
       }
     } catch(e) {
-      kiVorschlaegeListe.innerHTML = '';
-      const err = tx('div', '', '⚠ Fehler: ' + e.message);
-      err.style.cssText = 'padding:12px;color:#dc2626;font-size:12px;';
+      kiSpin.remove();
+      const err = tx('div', '', '⚠ Fehler: ' + e.message); err.style.cssText = 'padding:12px;color:#dc2626;font-size:12px;';
       kiVorschlaegeListe.appendChild(err);
     }
     kiVorschlBtn.disabled = false; kiVorschlBtn.textContent = '✨ Vorschlagen';

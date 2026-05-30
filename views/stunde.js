@@ -614,16 +614,134 @@ ${matSummary}`;
   // ══════════════════════════════════════════════════════════════════
   // SEKTION 3: Methode
   // ══════════════════════════════════════════════════════════════════
-  const methStatusText = methFertig ? '✓ ' + stunde.methode : 'offen';
-  const { body: s3body } = mkSec(3, 'Methode', 'methode', methStatusText, methFertig);
+  // Migration: altes stunde.methode → stunde.methoden.Erarbeitung
+  if (!stunde.methoden) {
+    stunde.methoden = { Einstieg: null, Erarbeitung: null, Sicherung: null };
+    if (stunde.methode) stunde.methoden.Erarbeitung = { name: stunde.methode, id: null, begr: '' };
+  }
+  const methAnz = ['Einstieg','Erarbeitung','Sicherung'].filter(t => stunde.methoden[t]?.name).length;
+  const methFertigNeu = methAnz > 0;
+  const methStatusText = methFertigNeu ? '✓ ' + methAnz + '/3' : 'offen';
+  const { body: s3body } = mkSec(3, 'Methoden', 'methoden', methStatusText, methFertigNeu);
 
-  let methodeManModus = false;
+  const METH_FARBE = { Einstieg: '#3b82f6', Erarbeitung: '#10b981', Sicherung: '#f59e0b' };
 
   function renderMethodeBody() {
     s3body.innerHTML = '';
-    const hasMat = (stunde.materialIds||[]).length > 0;
 
-    // ── Methode gewählt ─────────────────────────────────────────────
+    // ── KI: alle drei auf einmal ────────────────────────────────────
+    const kiAlleBtn = btn('✨ KI schlägt alle drei vor', 'btn btn-ki btn-sm');
+    kiAlleBtn.style.marginBottom = '14px';
+    kiAlleBtn.onclick = async () => {
+      const antKey = localStorage.getItem('ant_key');
+      if (!antKey) { alert('Bitte API-Key hinterlegen.'); return; }
+      kiAlleBtn.textContent = '⏳ KI denkt…'; kiAlleBtn.disabled = true;
+      const methPool = typ => (METHDB.length
+        ? METHDB.filter(m => !m.phasen?.length || m.phasen.includes(typ))
+        : METHDB
+      ).map(m => `ID:${m.id}|${m.name}${m.beschreibung?' – '+m.beschreibung.slice(0,80):''}`).join('\n') || '(keine)';
+      const prompt = `Du bist Didaktik-Experte. Schlage für diese Unterrichtsstunde je eine Methode für Einstieg, Erarbeitung und Sicherung vor.
+Fach: ${fp.fach}, Jahrgang: ${fp.jahrgang}
+Lernziel: ${stunde.lernziel||'–'}, Intention: ${stunde.intention||'–'}
+
+Methoden für Einstieg:\n${methPool('Einstieg')}
+Methoden für Erarbeitung:\n${methPool('Erarbeitung')}
+Methoden für Sicherung:\n${methPool('Sicherung')}
+
+Antworte NUR mit JSON:
+{"Einstieg":{"id":"ID-oder-null","name":"Name","begr":"1 Satz"},"Erarbeitung":{"id":"ID-oder-null","name":"Name","begr":"1 Satz"},"Sicherung":{"id":"ID-oder-null","name":"Name","begr":"1 Satz"}}`;
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 500, messages: [{ role: 'user', content: prompt }] }),
+        });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error?.message || res.statusText);
+        const parsed = JSON.parse(d.content?.[0]?.text?.match(/\{[\s\S]*\}/)?.[0] || '{}');
+        ['Einstieg','Erarbeitung','Sicherung'].forEach(t => { if (parsed[t]?.name) stunde.methoden[t] = parsed[t]; });
+        scheduleSave(); renderMethodeBody();
+      } catch(e) { alert('Fehler: ' + e.message); kiAlleBtn.textContent = '✨ KI schlägt alle drei vor'; kiAlleBtn.disabled = false; }
+    };
+    s3body.appendChild(kiAlleBtn);
+
+    // ── Drei Slots ──────────────────────────────────────────────────
+    ['Einstieg','Erarbeitung','Sicherung'].forEach(typ => {
+      const farbe = METH_FARBE[typ];
+      const slot = mk('div', 'meth-slot');
+      slot.style.borderLeft = '3px solid ' + farbe;
+
+      const badge = tx('span', 'meth-slot-badge', typ);
+      badge.style.color = farbe;
+      slot.appendChild(badge);
+
+      const gesetzt = stunde.methoden[typ];
+      if (gesetzt?.name) {
+        const nameRow = mk('div', 'meth-slot-set');
+        nameRow.appendChild(tx('span', 'meth-slot-name', gesetzt.name));
+        const clrBtn = mk('button', 'meth-slot-clr'); clrBtn.textContent = '✕';
+        clrBtn.onclick = () => { stunde.methoden[typ] = null; scheduleSave(); renderMethodeBody(); };
+        nameRow.appendChild(clrBtn);
+        slot.appendChild(nameRow);
+        if (gesetzt.begr) slot.appendChild(tx('div', 'meth-slot-begr', '✨ ' + gesetzt.begr));
+        const info = METHDB.find(m => m.id === gesetzt.id || m.name === gesetzt.name);
+        if (info?.beschreibung) slot.appendChild(tx('div', 'meth-slot-info', info.beschreibung));
+      } else {
+        const row = mk('div', 'meth-slot-pick');
+        const pool = METHDB.filter(m => !m.phasen?.length || m.phasen.includes(typ));
+        const si = document.createElement('input');
+        si.type = 'text'; si.placeholder = 'Methode suchen…'; si.className = 'mat-search-inp'; si.style.flex = '1';
+        const dd = mk('div', 'mat-dd');
+        si.oninput = () => {
+          const q = si.value.toLowerCase().trim();
+          dd.innerHTML = ''; dd.style.display = 'none';
+          if (!q) return;
+          const hits = (pool.length ? pool : METHDB).filter(m => m.name.toLowerCase().includes(q) || (m.beschreibung||'').toLowerCase().includes(q)).slice(0,8);
+          if (!hits.length) return;
+          hits.forEach(m => {
+            const it = mk('div', 'mat-dd-item');
+            it.appendChild(tx('strong', '', m.name));
+            if (m.beschreibung) it.appendChild(tx('div', 'mat-dd-sub', m.beschreibung.slice(0,70)));
+            it.onmousedown = () => { stunde.methoden[typ] = { id: m.id, name: m.name, begr: '' }; scheduleSave(); renderMethodeBody(); };
+            dd.appendChild(it);
+          });
+          dd.style.display = 'block';
+        };
+        si.onblur = () => setTimeout(() => { dd.style.display = 'none'; }, 150);
+        const sw = mk('div', 'mat-search-wrap'); sw.style.flex = '1';
+        sw.appendChild(si); sw.appendChild(dd);
+        row.appendChild(sw);
+        const kiBtn = mk('button', 'ph-meth-ki'); kiBtn.textContent = '✨'; kiBtn.title = 'KI wählt';
+        kiBtn.onclick = async () => {
+          const antKey = localStorage.getItem('ant_key');
+          if (!antKey) { alert('Bitte API-Key hinterlegen.'); return; }
+          kiBtn.textContent = '⏳'; kiBtn.disabled = true;
+          const mp = (pool.length ? pool : METHDB).map(m => `ID:${m.id}|${m.name}${m.beschreibung?' – '+m.beschreibung.slice(0,80):''}`).join('\n');
+          const p = `Wähle die passendste Methode für die ${typ}-Phase. Fach: ${fp.fach}, Jg: ${fp.jahrgang}, Lernziel: ${stunde.lernziel||'–'}\nMethoden:\n${mp}\nJSON: {"id":"ID","name":"Name","begr":"1 Satz"}`;
+          try {
+            const res = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+              body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 200, messages: [{ role: 'user', content: p }] }),
+            });
+            const d = await res.json(); if (!res.ok) throw new Error(d.error?.message);
+            const parsed = JSON.parse(d.content?.[0]?.text?.match(/\{[\s\S]*\}/)?.[0] || '{}');
+            if (parsed.name) { stunde.methoden[typ] = parsed; scheduleSave(); renderMethodeBody(); }
+          } catch(e) { alert('Fehler: ' + e.message); kiBtn.textContent = '✨'; kiBtn.disabled = false; }
+        };
+        row.appendChild(kiBtn);
+        slot.appendChild(row);
+      }
+      s3body.appendChild(slot);
+    });
+  }
+  renderMethodeBody();
+
+  // ══════════════════════════════════════════════════════════════════
+  // (legacy single-field Methode entfernt)
+  // ══════════════════════════════════════════════════════════════════
+  if (false) { // dead code — wird nie ausgeführt
+    // ── Methode gewählt (legacy, nicht mehr genutzt) ────────────────
     if (stunde.methode) {
       const selBox = mk('div', '');
       selBox.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;margin-bottom:10px;';
@@ -904,8 +1022,7 @@ Antworte NUR als JSON (keine Zeilenumbrüche in Strings):
     const orManBtn = btn('✏ Direkt manuell wählen', 'btn btn-ghost btn-xs');
     orManBtn.onclick = () => { methodeManModus = true; renderMethodeBody(); };
     s3body.appendChild(orManBtn);
-  }
-  renderMethodeBody();
+  } // end if(false) — legacy dead code
 
   // ══════════════════════════════════════════════════════════════════
   // SEKTION 4: Planungsrahmen

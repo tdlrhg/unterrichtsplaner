@@ -159,6 +159,17 @@ textarea::placeholder { color: #c4cdd6; }
 .ph-meth-ki:hover { opacity: 1; background: var(--surf2); }
 .ph-meth-begr { font-size: 11px; color: var(--tx3); font-style: italic; margin-top: 3px; line-height: 1.4; }
 
+/* ── Methoden-Slots (Sektion 3) ── */
+.meth-slot { padding: 10px 12px; border-radius: 6px; background: var(--surf2); margin-bottom: 8px; border-left: 3px solid var(--bord); }
+.meth-slot-badge { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: block; margin-bottom: 6px; }
+.meth-slot-set { display: flex; align-items: center; gap: 8px; }
+.meth-slot-name { font-weight: 600; font-size: 13px; flex: 1; }
+.meth-slot-clr { background: none; border: none; cursor: pointer; color: var(--tx3); font-size: 11px; padding: 1px 4px; border-radius: 3px; }
+.meth-slot-clr:hover { color: var(--red); background: var(--red-bg); }
+.meth-slot-begr { font-size: 11px; color: var(--tx3); font-style: italic; margin-top: 4px; line-height: 1.4; }
+.meth-slot-info { font-size: 11px; color: var(--tx2); margin-top: 4px; line-height: 1.5; }
+.meth-slot-pick { display: flex; align-items: center; gap: 6px; }
+
 /* ── KLP ── */
 .klp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .klp-sec { font-size: 11px; font-weight: 700; color: var(--tx2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }

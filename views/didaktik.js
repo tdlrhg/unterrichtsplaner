@@ -242,21 +242,19 @@ function buildExtraktionUI() {
   hint.style.cssText = 'font-size:13px;color:var(--tx2);margin-bottom:14px;line-height:1.5;';
   body.appendChild(hint);
 
-  // Upload-Zone
-  let uploadedImages = []; // [{name, dataUrl, mediaType}]
-
-  const uploadZone = mk('div', 'did-upload-zone');
-  uploadZone.innerHTML = '<div style="font-size:28px;margin-bottom:8px">🖼</div><div style="font-weight:600;margin-bottom:4px">Bilder hier ablegen</div><div style="font-size:12px;color:var(--tx3)">oder klicken zum Auswählen · JPG, PNG · mehrere Seiten möglich</div>';
+  // Upload-Bereich
+  let uploadedImages = [];
 
   const fileInput = document.createElement('input');
   fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.multiple = true;
   fileInput.style.display = 'none';
-  uploadZone.onclick = () => fileInput.click();
-  uploadZone.ondragover = e => { e.preventDefault(); uploadZone.classList.add('drag-over'); };
-  uploadZone.ondragleave = () => uploadZone.classList.remove('drag-over');
-  uploadZone.ondrop = e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); };
+  fileInput.onchange = () => { handleFiles(fileInput.files); fileInput.value = ''; };
+  body.appendChild(fileInput);
 
-  const thumbsWrap = mk('div', 'did-thumbs');
+  const uploadArea = mk('div', 'did-upload-area');
+  uploadArea.ondragover = e => { e.preventDefault(); uploadArea.classList.add('drag-over'); };
+  uploadArea.ondragleave = e => { if (!uploadArea.contains(e.relatedTarget)) uploadArea.classList.remove('drag-over'); };
+  uploadArea.ondrop = e => { e.preventDefault(); uploadArea.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); };
 
   function resizeImage(dataUrl, maxWidth, quality) {
     return new Promise(resolve => {
@@ -277,47 +275,38 @@ function buildExtraktionUI() {
     Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onload = async ev => {
-        // Auf max 1200px verkleinern, Qualität 0.82 → deutlich weniger Tokens
         const dataUrl = await resizeImage(ev.target.result, 1200, 0.82);
         uploadedImages.push({ name: file.name, dataUrl, mediaType: 'image/jpeg' });
-        renderThumbs();
+        renderUploadArea();
       };
       reader.readAsDataURL(file);
     });
   }
 
-  function renderThumbs() {
-    thumbsWrap.innerHTML = '';
+  function renderUploadArea() {
+    uploadArea.innerHTML = '';
+    // Thumbnails der hochgeladenen Seiten
     uploadedImages.forEach((img, i) => {
       const wrap = mk('div', 'did-thumb-wrap');
       const imgEl = document.createElement('img');
       imgEl.src = img.dataUrl; imgEl.className = 'did-thumb';
       const del = mk('button', 'did-thumb-del'); del.textContent = '✕';
-      del.onclick = e => { e.stopPropagation(); uploadedImages.splice(i, 1); renderThumbs(); };
+      del.onclick = e => { e.stopPropagation(); uploadedImages.splice(i, 1); renderUploadArea(); };
       const lbl = tx('div', 'did-thumb-lbl', 'Seite ' + (i + 1));
       wrap.appendChild(imgEl); wrap.appendChild(del); wrap.appendChild(lbl);
-      thumbsWrap.appendChild(wrap);
+      uploadArea.appendChild(wrap);
     });
-    if (uploadedImages.length) {
-      uploadZone.style.display = 'none';
-      thumbsWrap.style.display = 'flex';
-    } else {
-      uploadZone.style.display = '';
-      thumbsWrap.style.display = 'none';
-    }
+    // „+"-Kachel zum Hinzufügen (immer sichtbar)
+    const addTile = mk('div', 'did-thumb-wrap did-thumb-add');
+    addTile.innerHTML = uploadedImages.length
+      ? '<div style="font-size:22px;color:var(--tx3)">+</div>'
+      : '<div style="font-size:28px;margin-bottom:6px">🖼</div><div style="font-size:12px;font-weight:600;color:var(--tx2)">Seiten ablegen</div><div style="font-size:11px;color:var(--tx3);margin-top:2px">oder klicken</div>';
+    addTile.onclick = () => fileInput.click();
+    uploadArea.appendChild(addTile);
   }
 
-  fileInput.onchange = () => { handleFiles(fileInput.files); fileInput.value = ''; };
-  thumbsWrap.style.display = 'none';
-
-  const addMoreBtn = mk('button', 'did-add-more');
-  addMoreBtn.textContent = '+ Weitere Seiten';
-  addMoreBtn.onclick = () => fileInput.click();
-
-  body.appendChild(uploadZone);
-  body.appendChild(thumbsWrap);
-  body.appendChild(addMoreBtn);
-  body.appendChild(fileInput);
+  renderUploadArea();
+  body.appendChild(uploadArea);
 
   const actRow = mk('div', '');
   actRow.style.cssText = 'display:flex;gap:8px;margin-top:14px;align-items:center;';

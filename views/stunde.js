@@ -737,6 +737,13 @@ Antworte NUR mit JSON:
   }
   renderMethodeBody();
 
+  // Auto-KI: wenn alle Slots noch leer sind, direkt loslegen
+  const alleSlotLeer = ['Einstieg','Erarbeitung','Sicherung'].every(t => !stunde.methoden[t]?.name);
+  if (alleSlotLeer && !stunde._methKiTriggered && localStorage.getItem('ant_key')) {
+    stunde._methKiTriggered = true;
+    setTimeout(() => s3body.querySelector('.btn-ki')?.click(), 200);
+  }
+
   // ══════════════════════════════════════════════════════════════════
   // (legacy single-field Methode entfernt)
   // ══════════════════════════════════════════════════════════════════

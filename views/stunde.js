@@ -1054,47 +1054,54 @@ Antworte NUR als JSON (keine Zeilenumbrüche in Strings):
       res.elmo ? 'Elmo' : '',
       ...(res.apps || []),
     ].filter(Boolean).join(', ') || '–';
-    const lernzieleText = (stunde.lernziele || []).map(z => z.text).join('\n') || '–';
-    const prompt = `Du planst eine Unterrichtsstunde und wählst passende Planungsparameter.
 
-Stunde:
-- Fach: ${fp.fach || '–'}, Jahrgang: ${fp.jahrgang || '–'}
-- Dauer: ${stunde.dauer || 45} Minuten
-- Intention: ${stunde.intention || '–'}
-- Lernziele: ${lernzieleText}
-- Verfügbare Ressourcen: ${resText}
+    // Nutzervorgaben (bereits gesetzt = Einschränkung für KI)
+    const dauerVorgabe = stunde.dauer ? `${stunde.dauer} Minuten (Vorgabe)` : 'offen – du entscheidest';
+    const sozVorgabe   = pr.sozialformen?.length ? pr.sozialformen.join(', ') + ' (Vorgabe)' : 'offen – du entscheidest';
+    const schwVorgabe  = pr.schwerpunkt ? pr.schwerpunkt + ' (Vorgabe)' : 'offen – du entscheidest';
 
-Wähle NUR Parameter, die noch nicht gesetzt sind:
-${!pr.sozialformen?.length ? '- sozialformen: Array aus ["Plenum","Partnerarbeit","Gruppenarbeit","Einzelarbeit"]' : ''}
-${!pr.schwerpunkt ? '- schwerpunkt: einer von ["Einführung","Erarbeitung","Übung & Festigung","Sicherung","Experiment","Diskussion","Präsentation"]' : ''}
-${pr.differenzierung === undefined || pr.differenzierung === null ? '- differenzierung: einer von ["Keine","Leicht (1 Niveau)","Stark (2+ Niveaus)"]' : ''}
-${pr.hausaufgaben === undefined || pr.hausaufgaben === null ? '- hausaufgaben: true oder false' : ''}
+    const prompt = `Du planst eine Unterrichtsstunde. Wähle für alle offenen Parameter den besten Wert.
 
-Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in Strings:
+Fach: ${fp.fach || '–'}, Jahrgang: ${fp.jahrgang || '–'}
+Lernziel: ${stunde.lernziel || '–'}
+Intention: ${stunde.intention || '–'}
+Verfügbare Ressourcen: ${resText}
+
+Parameter (Vorgaben musst du einhalten, offene darfst du frei wählen):
+- Dauer: ${dauerVorgabe}
+- Sozialformen: ${sozVorgabe}
+- Schwerpunkt: ${schwVorgabe}
+
+Für offene Parameter wähle aus:
+- dauer: 45 oder 90
+- sozialformen: Array aus ["Plenum","Partnerarbeit","Gruppenarbeit","Einzelarbeit"]
+- schwerpunkt: einer von ["Einführung","Erarbeitung","Übung & Festigung","Sicherung","Experiment","Diskussion","Präsentation"]
+
+Antworte NUR als JSON mit den offenen Feldern (Vorgaben weglassen):
 {}`;
     try {
       const res2 = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 300, messages: [{ role: 'user', content: prompt }] }),
+        body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 200, messages: [{ role: 'user', content: prompt }] }),
       });
       const data = await res2.json();
-      const text = data.content?.[0]?.text || '';
-      const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      const parsed = JSON.parse(data.content?.[0]?.text?.match(/\{[\s\S]*\}/)?.[0] || '{}');
       const gewählt = [];
+      if (parsed.dauer && !stunde.dauer) { stunde.dauer = parsed.dauer; gewählt.push('dauer'); }
       if (parsed.sozialformen?.length && !pr.sozialformen?.length) { pr.sozialformen = parsed.sozialformen; gewählt.push('sozialformen'); }
       if (parsed.schwerpunkt && !pr.schwerpunkt) { pr.schwerpunkt = parsed.schwerpunkt; gewählt.push('schwerpunkt'); }
-      if (parsed.differenzierung && pr.differenzierung == null) { pr.differenzierung = parsed.differenzierung; gewählt.push('differenzierung'); }
-      if (parsed.hausaufgaben != null && pr.hausaufgaben == null) { pr.hausaufgaben = parsed.hausaufgaben; gewählt.push('hausaufgaben'); }
       pr.kiGewählt = [...new Set([...(pr.kiGewählt || []), ...gewählt])];
       scheduleSave(); render();
     } catch(e) { alert('Fehler: ' + e.message); }
     prKiBtn.textContent = '✨ KI wählt'; prKiBtn.disabled = false;
   };
 
-  function prSection(label) {
-    const h = tx('div', '', label);
-    h.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;margin-top:12px;';
+  function prSection(label, hint) {
+    const h = mk('div', '');
+    h.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;margin-top:12px;display:flex;align-items:center;gap:6px;';
+    h.appendChild(tx('span', '', label));
+    if (hint) h.appendChild(tx('span', '', '· ' + hint).style && h.lastChild || (() => { const s = tx('span','',hint); s.style.cssText='font-weight:400;text-transform:none;color:var(--tx3);'; return s; })());
     s4body.appendChild(h);
   }
   function prChips(key, options, multi) {
@@ -1119,32 +1126,30 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
     s4body.appendChild(wrap);
   }
 
+  // ── Dauer (Checkboxen 45 / 90, leer = KI entscheidet) ──────────
+  prSection('Dauer');
+  const dauerWrap = mk('div', 'pr-chip-wrap');
+  const kiDauer = (pr.kiGewählt || []).includes('dauer');
+  [45, 90].forEach(min => {
+    const isActive = stunde.dauer === min;
+    const b = mk('button', 'btn btn-xs pr-chip' + (isActive ? ' active' : '') + (isActive && kiDauer ? ' ki' : ''));
+    b.textContent = (isActive && kiDauer ? '✨ ' : '') + min + ' min';
+    b.onclick = () => {
+      stunde.dauer = isActive ? null : min;
+      pr.kiGewählt = (pr.kiGewählt || []).filter(k => k !== 'dauer');
+      scheduleSave(); render();
+    };
+    dauerWrap.appendChild(b);
+  });
+  s4body.appendChild(dauerWrap);
+
+  // ── Sozialformen ────────────────────────────────────────────────
   prSection('Sozialformen');
   prChips('sozialformen', ['Plenum', 'Partnerarbeit', 'Gruppenarbeit', 'Einzelarbeit'], true);
+
+  // ── Schwerpunkt ─────────────────────────────────────────────────
   prSection('Schwerpunkt');
   prChips('schwerpunkt', ['Einführung', 'Erarbeitung', 'Übung & Festigung', 'Sicherung', 'Experiment', 'Diskussion', 'Präsentation'], false);
-  prSection('Differenzierung');
-  prChips('differenzierung', ['Keine', 'Leicht (1 Niveau)', 'Stark (2+ Niveaus)'], false);
-  prSection('Hausaufgaben');
-  const haWrap = mk('div', 'pr-chip-wrap');
-  const kiHa = (pr.kiGewählt || []).includes('hausaufgaben');
-  [true, false].forEach(val => {
-    const label = val ? 'Ja' : 'Nein';
-    const isActive = pr.hausaufgaben === val;
-    const b = mk('button', 'btn btn-xs pr-chip' + (isActive ? ' active' : '') + (isActive && kiHa ? ' ki' : ''));
-    b.textContent = isActive && kiHa ? '✨ ' + label : label;
-    b.onclick = () => { pr.hausaufgaben = isActive ? null : val; pr.kiGewählt = (pr.kiGewählt||[]).filter(k=>k!=='hausaufgaben'); scheduleSave(); render(); };
-    haWrap.appendChild(b);
-  });
-  s4body.appendChild(haWrap);
-
-  prSection('Dauer');
-  const dfg = mk('div', 'fg'); dfg.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
-  const di = document.createElement('input');
-  di.type = 'number'; di.value = stunde.dauer || 45; di.className = 'finp'; di.style.maxWidth = '100px';
-  di.oninput = e => { stunde.dauer = parseInt(e.target.value) || 45; scheduleSave(); };
-  dfg.appendChild(di); dfg.appendChild(tx('span', '', 'Minuten'));
-  s4body.appendChild(dfg);
 
   prSection('Besondere Hinweise');
   const hinweisTA = document.createElement('textarea');

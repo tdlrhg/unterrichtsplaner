@@ -104,6 +104,139 @@ function viewEinstellungen() {
   r2Card.appendChild(r2b);
   div.appendChild(r2Card);
 
+  // ── KI-Wissenszuordnung ───────────────────────────────────────
+  const KI_ROUTING = [
+    {
+      name: 'Reihen / Stunden vorschlagen',
+      ort: 'Fachplanung · Notizen-Karte',
+      ebenen: ['reihe', 'stunde'],
+      werkzeuge: false,
+      hinweis: '„reihe" wenn Blöcke geplant werden, „stunde" + „reihe" wenn Reihen geplant werden',
+    },
+    {
+      name: 'Nächste Stunde planen',
+      ort: 'Stundenansicht · Header-Button',
+      ebenen: ['stunde', 'reihe'],
+      werkzeuge: false,
+    },
+    {
+      name: 'Methoden vorschlagen (alle 3 Phasen)',
+      ort: 'Stundenansicht · Sektion 3 Methoden',
+      ebenen: ['stunde'],
+      werkzeuge: true,
+      hinweis: 'Heuristiken und Darstellungsformen aus Werkzeugen werden mitgegeben',
+    },
+    {
+      name: 'Phasen generieren (KI)',
+      ort: 'Stundenansicht · Sektion 5 Phasen',
+      ebenen: ['stunde'],
+      werkzeuge: true,
+      hinweis: 'Heuristiken und Darstellungsformen aus Werkzeugen werden mitgegeben',
+    },
+    {
+      name: 'Planungsrahmen ausfüllen',
+      ort: 'Stundenansicht · Sektion 4',
+      ebenen: ['stunde'],
+      werkzeuge: false,
+    },
+  ];
+
+  const wzCard = mk('div', 'card');
+  wzCard.appendChild(cardHdr('KI-Wissenszuordnung'));
+  const wzb = mk('div', 'card-body');
+
+  const wzHint = tx('div', '', 'Hier siehst du, welche Didaktik-Bausteine jeder KI-Button aus der Wissensdatenbank zieht. Klicke auf „Vorschau" um den exakten Text zu sehen, der der KI mitgegeben wird.');
+  wzHint.style.cssText = 'font-size:13px;color:var(--tx2);margin-bottom:14px;line-height:1.5;';
+  wzb.appendChild(wzHint);
+
+  const tbl = document.createElement('table');
+  tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  ['KI-Funktion', 'Wo', 'Planungsebenen', 'Bausteine', ''].forEach(h => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    th.style.cssText = 'padding:6px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;background:var(--surf2);border-bottom:2px solid var(--bord);';
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  tbl.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  KI_ROUTING.forEach((r, i) => {
+    const ctx = getDIDContext(r.ebenen, [], r.werkzeuge || false);
+    const bausteinAnz = ctx ? ctx.split('\n').filter(l => l.startsWith('•') || l.startsWith('→') || l.startsWith('Heuristiken') || l.startsWith('Darstellungs')).length : 0;
+
+    const tr = document.createElement('tr');
+    tr.style.cssText = i % 2 === 0 ? '' : 'background:var(--surf2);';
+
+    const tdName = document.createElement('td'); tdName.style.cssText = 'padding:8px 10px;vertical-align:top;font-weight:600;';
+    tdName.textContent = r.name;
+    if (r.hinweis) {
+      const h = tx('div', '', r.hinweis); h.style.cssText = 'font-size:11px;color:var(--tx3);font-weight:400;margin-top:2px;';
+      tdName.appendChild(h);
+    }
+    tr.appendChild(tdName);
+
+    const tdOrt = document.createElement('td'); tdOrt.style.cssText = 'padding:8px 10px;vertical-align:top;color:var(--tx2);font-size:12px;';
+    tdOrt.textContent = r.ort;
+    tr.appendChild(tdOrt);
+
+    const tdEbenen = document.createElement('td'); tdEbenen.style.cssText = 'padding:8px 10px;vertical-align:top;';
+    r.ebenen.forEach(e => {
+      const b = tx('span', 'did-ebene-badge', e);
+      b.style.background = (PLANUNGSEBENE_FARBE?.[e] || '#94a3b8') + '22';
+      b.style.color = PLANUNGSEBENE_FARBE?.[e] || '#94a3b8';
+      b.style.marginRight = '4px';
+      tdEbenen.appendChild(b);
+    });
+    if (r.werkzeuge) {
+      const wb = tx('span', 'did-thema-badge', '+ Werkzeuge');
+      wb.style.marginRight = '4px';
+      tdEbenen.appendChild(wb);
+    }
+    tr.appendChild(tdEbenen);
+
+    const tdAnz = document.createElement('td'); tdAnz.style.cssText = 'padding:8px 10px;vertical-align:top;text-align:center;';
+    const anzEl = tx('span', '', bausteinAnz > 0 ? bausteinAnz + '' : '–');
+    anzEl.style.cssText = bausteinAnz > 0 ? 'font-weight:700;color:var(--grn);' : 'color:var(--tx3);';
+    tdAnz.appendChild(anzEl);
+    tr.appendChild(tdAnz);
+
+    const tdBtn = document.createElement('td'); tdBtn.style.cssText = 'padding:8px 10px;vertical-align:top;';
+    const prevBtn = btn('Vorschau', 'btn btn-ghost btn-xs');
+    prevBtn.onclick = () => {
+      const existing = tbl.querySelector('.ki-wz-preview');
+      if (existing && existing.dataset.row === String(i)) { existing.remove(); return; }
+      tbl.querySelectorAll('.ki-wz-preview').forEach(el => el.remove());
+      const previewTr = document.createElement('tr');
+      previewTr.className = 'ki-wz-preview';
+      previewTr.dataset.row = String(i);
+      const previewTd = document.createElement('td');
+      previewTd.colSpan = 5;
+      previewTd.style.cssText = 'padding:0;';
+      const pre = document.createElement('pre');
+      pre.style.cssText = 'margin:0;padding:10px 14px;background:#f8faff;border-top:1px solid var(--bord);border-bottom:1px solid var(--bord);font-size:11px;color:var(--tx2);white-space:pre-wrap;line-height:1.6;max-height:200px;overflow-y:auto;';
+      pre.textContent = ctx || '(Didaktik-Datenbank ist leer – keine Bausteine verfügbar)';
+      previewTd.appendChild(pre);
+      previewTr.appendChild(previewTd);
+      tr.after(previewTr);
+    };
+    tdBtn.appendChild(prevBtn);
+    tr.appendChild(tdBtn);
+
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  wzb.appendChild(tbl);
+
+  const leerHint = tx('div', '', DIDARTDB.length === 0 ? '⚠ Die Didaktik-Wissensdatenbank ist noch leer. Füge Artikel hinzu damit hier Bausteine angezeigt werden.' : `✓ ${DIDARTDB.length} Artikel in der Wissensdatenbank`);
+  leerHint.style.cssText = 'font-size:12px;margin-top:12px;color:' + (DIDARTDB.length === 0 ? 'var(--tx3)' : 'var(--grn)') + ';';
+  wzb.appendChild(leerHint);
+
+  wzCard.appendChild(wzb);
+  div.appendChild(wzCard);
+
   return div;
 }
 

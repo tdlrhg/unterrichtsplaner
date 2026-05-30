@@ -258,13 +258,28 @@ function buildExtraktionUI() {
 
   const thumbsWrap = mk('div', 'did-thumbs');
 
+  function resizeImage(dataUrl, maxWidth, quality) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = dataUrl;
+    });
+  }
+
   function handleFiles(files) {
     Array.from(files).forEach(file => {
       const reader = new FileReader();
-      reader.onload = ev => {
-        const dataUrl = ev.target.result;
-        const mediaType = file.type || 'image/jpeg';
-        uploadedImages.push({ name: file.name, dataUrl, mediaType });
+      reader.onload = async ev => {
+        // Auf max 1200px verkleinern, Qualität 0.82 → deutlich weniger Tokens
+        const dataUrl = await resizeImage(ev.target.result, 1200, 0.82);
+        uploadedImages.push({ name: file.name, dataUrl, mediaType: 'image/jpeg' });
         renderThumbs();
       };
       reader.readAsDataURL(file);

@@ -858,6 +858,10 @@ TITEL: Kurz und prägnant – ein Oberbegriff, kein vollständiger Satz. Beispie
   };
   const cfg = AUFGABEN[typ];
 
+  // Didaktik-Kontext: Ebene je nach Typ
+  const didEbenen = typ === 'block' ? ['reihe'] : ['stunde', 'reihe'];
+  const didCtx = getDIDContext(didEbenen);
+
   const prompt = `Du bist Didaktik-Expertin für NRW-Gymnasien.
 
 KONTEXT: ${pfad.join(' › ')}
@@ -868,7 +872,7 @@ ${notizen}
 
 VERFÜGBARE KLP-KOMPETENZEN:
 ${klpText || '(keine geladen)'}
-
+${didCtx}
 AUFGABE: ${cfg.aufgabe}
 
 Antworte NUR mit einem JSON-Objekt:

@@ -72,6 +72,35 @@ function getAlleStunden(fpId) {
   return alle;
 }
 
+// ── Didaktik-Kontext für KI-Prompts ─────────────────────────────
+// Gibt passende Kernaussagen + Muster aus DIDARTDB als kompakten Text zurück.
+// ebenen: ['reihe','stunde','material','situation'] - welche Planungsebene
+// themen: ['problemlösen','differenzierung',...] - optional, filtert zusätzlich
+// werkzeuge: true → Heuristiken + Darstellungsformen einschließen
+function getDIDContext(ebenen = [], themen = [], werkzeuge = false) {
+  if (!DIDARTDB.length) return '';
+  const lines = [];
+  DIDARTDB.forEach(art => {
+    (art.kernaussagen || []).forEach(k => {
+      const eOk = !ebenen.length || (k.planungsebene||[]).some(e => ebenen.includes(e));
+      const tOk = !themen.length || (k.themen||[]).some(t => themen.some(th => t.includes(th) || th.includes(t)));
+      if (eOk && tOk) lines.push('• ' + k.aussage);
+    });
+    (art.muster || []).forEach(m => {
+      const eOk = !ebenen.length || (m.planungsebene||[]).some(e => ebenen.includes(e));
+      const tOk = !themen.length || (m.themen||[]).some(t => themen.some(th => t.includes(th) || th.includes(t)));
+      if (eOk && tOk) lines.push(`→ ${m.name}: ${m.prinzip}`);
+    });
+    if (werkzeuge) {
+      const wz = art.werkzeuge || {};
+      if (wz.heuristiken?.length) lines.push(`Problemlöseheuristiken: ${wz.heuristiken.join(', ')}`);
+      if (wz.repraesentationen?.length) lines.push(`Darstellungsformen: ${wz.repraesentationen.join(', ')}`);
+    }
+  });
+  if (!lines.length) return '';
+  return '\nDidaktische Leitlinien:\n' + lines.join('\n') + '\n';
+}
+
 // ── Migration: altes Format (einheit.stunden[]) → flach (reihe.stunden[]) ──
 function migrateToFlatStunden(lp) {
   (lp.blocks || []).forEach(block => {

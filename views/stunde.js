@@ -643,7 +643,7 @@ ${matSummary}`;
       const prompt = `Du bist Didaktik-Experte. Schlage für diese Unterrichtsstunde je eine Methode für Einstieg, Erarbeitung und Sicherung vor.
 Fach: ${fp.fach}, Jahrgang: ${fp.jahrgang}
 Lernziel: ${stunde.lernziel||'–'}, Intention: ${stunde.intention||'–'}
-
+${getDIDContext(['stunde'], [], true)}
 Methoden für Einstieg:\n${methPool('Einstieg')}
 Methoden für Erarbeitung:\n${methPool('Erarbeitung')}
 Methoden für Sicherung:\n${methPool('Sicherung')}
@@ -1066,7 +1066,7 @@ Fach: ${fp.fach || '–'}, Jahrgang: ${fp.jahrgang || '–'}
 Lernziel: ${stunde.lernziel || '–'}
 Intention: ${stunde.intention || '–'}
 Verfügbare Ressourcen: ${resText}
-
+${getDIDContext(['stunde'])}
 Parameter (Vorgaben musst du einhalten, offene darfst du frei wählen):
 - Dauer: ${dauerVorgabe}
 - Sozialformen: ${sozVorgabe}
@@ -1260,8 +1260,9 @@ ${lernzieleText}
 - Planungsrahmen:
 ${prText}
 
-Didaktisches Hintergrundwissen:
+Didaktisches Hintergrundwissen (Phasenmodelle):
 ${wissenText}
+${getDIDContext(['stunde'], [], true)}
 
 Verfügbare Modelle (nur eines wählen):
 - 3-Phasen: Einstieg / Erarbeitung / Sicherung
@@ -1474,7 +1475,7 @@ ${matText}
 
 KLP-KOMPETENZERWARTUNGEN (NRW):
 ${klpText}
-
+${getDIDContext(['stunde', 'reihe'])}
 Plane jetzt die NÄCHSTE sinnvolle Unterrichtsstunde in dieser Reihe.
 Berücksichtige dabei:
 - Was wurde bisher erarbeitet? Was fehlt noch?

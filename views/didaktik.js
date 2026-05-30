@@ -388,7 +388,7 @@ Die Seiten des Artikels sind als Bilder beigefügt.`;
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
-          max_tokens: 4000,
+          max_tokens: 8000,
           messages: [{
             role: 'user',
             content: [
@@ -409,7 +409,23 @@ Die Seiten des Artikels sind als Bilder beigefügt.`;
       if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
       const data = await res.json();
       const rawText = data.content?.[0]?.text || '';
-      const parsed = JSON.parse(rawText.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      let jsonStr = rawText.match(/\{[\s\S]*\}/)?.[0] || '{}';
+      // Robuste Bereinigung: trailing commas, abgeschnittene Arrays/Objekte schließen
+      jsonStr = jsonStr
+        .replace(/,\s*([\]}])/g, '$1')   // trailing commas entfernen
+        .replace(/,\s*$/g, '');           // trailing comma am Ende
+      // Falls JSON abgeschnitten: versuche aufzufüllen
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonStr);
+      } catch(_) {
+        // Notfall: schließe offene Klammern
+        const opens = (jsonStr.match(/\{/g)||[]).length - (jsonStr.match(/\}/g)||[]).length;
+        const openArr = (jsonStr.match(/\[/g)||[]).length - (jsonStr.match(/\]/g)||[]).length;
+        jsonStr += ']'.repeat(Math.max(0, openArr)) + '}'.repeat(Math.max(0, opens));
+        jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
+        parsed = JSON.parse(jsonStr);
+      }
       if (!parsed.quelle) throw new Error('Ungültige Antwort von der KI.');
 
       // Vorschau anzeigen

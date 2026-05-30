@@ -233,42 +233,93 @@ function buildEbenenBadges(ebenen, themen) {
 // ── Extraktions-UI ────────────────────────────────────────────────
 function buildExtraktionUI() {
   const div = mk('div', '');
-
   const card = mk('div', 'card');
-  const hdr = cardHdr('✨ Artikel extrahieren');
-  card.appendChild(hdr);
-
+  card.appendChild(cardHdr('✨ Artikel extrahieren'));
   const body = mk('div', 'card-body');
 
-  const hint = tx('div', '', 'Füge den Artikeltext ein. Die KI extrahiert Kernaussagen, didaktische Muster, Werkzeuge und Einwände.');
-  hint.style.cssText = 'font-size:13px;color:var(--tx2);margin-bottom:12px;line-height:1.5;';
+  // Hint
+  const hint = tx('div', '', 'Lade die Seiten als Bilder hoch (Screenshots oder aus PDF exportiert). Die KI liest sie und extrahiert Kernaussagen, Muster, Werkzeuge und Einwände.');
+  hint.style.cssText = 'font-size:13px;color:var(--tx2);margin-bottom:14px;line-height:1.5;';
   body.appendChild(hint);
 
-  const ta = document.createElement('textarea');
-  ta.className = 'finp';
-  ta.rows = 12;
-  ta.placeholder = 'Artikeltext hier einfügen…';
-  ta.style.cssText = 'font-size:12px;font-family:inherit;resize:vertical;';
-  body.appendChild(ta);
+  // Upload-Zone
+  let uploadedImages = []; // [{name, dataUrl, mediaType}]
+
+  const uploadZone = mk('div', 'did-upload-zone');
+  uploadZone.innerHTML = '<div style="font-size:28px;margin-bottom:8px">🖼</div><div style="font-weight:600;margin-bottom:4px">Bilder hier ablegen</div><div style="font-size:12px;color:var(--tx3)">oder klicken zum Auswählen · JPG, PNG · mehrere Seiten möglich</div>';
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.multiple = true;
+  fileInput.style.display = 'none';
+  uploadZone.onclick = () => fileInput.click();
+  uploadZone.ondragover = e => { e.preventDefault(); uploadZone.classList.add('drag-over'); };
+  uploadZone.ondragleave = () => uploadZone.classList.remove('drag-over');
+  uploadZone.ondrop = e => { e.preventDefault(); uploadZone.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); };
+
+  const thumbsWrap = mk('div', 'did-thumbs');
+
+  function handleFiles(files) {
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const dataUrl = ev.target.result;
+        const mediaType = file.type || 'image/jpeg';
+        uploadedImages.push({ name: file.name, dataUrl, mediaType });
+        renderThumbs();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderThumbs() {
+    thumbsWrap.innerHTML = '';
+    uploadedImages.forEach((img, i) => {
+      const wrap = mk('div', 'did-thumb-wrap');
+      const imgEl = document.createElement('img');
+      imgEl.src = img.dataUrl; imgEl.className = 'did-thumb';
+      const del = mk('button', 'did-thumb-del'); del.textContent = '✕';
+      del.onclick = e => { e.stopPropagation(); uploadedImages.splice(i, 1); renderThumbs(); };
+      const lbl = tx('div', 'did-thumb-lbl', 'Seite ' + (i + 1));
+      wrap.appendChild(imgEl); wrap.appendChild(del); wrap.appendChild(lbl);
+      thumbsWrap.appendChild(wrap);
+    });
+    if (uploadedImages.length) {
+      uploadZone.style.display = 'none';
+      thumbsWrap.style.display = 'flex';
+    } else {
+      uploadZone.style.display = '';
+      thumbsWrap.style.display = 'none';
+    }
+  }
+
+  fileInput.onchange = () => { handleFiles(fileInput.files); fileInput.value = ''; };
+  thumbsWrap.style.display = 'none';
+
+  const addMoreBtn = mk('button', 'did-add-more');
+  addMoreBtn.textContent = '+ Weitere Seiten';
+  addMoreBtn.onclick = () => fileInput.click();
+
+  body.appendChild(uploadZone);
+  body.appendChild(thumbsWrap);
+  body.appendChild(addMoreBtn);
+  body.appendChild(fileInput);
 
   const actRow = mk('div', '');
-  actRow.style.cssText = 'display:flex;gap:8px;margin-top:10px;align-items:center;';
+  actRow.style.cssText = 'display:flex;gap:8px;margin-top:14px;align-items:center;';
 
   const kiBtn = btn('✨ KI extrahiert', 'btn btn-pri btn-sm');
   const cancelBtn2 = btn('Abbrechen', 'btn btn-ghost btn-sm');
   cancelBtn2.onclick = () => { S._didaktikView = null; render(); };
-
   const statusEl = tx('span', '', '');
   statusEl.style.cssText = 'font-size:12px;color:var(--tx3);';
 
   kiBtn.onclick = async () => {
-    const text = ta.value.trim();
-    if (!text) { alert('Bitte Artikeltext einfügen.'); return; }
+    if (!uploadedImages.length) { alert('Bitte mindestens ein Bild hochladen.'); return; }
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) { alert('Bitte API-Key hinterlegen.'); return; }
 
     kiBtn.disabled = true; kiBtn.textContent = '⏳ Liest…';
-    statusEl.textContent = 'KI analysiert den Artikel…';
+    statusEl.textContent = 'KI liest die Bilder…';
 
     const prompt = `Du bist Experte für Didaktik und Unterrichtsplanung. Analysiere diesen Fachartikel und extrahiere strukturiertes Wissen für eine Didaktik-Datenbank.
 
@@ -324,8 +375,7 @@ Regeln:
 - Leere Arrays [] wenn keine Einträge vorhanden
 - Maximal 8 Kernaussagen, 5 Muster, 5 Einwände
 
-Artikel:
-${text}`;
+Die Seiten des Artikels sind als Bilder beigefügt.`;
 
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -339,7 +389,21 @@ ${text}`;
         body: JSON.stringify({
           model: 'claude-sonnet-4-6',
           max_tokens: 4000,
-          messages: [{ role: 'user', content: prompt }],
+          messages: [{
+            role: 'user',
+            content: [
+              // Alle Bilder als content blocks
+              ...uploadedImages.map(img => ({
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: img.mediaType,
+                  data: img.dataUrl.split(',')[1],
+                }
+              })),
+              { type: 'text', text: prompt }
+            ]
+          }],
         }),
       });
       if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);

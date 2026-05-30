@@ -1035,3 +1035,14 @@ textarea::placeholder { color: #c4cdd6; }
 
 .did-tag-wrap { display:flex; flex-wrap:wrap; gap:4px; }
 .did-tag { font-size:11px; padding:2px 8px; border-radius:10px; background:var(--surf2); color:var(--tx2); border:1px solid var(--bord); }
+
+/* ── Didaktik Bildupload ── */
+.did-upload-zone { border:2px dashed var(--bord); border-radius:var(--r); padding:32px 20px; text-align:center; cursor:pointer; color:var(--tx2); transition:all .15s; margin-bottom:10px; }
+.did-upload-zone:hover, .did-upload-zone.drag-over { border-color:var(--pri); background:#eff6ff; color:var(--pri); }
+.did-thumbs { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.did-thumb-wrap { position:relative; width:80px; }
+.did-thumb { width:80px; height:100px; object-fit:cover; border-radius:4px; border:1px solid var(--bord); display:block; }
+.did-thumb-del { position:absolute; top:2px; right:2px; background:rgba(0,0,0,.6); color:#fff; border:none; border-radius:50%; width:18px; height:18px; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; line-height:1; }
+.did-thumb-lbl { font-size:10px; color:var(--tx3); text-align:center; margin-top:2px; }
+.did-add-more { background:none; border:1px dashed var(--bord); border-radius:6px; color:var(--tx3); font-size:12px; cursor:pointer; padding:4px 10px; margin-bottom:4px; }
+.did-add-more:hover { border-color:var(--pri); color:var(--pri); }

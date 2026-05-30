@@ -172,9 +172,12 @@ function phasenTable(stunde) {
   const tbl = document.createElement('table');
   tbl.className = 'ph-table';
 
+  const PHASEN_TYP_FARBE = { Einstieg: '#3b82f6', Erarbeitung: '#10b981', Sicherung: '#f59e0b' };
+  const PHASEN_TYPEN = ['Einstieg', 'Erarbeitung', 'Sicherung'];
+
   const thead = document.createElement('thead');
   const hr = document.createElement('tr');
-  ['#', 'Titel / Inhalt', 'Methode', 'Sozialform', 'Min.', 'Material', ''].forEach(h => {
+  ['#', 'Typ', 'Titel / Inhalt', 'Methode', 'Sozialform', 'Min.', 'Material', ''].forEach(h => {
     const th = document.createElement('th');
     th.textContent = h;
     hr.appendChild(th);
@@ -193,6 +196,27 @@ function phasenTable(stunde) {
     tnr.textContent = i + 1;
     tr.appendChild(tnr);
 
+    // Typ-Badge (Einstieg / Erarbeitung / Sicherung)
+    const ttyp = document.createElement('td');
+    ttyp.style.cssText = 'width:90px;vertical-align:top;padding-top:6px;';
+    const typSel = document.createElement('select');
+    typSel.style.cssText = 'border:none;background:transparent;font-size:11px;font-weight:700;width:90px;cursor:pointer;';
+    const emptyOpt = document.createElement('option');
+    emptyOpt.value = ''; emptyOpt.textContent = '–';
+    typSel.appendChild(emptyOpt);
+    PHASEN_TYPEN.forEach(t => {
+      const o = document.createElement('option');
+      o.value = t; o.textContent = t;
+      if (phase.typ === t) o.selected = true;
+      typSel.appendChild(o);
+    });
+    typSel.onchange = () => { phase.typ = typSel.value; scheduleSave(); renderMethCell(); };
+    const farbe = PHASEN_TYP_FARBE[phase.typ] || 'var(--tx3)';
+    typSel.style.color = farbe;
+    typSel.addEventListener('change', () => { typSel.style.color = PHASEN_TYP_FARBE[phase.typ] || 'var(--tx3)'; });
+    ttyp.appendChild(typSel);
+    tr.appendChild(ttyp);
+
     // Titel + Inhalt
     const ti = document.createElement('td');
     ti.style.minWidth = '180px';
@@ -207,19 +231,70 @@ function phasenTable(stunde) {
     ti.appendChild(titI); ti.appendChild(inhTA);
     tr.appendChild(ti);
 
-    // Methode
+    // Methode (aus METHDB, gefiltert nach Phasentyp)
     const tm = document.createElement('td');
-    const mSel = document.createElement('select');
-    mSel.style.cssText = 'border:none;background:transparent;font-size:13px;width:100%;';
-    mSel.appendChild(Object.assign(document.createElement('option'), { value: '', textContent: '–' }));
-    METHODEN.forEach(m => {
-      const o = document.createElement('option');
-      o.value = m; o.textContent = m;
-      if (phase.methode === m) o.selected = true;
-      mSel.appendChild(o);
-    });
-    mSel.onchange = e => { phase.methode = e.target.value; scheduleSave(); };
-    tm.appendChild(mSel); tr.appendChild(tm);
+    tm.style.minWidth = '160px';
+
+    function renderMethCell() {
+      tm.innerHTML = '';
+      // Aktuelle Methode anzeigen
+      if (phase.methodeId) {
+        const mObj = METHDB.find(m => m.id === phase.methodeId);
+        const nameDiv = mk('div', 'ph-meth-set');
+        nameDiv.appendChild(tx('span', '', mObj ? mObj.name : phase.methode || '?'));
+        const clr = mk('span', 'ph-meth-clr'); clr.textContent = '✕';
+        clr.onclick = () => { phase.methodeId = null; phase.methode = ''; scheduleSave(); renderMethCell(); };
+        nameDiv.appendChild(clr);
+        tm.appendChild(nameDiv);
+        return;
+      }
+
+      const wrap = mk('div', 'mat-cell'); // recycle same search-dropdown pattern
+      const searchWrap = mk('div', 'mat-search-wrap');
+      const si = document.createElement('input');
+      si.type = 'text';
+      si.placeholder = phase.methode || '+ Methode…';
+      si.className = 'mat-search-inp';
+      const dd = mk('div', 'mat-dd');
+
+      si.oninput = () => {
+        const q = si.value.toLowerCase().trim();
+        dd.innerHTML = ''; dd.style.display = 'none';
+        // Pool: wenn Typ gesetzt → METHDB gefiltert; sonst alles; Fallback: METHODEN-Liste
+        let pool = METHDB.length ? METHDB : METHODEN.map(n => ({ id: null, name: n, phasen: [], beschreibung: '' }));
+        if (phase.typ) pool = pool.filter(m => !m.phasen?.length || m.phasen.includes(phase.typ));
+        if (q) pool = pool.filter(m => m.name.toLowerCase().includes(q) || (m.beschreibung||'').toLowerCase().includes(q));
+        pool = pool.slice(0, 8);
+        if (!pool.length) return;
+        pool.forEach(m => {
+          const it = mk('div', 'mat-dd-item');
+          it.appendChild(tx('strong', '', m.name));
+          if (m.beschreibung) it.appendChild(tx('div', 'mat-dd-sub', m.beschreibung.slice(0, 60)));
+          it.onmousedown = () => {
+            phase.methodeId = m.id || null;
+            phase.methode = m.name;
+            scheduleSave(); si.value = ''; renderMethCell();
+          };
+          dd.appendChild(it);
+        });
+        dd.style.display = 'block';
+      };
+      si.onblur = () => setTimeout(() => { dd.style.display = 'none'; si.value = ''; }, 150);
+
+      searchWrap.appendChild(si); searchWrap.appendChild(dd);
+      wrap.appendChild(searchWrap);
+
+      // KI-Vorschlag Button
+      const kiBtn = mk('button', 'ph-meth-ki');
+      kiBtn.textContent = '✨'; kiBtn.title = 'Methode von KI vorschlagen lassen';
+      kiBtn.onclick = () => kiMethVorschlag(phase, renderMethCell);
+      wrap.appendChild(kiBtn);
+
+      tm.appendChild(wrap);
+    }
+
+    renderMethCell();
+    tr.appendChild(tm);
 
     // Sozialform
     const ts = document.createElement('td');
@@ -319,5 +394,68 @@ function phasenTable(stunde) {
   tbl.appendChild(tbody);
   wrap.appendChild(tbl);
   return wrap;
+}
+
+// ── KI: Methodenvorschlag für eine Phase ─────────────────────────
+async function kiMethVorschlag(phase, onDone) {
+  const antKey = localStorage.getItem('ant_key');
+  if (!antKey) { alert('Bitte zuerst API-Key in den Einstellungen hinterlegen.'); return; }
+  if (!METHDB.length) { alert('Methodendatenbank ist leer.'); return; }
+
+  const pool = phase.typ
+    ? METHDB.filter(m => !m.phasen?.length || m.phasen.includes(phase.typ))
+    : METHDB;
+
+  const methListe = pool.map(m =>
+    `ID:${m.id} | ${m.name}` +
+    (m.phasen?.length ? ' [' + m.phasen.join('/') + ']' : '') +
+    (m.beschreibung ? ' – ' + m.beschreibung.slice(0, 100) : '')
+  ).join('\n');
+
+  const prompt = `Du bist Didaktik-Experte. Wähle die am besten passende Unterrichtsmethode für diese Phase.
+
+Phase: "${phase.titel || phase.typ || 'unbekannt'}"
+Typ: ${phase.typ || 'nicht festgelegt'}
+Dauer: ${phase.minuten || '?'} Minuten
+Inhalt/Aktivität: ${phase.inhalt || '(noch kein Inhalt)'}
+
+Verfügbare Methoden:
+${methListe}
+
+Antworte NUR mit diesem JSON:
+{"id": "exakte-ID-aus-der-Liste", "name": "Methodenname", "begruendung": "1-2 Sätze warum diese Methode hier passt"}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': antKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 300, messages: [{ role: 'user', content: prompt }] }),
+    });
+    if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
+    const data = await res.json();
+    const parsed = JSON.parse(data.content?.[0]?.text?.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    if (!parsed.name) throw new Error('Kein Vorschlag erhalten.');
+    phase.methodeId = parsed.id || null;
+    phase.methode = parsed.name;
+    scheduleSave();
+    onDone();
+    if (parsed.begruendung) {
+      // Kurze Begründung als Tooltip-artiger Hinweis unter der Methode
+      setTimeout(() => {
+        const cell = document.querySelector('.ph-meth-set');
+        if (cell && !cell.querySelector('.ph-meth-begr')) {
+          const b = tx('div', 'ph-meth-begr', '✨ ' + parsed.begruendung);
+          cell.after(b);
+        }
+      }, 50);
+    }
+  } catch(e) {
+    alert('Fehler: ' + e.message);
+  }
 }
 

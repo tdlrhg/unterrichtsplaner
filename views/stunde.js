@@ -1042,27 +1042,27 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
 
   const PHASEN_VORLAGEN = {
     '3-Phasen': [
-      { titel: 'Einstieg', minuten: 10 },
-      { titel: 'Erarbeitung', minuten: 25 },
-      { titel: 'Sicherung', minuten: 10 },
+      { titel: 'Einstieg',    minuten: 10, typ: 'Einstieg' },
+      { titel: 'Erarbeitung', minuten: 25, typ: 'Erarbeitung' },
+      { titel: 'Sicherung',   minuten: 10, typ: 'Sicherung' },
     ],
     'AVIVA': [
-      { titel: 'Ankommen & Einstimmen', minuten: 5 },
-      { titel: 'Vorwissen aktivieren', minuten: 8 },
-      { titel: 'Informieren', minuten: 15 },
-      { titel: 'Verarbeiten', minuten: 12 },
-      { titel: 'Auswerten', minuten: 5 },
+      { titel: 'Ankommen & Einstimmen', minuten: 5,  typ: 'Einstieg' },
+      { titel: 'Vorwissen aktivieren',  minuten: 8,  typ: 'Einstieg' },
+      { titel: 'Informieren',           minuten: 15, typ: 'Erarbeitung' },
+      { titel: 'Verarbeiten',           minuten: 12, typ: 'Erarbeitung' },
+      { titel: 'Auswerten',             minuten: 5,  typ: 'Sicherung' },
     ],
     'Direkte Instruktion': [
-      { titel: 'I do (Modellieren)', minuten: 15 },
-      { titel: 'We do (Gemeinsam üben)', minuten: 15 },
-      { titel: 'You do (Selbstständig üben)', minuten: 15 },
+      { titel: 'I do (Modellieren)',        minuten: 15, typ: 'Einstieg' },
+      { titel: 'We do (Gemeinsam üben)',    minuten: 15, typ: 'Erarbeitung' },
+      { titel: 'You do (Selbstständig üben)', minuten: 15, typ: 'Sicherung' },
     ],
     'Forschend-entdeckend': [
-      { titel: 'Phänomen / Einstieg', minuten: 8 },
-      { titel: 'Hypothesenbildung', minuten: 7 },
-      { titel: 'Experiment / Erarbeitung', minuten: 20 },
-      { titel: 'Auswertung & Schlussfolgerung', minuten: 10 },
+      { titel: 'Phänomen / Einstieg',          minuten: 8,  typ: 'Einstieg' },
+      { titel: 'Hypothesenbildung',             minuten: 7,  typ: 'Einstieg' },
+      { titel: 'Experiment / Erarbeitung',      minuten: 20, typ: 'Erarbeitung' },
+      { titel: 'Auswertung & Schlussfolgerung', minuten: 10, typ: 'Sicherung' },
     ],
   };
   const MODELL_META = {
@@ -1075,7 +1075,7 @@ Antworte NUR als JSON mit den Feldern die du wählst. Keine Zeilenumbrüche in S
     if (!skipConfirm && stunde.phasen.length > 0 && !confirm('Vorhandene Phasen ersetzen?')) return false;
     stunde.phasenModell = key;
     stunde.phasen = PHASEN_VORLAGEN[key].map(p => ({
-      id: uid(), titel: p.titel, inhalt: '', methode: '', sozialform: '', minuten: p.minuten, materialIds: []
+      id: uid(), titel: p.titel, inhalt: '', methode: '', sozialform: '', minuten: p.minuten, materialIds: [], typ: p.typ || ''
     }));
     scheduleSave(); render();
     return true;

@@ -151,6 +151,14 @@ textarea::placeholder { color: #c4cdd6; }
 .ph-table td { padding: 6px 8px; border-bottom: 1px solid var(--bord); vertical-align: top; }
 .ph-table tr:last-child td { border-bottom: none; }
 
+/* Methoden-Zelle */
+.ph-meth-set { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--tx); }
+.ph-meth-clr { cursor: pointer; color: var(--tx3); font-size: 11px; padding: 0 3px; }
+.ph-meth-clr:hover { color: var(--red); }
+.ph-meth-ki { background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 4px; opacity: .6; }
+.ph-meth-ki:hover { opacity: 1; background: var(--surf2); }
+.ph-meth-begr { font-size: 11px; color: var(--tx3); font-style: italic; margin-top: 3px; line-height: 1.4; }
+
 /* ── KLP ── */
 .klp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .klp-sec { font-size: 11px; font-weight: 700; color: var(--tx2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }

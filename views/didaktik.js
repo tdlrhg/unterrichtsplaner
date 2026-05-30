@@ -238,7 +238,7 @@ function buildExtraktionUI() {
   const body = mk('div', 'card-body');
 
   // Hint
-  const hint = tx('div', '', 'Lade die Seiten als Bilder hoch (Screenshots oder aus PDF exportiert). Die KI liest sie und extrahiert Kernaussagen, Muster, Werkzeuge und Einwände.');
+  const hint = tx('div', '', 'Lade die Seiten als Bilder hoch. Tipp: Klicke auf die „+"-Kachel und wähle alle Seiten auf einmal mit Cmd+Klick aus — dann musst du nicht einzeln ziehen.');
   hint.style.cssText = 'font-size:13px;color:var(--tx2);margin-bottom:14px;line-height:1.5;';
   body.appendChild(hint);
 

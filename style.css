@@ -11,7 +11,7 @@
   /* Sidebar dark theme */
   --sb-bg: #0f0618; --sb-hover: rgba(255,255,255,.06);
   --sb-tx: rgba(255,255,255,.82); --sb-tx2: rgba(255,255,255,.38);
-  --sb-active-bg: rgba(190,24,93,.28); --sb-active-tx: #f9a8d4;
+  --sb-active-bg: rgba(190,24,93,.42); --sb-active-tx: #f9a8d4;
   --sb-sep: rgba(255,255,255,.08);
 }
 

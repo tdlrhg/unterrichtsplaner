@@ -297,7 +297,92 @@ Antworte NUR mit validem JSON:
     });
   }
 
+  // ── Unterkapitel hinzufügen ───────────────────────────────────
+  function showAddUnterkapitel(buch, kap, onDone) {
+    openOverlay('Unterkapitel hinzufügen', 600, (body, close) => {
+      body.style.display = 'flex'; body.style.flexDirection = 'column'; body.style.gap = '12px';
+
+      const nrInp = document.createElement('input'); nrInp.className = 'finp'; nrInp.placeholder = 'z.B. 3.1';
+      body.appendChild(field('Nummer', nrInp));
+
+      const titelInp = document.createElement('input'); titelInp.className = 'finp'; titelInp.placeholder = 'z.B. Terme aufstellen';
+      body.appendChild(field('Titel *', titelInp));
+
+      const sRow = mk('div', ''); sRow.style.cssText = 'display:flex;gap:8px;';
+      const vonInp = document.createElement('input'); vonInp.type = 'number'; vonInp.className = 'finp'; vonInp.placeholder = 'Seite von';
+      const bisInp = document.createElement('input'); bisInp.type = 'number'; bisInp.className = 'finp'; bisInp.placeholder = 'Seite bis';
+      sRow.appendChild(vonInp); sRow.appendChild(bisInp);
+      const sFg = mk('div', 'fg'); sFg.appendChild(tx('label', 'fl', 'Seitenbereich (optional)')); sFg.appendChild(sRow);
+      body.appendChild(sFg);
+
+      const uploadWidget = buildImageUpload(body);
+
+      const statusEl = tx('div', '', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;';
+      body.appendChild(statusEl);
+
+      const row = mk('div', ''); row.style.cssText = 'display:flex;gap:8px;';
+      const saveBtn = btn('Unterkapitel anlegen', 'btn btn-pri btn-sm');
+      const cancelB = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelB.onclick = close;
+      row.appendChild(saveBtn); row.appendChild(cancelB);
+      body.appendChild(row);
+
+      saveBtn.onclick = async () => {
+        const titel = titelInp.value.trim();
+        if (!titel) { alert('Bitte einen Titel eingeben.'); return; }
+        saveBtn.disabled = true;
+        let aufgaben = [];
+        const imgs = uploadWidget.getImages();
+        if (imgs.length) {
+          try { aufgaben = await extractAufgaben(imgs, statusEl); }
+          catch(e) { statusEl.textContent = 'KI-Fehler: ' + e.message; await new Promise(r => setTimeout(r, 2000)); }
+        }
+        const ukap = {
+          id: uid(),
+          nr: nrInp.value.trim() || (kap.nr + '.' + ((kap.unterkapitel || []).length + 1)),
+          titel,
+          seiteVon: vonInp.value ? parseInt(vonInp.value) : null,
+          seiteBis: bisInp.value ? parseInt(bisInp.value) : null,
+          aufgaben,
+        };
+        if (!kap.unterkapitel) kap.unterkapitel = [];
+        kap.unterkapitel.push(ukap);
+        saveSchulbuchDB();
+        close();
+        onDone();
+      };
+    });
+  }
+
+  // ── Aufgaben-Liste (wiederverwendbar) ─────────────────────────
+  function buildAufgabenListe(aufgaben) {
+    const aufgList = mk('div', '');
+    aufgList.style.cssText = 'display:flex;flex-direction:column;gap:3px;max-height:240px;overflow-y:auto;';
+    aufgaben.forEach(aufg => {
+      const arow = mk('div', '');
+      arow.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:4px 8px;background:var(--surf2);border-radius:5px;font-size:13px;';
+      arow.appendChild(tx('strong', '', 'Aufg. ' + aufg.nr));
+      if (aufg.seite) arow.appendChild(tx('span', 'matc-jg', 'S. ' + aufg.seite));
+      if (aufg.schwierigkeit) {
+        const sw = tx('span', 'matc-typ-badge', aufg.schwierigkeit);
+        const sc = { einfach: { bg: '#dcfce7', tx: '#166534' }, mittel: { bg: '#dbeafe', tx: '#1e40af' }, anspruchsvoll: { bg: '#fce7f3', tx: '#9d174d' } }[aufg.schwierigkeit];
+        if (sc) { sw.style.background = sc.bg; sw.style.color = sc.tx; }
+        arow.appendChild(sw);
+      }
+      const textSpan = tx('span', '', aufg.text || '');
+      textSpan.style.cssText = 'flex:1;color:var(--tx2);';
+      arow.appendChild(textSpan);
+      aufgList.appendChild(arow);
+    });
+    return aufgList;
+  }
+
   // ── Buch-Liste ────────────────────────────────────────────────
+  function countAufgaben(buch) {
+    return (buch.kapitel || []).reduce((n, k) =>
+      n + (k.aufgaben || []).length +
+      (k.unterkapitel || []).reduce((m, u) => m + (u.aufgaben || []).length, 0), 0);
+  }
+
   function renderBuchListe() {
     subT.textContent = SCHULBUCHDB.length + ' Bücher';
     main.innerHTML = '';
@@ -310,7 +395,7 @@ Antworte NUR mit validem JSON:
     SCHULBUCHDB.forEach(buch => {
       const card = mk('div', 'matc-card');
       const kap = (buch.kapitel || []).length;
-      const aufg = (buch.kapitel || []).reduce((n, k) => n + (k.aufgaben || []).length, 0);
+      const aufg = countAufgaben(buch);
 
       const topRow = mk('div', 'matc-top-row');
       if (buch.verlag) topRow.appendChild(tx('span', 'matc-quelle', buch.verlag));
@@ -397,8 +482,12 @@ Antworte NUR mit validem JSON:
         const aufgCount = (kap.aufgaben || []).length;
         hrow.appendChild(tx('span', 'matc-klp-count', aufgCount + ' Aufgaben'));
 
+        const addUkapBtn = btn('+ Unterkapitel', 'btn btn-ghost btn-xs');
+        addUkapBtn.style.marginLeft = 'auto';
+        addUkapBtn.onclick = () => showAddUnterkapitel(buch, kap, renderKapitel);
+        hrow.appendChild(addUkapBtn);
+
         const moreBtn = btn('+ Seiten', 'btn btn-ghost btn-xs');
-        moreBtn.style.marginLeft = 'auto';
         moreBtn.onclick = () => showAddSeiten(buch, kap, renderKapitel);
         hrow.appendChild(moreBtn);
 
@@ -411,27 +500,43 @@ Antworte NUR mit validem JSON:
         hrow.appendChild(delKapBtn);
         body.appendChild(hrow);
 
-        // Aufgaben-Tabelle
-        if (aufgCount) {
-          const aufgList = mk('div', '');
-          aufgList.style.cssText = 'display:flex;flex-direction:column;gap:3px;max-height:280px;overflow-y:auto;';
-          kap.aufgaben.forEach(aufg => {
-            const arow = mk('div', '');
-            arow.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:4px 8px;background:var(--surf2);border-radius:5px;font-size:13px;';
-            arow.appendChild(tx('strong', '', 'Aufg. ' + aufg.nr));
-            if (aufg.seite) arow.appendChild(tx('span', 'matc-jg', 'S. ' + aufg.seite));
-            if (aufg.schwierigkeit) {
-              const sw = tx('span', 'matc-typ-badge', aufg.schwierigkeit);
-              const sc = { einfach: { bg: '#dcfce7', tx: '#166534' }, mittel: { bg: '#dbeafe', tx: '#1e40af' }, anspruchsvoll: { bg: '#fce7f3', tx: '#9d174d' } }[aufg.schwierigkeit];
-              if (sc) { sw.style.background = sc.bg; sw.style.color = sc.tx; }
-              arow.appendChild(sw);
-            }
-            const textSpan = tx('span', '', aufg.text || '');
-            textSpan.style.cssText = 'flex:1;color:var(--tx2);';
-            arow.appendChild(textSpan);
-            aufgList.appendChild(arow);
+        // Direkte Aufgaben am Kapitel
+        if (aufgCount) body.appendChild(buildAufgabenListe(kap.aufgaben));
+
+        // Unterkapitel
+        const ukaps = kap.unterkapitel || [];
+        if (ukaps.length) {
+          const uList = mk('div', '');
+          uList.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-top:10px;padding-left:16px;border-left:3px solid var(--bd);';
+          ukaps.forEach(ukap => {
+            const uCard = mk('div', '');
+            uCard.style.cssText = 'background:var(--surf2);border-radius:6px;padding:8px 10px;';
+
+            const uHrow = mk('div', '');
+            uHrow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;';
+            uHrow.appendChild(tx('strong', '', ukap.nr + ' ' + ukap.titel));
+            if (ukap.seiteVon && ukap.seiteBis) uHrow.appendChild(tx('span', 'matc-jg', 'S. ' + ukap.seiteVon + '–' + ukap.seiteBis));
+            const uAufgCount = (ukap.aufgaben || []).length;
+            uHrow.appendChild(tx('span', 'matc-klp-count', uAufgCount + ' Aufg.'));
+
+            const uMoreBtn = btn('+ Seiten', 'btn btn-ghost btn-xs');
+            uMoreBtn.style.marginLeft = 'auto';
+            uMoreBtn.onclick = () => showAddSeiten(buch, ukap, renderKapitel);
+            uHrow.appendChild(uMoreBtn);
+
+            const uDelBtn = btn('✕', 'matc-del');
+            uDelBtn.onclick = () => {
+              if (!confirm('Unterkapitel "' + ukap.titel + '" löschen?')) return;
+              kap.unterkapitel = kap.unterkapitel.filter(u => u.id !== ukap.id);
+              saveSchulbuchDB(); renderKapitel();
+            };
+            uHrow.appendChild(uDelBtn);
+            uCard.appendChild(uHrow);
+
+            if (uAufgCount) uCard.appendChild(buildAufgabenListe(ukap.aufgaben));
+            uList.appendChild(uCard);
           });
-          body.appendChild(aufgList);
+          body.appendChild(uList);
         }
 
         card.appendChild(body);

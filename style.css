@@ -111,7 +111,7 @@ body { font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif; back
 .btn-grp { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ── Cards ── */
-.card { background: var(--surf); border: 1px solid var(--bord); border-radius: var(--r); box-shadow: var(--sh); margin-bottom: 16px; }
+.card { background: var(--surf); border: 1px solid var(--bord); border-top: 2px solid var(--pri); border-radius: var(--r); box-shadow: var(--sh); margin-bottom: 16px; }
 .card-hdr { padding: 13px 18px; border-bottom: 1px solid var(--bord); display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
 .phasen-vorlage-wrap { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .phasen-vorlage-sel { font-size: 12px; padding: 3px 6px; height: auto; width: auto; }

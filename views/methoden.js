@@ -62,7 +62,7 @@ function viewMethoden() {
   }
 
   const pRow = chipRow('Phase',
-    ['Einstieg','Erarbeitung','Sicherung'].map(v => ({val:v,label:v})),
+    ['Einstieg','Erarbeitung','Übung','Sicherung'].map(v => ({val:v,label:v})),
     () => filterPhase, v => filterPhase = v);
   const sRow = chipRow('Sozialform',
     ['Einzelarbeit','Partnerarbeit','Gruppenarbeit','Plenum'].map(v => ({val:v,label:v})),
@@ -94,7 +94,7 @@ function viewMethoden() {
   const SOZ_ABK = { 'Einzelarbeit':'EA', 'Partnerarbeit':'PA', 'Gruppenarbeit':'GA', 'Plenum':'PL' };
 
   const SOZ_ALL  = ['Einzelarbeit','Partnerarbeit','Gruppenarbeit','Plenum'];
-  const PHAS_ALL = ['Einstieg','Erarbeitung','Sicherung'];
+  const PHAS_ALL = ['Einstieg','Erarbeitung','Übung','Sicherung'];
   const MAT_ALL  = ['Kein Material','Texte','Karten','Arbeitsblätter','Experimente','Plakate/Papier','Bilder/Comics','Objekte/Modelle','Digitale Medien'];
 
   function refresh() {

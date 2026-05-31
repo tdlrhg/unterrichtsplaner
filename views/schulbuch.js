@@ -60,7 +60,7 @@ Für jeden Eintrag:
 - nr: Aufgabennummer inkl. Teilaufgabe (z.B. "7a", "7b", "7c") — wenn keine Teilaufgaben, dann nur "7"
 - seite: Seitennummer falls erkennbar, sonst null
 - text: VOLLSTÄNDIGER Aufgabentext, exakt wie im Buch (keine Kürzung, keine Paraphrase). Wichtig: Kein Zeilenumbruch innerhalb des text-Feldes — alles in einer Zeile, Formeln als Text (z.B. "x^2 + 3x - 4 = 0" oder "3/4 * 8").
-- schwierigkeit: "einfach" | "mittel" | "anspruchsvoll" — einschätzen anhand Anforderungsniveau
+- schwierigkeit: Lies das Kreissymbol vor der Aufgabennummer: leerer Kreis (○) = "einfach", halb gefüllter Kreis (◐) = "mittel", gefüllter Kreis (●) = "anspruchsvoll". Falls kein Symbol erkennbar, schätze anhand des Anforderungsniveaus.
 - kompetenzen: Array mit Kompetenzkürzel falls erkennbar (z.B. ["UF1","K2"]), sonst []
 
 Wichtig: Nichts weglassen. Auch Beispielaufgaben, Wiederholungsaufgaben und Knobelaufgaben erfassen.

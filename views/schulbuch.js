@@ -301,6 +301,48 @@ Antworte NUR mit validem JSON:
     });
   }
 
+  // ── Eintrag bearbeiten (Kapitel oder Unterkapitel) ───────────
+  function showEditEntry(overlayTitle, entry, onDone) {
+    openOverlay(overlayTitle, 480, (body, close) => {
+      body.style.display = 'flex'; body.style.flexDirection = 'column'; body.style.gap = '12px';
+
+      const nrInp = document.createElement('input'); nrInp.className = 'finp';
+      nrInp.value = entry.nr || '';
+      body.appendChild(field('Nummer', nrInp));
+
+      const titelInp = document.createElement('input'); titelInp.className = 'finp';
+      titelInp.value = entry.titel || '';
+      body.appendChild(field('Titel *', titelInp));
+
+      const sRow = mk('div', ''); sRow.style.cssText = 'display:flex;gap:8px;';
+      const vonInp = document.createElement('input'); vonInp.type = 'number'; vonInp.className = 'finp'; vonInp.placeholder = 'Seite von';
+      vonInp.value = entry.seiteVon || '';
+      const bisInp = document.createElement('input'); bisInp.type = 'number'; bisInp.className = 'finp'; bisInp.placeholder = 'Seite bis';
+      bisInp.value = entry.seiteBis || '';
+      sRow.appendChild(vonInp); sRow.appendChild(bisInp);
+      const sFg = mk('div', 'fg'); sFg.appendChild(tx('label', 'fl', 'Seitenbereich')); sFg.appendChild(sRow);
+      body.appendChild(sFg);
+
+      const row = mk('div', ''); row.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
+      const saveBtn = btn('Speichern', 'btn btn-pri btn-sm');
+      const cancelB = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelB.onclick = close;
+      row.appendChild(saveBtn); row.appendChild(cancelB);
+      body.appendChild(row);
+
+      saveBtn.onclick = () => {
+        const titel = titelInp.value.trim();
+        if (!titel) { alert('Bitte einen Titel eingeben.'); return; }
+        entry.nr = nrInp.value.trim() || entry.nr;
+        entry.titel = titel;
+        entry.seiteVon = vonInp.value ? parseInt(vonInp.value) : null;
+        entry.seiteBis = bisInp.value ? parseInt(bisInp.value) : null;
+        saveSchulbuchDB();
+        close();
+        onDone();
+      };
+    });
+  }
+
   // ── Unterkapitel hinzufügen ───────────────────────────────────
   function showAddUnterkapitel(buch, kap, onDone) {
     openOverlay('Unterkapitel hinzufügen', 600, (body, close) => {
@@ -495,6 +537,11 @@ Antworte NUR mit validem JSON:
         moreBtn.onclick = () => showAddSeiten(buch, kap, renderKapitel);
         hrow.appendChild(moreBtn);
 
+        const editKapBtn = btn('✎', 'matc-del');
+        editKapBtn.title = 'Bearbeiten'; editKapBtn.style.color = 'var(--tx2)';
+        editKapBtn.onclick = () => showEditEntry('Kapitel bearbeiten', kap, renderKapitel);
+        hrow.appendChild(editKapBtn);
+
         const delKapBtn = btn('✕', 'matc-del');
         delKapBtn.onclick = () => {
           if (!confirm('Kapitel "' + kap.titel + '" löschen?')) return;
@@ -527,6 +574,11 @@ Antworte NUR mit validem JSON:
             uMoreBtn.style.marginLeft = 'auto';
             uMoreBtn.onclick = () => showAddSeiten(buch, ukap, renderKapitel);
             uHrow.appendChild(uMoreBtn);
+
+            const uEditBtn = btn('✎', 'matc-del');
+            uEditBtn.title = 'Bearbeiten'; uEditBtn.style.color = 'var(--tx2)';
+            uEditBtn.onclick = () => showEditEntry('Unterkapitel bearbeiten', ukap, renderKapitel);
+            uHrow.appendChild(uEditBtn);
 
             const uDelBtn = btn('✕', 'matc-del');
             uDelBtn.onclick = () => {

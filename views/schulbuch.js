@@ -485,12 +485,27 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
 
     function aufgRow(aufg, eingerueckt) {
       const arow = mk('div', '');
-      arow.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:3px 8px;border-radius:5px;font-size:13px;' + (eingerueckt ? 'padding-left:24px;' : 'background:var(--surf2);');
-      arow.appendChild(tx('strong', '', (eingerueckt ? '' : 'Aufg. ') + aufg.nr));
-      if (aufg.seite && !eingerueckt) arow.appendChild(tx('span', 'matc-jg', 'S. ' + aufg.seite));
-      if (aufg.schwierigkeit) arow.appendChild(schwBadge(aufg.schwierigkeit));
+      arow.style.cssText = 'display:flex;gap:0;align-items:baseline;padding:3px 8px;border-radius:5px;font-size:13px;' + (eingerueckt ? 'padding-left:32px;' : 'background:var(--surf2);');
+
+      if (eingerueckt) {
+        // Symbol (feste Breite) → Buchstabe (feste Breite) → Text
+        const sym = tx('span', '', aufg.schwierigkeit || '');
+        sym.style.cssText = 'width:18px;flex-shrink:0;font-size:13px;color:' + (SC[aufg.schwierigkeit] || 'var(--tx3)') + ';';
+        arow.appendChild(sym);
+
+        // Nur den Buchstaben-Teil der Nr extrahieren (z.B. "20a" → "a")
+        const buchstabe = aufg.nr.replace(/^\d+/, '') || aufg.nr;
+        const nrSpan = tx('strong', '', buchstabe);
+        nrSpan.style.cssText = 'width:20px;flex-shrink:0;';
+        arow.appendChild(nrSpan);
+      } else {
+        arow.appendChild(tx('strong', '', 'Aufg. ' + aufg.nr));
+        if (aufg.seite) { const s = tx('span', 'matc-jg', 'S. ' + aufg.seite); s.style.margin = '0 4px'; arow.appendChild(s); }
+        if (aufg.schwierigkeit) { const sw = schwBadge(aufg.schwierigkeit); sw.style.marginRight = '4px'; arow.appendChild(sw); }
+      }
+
       const textWrap = mk('div', '');
-      textWrap.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:2px;';
+      textWrap.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:2px;margin-left:6px;';
       const textSpan = tx('span', '', aufg.text || '');
       textSpan.style.color = 'var(--tx2)';
       textWrap.appendChild(textSpan);

@@ -120,12 +120,40 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
 
   // ── Materialvorschau ─────────────────────────────────────────
   const _matKey = mat.r2key || mat.dateipfad;
+  const _isImage = key => key && /\.(jpe?g|png|gif|webp|bmp)$/i.test(key);
+
+  async function renderPreviewKey(key, container) {
+    if (_isImage(key)) {
+      const buf = await r2Download(key);
+      const ext = key.split('.').pop().toLowerCase();
+      const mime = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+      const blob = new Blob([buf], { type: mime });
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(blob);
+      img.className = 'mat-detail-preview-thumb';
+      img.style.cssText = 'max-width:280px;border-radius:4px;display:block;';
+      container.appendChild(img);
+    } else {
+      const buf = await r2Download(key);
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const vp0 = page.getViewport({ scale: 1 });
+        const vp = page.getViewport({ scale: 280 / vp0.width });
+        const cv = document.createElement('canvas');
+        cv.width = vp.width; cv.height = vp.height;
+        await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+        cv.className = 'mat-detail-preview-thumb';
+        container.appendChild(cv);
+      }
+    }
+  }
+
   if (_matKey) {
     const prevWrap = mk('div', 'mat-detail-preview');
     const prevBtn = btn('👁 Vorschau laden', 'btn btn-ghost btn-xs');
     const prevPages = mk('div', 'mat-detail-preview-pages');
     prevBtn.onclick = async () => {
-      // Wenn bereits geladen: Toggle Sichtbarkeit
       if (prevPages.childElementCount > 0) {
         const hidden = prevPages.style.display === 'none';
         prevPages.style.display = hidden ? '' : 'none';
@@ -134,20 +162,8 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
       }
       prevBtn.disabled = true; prevBtn.textContent = '⏳ Lade…';
       try {
-        const buf = await r2Download(_matKey);
-        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
         prevPages.innerHTML = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const vp0  = page.getViewport({ scale: 1 });
-          const scale = 280 / vp0.width;
-          const vp   = page.getViewport({ scale });
-          const cv   = document.createElement('canvas');
-          cv.width = vp.width; cv.height = vp.height;
-          await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
-          cv.className = 'mat-detail-preview-thumb';
-          prevPages.appendChild(cv);
-        }
+        await renderPreviewKey(_matKey, prevPages);
         prevBtn.textContent = '🙈 Vorschau ausblenden';
         prevBtn.disabled = false;
       } catch(e2) {
@@ -172,19 +188,8 @@ function openMatOverlay(mat, card, overlay, panel, panTitle, renderCards) {
         }
         wBtn.disabled = true; wBtn.textContent = '⏳ Lade…';
         try {
-          const buf = await r2Download(wKey);
-          const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
           wPages.innerHTML = '';
-          for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const vp0 = page.getViewport({ scale: 1 });
-            const vp = page.getViewport({ scale: 280 / vp0.width });
-            const cv = document.createElement('canvas');
-            cv.width = vp.width; cv.height = vp.height;
-            await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
-            cv.className = 'mat-detail-preview-thumb';
-            wPages.appendChild(cv);
-          }
+          await renderPreviewKey(wKey, wPages);
           wBtn.textContent = '🙈 Datei ' + (i + 2) + ' ausblenden';
           wBtn.disabled = false;
         } catch(e2) { wBtn.textContent = '⚠ ' + e2.message; wBtn.disabled = false; }

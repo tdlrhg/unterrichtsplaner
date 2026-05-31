@@ -1147,18 +1147,81 @@ function buildScanPanel(subTitle, renderCards, onClose) {
       const now = new Date().toISOString();
       const entries = rawEntries.map(e => {
         const normalized = normalizeMaterialResult(e);
-        // Default-Fach anwenden wenn leer und Lehrerin hat eines vorgewählt
         if (defaultFach && (!normalized.fach || !normalized.fach.length)) {
           normalized.fach = [defaultFach];
         }
         return normalized;
       });
-      entries.forEach(e => {
+
+      // ── Bilder auf R2 hochladen ──────────────────────────────────
+      statusMsg.textContent = '⏳ Lade Bilder hoch…';
+
+      // Hilfsfunktion: dataURL → Blob
+      function dataURLtoBlob(dataUrl) {
+        const [header, b64] = dataUrl.split(',');
+        const mime = header.match(/:(.*?);/)[1];
+        const bin = atob(b64);
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        return new Blob([arr], { type: mime });
+      }
+
+      // Material-Bilder hochladen
+      const matFileObjects = matFiles; // die Original-File-Objekte
+      const matUploadKeys = [];
+      for (let i = 0; i < matFiles.length; i++) {
+        const f = matFiles[i];
+        const ext = f.name.split('.').pop().toLowerCase() || 'jpg';
+        const key = `scan_${idBase}_mat_${i + 1}.${ext}`;
+        try {
+          await r2Upload(key, f, f.type || 'image/jpeg');
+          matUploadKeys.push(key);
+        } catch(_) { matUploadKeys.push(null); }
+      }
+
+      // Kontext-Bilder hochladen (ein gemeinsamer Satz für alle Einträge)
+      const kontextUploadKeys = [];
+      for (let i = 0; i < kontextFiles.length; i++) {
+        const f = kontextFiles[i];
+        const ext = f.name.split('.').pop().toLowerCase() || 'jpg';
+        const key = `scan_${idBase}_kontext_${i + 1}.${ext}`;
+        try {
+          await r2Upload(key, f, f.type || 'image/jpeg');
+          kontextUploadKeys.push(key);
+        } catch(_) { kontextUploadKeys.push(null); }
+      }
+
+      // Hochgeladene Keys auf Einträge verteilen:
+      // Bei einem Eintrag: alle Mat-Bilder → erster als r2key, Rest als dateipfadeWeitere
+      // Bei mehreren Einträgen: Bilder gleichmäßig aufteilen, Kontext für alle
+      const validMatKeys = matUploadKeys.filter(Boolean);
+      const validKontextKeys = kontextUploadKeys.filter(Boolean);
+      entries.forEach((e, i) => {
         if (!e.id) e.id = 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
         if (!e.importiertAm) e.importiertAm = now;
+
+        if (entries.length === 1) {
+          // Ein Eintrag bekommt alle Material-Bilder
+          if (validMatKeys[0]) e.r2key = validMatKeys[0];
+          if (validMatKeys.length > 1) e.dateipfadeWeitere = validMatKeys.slice(1);
+        } else {
+          // Mehrere Einträge: Bilder gleichmäßig aufteilen
+          const perEntry = Math.max(1, Math.ceil(validMatKeys.length / entries.length));
+          const myKeys = validMatKeys.slice(i * perEntry, (i + 1) * perEntry);
+          if (myKeys[0]) e.r2key = myKeys[0];
+          if (myKeys.length > 1) e.dateipfadeWeitere = myKeys.slice(1);
+        }
+
+        // Kontext für alle Einträge
+        if (validKontextKeys[0]) {
+          e.kontextR2key = validKontextKeys[0];
+          if (validKontextKeys.length > 1) e.kontextWeitere = validKontextKeys.slice(1);
+        }
+
         const idx = MATDB.findIndex(m => m.id === e.id);
         if (idx >= 0) MATDB[idx] = e; else MATDB.unshift(e);
       });
+
       clearInterval(timer);
       saveMatDB();
       clearSchuelermaterial();

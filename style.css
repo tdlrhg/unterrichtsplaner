@@ -900,6 +900,7 @@ textarea::placeholder { color: #c4cdd6; }
 /* ── FP Tree View ── */
 .fp-tree-panel {
   border: 1px solid var(--bord);
+  border-top: 2px solid var(--pri);
   border-radius: var(--r);
   background: var(--surf);
   box-shadow: var(--sh);

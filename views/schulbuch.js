@@ -550,19 +550,21 @@ Antworte NUR mit validem JSON:
         const aufgCount = (kap.aufgaben || []).length;
         hrow.appendChild(tx('span', 'matc-klp-count', aufgCount + ' Aufgaben'));
 
+        const btnGrp = mk('div', '');
+        btnGrp.style.cssText = 'display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;';
+
         const addUkapBtn = btn('+ Unterkapitel', 'btn btn-ghost btn-xs');
-        addUkapBtn.style.marginLeft = 'auto';
         addUkapBtn.onclick = () => showAddUnterkapitel(buch, kap, renderKapitel);
-        hrow.appendChild(addUkapBtn);
+        btnGrp.appendChild(addUkapBtn);
 
         const moreBtn = btn('+ Seiten', 'btn btn-ghost btn-xs');
         moreBtn.onclick = () => showAddSeiten(buch, kap, renderKapitel);
-        hrow.appendChild(moreBtn);
+        btnGrp.appendChild(moreBtn);
 
         const editKapBtn = btn('✎', 'matc-del');
         editKapBtn.title = 'Bearbeiten'; editKapBtn.style.color = 'var(--tx2)';
         editKapBtn.onclick = () => showEditEntry('Kapitel bearbeiten', kap, renderKapitel);
-        hrow.appendChild(editKapBtn);
+        btnGrp.appendChild(editKapBtn);
 
         const delKapBtn = btn('✕', 'matc-del');
         delKapBtn.onclick = () => {
@@ -570,7 +572,8 @@ Antworte NUR mit validem JSON:
           buch.kapitel = buch.kapitel.filter(k => k.id !== kap.id);
           saveSchulbuchDB(); renderKapitel();
         };
-        hrow.appendChild(delKapBtn);
+        btnGrp.appendChild(delKapBtn);
+        hrow.appendChild(btnGrp);
         body.appendChild(hrow);
 
         // Direkte Aufgaben am Kapitel
@@ -592,15 +595,17 @@ Antworte NUR mit validem JSON:
             const uAufgCount = (ukap.aufgaben || []).length;
             uHrow.appendChild(tx('span', 'matc-klp-count', uAufgCount + ' Aufg.'));
 
+            const uBtnGrp = mk('div', '');
+            uBtnGrp.style.cssText = 'display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;';
+
             const uMoreBtn = btn('+ Seiten', 'btn btn-ghost btn-xs');
-            uMoreBtn.style.marginLeft = 'auto';
             uMoreBtn.onclick = () => showAddSeiten(buch, ukap, renderKapitel);
-            uHrow.appendChild(uMoreBtn);
+            uBtnGrp.appendChild(uMoreBtn);
 
             const uEditBtn = btn('✎', 'matc-del');
             uEditBtn.title = 'Bearbeiten'; uEditBtn.style.color = 'var(--tx2)';
             uEditBtn.onclick = () => showEditEntry('Unterkapitel bearbeiten', ukap, renderKapitel);
-            uHrow.appendChild(uEditBtn);
+            uBtnGrp.appendChild(uEditBtn);
 
             const uDelBtn = btn('✕', 'matc-del');
             uDelBtn.onclick = () => {
@@ -608,7 +613,8 @@ Antworte NUR mit validem JSON:
               kap.unterkapitel = kap.unterkapitel.filter(u => u.id !== ukap.id);
               saveSchulbuchDB(); renderKapitel();
             };
-            uHrow.appendChild(uDelBtn);
+            uBtnGrp.appendChild(uDelBtn);
+            uHrow.appendChild(uBtnGrp);
             uCard.appendChild(uHrow);
 
             if (uAufgCount) uCard.appendChild(buildAufgabenListe(ukap.aufgaben));

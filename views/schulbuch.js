@@ -59,7 +59,7 @@ Extrahiere ALLE Aufgaben vollständig. Jede Teilaufgabe (a, b, c, d …) wird al
 Für jeden Eintrag:
 - nr: Aufgabennummer inkl. Teilaufgabe (z.B. "7a", "7b", "7c") — wenn keine Teilaufgaben, dann nur "7"
 - seite: Seitennummer falls erkennbar, sonst null
-- text: VOLLSTÄNDIGER Aufgabentext, exakt wie im Buch (keine Kürzung, keine Paraphrase). Wichtig: Kein Zeilenumbruch innerhalb des text-Feldes — alles in einer Zeile, Formeln als Text (z.B. "x^2 + 3x - 4 = 0" oder "3/4 * 8").
+- text: Aufgabentext exakt wie im Buch, alles in einer Zeile, Formeln als Text (z.B. "x^2 + 3x - 4 = 0"). Bei Teilaufgaben (a, b, c …): Schreibe die gemeinsame Aufgabenstellung NUR bei der ersten Teilaufgabe vollständig. Bei allen weiteren Teilaufgaben schreibe NUR den individuellen Teil (z.B. nur die Gleichung "2,8 - [] = -8,2"), nicht die wiederholte Aufgabenstellung.
 - schwierigkeit: Lies das Kreissymbol vor der Aufgabennummer und gib es exakt zurück: "○" (leerer Kreis = einfach), "◒" (halb gefüllt = mittel), "●" (gefüllt = anspruchsvoll). Falls kein Symbol erkennbar, schätze und verwende das passende Symbol.
 - kompetenzen: Array mit Kompetenzkürzel falls erkennbar (z.B. ["UF1","K2"]), sonst []
 
@@ -463,14 +463,24 @@ Antworte NUR mit validem JSON:
       } else {
         // Gruppe → Kopfzeile + eingerückte Teilaufgaben
         const header = mk('div', '');
-        header.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:3px 8px;background:var(--surf2);border-radius:5px 5px 0 0;font-size:13px;font-weight:600;';
+        header.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:3px 8px;background:var(--surf2);border-radius:5px 5px 0 0;font-size:13px;font-weight:600;flex-wrap:wrap;';
         header.appendChild(tx('span', '', 'Aufg. ' + base));
         if (gruppe[0].seite) header.appendChild(tx('span', 'matc-jg', 'S. ' + gruppe[0].seite));
+        // Gemeinsame Aufgabenstellung aus erster Teilaufgabe im Header zeigen
+        if (gruppe[0].text) {
+          const desc = tx('span', '', gruppe[0].text);
+          desc.style.cssText = 'font-weight:400;color:var(--tx2);font-size:12px;';
+          header.appendChild(desc);
+        }
         aufgList.appendChild(header);
 
         const subWrap = mk('div', '');
         subWrap.style.cssText = 'background:var(--surf2);border-radius:0 0 5px 5px;padding:2px 0 4px 0;margin-bottom:1px;';
-        gruppe.forEach(aufg => subWrap.appendChild(aufgRow(aufg, true)));
+        // Erste Teilaufgabe ohne Text (steht im Header), Rest normal
+        gruppe.forEach((aufg, i) => {
+          const display = i === 0 ? { ...aufg, text: '' } : aufg;
+          subWrap.appendChild(aufgRow(display, true));
+        });
         aufgList.appendChild(subWrap);
       }
     });

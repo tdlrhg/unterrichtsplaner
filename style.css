@@ -48,7 +48,8 @@ body { font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif; back
   border-radius: 6px;
 }
 .sb-item:hover { background: var(--sb-hover); }
-.sb-item.active { background: var(--sb-active-bg); }
+.sb-item.active { background: var(--sb-active-bg); border-left: 2px solid var(--pri); padding-left: 12px; }
+.sb-fach.active { border-left: 2px solid var(--pri); padding-left: 12px; }
 
 .sb-item-label {
   font-size: 13px;

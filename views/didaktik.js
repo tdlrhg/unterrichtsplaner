@@ -28,19 +28,22 @@ function viewDidaktik() {
 
   // ── Tabs ──────────────────────────────────────────────────────────
   const tabBar = mk('div', 'did-tabs');
-  const tabArt = mk('button', 'did-tab' + (S._didaktikTab !== 'phasen' ? ' active' : ''));
-  tabArt.textContent = '📚 Artikeldatenbank';
-  tabArt.onclick = () => { S._didaktikTab = 'artikel'; S._didaktikView = null; render(); };
-  const tabPh = mk('button', 'did-tab' + (S._didaktikTab === 'phasen' ? ' active' : ''));
-  tabPh.textContent = '📐 Phasenmodelle';
-  tabPh.onclick = () => { S._didaktikTab = 'phasen'; S._didaktikView = null; render(); };
-  tabBar.appendChild(tabArt); tabBar.appendChild(tabPh);
+  const tabs = [
+    { id: 'artikel',  label: '📚 Artikel' },
+    { id: 'themen',   label: '🏷 Nach Themen' },
+    { id: 'phasen',   label: '📐 Phasenmodelle' },
+  ];
+  const aktTab = S._didaktikTab || 'artikel';
+  tabs.forEach(t => {
+    const tb = mk('button', 'did-tab' + (aktTab === t.id ? ' active' : ''));
+    tb.textContent = t.label;
+    tb.onclick = () => { S._didaktikTab = t.id; S._didaktikView = null; render(); };
+    tabBar.appendChild(tb);
+  });
   div.appendChild(tabBar);
 
-  if (S._didaktikTab === 'phasen') {
-    div.appendChild(buildPhasenTab());
-    return div;
-  }
+  if (aktTab === 'phasen') { div.appendChild(buildPhasenTab()); return div; }
+  if (aktTab === 'themen')  { div.appendChild(buildNachThemenTab()); return div; }
 
   // ── Extraktions-UI ────────────────────────────────────────────────
   if (S._didaktikView === 'neu') {
@@ -512,6 +515,154 @@ function buildExtraktionVorschau(parsed, container) {
   wrap.appendChild(actRow);
 
   return wrap;
+}
+
+// ── Nach-Themen-Tab ───────────────────────────────────────────────
+function buildNachThemenTab() {
+  const div = mk('div', '');
+
+  if (!DIDARTDB.length) {
+    const empty = mk('div', 'did-empty');
+    empty.style.marginTop = '40px';
+    empty.innerHTML = '<div style="font-size:32px;margin-bottom:12px">🏷</div><div style="font-weight:700;margin-bottom:6px">Noch keine Artikel in der Datenbank</div><div style="font-size:13px;color:var(--tx3)">Füge Artikel hinzu um hier nach Themen zu suchen.</div>';
+    div.appendChild(empty);
+    return div;
+  }
+
+  // Alle Bausteine aus allen Artikeln sammeln
+  const alleBausteine = [];
+  DIDARTDB.forEach(art => {
+    const quelle = art.quelle?.autoren?.[0]
+      ? (art.quelle.autoren[0] + (art.quelle.autoren.length > 1 ? ' u.a.' : ''))
+      : art.quelle?.titel || '?';
+    (art.kernaussagen || []).forEach(k => alleBausteine.push({
+      typ: 'kernaussage', text: k.aussage, planungsebene: k.planungsebene || [],
+      themen: k.themen || [], quelle, artikelId: art.id,
+    }));
+    (art.muster || []).forEach(m => alleBausteine.push({
+      typ: 'muster', text: m.name + ': ' + m.prinzip, planungsebene: m.planungsebene || [],
+      themen: m.themen || [], quelle, artikelId: art.id,
+    }));
+    (art.einwaende || []).forEach(e => alleBausteine.push({
+      typ: 'einwand', text: '? ' + e.einwand + ' → ' + e.antwort, planungsebene: [],
+      themen: e.themen || [], quelle, artikelId: art.id,
+    }));
+  });
+
+  // Alle vorhandenen Tags sammeln
+  const alleThemen = [...new Set(alleBausteine.flatMap(b => b.themen))].sort();
+  const alleEbenen = PLANUNGSEBENEN.filter(e => alleBausteine.some(b => b.planungsebene.includes(e)));
+
+  // Filter-State
+  if (!S._didThemenFilter) S._didThemenFilter = { ebene: null, thema: null, suche: '' };
+  const F = S._didThemenFilter;
+
+  // Suchfeld
+  const suchRow = mk('div', '');
+  suchRow.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:12px;';
+  const suchInp = document.createElement('input');
+  suchInp.type = 'text'; suchInp.className = 'finp';
+  suchInp.placeholder = 'Bausteine durchsuchen…';
+  suchInp.value = F.suche || '';
+  suchInp.style.flex = '1';
+  suchInp.oninput = () => { F.suche = suchInp.value; renderBausteine(); };
+  suchRow.appendChild(suchInp);
+  const resetBtn = btn('Filter zurücksetzen', 'btn btn-ghost btn-xs');
+  resetBtn.onclick = () => { F.ebene = null; F.thema = null; F.suche = ''; suchInp.value = ''; renderBausteine(); renderFilter(); };
+  suchRow.appendChild(resetBtn);
+  div.appendChild(suchRow);
+
+  // Planungsebene-Filter
+  const ebenenRow = mk('div', 'did-filter-row');
+  ebenenRow.appendChild(tx('span', 'did-filter-label', 'Ebene:'));
+  const ebenenChips = mk('div', 'did-tag-wrap');
+  function renderFilter() {
+    ebenenChips.innerHTML = '';
+    alleEbenen.forEach(e => {
+      const isOn = F.ebene === e;
+      const b = mk('button', 'did-filter-chip' + (isOn ? ' on' : ''));
+      b.textContent = PLANUNGSEBENE_LABEL[e] || e;
+      if (isOn) { b.style.background = PLANUNGSEBENE_FARBE[e] + '33'; b.style.color = PLANUNGSEBENE_FARBE[e]; b.style.borderColor = PLANUNGSEBENE_FARBE[e]; }
+      b.onclick = () => { F.ebene = isOn ? null : e; renderBausteine(); renderFilter(); };
+      ebenenChips.appendChild(b);
+    });
+    themenChips.innerHTML = '';
+    const relevantThemen = F.ebene
+      ? [...new Set(alleBausteine.filter(b => b.planungsebene.includes(F.ebene)).flatMap(b => b.themen))].sort()
+      : alleThemen;
+    relevantThemen.forEach(t => {
+      const isOn = F.thema === t;
+      const b = mk('button', 'did-filter-chip' + (isOn ? ' on' : ''));
+      b.textContent = t;
+      b.onclick = () => { F.thema = isOn ? null : t; renderBausteine(); renderFilter(); };
+      themenChips.appendChild(b);
+    });
+  }
+  ebenenRow.appendChild(ebenenChips);
+  div.appendChild(ebenenRow);
+
+  const themenRow = mk('div', 'did-filter-row');
+  themenRow.appendChild(tx('span', 'did-filter-label', 'Thema:'));
+  const themenChips = mk('div', 'did-tag-wrap');
+  themenRow.appendChild(themenChips);
+  div.appendChild(themenRow);
+
+  // Bausteine-Liste
+  const listeWrap = mk('div', '');
+  listeWrap.style.marginTop = '16px';
+  div.appendChild(listeWrap);
+
+  const TYP_LABEL = { kernaussage: 'Kernaussage', muster: 'Muster', einwand: 'Einwand' };
+  const TYP_FARBE = { kernaussage: 'var(--pri)', muster: 'var(--grn)', einwand: '#8b5cf6' };
+
+  function renderBausteine() {
+    listeWrap.innerHTML = '';
+    const q = (F.suche || '').toLowerCase().trim();
+    const gefiltert = alleBausteine.filter(b => {
+      if (F.ebene && !b.planungsebene.includes(F.ebene)) return false;
+      if (F.thema && !b.themen.includes(F.thema)) return false;
+      if (q && !b.text.toLowerCase().includes(q) && !b.themen.join(' ').includes(q)) return false;
+      return true;
+    });
+
+    if (!gefiltert.length) {
+      listeWrap.appendChild(tx('div', 'did-empty', 'Keine Bausteine gefunden.'));
+      return;
+    }
+
+    const zaehler = tx('div', '', gefiltert.length + ' Baustein' + (gefiltert.length !== 1 ? 'e' : ''));
+    zaehler.style.cssText = 'font-size:12px;color:var(--tx3);margin-bottom:8px;';
+    listeWrap.appendChild(zaehler);
+
+    gefiltert.forEach(b => {
+      const row = mk('div', 'did-themen-baustein');
+      const top = mk('div', '');
+      top.style.cssText = 'display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;';
+      const typBadge = tx('span', '', TYP_LABEL[b.typ] || b.typ);
+      typBadge.style.cssText = `font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${TYP_FARBE[b.typ]}22;color:${TYP_FARBE[b.typ]};flex-shrink:0;margin-top:2px;`;
+      top.appendChild(typBadge);
+      top.appendChild(tx('span', '', b.text));
+      row.appendChild(top);
+
+      const meta = mk('div', 'did-badges-row');
+      (b.planungsebene || []).forEach(e => {
+        const badge = tx('span', 'did-ebene-badge', PLANUNGSEBENE_LABEL[e] || e);
+        badge.style.background = (PLANUNGSEBENE_FARBE[e] || '#94a3b8') + '22';
+        badge.style.color = PLANUNGSEBENE_FARBE[e] || '#94a3b8';
+        meta.appendChild(badge);
+      });
+      (b.themen || []).forEach(t => meta.appendChild(tx('span', 'did-thema-badge', t)));
+      const src = tx('span', '', '— ' + b.quelle);
+      src.style.cssText = 'font-size:11px;color:var(--tx3);margin-left:4px;';
+      meta.appendChild(src);
+      row.appendChild(meta);
+      listeWrap.appendChild(row);
+    });
+  }
+
+  renderFilter();
+  renderBausteine();
+  return div;
 }
 
 // ── Phasenmodelle-Tab (alter Inhalt) ──────────────────────────────

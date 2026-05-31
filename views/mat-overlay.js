@@ -782,11 +782,15 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
         if (_isImage(key)) {
           const ext = (key.split('.').pop() || 'jpg').toLowerCase();
           const mime = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
-          // ArrayBuffer → base64
-          const bytes = new Uint8Array(buf);
-          let bin = '';
-          for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
-          return [`data:${mime};base64,${btoa(bin)}`];
+          // Blob → FileReader → base64 (zuverlässig für große Dateien)
+          const blob = new Blob([buf], { type: mime });
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          return [dataUrl];
         }
         const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
         const urls = [];
@@ -840,8 +844,10 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
         });
         if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error('API ' + res.status + ': ' + (err.error?.message || res.statusText)); }
         const d = await res.json();
-        const match = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/);
-        if (!match) throw new Error('Kein JSON in der KI-Antwort.');
+        const rawKiText = d.content?.[0]?.text || '';
+        console.log('[Neuanalyse] KI-Antwort:', rawKiText.slice(0, 300));
+        const match = rawKiText.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('Kein JSON in der KI-Antwort. Antwort: ' + rawKiText.slice(0, 200));
         const sanitized = match[0].replace(/[\x00-\x1F\x7F]/g, c => c === '\n' || c === '\r' || c === '\t' ? ' ' : '');
         const enriched = normalizeMaterialResult(robustParseObj(sanitized));
         const idx = MATDB.findIndex(m => m.id === mat.id);
@@ -882,11 +888,15 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
         const buf = await r2Download(r2key);
         if (_isImage(r2key)) {
           const ext = (r2key.split('.').pop() || 'jpg').toLowerCase();
-          const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
-          const bytes = new Uint8Array(buf);
-          let bin = '';
-          for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
-          return [`data:${mime};base64,${btoa(bin)}`];
+          const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+          const blob = new Blob([buf], { type: mime });
+          const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          return [dataUrl];
         }
         const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
         const urls = [];

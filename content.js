@@ -7,6 +7,7 @@ function buildContent() {
   if (S.view === 'materialien') { c.appendChild(viewMaterialien()); return c; }
   if (S.view === 'methoden') { c.appendChild(viewMethoden()); return c; }
   if (S.view === 'didaktik') { c.appendChild(viewDidaktik()); return c; }
+  if (S.view === 'schulbuecher') { c.appendChild(viewSchulbuecher()); return c; }
   if (S.view === 'kursDetail' && S.aktKursDetailId) { c.appendChild(viewKursDetail(S.aktKursDetailId)); return c; }
   if (S.view === 'kursEinstellungen' && S.aktKursDetailId) { c.appendChild(viewKursEinstellungen(S.aktKursDetailId)); return c; }
   if (!S.aktFpId) { c.appendChild(viewFachplanung()); return c; }

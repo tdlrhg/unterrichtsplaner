@@ -142,6 +142,11 @@ function buildSidebar() {
     S.view === 'didaktik',
     () => { S.view = 'didaktik'; S.sel = null; render(); }
   ));
+  sb.appendChild(sbRow(
+    '📖 Schulbücher', null,
+    S.view === 'schulbuecher',
+    () => { S.view = 'schulbuecher'; S.sel = null; render(); }
+  ));
 
   // ── Einstellungen ─────────────────────────────────────────────
   sb.appendChild(mk('div', 'sb-sep'));

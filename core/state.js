@@ -13,6 +13,9 @@ let DIDAKTIKDB = {};
 // ── Didaktik-Artikel (aus Zeitschriften) ─────────────────────────
 let DIDARTDB = [];
 
+// ── Schulbücher ───────────────────────────────────────────────────
+let SCHULBUCHDB = [];
+
 // ── State ────────────────────────────────────────────────────────
 const S = {
   data: null,        // { fachplanungen: [], kurse: [] }

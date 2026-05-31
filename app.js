@@ -116,19 +116,21 @@ function buildSetup() {
       checkVersion();
     });
 
-  const [loaded, matdb, klpdb, didaktik, methdb, didart] = await Promise.all([
+  const [loaded, matdb, klpdb, didaktik, methdb, didart, schulbuecher] = await Promise.all([
     sbDownload('data.json').catch(() => null),
     sbDownload('materialien.json').catch(() => []),
     fetch('klp.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
     sbDownload('didaktik.json').catch(() => ({})),
     sbDownload('methoden.json').catch(() => []),
     sbDownload('didaktik-artikel.json').catch(() => []),
+    sbDownload('schulbuecher.json').catch(() => []),
   ]);
   MATDB = Array.isArray(matdb) ? matdb : [];
   KLPDB = Array.isArray(klpdb) ? klpdb : [];
   METHDB = Array.isArray(methdb) ? methdb : [];
   DIDAKTIKDB = (didaktik && typeof didaktik === 'object' && !Array.isArray(didaktik)) ? didaktik : {};
   DIDARTDB = Array.isArray(didart) ? didart : [];
+  SCHULBUCHDB = Array.isArray(schulbuecher) ? schulbuecher : [];
 
   // ── Migration: alle SII-Varianten → 'SII' ────────────────────
   const SII_NORM = new Set(['EF','Q1','Q2','Q (GK)','Q (LK)','Q-Phase','Oberstufe','Einführungsphase']);

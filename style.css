@@ -48,8 +48,8 @@ body { font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif; back
   border-radius: 6px;
 }
 .sb-item:hover { background: var(--sb-hover); }
-.sb-item.active { background: var(--sb-active-bg); border-left: 2px solid var(--pri); padding-left: 12px; }
-.sb-fach.active { border-left: 2px solid var(--pri); padding-left: 12px; }
+.sb-item.active { background: var(--sb-active-bg); border-left: 3px solid var(--pri); padding-left: 11px; box-shadow: inset 3px 0 12px rgba(190,24,93,.15); }
+.sb-fach.active { background: var(--sb-active-bg); border-left: 3px solid var(--pri); padding-left: 11px; box-shadow: inset 3px 0 12px rgba(190,24,93,.15); }
 
 .sb-item-label {
   font-size: 13px;

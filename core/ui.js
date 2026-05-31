@@ -103,65 +103,6 @@ function breadcrumb(items) {
   return bc;
 }
 
-function ovCard(title, sub, onclick) {
-  const c = mk('div', 'ov-card');
-  c.appendChild(tx('div', 'ov-title', title));
-  c.appendChild(tx('div', 'ov-sub', sub));
-  c.onclick = onclick;
-  return c;
-}
-
-// ── KLP Selector ─────────────────────────────────────────────────
-function klpSelector(stunde, fach) {
-  const klp = KLP[fach] || KLP.M;
-  if (!stunde.klpInhalt) stunde.klpInhalt = [];
-  if (!stunde.klpProzess) stunde.klpProzess = [];
-
-  const grid = mk('div', 'klp-grid');
-
-  [['Inhaltsbereiche', klp.inhalt, 'klpInhalt'],
-   ['Prozesskompetenzen', klp.prozess, 'klpProzess']].forEach(([label, items, prop]) => {
-    const sec = mk('div', '');
-    sec.appendChild(tx('div', 'klp-sec', label));
-    items.forEach(k => {
-      const sel = stunde[prop].includes(k.id);
-      const item = mk('div', 'klp-item' + (sel ? ' sel' : ''));
-      const cb = document.createElement('input');
-      cb.type = 'checkbox'; cb.checked = sel;
-      cb.onchange = () => {
-        if (cb.checked) stunde[prop].push(k.id);
-        else stunde[prop] = stunde[prop].filter(x => x !== k.id);
-        scheduleSave();
-        item.className = 'klp-item' + (cb.checked ? ' sel' : '');
-      };
-      item.appendChild(cb);
-      item.appendChild(tx('span', '', k.label));
-      item.onclick = e => { if (e.target !== cb) { cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); } };
-      sec.appendChild(item);
-    });
-    grid.appendChild(sec);
-  });
-  return grid;
-}
-
-// ── Coverage display ─────────────────────────────────────────────
-function klpCoverage(kursId, fach) {
-  const klp = KLP[fach] || KLP.M;
-  const alle = getAlleStunden(kursId);
-  const covI = new Set(alle.flatMap(s => s.klpInhalt || []));
-  const covP = new Set(alle.flatMap(s => s.klpProzess || []));
-
-  const grid = mk('div', 'cov-grid');
-  [...klp.inhalt, ...klp.prozess].forEach(k => {
-    const covered = covI.has(k.id) || covP.has(k.id);
-    const item = mk('div', 'cov-item ' + (covered ? 'ok' : 'miss'));
-    item.appendChild(tx('span', 'cov-lbl', k.label));
-    item.appendChild(tx('span', '', covered ? '✓' : '✗'));
-    grid.appendChild(item);
-  });
-  return grid;
-}
-
 // ── Phasen table ─────────────────────────────────────────────────
 function phasenTable(stunde) {
   if (!stunde.phasen) stunde.phasen = [];

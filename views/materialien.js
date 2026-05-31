@@ -28,12 +28,6 @@ const TYP_COLOR = {
   'Faltheft / Merkheft / Lernhilfe': { bg: '#fef9ec', tx: '#92400e' },
 };
 
-function phaseChip(phase) {
-  const c = PHASE_COLOR[phase] || { bg: 'var(--surf2)', tx: 'var(--tx2)' };
-  const s = tx('span', 'matc-phase-chip', phase);
-  s.style.background = c.bg; s.style.color = c.tx;
-  return s;
-}
 function typBadge(typ) {
   const c = TYP_COLOR[typ] || { bg: 'var(--surf2)', tx: 'var(--tx2)' };
   const s = tx('span', 'matc-typ-badge', typ);
@@ -375,10 +369,6 @@ function viewMaterialien() {
 function saveMatDB() {
   sbUpload('materialien.json', MATDB).catch(e => console.error('Speichern fehlgeschlagen:', e));
 }
-function saveDDB() {
-  sbUpload('didaktik-artikel.json', DIDARTDB).catch(e => console.error('Didaktik-Artikel speichern fehlgeschlagen:', e));
-}
-
 async function extractPdfText(blob) {
   try {
     const buf = await blob.arrayBuffer();

@@ -187,9 +187,6 @@ Antworte NUR mit validem JSON:
       jgSel.value = '7';
       body.appendChild(field('Jahrgang', jgSel));
 
-      const isbnInp = document.createElement('input'); isbnInp.className = 'finp'; isbnInp.placeholder = 'optional';
-      body.appendChild(field('ISBN', isbnInp));
-
       const row = mk('div', ''); row.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
       const saveBtn = btn('Anlegen', 'btn btn-pri btn-sm');
       const cancelB = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelB.onclick = close;
@@ -199,7 +196,7 @@ Antworte NUR mit validem JSON:
       saveBtn.onclick = () => {
         const titel = titelInp.value.trim();
         if (!titel) { alert('Bitte einen Titel eingeben.'); return; }
-        const buch = { id: uid(), titel, verlag: verlagInp.value.trim() || null, fach: fachSel.value, jahrgang: jgSel.value, isbn: isbnInp.value.trim() || null, kapitel: [], erstellt: new Date().toISOString() };
+        const buch = { id: uid(), titel, verlag: verlagInp.value.trim() || null, fach: fachSel.value, jahrgang: jgSel.value, kapitel: [], erstellt: new Date().toISOString() };
         SCHULBUCHDB.push(buch);
         saveSchulbuchDB();
         aktBuchId = buch.id;
@@ -366,7 +363,6 @@ Antworte NUR mit validem JSON:
     infoBody.appendChild(tx('strong', '', buch.titel));
     if (buch.verlag) infoBody.appendChild(tx('span', 'c-sub', buch.verlag));
     if (buch.jahrgang) infoBody.appendChild(tx('span', 'matc-jg', 'Jg. ' + buch.jahrgang));
-    if (buch.isbn) infoBody.appendChild(tx('span', 'c-sub', 'ISBN ' + buch.isbn));
     infoCard.appendChild(infoBody);
     main.appendChild(infoCard);
 

@@ -59,11 +59,12 @@ Extrahiere ALLE Aufgaben vollständig. Jede Teilaufgabe (a, b, c, d …) wird al
 Für jeden Eintrag:
 - nr: Aufgabennummer inkl. Teilaufgabe (z.B. "7a", "7b", "7c") — wenn keine Teilaufgaben, dann nur "7"
 - seite: Seitennummer falls erkennbar, sonst null
-- text: VOLLSTÄNDIGER Aufgabentext, exakt wie im Buch (keine Kürzung, keine Paraphrase)
+- text: VOLLSTÄNDIGER Aufgabentext, exakt wie im Buch (keine Kürzung, keine Paraphrase). Wichtig: Kein Zeilenumbruch innerhalb des text-Feldes — alles in einer Zeile, Formeln als Text (z.B. "x^2 + 3x - 4 = 0" oder "3/4 * 8").
 - schwierigkeit: "einfach" | "mittel" | "anspruchsvoll" — einschätzen anhand Anforderungsniveau
 - kompetenzen: Array mit Kompetenzkürzel falls erkennbar (z.B. ["UF1","K2"]), sonst []
 
 Wichtig: Nichts weglassen. Auch Beispielaufgaben, Wiederholungsaufgaben und Knobelaufgaben erfassen.
+Alle Strings müssen JSON-valide sein: keine rohen Anführungszeichen, keine Zeilenumbrüche in Stringwerten.
 
 Antworte NUR mit validem JSON:
 {"aufgaben": [{"nr":"7a","seite":35,"text":"Berechne den Umfang des Rechtecks mit a = 5 cm und b = 3 cm.","schwierigkeit":"einfach","kompetenzen":["UF1"]}]}` });
@@ -83,10 +84,31 @@ Antworte NUR mit validem JSON:
     const data = await res.json();
     const raw = data.content?.[0]?.text || '';
     let jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || '{}';
+
+    // Reparatur 1: offene Klammern schließen (Truncation)
     const opens = (jsonStr.match(/\[/g)||[]).length - (jsonStr.match(/\]/g)||[]).length;
     const opensCurl = (jsonStr.match(/\{/g)||[]).length - (jsonStr.match(/\}/g)||[]).length;
     jsonStr += ']'.repeat(Math.max(0, opens)) + '}'.repeat(Math.max(0, opensCurl));
-    const parsed = JSON.parse(jsonStr);
+
+    // Reparatur 2: Steuerzeichen in Strings escapen (Zeilenumbrüche, Tabs)
+    jsonStr = jsonStr.replace(/("(?:[^"\\]|\\.)*")|[\x00-\x1F]/g, (m, str) => {
+      if (str) return str; // kompletter String-Token → unverändert
+      if (m === '\n') return '\\n';
+      if (m === '\r') return '\\r';
+      if (m === '\t') return '\\t';
+      return '';
+    });
+
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch(e) {
+      // Fallback: einzelne Aufgaben-Objekte per Regex extrahieren
+      const matches = [...raw.matchAll(/\{[^{}]*"nr"\s*:\s*"[^"]*"[^{}]*\}/g)];
+      if (!matches.length) throw new Error('KI-Antwort konnte nicht als JSON gelesen werden');
+      parsed = { aufgaben: matches.map(m => { try { return JSON.parse(m[0]); } catch(e2) { return null; } }).filter(Boolean) };
+    }
+
     const aufgaben = parsed.aufgaben || [];
     aufgaben.forEach(a => { a.id = uid(); });
     if (statusEl) statusEl.textContent = '✓ ' + aufgaben.length + ' Aufgaben extrahiert';

@@ -500,8 +500,7 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
         arow.appendChild(nrSpan);
       } else {
         arow.appendChild(tx('strong', '', 'Aufg. ' + aufg.nr));
-        if (aufg.seite) { const s = tx('span', 'matc-jg', 'S. ' + aufg.seite); s.style.margin = '0 4px'; arow.appendChild(s); }
-        if (aufg.schwierigkeit) { const sw = schwBadge(aufg.schwierigkeit); sw.style.marginRight = '4px'; arow.appendChild(sw); }
+        if (aufg.schwierigkeit) { const sw = schwBadge(aufg.schwierigkeit); sw.style.margin = '0 4px'; arow.appendChild(sw); }
       }
 
       const textWrap = mk('div', '');
@@ -515,6 +514,11 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
         textWrap.appendChild(grafSpan);
       }
       arow.appendChild(textWrap);
+      if (!eingerueckt && aufg.seite) {
+        const s = tx('span', 'matc-jg', 'S. ' + aufg.seite);
+        s.style.cssText = 'margin-left:auto;flex-shrink:0;padding-left:8px;';
+        arow.appendChild(s);
+      }
       return arow;
     }
 
@@ -545,12 +549,19 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
         const header = mk('div', '');
         header.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:3px 8px;background:var(--surf2);border-radius:5px 5px 0 0;font-size:13px;font-weight:600;flex-wrap:wrap;';
         header.appendChild(tx('span', '', 'Aufg. ' + base));
-        if (gruppe[0].seite) header.appendChild(tx('span', 'matc-jg', 'S. ' + gruppe[0].seite));
         const aufgStellung = hauptEintrag?.aufgabenstellung || null;
         if (aufgStellung) {
           const desc = tx('span', '', aufgStellung);
-          desc.style.cssText = 'font-weight:400;color:var(--tx2);font-size:12px;';
+          desc.style.cssText = 'font-weight:400;color:var(--tx2);font-size:12px;flex:1;';
           header.appendChild(desc);
+        } else {
+          const spacer = mk('span', ''); spacer.style.flex = '1';
+          header.appendChild(spacer);
+        }
+        if (gruppe[0].seite) {
+          const s = tx('span', 'matc-jg', 'S. ' + gruppe[0].seite);
+          s.style.flexShrink = '0';
+          header.appendChild(s);
         }
         aufgList.appendChild(header);
 

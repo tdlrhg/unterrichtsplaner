@@ -12,8 +12,9 @@
 <div id="root"></div>
 <script src="core/supabase.js"></script>
 <script src="core/r2.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="lib/pdf.min.js"></script>
+<script>if(typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';</script>
+<script src="lib/pdf-lib.min.js"></script>
 <script src="core/kalender-data.js"></script>
 <script src="core/kalender-view.js"></script>
 <script src="core/klp.js"></script>

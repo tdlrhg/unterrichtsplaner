@@ -473,6 +473,36 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
     });
   }
 
+  // ── Aufgaben-Toggle (eingeklappt, aufklappbar) ────────────────
+  function buildToggleAufgaben(aufgaben, count) {
+    const wrap = mk('div', '');
+    wrap.style.cssText = 'margin-top:6px;';
+    let offen = false;
+    const toggleBtn = mk('div', '');
+    toggleBtn.style.cssText = 'display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--tx3);padding:2px 0;user-select:none;';
+    const arrow = tx('span', '', '▶');
+    arrow.style.cssText = 'font-size:10px;transition:transform .15s;';
+    const label = tx('span', '', count + ' Aufgaben anzeigen');
+    toggleBtn.appendChild(arrow);
+    toggleBtn.appendChild(label);
+    wrap.appendChild(toggleBtn);
+
+    const listWrap = mk('div', '');
+    listWrap.style.display = 'none';
+    listWrap.style.marginTop = '6px';
+    wrap.appendChild(listWrap);
+
+    let built = false;
+    toggleBtn.onclick = () => {
+      offen = !offen;
+      arrow.style.transform = offen ? 'rotate(90deg)' : '';
+      label.textContent = offen ? count + ' Aufgaben ausblenden' : count + ' Aufgaben anzeigen';
+      listWrap.style.display = offen ? '' : 'none';
+      if (offen && !built) { listWrap.appendChild(buildAufgabenListe(aufgaben)); built = true; }
+    };
+    return wrap;
+  }
+
   // ── Aufgaben-Liste (wiederverwendbar, gruppiert) ──────────────
   function buildAufgabenListe(aufgaben) {
     const SC = { '○': '#16a34a', '◒': '#2563eb', '●': '#9d174d' };
@@ -707,8 +737,8 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
         hrow.appendChild(btnGrp);
         body.appendChild(hrow);
 
-        // Direkte Aufgaben am Kapitel
-        if (aufgCount) body.appendChild(buildAufgabenListe(kap.aufgaben));
+        // Direkte Aufgaben am Kapitel (eingeklappt)
+        if (aufgCount) body.appendChild(buildToggleAufgaben(kap.aufgaben, aufgCount));
 
         // Unterkapitel
         const ukaps = kap.unterkapitel || [];
@@ -720,11 +750,10 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
             uCard.style.cssText = 'background:var(--surf2);border-radius:6px;padding:8px 10px;';
 
             const uHrow = mk('div', '');
-            uHrow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;';
+            uHrow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
             uHrow.appendChild(tx('strong', '', ukap.nr + ' ' + ukap.titel));
             if (ukap.seiteVon && ukap.seiteBis) uHrow.appendChild(tx('span', 'matc-jg', 'S. ' + ukap.seiteVon + '–' + ukap.seiteBis));
             const uAufgCount = (ukap.aufgaben || []).length;
-            uHrow.appendChild(tx('span', 'matc-klp-count', uAufgCount + ' Aufg.'));
 
             const uBtnGrp = mk('div', '');
             uBtnGrp.style.cssText = 'display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;';
@@ -748,7 +777,7 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
             uHrow.appendChild(uBtnGrp);
             uCard.appendChild(uHrow);
 
-            if (uAufgCount) uCard.appendChild(buildAufgabenListe(ukap.aufgaben));
+            if (uAufgCount) uCard.appendChild(buildToggleAufgaben(ukap.aufgaben, uAufgCount));
             uList.appendChild(uCard);
           });
           body.appendChild(uList);

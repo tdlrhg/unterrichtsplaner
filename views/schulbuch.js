@@ -61,6 +61,7 @@ Für jeden Eintrag:
 - seite: Seitennummer falls erkennbar, sonst null
 - text: Aufgabentext exakt wie im Buch, alles in einer Zeile, Formeln als Text (z.B. "x^2 + 3x - 4 = 0"). Bei Teilaufgaben (a, b, c …): Schreibe die gemeinsame Aufgabenstellung NUR bei der ersten Teilaufgabe vollständig. Bei allen weiteren Teilaufgaben schreibe NUR den individuellen Teil (z.B. nur die Gleichung "2,8 - [] = -8,2"), nicht die wiederholte Aufgabenstellung.
 - schwierigkeit: Lies das Kreissymbol vor der Aufgabennummer und gib es exakt zurück: "○" (leerer Kreis = einfach), "◒" (halb gefüllt = mittel), "●" (gefüllt = anspruchsvoll). Falls kein Symbol erkennbar, schätze und verwende das passende Symbol.
+- grafik: Kurze Beschreibung des visuellen Elements falls vorhanden (Diagramm, geometrische Figur, Koordinatensystem, Zahlenstrahl mit Werten usw.) — max. 1 Satz, präzise. Null wenn kein relevantes visuelles Element vorhanden.
 - kompetenzen: Array mit Kompetenzkürzel falls erkennbar (z.B. ["UF1","K2"]), sonst []
 
 Wichtig: Nichts weglassen. Auch Beispielaufgaben, Wiederholungsaufgaben und Knobelaufgaben erfassen.
@@ -486,9 +487,17 @@ Antworte NUR mit validem JSON:
       arow.appendChild(tx('strong', '', (eingerueckt ? '' : 'Aufg. ') + aufg.nr));
       if (aufg.seite && !eingerueckt) arow.appendChild(tx('span', 'matc-jg', 'S. ' + aufg.seite));
       if (aufg.schwierigkeit) arow.appendChild(schwBadge(aufg.schwierigkeit));
+      const textWrap = mk('div', '');
+      textWrap.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:2px;';
       const textSpan = tx('span', '', aufg.text || '');
-      textSpan.style.cssText = 'flex:1;color:var(--tx2);';
-      arow.appendChild(textSpan);
+      textSpan.style.color = 'var(--tx2)';
+      textWrap.appendChild(textSpan);
+      if (aufg.grafik) {
+        const grafSpan = tx('span', '', '🖼 ' + aufg.grafik);
+        grafSpan.style.cssText = 'font-size:11px;color:var(--tx3);font-style:italic;';
+        textWrap.appendChild(grafSpan);
+      }
+      arow.appendChild(textWrap);
       return arow;
     }
 

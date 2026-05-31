@@ -337,6 +337,77 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
     });
   }
 
+  // ── Aufgaben einer Seite bearbeiten ───────────────────────────
+  function showEditAufgaben(entry, seite, onDone) {
+    openOverlay('Aufgaben S. ' + seite + ' bearbeiten', 640, (body, close) => {
+      body.style.display = 'flex'; body.style.flexDirection = 'column'; body.style.gap = '10px';
+      body.style.maxHeight = '70vh'; body.style.overflowY = 'auto';
+
+      const aufgaben = (entry.aufgaben || []).filter(a => a.seite === seite);
+
+      aufgaben.forEach(aufg => {
+        const box = mk('div', '');
+        box.style.cssText = 'border:1px solid var(--bd);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;';
+
+        // Kopfzeile: Nr + Schwierigkeit
+        const topRow = mk('div', '');
+        topRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+        topRow.appendChild(tx('strong', '', aufg.nr));
+
+        const schwSel = document.createElement('select'); schwSel.className = 'finp'; schwSel.style.cssText = 'width:auto;font-size:13px;padding:2px 6px;';
+        [['○','○ einfach'],['◒','◒ mittel'],['●','● anspruchsvoll'],['','– unbekannt']].forEach(([v,l]) => {
+          const o = document.createElement('option'); o.value = v; o.textContent = l;
+          if (aufg.schwierigkeit === v) o.selected = true;
+          schwSel.appendChild(o);
+        });
+        topRow.appendChild(schwSel);
+        box.appendChild(topRow);
+
+        // Aufgabenstellung (falls vorhanden)
+        if (aufg.aufgabenstellung != null) {
+          const aLabel = tx('label', 'fl', 'Aufgabenstellung');
+          aLabel.style.fontSize = '11px';
+          box.appendChild(aLabel);
+          const aTa = document.createElement('textarea'); aTa.className = 'finp';
+          aTa.value = aufg.aufgabenstellung || ''; aTa.rows = 2; aTa.style.fontSize = '13px';
+          aTa.oninput = () => { aufg.aufgabenstellung = aTa.value; };
+          box.appendChild(aTa);
+        }
+
+        // Text
+        const tLabel = tx('label', 'fl', aufg.aufgabenstellung != null ? 'Individueller Teil' : 'Aufgabentext');
+        tLabel.style.fontSize = '11px';
+        box.appendChild(tLabel);
+        const tTa = document.createElement('textarea'); tTa.className = 'finp';
+        tTa.value = aufg.text || ''; tTa.rows = 2; tTa.style.fontSize = '13px';
+        tTa.oninput = () => { aufg.text = tTa.value; };
+        box.appendChild(tTa);
+
+        // Grafik
+        if (aufg.grafik != null) {
+          const gLabel = tx('label', 'fl', '🖼 Grafik');
+          gLabel.style.fontSize = '11px';
+          box.appendChild(gLabel);
+          const gInp = document.createElement('input'); gInp.className = 'finp'; gInp.value = aufg.grafik || ''; gInp.style.fontSize = '13px';
+          gInp.oninput = () => { aufg.grafik = gInp.value || null; };
+          box.appendChild(gInp);
+        }
+
+        schwSel.onchange = () => { aufg.schwierigkeit = schwSel.value; };
+        box.appendChild(topRow);
+        body.appendChild(box);
+      });
+
+      const row = mk('div', ''); row.style.cssText = 'display:flex;gap:8px;padding-top:4px;position:sticky;bottom:0;background:var(--bg);';
+      const saveBtn = btn('Speichern', 'btn btn-pri btn-sm');
+      const cancelB = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelB.onclick = close;
+      row.appendChild(saveBtn); row.appendChild(cancelB);
+      body.appendChild(row);
+
+      saveBtn.onclick = () => { saveSchulbuchDB(); close(); onDone(); };
+    });
+  }
+
   // ── Eintrag bearbeiten (Kapitel oder Unterkapitel) ───────────
   function showEditEntry(overlayTitle, entry, onDone) {
     openOverlay(overlayTitle, 480, (body, close) => {
@@ -387,8 +458,12 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
             const cnt = tx('span', '', aufgOnPage.length + ' Aufg.');
             cnt.style.cssText = 'color:var(--tx3);font-size:12px;flex:1;';
             row.appendChild(cnt);
-            const clrBtn = btn('✕ leeren', 'btn btn-ghost btn-xs');
-            clrBtn.style.color = 'var(--red)';
+            const editSBtn = btn('✎', 'btn btn-ghost btn-xs');
+            editSBtn.title = 'Aufgaben bearbeiten';
+            editSBtn.onclick = () => showEditAufgaben(entry, s, renderSeitenListe);
+            row.appendChild(editSBtn);
+            const clrBtn = btn('✕', 'btn btn-ghost btn-xs');
+            clrBtn.style.color = 'var(--red)'; clrBtn.title = 'Seite leeren';
             clrBtn.onclick = () => {
               if (!confirm('Alle Aufgaben von S. ' + s + ' löschen?')) return;
               entry.aufgaben = (entry.aufgaben || []).filter(a => a.seite !== s);

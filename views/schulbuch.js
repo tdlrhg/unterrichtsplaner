@@ -60,7 +60,7 @@ Für jeden Eintrag:
 - nr: Aufgabennummer inkl. Teilaufgabe (z.B. "7a", "7b", "7c") — wenn keine Teilaufgaben, dann nur "7"
 - seite: Seitennummer falls erkennbar, sonst null
 - text: VOLLSTÄNDIGER Aufgabentext, exakt wie im Buch (keine Kürzung, keine Paraphrase). Wichtig: Kein Zeilenumbruch innerhalb des text-Feldes — alles in einer Zeile, Formeln als Text (z.B. "x^2 + 3x - 4 = 0" oder "3/4 * 8").
-- schwierigkeit: Lies das Kreissymbol vor der Aufgabennummer: leerer Kreis (○) = "einfach", halb gefüllter Kreis (◐) = "mittel", gefüllter Kreis (●) = "anspruchsvoll". Falls kein Symbol erkennbar, schätze anhand des Anforderungsniveaus.
+- schwierigkeit: Lies das Kreissymbol vor der Aufgabennummer und gib es exakt zurück: "○" (leerer Kreis = einfach), "◒" (halb gefüllt = mittel), "●" (gefüllt = anspruchsvoll). Falls kein Symbol erkennbar, schätze und verwende das passende Symbol.
 - kompetenzen: Array mit Kompetenzkürzel falls erkennbar (z.B. ["UF1","K2"]), sonst []
 
 Wichtig: Nichts weglassen. Auch Beispielaufgaben, Wiederholungsaufgaben und Knobelaufgaben erfassen.
@@ -431,9 +431,9 @@ Antworte NUR mit validem JSON:
       arow.appendChild(tx('strong', '', 'Aufg. ' + aufg.nr));
       if (aufg.seite) arow.appendChild(tx('span', 'matc-jg', 'S. ' + aufg.seite));
       if (aufg.schwierigkeit) {
-        const sw = tx('span', 'matc-typ-badge', aufg.schwierigkeit);
-        const sc = { einfach: { bg: '#dcfce7', tx: '#166534' }, mittel: { bg: '#dbeafe', tx: '#1e40af' }, anspruchsvoll: { bg: '#fce7f3', tx: '#9d174d' } }[aufg.schwierigkeit];
-        if (sc) { sw.style.background = sc.bg; sw.style.color = sc.tx; }
+        const sc = { '○': '#16a34a', '◒': '#2563eb', '●': '#9d174d' };
+        const sw = tx('span', '', aufg.schwierigkeit);
+        sw.style.cssText = 'font-size:14px;color:' + (sc[aufg.schwierigkeit] || 'var(--tx3)') + ';flex-shrink:0;';
         arow.appendChild(sw);
       }
       const textSpan = tx('span', '', aufg.text || '');

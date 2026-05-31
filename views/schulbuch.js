@@ -59,7 +59,7 @@ Extrahiere ALLE Aufgaben vollständig. Jede Teilaufgabe (a, b, c, d …) wird al
 Für jeden Eintrag:
 - nr: Aufgabennummer inkl. Teilaufgabe (z.B. "7a", "7b", "7c") — wenn keine Teilaufgaben, dann nur "7"
 - seite: Seitennummer falls erkennbar, sonst null
-- text: Aufgabentext exakt wie im Buch, alles in einer Zeile, Formeln als Text (z.B. "x^2 + 3x - 4 = 0"). Bei Teilaufgaben (a, b, c …): Schreibe die gemeinsame Aufgabenstellung NUR bei der ersten Teilaufgabe vollständig. Bei allen weiteren Teilaufgaben schreibe NUR den individuellen Teil (z.B. nur die Gleichung "2,8 - [] = -8,2"), nicht die wiederholte Aufgabenstellung.
+- text: Aufgabentext exakt wie im Buch, alles in einer Zeile, Formeln als Text (z.B. "x^2 + 3x - 4 = 0"). Bei Teilaufgaben (a, b, c …): Schreibe bei jeder Teilaufgabe NUR den individuellen Teil (die konkrete Formel oder Frage), NICHT die gemeinsame Aufgabenstellung — die steht im übergeordneten Eintrag. Beispiel: Bei "Aufg. 20: Bestimme welche Zahl… a) 2,8 - [] = -8,2  b) [] - 1,7 = -3,3" trägst du ein: nr:"20a" text:"2,8 - [] = -8,2", nr:"20b" text:"[] - 1,7 = -3,3". Die gemeinsame Aufgabenstellung "Bestimme welche Zahl…" kommt NICHT in den text-Feldern vor.
 - schwierigkeit: Lies das Kreissymbol vor der Aufgabennummer und gib es exakt zurück: "○" (leerer Kreis = einfach), "◒" (halb gefüllt = mittel), "●" (gefüllt = anspruchsvoll). Falls kein Symbol erkennbar, schätze und verwende das passende Symbol.
 - grafik: Kurze Beschreibung des visuellen Elements falls vorhanden (Diagramm, geometrische Figur, Koordinatensystem, Zahlenstrahl mit Werten usw.) — max. 1 Satz, präzise. Null wenn kein relevantes visuelles Element vorhanden.
 - kompetenzen: Array mit Kompetenzkürzel falls erkennbar (z.B. ["UF1","K2"]), sonst []
@@ -68,7 +68,9 @@ Wichtig: Nichts weglassen. Auch Beispielaufgaben, Wiederholungsaufgaben und Knob
 Alle Strings müssen JSON-valide sein: keine rohen Anführungszeichen, keine Zeilenumbrüche in Stringwerten.
 
 Antworte NUR mit validem JSON:
-{"aufgaben": [{"nr":"7a","seite":35,"text":"Berechne den Umfang des Rechtecks mit a = 5 cm und b = 3 cm.","schwierigkeit":"einfach","kompetenzen":["UF1"]}]}` });
+{"aufgaben": [{"nr":"20","seite":35,"aufgabenstellung":"Bestimme, welche Zahl in das Kästchen gehört. Eine Umkehraufgabe kann helfen.","text":null,"schwierigkeit":"○","grafik":null,"kompetenzen":[]},{"nr":"20a","seite":35,"aufgabenstellung":null,"text":"2,8 - [] = -8,2","schwierigkeit":"○","grafik":null,"kompetenzen":[]}]}
+
+Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag für die Hauptaufgabe an (z.B. nr:"20") mit der gemeinsamen Aufgabenstellung in "aufgabenstellung" und text:null. Dann folgen die Teilaufgaben (nr:"20a", "20b" …) mit text=individuelle Formel/Frage und aufgabenstellung:null. Aufgaben ohne Teilaufgaben haben aufgabenstellung:null und den vollen Text in "text".` });
 
     if (statusEl) statusEl.textContent = '✨ KI analysiert Aufgaben…';
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -79,7 +81,7 @@ Antworte NUR mit validem JSON:
         'anthropic-dangerous-direct-browser-access': 'true',
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8000, messages: [{ role: 'user', content: blocks }] }),
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 16000, messages: [{ role: 'user', content: blocks }] }),
     });
     if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || res.statusText); }
     const data = await res.json();
@@ -520,13 +522,18 @@ Antworte NUR mit validem JSON:
         aufgList.appendChild(aufgRow(gruppe[0], false));
       } else {
         // Gruppe → Kopfzeile + eingerückte Teilaufgaben
+        // Hauptaufgaben-Eintrag (ohne Buchstabe) als Header verwenden falls vorhanden
+        const hauptEintrag = gruppe.find(a => a.nr === base);
+        const teilaufgaben = gruppe.filter(a => a.nr !== base);
+        const anzeigeGruppe = teilaufgaben.length ? teilaufgaben : gruppe;
+
         const header = mk('div', '');
         header.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:3px 8px;background:var(--surf2);border-radius:5px 5px 0 0;font-size:13px;font-weight:600;flex-wrap:wrap;';
         header.appendChild(tx('span', '', 'Aufg. ' + base));
         if (gruppe[0].seite) header.appendChild(tx('span', 'matc-jg', 'S. ' + gruppe[0].seite));
-        // Gemeinsame Aufgabenstellung aus erster Teilaufgabe im Header zeigen
-        if (gruppe[0].text) {
-          const desc = tx('span', '', gruppe[0].text);
+        const aufgStellung = hauptEintrag?.aufgabenstellung || null;
+        if (aufgStellung) {
+          const desc = tx('span', '', aufgStellung);
           desc.style.cssText = 'font-weight:400;color:var(--tx2);font-size:12px;';
           header.appendChild(desc);
         }
@@ -534,11 +541,7 @@ Antworte NUR mit validem JSON:
 
         const subWrap = mk('div', '');
         subWrap.style.cssText = 'background:var(--surf2);border-radius:0 0 5px 5px;padding:2px 0 4px 0;margin-bottom:1px;';
-        // Erste Teilaufgabe ohne Text (steht im Header), Rest normal
-        gruppe.forEach((aufg, i) => {
-          const display = i === 0 ? { ...aufg, text: '' } : aufg;
-          subWrap.appendChild(aufgRow(display, true));
-        });
+        anzeigeGruppe.forEach(aufg => subWrap.appendChild(aufgRow(aufg, true)));
         aufgList.appendChild(subWrap);
       }
     });

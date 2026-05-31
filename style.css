@@ -1,6 +1,6 @@
 /* ── Variables ── */
 :root {
-  --bg: #f4f3f0; --surf: #ffffff; --surf2: #efede9; --bord: #e2dfd8;
+  --bg: #ebe5dd; --surf: #ffffff; --surf2: #e8e2da; --bord: #d8d2c8;
   --pri: #be185d; --pri2: #9d174d;
   --acc: #0f766e;
   --gold: #b45309;
@@ -84,7 +84,7 @@ body { font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif; back
 }
 .sb-item:hover .sb-item-del { opacity: 1; }
 .sb-item-del:hover { color: #fca5a5; background: rgba(220,38,38,.2); }
-.content { flex: 1; overflow-y: auto; padding: 24px; }
+.content { flex: 1; overflow-y: auto; padding: 24px; background: linear-gradient(160deg, rgba(190,24,93,.04) 0%, transparent 300px), var(--bg); box-shadow: inset 4px 0 24px rgba(0,0,0,.06); }
 
 /* ── Tree ── */
 .tree-row { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 6px; cursor: pointer; user-select: none; }

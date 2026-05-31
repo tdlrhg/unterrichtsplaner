@@ -421,26 +421,60 @@ Antworte NUR mit validem JSON:
     });
   }
 
-  // ── Aufgaben-Liste (wiederverwendbar) ─────────────────────────
+  // ── Aufgaben-Liste (wiederverwendbar, gruppiert) ──────────────
   function buildAufgabenListe(aufgaben) {
-    const aufgList = mk('div', '');
-    aufgList.style.cssText = 'display:flex;flex-direction:column;gap:3px;max-height:240px;overflow-y:auto;';
-    aufgaben.forEach(aufg => {
+    const SC = { '○': '#16a34a', '◒': '#2563eb', '●': '#9d174d' };
+
+    function schwBadge(s) {
+      const sp = tx('span', '', s || '');
+      sp.style.cssText = 'font-size:14px;color:' + (SC[s] || 'var(--tx3)') + ';flex-shrink:0;';
+      return sp;
+    }
+
+    function aufgRow(aufg, eingerueckt) {
       const arow = mk('div', '');
-      arow.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:4px 8px;background:var(--surf2);border-radius:5px;font-size:13px;';
-      arow.appendChild(tx('strong', '', 'Aufg. ' + aufg.nr));
-      if (aufg.seite) arow.appendChild(tx('span', 'matc-jg', 'S. ' + aufg.seite));
-      if (aufg.schwierigkeit) {
-        const sc = { '○': '#16a34a', '◒': '#2563eb', '●': '#9d174d' };
-        const sw = tx('span', '', aufg.schwierigkeit);
-        sw.style.cssText = 'font-size:14px;color:' + (sc[aufg.schwierigkeit] || 'var(--tx3)') + ';flex-shrink:0;';
-        arow.appendChild(sw);
-      }
+      arow.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:3px 8px;border-radius:5px;font-size:13px;' + (eingerueckt ? 'padding-left:24px;' : 'background:var(--surf2);');
+      arow.appendChild(tx('strong', '', (eingerueckt ? '' : 'Aufg. ') + aufg.nr));
+      if (aufg.seite && !eingerueckt) arow.appendChild(tx('span', 'matc-jg', 'S. ' + aufg.seite));
+      if (aufg.schwierigkeit) arow.appendChild(schwBadge(aufg.schwierigkeit));
       const textSpan = tx('span', '', aufg.text || '');
       textSpan.style.cssText = 'flex:1;color:var(--tx2);';
       arow.appendChild(textSpan);
-      aufgList.appendChild(arow);
+      return arow;
+    }
+
+    // Gruppieren nach Basisnummer (z.B. "17" für "17a", "17b")
+    const groups = [];
+    const groupMap = {};
+    aufgaben.forEach(aufg => {
+      const base = aufg.nr.match(/^(\d+)/)?.[1] || aufg.nr;
+      if (!groupMap[base]) { groupMap[base] = []; groups.push(base); }
+      groupMap[base].push(aufg);
     });
+
+    const aufgList = mk('div', '');
+    aufgList.style.cssText = 'display:flex;flex-direction:column;gap:3px;max-height:320px;overflow-y:auto;';
+
+    groups.forEach(base => {
+      const gruppe = groupMap[base];
+      if (gruppe.length === 1) {
+        // Einzelne Aufgabe → flach anzeigen
+        aufgList.appendChild(aufgRow(gruppe[0], false));
+      } else {
+        // Gruppe → Kopfzeile + eingerückte Teilaufgaben
+        const header = mk('div', '');
+        header.style.cssText = 'display:flex;gap:8px;align-items:baseline;padding:3px 8px;background:var(--surf2);border-radius:5px 5px 0 0;font-size:13px;font-weight:600;';
+        header.appendChild(tx('span', '', 'Aufg. ' + base));
+        if (gruppe[0].seite) header.appendChild(tx('span', 'matc-jg', 'S. ' + gruppe[0].seite));
+        aufgList.appendChild(header);
+
+        const subWrap = mk('div', '');
+        subWrap.style.cssText = 'background:var(--surf2);border-radius:0 0 5px 5px;padding:2px 0 4px 0;margin-bottom:1px;';
+        gruppe.forEach(aufg => subWrap.appendChild(aufgRow(aufg, true)));
+        aufgList.appendChild(subWrap);
+      }
+    });
+
     return aufgList;
   }
 

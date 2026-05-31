@@ -16,11 +16,11 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--tx); font-size: 14px; min-height: 100vh; }
+body { font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--tx); font-size: 14px; min-height: 100vh; }
 
 /* ── Topbar ── */
 .topbar { background: linear-gradient(135deg, #0f0618 0%, #7b1150 55%, #be185d 100%); color: #fff; height: 52px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 16px rgba(190,24,93,.4); position: sticky; top: 0; z-index: 100; }
-.topbar-title { font-size: 16px; font-weight: 700; }
+.topbar-title { font-size: 17px; font-weight: 700; font-family: 'Playfair Display', serif; letter-spacing: .02em; }
 .topbar-right { display: flex; align-items: center; gap: 10px; font-size: 12px; opacity: .85; }
 .topbar-version { font-size: 11px; opacity: .6; letter-spacing: .02em; }
 .save-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; display: inline-block; animation: blink 1s infinite; }

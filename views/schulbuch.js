@@ -562,6 +562,7 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
 
   // ── Aufgaben-Toggle (eingeklappt, aufklappbar) ────────────────
   function buildToggleAufgaben(aufgaben, count) {
+    sortAufgaben(aufgaben); // auch bereits gespeicherte Daten sortieren
     const wrap = mk('div', '');
     wrap.style.cssText = 'margin-top:6px;';
     let offen = false;

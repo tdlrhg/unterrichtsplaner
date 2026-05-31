@@ -623,7 +623,7 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
 
       const textWrap = mk('div', '');
       textWrap.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:2px;margin-left:6px;';
-      const textSpan = tx('span', '', aufg.text || '');
+      const textSpan = tx('span', '', aufg.text || aufg.aufgabenstellung || '');
       textSpan.style.color = 'var(--tx2)';
       textWrap.appendChild(textSpan);
       if (aufg.grafik) {

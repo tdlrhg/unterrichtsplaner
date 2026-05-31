@@ -1,6 +1,15 @@
 // ── Schulbücher-Datenbank ─────────────────────────────────────────
 // SCHULBUCHDB wird in core/state.js deklariert
 
+function sortAufgaben(aufgaben) {
+  aufgaben.sort((a, b) => {
+    if ((a.seite || 0) !== (b.seite || 0)) return (a.seite || 0) - (b.seite || 0);
+    const an = parseInt(a.nr) || 0, bn = parseInt(b.nr) || 0;
+    if (an !== bn) return an - bn;
+    return (a.nr || '').localeCompare(b.nr || '', 'de', { numeric: true });
+  });
+}
+
 function saveSchulbuchDB() {
   sbUpload('schulbuecher.json', SCHULBUCHDB).catch(e => console.error('Schulbücher speichern fehlgeschlagen:', e));
 }
@@ -282,6 +291,7 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
           seiteBis: bisInp.value ? parseInt(bisInp.value) : null,
           aufgaben,
         };
+        sortAufgaben(kap.aufgaben);
         if (!buch.kapitel) buch.kapitel = [];
         buch.kapitel.push(kap);
         saveSchulbuchDB();
@@ -315,6 +325,7 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
           const neueAufgaben = await extractAufgaben(imgs, statusEl);
           if (!kap.aufgaben) kap.aufgaben = [];
           kap.aufgaben.push(...neueAufgaben);
+          sortAufgaben(kap.aufgaben);
           saveSchulbuchDB();
           close();
           onDone();
@@ -464,6 +475,7 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
           seiteBis: bisInp.value ? parseInt(bisInp.value) : null,
           aufgaben,
         };
+        sortAufgaben(ukap.aufgaben);
         if (!kap.unterkapitel) kap.unterkapitel = [];
         kap.unterkapitel.push(ukap);
         saveSchulbuchDB();

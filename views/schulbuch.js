@@ -54,15 +54,19 @@ function viewSchulbuecher() {
     }
     blocks.push({ type: 'text', text: `Du analysierst Seiten aus einem Schulbuch (Gymnasium, Mathematik oder Naturwissenschaften).
 
-Extrahiere alle Aufgaben aus den Bildern. Für jede Aufgabe:
-- nr: Aufgabennummer (z.B. "1", "2a", "3b")
+Extrahiere ALLE Aufgaben vollständig. Jede Teilaufgabe (a, b, c, d …) wird als eigener Eintrag erfasst.
+
+Für jeden Eintrag:
+- nr: Aufgabennummer inkl. Teilaufgabe (z.B. "7a", "7b", "7c") — wenn keine Teilaufgaben, dann nur "7"
 - seite: Seitennummer falls erkennbar, sonst null
-- text: Kurze Beschreibung der Aufgabe (max. 100 Zeichen, Kernaufgabe zusammengefasst)
-- schwierigkeit: "einfach" | "mittel" | "anspruchsvoll"
+- text: VOLLSTÄNDIGER Aufgabentext, exakt wie im Buch (keine Kürzung, keine Paraphrase)
+- schwierigkeit: "einfach" | "mittel" | "anspruchsvoll" — einschätzen anhand Anforderungsniveau
 - kompetenzen: Array mit Kompetenzkürzel falls erkennbar (z.B. ["UF1","K2"]), sonst []
 
+Wichtig: Nichts weglassen. Auch Beispielaufgaben, Wiederholungsaufgaben und Knobelaufgaben erfassen.
+
 Antworte NUR mit validem JSON:
-{"aufgaben": [{"nr":"1a","seite":47,"text":"...","schwierigkeit":"mittel","kompetenzen":[]}]}` });
+{"aufgaben": [{"nr":"7a","seite":35,"text":"Berechne den Umfang des Rechtecks mit a = 5 cm und b = 3 cm.","schwierigkeit":"einfach","kompetenzen":["UF1"]}]}` });
 
     if (statusEl) statusEl.textContent = '✨ KI analysiert Aufgaben…';
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -73,7 +77,7 @@ Antworte NUR mit validem JSON:
         'anthropic-dangerous-direct-browser-access': 'true',
         'content-type': 'application/json',
       },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 4000, messages: [{ role: 'user', content: blocks }] }),
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8000, messages: [{ role: 'user', content: blocks }] }),
     });
     if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || res.statusText); }
     const data = await res.json();

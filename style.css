@@ -718,6 +718,7 @@ textarea::placeholder { color: #c4cdd6; }
 .matc-title { font-size: 13px; font-weight: 700; color: var(--tx); flex: 1; min-width: 0; }
 .matc-del { border: none; background: none; cursor: pointer; color: var(--tx3); font-size: 12px; opacity: 0; transition: opacity .15s; padding: 0 2px; margin-left: auto; flex-shrink: 0; }
 .matc-card:hover .matc-del { opacity: 1; }
+.card .matc-del { opacity: 1; }
 .matc-del:hover { color: var(--red); }
 
 .matc-unit { font-size: 10px; color: var(--tx3); margin-top: -2px; }

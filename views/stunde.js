@@ -640,10 +640,11 @@ ${matSummary}`;
         ? METHDB.filter(m => !m.phasen?.length || m.phasen.includes(typ))
         : METHDB
       ).map(m => `ID:${m.id}|${m.name}${m.beschreibung?' – '+m.beschreibung.slice(0,80):''}`).join('\n') || '(keine)';
+      const _lgT = getLGThemen((getAktKurs(fp.id)||{}).id||'');
       const prompt = `Du bist Didaktik-Experte. Schlage für diese Unterrichtsstunde je eine Methode für Einstieg, Erarbeitung und Sicherung vor.
 Fach: ${fp.fach}, Jahrgang: ${fp.jahrgang}
 Lernziel: ${stunde.lernziel||'–'}, Intention: ${stunde.intention||'–'}
-${getDIDContext(['stunde'], [], true)}
+${getDIDContext(['stunde'], _lgT, true)}
 Methoden für Einstieg:\n${methPool('Einstieg')}
 Methoden für Erarbeitung:\n${methPool('Erarbeitung')}
 Methoden für Sicherung:\n${methPool('Sicherung')}
@@ -1262,7 +1263,7 @@ ${prText}
 
 Didaktisches Hintergrundwissen (Phasenmodelle):
 ${wissenText}
-${getDIDContext(['stunde'], [], true)}
+${getDIDContext(['stunde'], getLGThemen((getAktKurs(fp.id)||{}).id||''), true)}
 
 Verfügbare Modelle (nur eines wählen):
 - 3-Phasen: Einstieg / Erarbeitung / Sicherung
@@ -1455,8 +1456,19 @@ async function kiNaechsteStunde(fp, block, reihe, aktStunde, gruppe, triggerBtn)
       ? klpHits.map(e => `  [${e.id}] ${e.kompetenzcodes.join(',')} ${e.inhaltsfeld}: ${e.beschreibung.slice(0,100)}`).join('\n')
       : '  (kein KLP geladen)';
 
-    const prompt = `Du bist Fachlehrerin für ${fachName} (Jahrgang ${fp.jahrgang}) an einem Gymnasium in NRW.
+    const aktKurs = getAktKurs(fp.id);
+    const lgThemen = aktKurs ? getLGThemen(aktKurs.id) : [];
+    const lgInfo = aktKurs?.lerngruppe ? (() => {
+      const lg = aktKurs.lerngruppe;
+      return [
+        lg.leistung ? 'Leistungsniveau: ' + lg.leistung : '',
+        lg.foerderung?.length ? 'Förderbedarf: ' + lg.foerderung.join(', ') : '',
+        lg.konsequenzen ? 'Didakt. Konsequenzen: ' + lg.konsequenzen.slice(0, 200) : '',
+      ].filter(Boolean).join('\n');
+    })() : '';
 
+    const prompt = `Du bist Fachlehrerin für ${fachName} (Jahrgang ${fp.jahrgang}) an einem Gymnasium in NRW.
+${lgInfo ? '\nLERNGRUPPE (' + (aktKurs?.klasse||'') + '):\n' + lgInfo + '\n' : ''}
 AKTUELLE STUNDE (die gerade abgeschlossene/bearbeitete):
 Titel: "${aktStunde.titel || '(ohne Titel)'}"
 Lernziel: "${aktStunde.lernziel || '(kein Lernziel)'}"
@@ -1475,7 +1487,7 @@ ${matText}
 
 KLP-KOMPETENZERWARTUNGEN (NRW):
 ${klpText}
-${getDIDContext(['stunde', 'reihe'])}
+${getDIDContext(['stunde', 'reihe'], lgThemen)}
 Plane jetzt die NÄCHSTE sinnvolle Unterrichtsstunde in dieser Reihe.
 Berücksichtige dabei:
 - Was wurde bisher erarbeitet? Was fehlt noch?

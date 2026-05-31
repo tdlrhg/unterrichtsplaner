@@ -421,8 +421,30 @@ function viewFachplanung() {
   const hdr = mk('div', 'c-hdr');
   const left = mk('div', '');
   left.appendChild(tx('div', 'c-title', fachLabel(lp.fach) + ' · Jahrgang ' + lp.jahrgang));
-  left.appendChild(tx('div', 'c-sub', 'Fachplanung · wird in ' + kurseForFachplanung(lp.id).length + ' Kurs/Kursen verwendet'));
+  const kurse = kurseForFachplanung(lp.id);
+  const aktKurs = getAktKurs(lp.id);
+  left.appendChild(tx('div', 'c-sub', 'Fachplanung · ' + kurse.length + ' Kurs/Kurse'));
   hdr.appendChild(left);
+
+  // Kurs-Selector — nur wenn mehrere Kurse verknüpft
+  if (kurse.length > 1) {
+    const kSel = mk('div', '');
+    kSel.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    kSel.appendChild(tx('span', '', 'Planung für:'));
+    kSel.lastChild.style.cssText = 'font-size:12px;color:var(--tx2);';
+    const sel = document.createElement('select');
+    sel.className = 'finp';
+    sel.style.cssText = 'width:auto;padding:4px 8px;font-size:13px;';
+    kurse.forEach(k => {
+      const o = document.createElement('option');
+      o.value = k.id; o.textContent = k.klasse + (k.schuljahr ? ' · ' + k.schuljahr : '');
+      if (aktKurs?.id === k.id) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.onchange = () => { S.aktKursId = sel.value; render(); };
+    kSel.appendChild(sel);
+    hdr.appendChild(kSel);
+  }
   const freieBtn = btn('+ Freie Stunde', 'btn btn-ghost btn-sm');
   freieBtn.onclick = () => {
     if (!lp.freieStunden) lp.freieStunden = [];
@@ -858,9 +880,11 @@ TITEL: Kurz und prägnant – ein Oberbegriff, kein vollständiger Satz. Beispie
   };
   const cfg = AUFGABEN[typ];
 
-  // Didaktik-Kontext: Ebene je nach Typ
+  // Didaktik-Kontext: Ebene je nach Typ + LG-Tags des aktiven Kurses
   const didEbenen = typ === 'block' ? ['reihe'] : ['stunde', 'reihe'];
-  const didCtx = getDIDContext(didEbenen);
+  const aktKurs = getAktKurs(lp.id);
+  const lgThemen = aktKurs ? getLGThemen(aktKurs.id) : [];
+  const didCtx = getDIDContext(didEbenen, lgThemen);
 
   const prompt = `Du bist Didaktik-Expertin für NRW-Gymnasien.
 

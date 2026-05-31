@@ -77,6 +77,37 @@ function getAlleStunden(fpId) {
 // ebenen: ['reihe','stunde','material','situation'] - welche Planungsebene
 // themen: ['problemlösen','differenzierung',...] - optional, filtert zusätzlich
 // werkzeuge: true → Heuristiken + Darstellungsformen einschließen
+// Leitet Didaktik-Tags aus der Lerngruppenanalyse eines Kurses ab
+function getLGThemen(kursId) {
+  const kurs = getKurs(kursId);
+  if (!kurs?.lerngruppe) return [];
+  const lg = kurs.lerngruppe;
+  const tags = new Set();
+  if (['heterogen','eher schwach'].includes(lg.leistung)) tags.add('differenzierung');
+  if (lg.leistung === 'eher stark') { tags.add('differenzierung'); tags.add('hochbegabung'); }
+  if ((lg.foerderung||[]).includes('DaZ') || (lg.sprachBesonderheiten||[]).includes('DaZ')) tags.add('sprachsensibel');
+  if (['gering','entwickelt sich'].includes(lg.fachsprache)) tags.add('sprachsensibel');
+  if ((lg.foerderung||[]).includes('ADHS')) { tags.add('neurodiversität'); tags.add('classroom-management'); }
+  if ((lg.foerderung||[]).includes('Inklusion')) { tags.add('inklusion'); tags.add('differenzierung'); }
+  if ((lg.foerderung||[]).includes('Hochbegabung')) { tags.add('differenzierung'); tags.add('hochbegabung'); }
+  if ((lg.foerderung||[]).includes('LRS')) tags.add('differenzierung');
+  if (lg.sozial === 'angespannt') tags.add('classroom-management');
+  if (lg.motivation === 'gering') tags.add('motivation');
+  if ((lg.arbeitsweisen||[]).includes('Problemlösen')) tags.add('problemlösen');
+  return [...tags];
+}
+
+// Gibt aktiven Kurs für eine Fachplanung zurück
+function getAktKurs(fpId) {
+  const kurse = kurseForFachplanung(fpId);
+  if (!kurse.length) return null;
+  if (S.aktKursId) {
+    const k = kurse.find(k => k.id === S.aktKursId);
+    if (k) return k;
+  }
+  return kurse[0];
+}
+
 function getDIDContext(ebenen = [], themen = [], werkzeuge = false) {
   if (!DIDARTDB.length) return '';
   const lines = [];

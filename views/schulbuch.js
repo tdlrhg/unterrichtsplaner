@@ -345,6 +345,55 @@ Antworte NUR mit validem JSON:
       const sFg = mk('div', 'fg'); sFg.appendChild(tx('label', 'fl', 'Seitenbereich')); sFg.appendChild(sRow);
       body.appendChild(sFg);
 
+      // ── Seiten-Checkliste ──────────────────────────────────────
+      const seitenSec = mk('div', '');
+      body.appendChild(seitenSec);
+
+      function renderSeitenListe() {
+        seitenSec.innerHTML = '';
+        const von = vonInp.value ? parseInt(vonInp.value) : entry.seiteVon;
+        const bis = bisInp.value ? parseInt(bisInp.value) : entry.seiteBis;
+        if (!von || !bis || bis < von || (bis - von) > 40) return;
+
+        seitenSec.appendChild(tx('label', 'fl', 'Seiten'));
+        const grid = mk('div', '');
+        grid.style.cssText = 'display:flex;flex-direction:column;gap:3px;max-height:200px;overflow-y:auto;';
+
+        for (let s = von; s <= bis; s++) {
+          const aufgOnPage = (entry.aufgaben || []).filter(a => a.seite === s);
+          const row = mk('div', '');
+          row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:3px 6px;border-radius:5px;font-size:13px;background:var(--surf2);';
+
+          const status = tx('span', '', aufgOnPage.length ? '✓' : '○');
+          status.style.cssText = 'font-size:14px;color:' + (aufgOnPage.length ? '#16a34a' : 'var(--tx3)') + ';width:16px;';
+          row.appendChild(status);
+          row.appendChild(tx('span', '', 'S. ' + s));
+
+          if (aufgOnPage.length) {
+            const cnt = tx('span', '', aufgOnPage.length + ' Aufg.');
+            cnt.style.cssText = 'color:var(--tx3);font-size:12px;flex:1;';
+            row.appendChild(cnt);
+            const clrBtn = btn('✕ leeren', 'btn btn-ghost btn-xs');
+            clrBtn.style.color = 'var(--red)';
+            clrBtn.onclick = () => {
+              if (!confirm('Alle Aufgaben von S. ' + s + ' löschen?')) return;
+              entry.aufgaben = (entry.aufgaben || []).filter(a => a.seite !== s);
+              saveSchulbuchDB();
+              renderSeitenListe();
+            };
+            row.appendChild(clrBtn);
+          } else {
+            row.appendChild(tx('span', '', '–'));
+          }
+          grid.appendChild(row);
+        }
+        seitenSec.appendChild(grid);
+      }
+
+      vonInp.oninput = renderSeitenListe;
+      bisInp.oninput = renderSeitenListe;
+      renderSeitenListe();
+
       const row = mk('div', ''); row.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
       const saveBtn = btn('Speichern', 'btn btn-pri btn-sm');
       const cancelB = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelB.onclick = close;

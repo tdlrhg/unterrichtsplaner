@@ -380,7 +380,9 @@ Regeln:
 - Kernaussagen: handlungsanleitend formulieren (Imperativ), nicht beschreibend
 - fach/stufe: leer lassen wenn der Artikel fach-/stufenunabhängig ist
 - Leere Arrays [] wenn keine Einträge vorhanden
-- Maximal 8 Kernaussagen, 5 Muster, 5 Einwände
+- Extrahiere NUR was wirklich im Text steht — erfinde keine Aussagen um eine Mindestanzahl zu füllen
+- Kurze Texte (1-3 Seiten): typisch 2-4 Kernaussagen. Lange Artikel (10+ Seiten): bis zu 8
+- Qualität vor Quantität: lieber 3 präzise Kernaussagen als 8 verwässerte
 
 Die Seiten des Artikels sind als Bilder beigefügt.`;
 

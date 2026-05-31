@@ -4,7 +4,10 @@ function buildSidebar() {
 
   function sbSection(label, onAdd) {
     const hdr = mk('div', 'sb-section-hdr');
-    const lbl = tx('span', '', label);
+    const lbl = mk('span', '');
+    const dot = tx('span', 'sb-section-dot', '◆');
+    lbl.appendChild(dot);
+    lbl.appendChild(document.createTextNode(' ' + label));
     hdr.appendChild(lbl);
     if (onAdd) {
       const b = btn('+ Neu', 'btn btn-xs btn-ghost');

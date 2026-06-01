@@ -1032,48 +1032,128 @@ Regeln:
       (k.unterkapitel || []).reduce((m, u) => m + (u.aufgaben || []).length, 0), 0);
   }
 
+  const FACH_FARBEN = {
+    mathe:  { bg: '#1e40af', grad: 'linear-gradient(135deg,#1e40af,#3b82f6)', icon: '📐' },
+    bio:    { bg: '#166534', grad: 'linear-gradient(135deg,#166534,#22c55e)', icon: '🌿' },
+    chemie: { bg: '#6b21a8', grad: 'linear-gradient(135deg,#6b21a8,#a855f7)', icon: '🧪' },
+  };
+  const TYP_FARBEN = {
+    schulbuch:   { bg: '#fef3c7', border: '#d97706', text: '#92400e' },
+    sammlung:    { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
+    aufgabenpool:{ bg: '#f3e8ff', border: '#a855f7', text: '#6b21a8' },
+  };
+
   function renderBuchListe() {
     subT.textContent = SCHULBUCHDB.length + ' Bücher';
     main.innerHTML = '';
     if (!SCHULBUCHDB.length) {
-      const empty = tx('div', '', 'Noch keine Schulbücher angelegt. Klicke „Neues Buch" um zu beginnen.');
+      const empty = tx('div', '', 'Noch keine Bücher angelegt. Klicke „Neues Buch" um zu beginnen.');
       empty.style.cssText = 'padding:40px;color:var(--tx3);text-align:center;';
       main.appendChild(empty); return;
     }
-    const grid = mk('div', 'matc-grid');
-    SCHULBUCHDB.forEach(buch => {
-      const card = mk('div', 'matc-card');
-      const kap = (buch.kapitel || []).length;
-      const aufg = countAufgaben(buch);
 
-      const topRow = mk('div', 'matc-top-row');
-      const typBadge = tx('span', 'matc-quelle', buchTypIcon(buch.typ) + ' ' + buchTypLabel(buch.typ));
-      topRow.appendChild(typBadge);
-      if (buch.verlag) topRow.appendChild(tx('span', 'matc-quelle', buch.verlag));
-      topRow.appendChild(tx('span', 'matc-fach-prominent', fachIcon(buch.fach)));
-      card.appendChild(topRow);
-
-      card.appendChild(tx('div', 'matc-title', buch.titel || '–'));
-
-      const metaRow = mk('div', 'matc-meta');
-      if (buch.jahrgang) metaRow.appendChild(tx('span', 'matc-jg', 'Jg. ' + buch.jahrgang));
-      if (kap) metaRow.appendChild(tx('span', 'matc-klp-count', kap + ' Kapitel'));
-      if (aufg) metaRow.appendChild(tx('span', 'matc-klp-count', aufg + ' Aufgaben'));
-      card.appendChild(metaRow);
-
-      const delBtn = btn('✕', 'matc-del');
-      delBtn.title = 'Löschen';
-      delBtn.onclick = e => {
-        e.stopPropagation();
-        if (!confirm('"' + buch.titel + '" löschen?')) return;
-        SCHULBUCHDB = SCHULBUCHDB.filter(b => b.id !== buch.id);
-        saveSchulbuchDB(); renderMain();
-      };
-      card.appendChild(delBtn);
-      card.onclick = () => { aktBuchId = buch.id; renderMain(); };
-      grid.appendChild(card);
+    // Nach Fach gruppieren
+    const fachOrder = ['mathe', 'bio', 'chemie'];
+    const byFach = {};
+    SCHULBUCHDB.forEach(b => {
+      const f = b.fach || 'sonstige';
+      if (!byFach[f]) byFach[f] = [];
+      byFach[f].push(b);
     });
-    main.appendChild(grid);
+
+    const faecher = [...fachOrder.filter(f => byFach[f]), ...Object.keys(byFach).filter(f => !fachOrder.includes(f))];
+
+    faecher.forEach(fach => {
+      const farbe = FACH_FARBEN[fach] || { bg: '#374151', grad: 'linear-gradient(135deg,#374151,#6b7280)', icon: '📖' };
+      const buecher = byFach[fach];
+
+      // Regal-Header
+      const regalHdr = mk('div', '');
+      regalHdr.style.cssText = 'display:flex;align-items:center;gap:10px;margin:24px 0 12px;';
+      const fachPill = mk('div', '');
+      fachPill.style.cssText = 'display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:20px;color:#fff;font-weight:700;font-size:15px;background:' + farbe.bg + ';';
+      fachPill.appendChild(document.createTextNode(farbe.icon + ' ' + fachLabel(fach)));
+      regalHdr.appendChild(fachPill);
+      const fachSub = tx('span', '', buecher.length + (buecher.length === 1 ? ' Buch' : ' Bücher'));
+      fachSub.style.cssText = 'font-size:13px;color:var(--tx3);';
+      regalHdr.appendChild(fachSub);
+      main.appendChild(regalHdr);
+
+      // Bücherregal
+      const regal = mk('div', '');
+      regal.style.cssText = 'display:flex;flex-wrap:wrap;gap:14px;padding:16px;background:var(--surf2);border-radius:12px;border-bottom:4px solid ' + farbe.bg + ';';
+
+      buecher.forEach(buch => {
+        const kap = (buch.kapitel || []).length;
+        const aufg = countAufgaben(buch);
+        const typF = TYP_FARBEN[buch.typ] || TYP_FARBEN.schulbuch;
+
+        const card = mk('div', '');
+        card.style.cssText = 'width:160px;border-radius:10px;overflow:hidden;background:var(--bg);box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;position:relative;';
+        card.onmouseenter = () => { card.style.transform = 'translateY(-4px)'; card.style.boxShadow = '0 8px 24px rgba(0,0,0,.15)'; };
+        card.onmouseleave = () => { card.style.transform = ''; card.style.boxShadow = '0 2px 8px rgba(0,0,0,.08)'; };
+
+        // Farbiger oberer Streifen mit Gradient
+        const stripe = mk('div', '');
+        stripe.style.cssText = 'height:80px;background:' + farbe.grad + ';display:flex;align-items:center;justify-content:center;font-size:36px;';
+        stripe.textContent = buchTypIcon(buch.typ);
+        card.appendChild(stripe);
+
+        // Inhalt
+        const content = mk('div', '');
+        content.style.cssText = 'padding:10px;flex:1;display:flex;flex-direction:column;gap:6px;';
+
+        // Typ-Badge
+        const typBadge = tx('span', '', buchTypLabel(buch.typ));
+        typBadge.style.cssText = 'font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:' + typF.bg + ';color:' + typF.text + ';border:1px solid ' + typF.border + ';width:fit-content;';
+        content.appendChild(typBadge);
+
+        // Titel
+        const titel = tx('div', '', buch.titel || '–');
+        titel.style.cssText = 'font-weight:700;font-size:13px;line-height:1.3;color:var(--tx1);';
+        content.appendChild(titel);
+
+        // Meta
+        const meta = mk('div', '');
+        meta.style.cssText = 'margin-top:auto;display:flex;flex-wrap:wrap;gap:4px;';
+        if (buch.jahrgang) {
+          const jg = tx('span', '', 'Jg. ' + buch.jahrgang);
+          jg.style.cssText = 'font-size:10px;padding:1px 5px;border-radius:3px;background:var(--surf2);color:var(--tx2);';
+          meta.appendChild(jg);
+        }
+        if (buch.verlag) {
+          const vl = tx('span', '', buch.verlag);
+          vl.style.cssText = 'font-size:10px;color:var(--tx3);';
+          meta.appendChild(vl);
+        }
+        content.appendChild(meta);
+
+        const chips = mk('div', '');
+        chips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
+        if (kap) { const c = tx('span','',kap+' Kap.'); c.style.cssText='font-size:10px;padding:1px 5px;border-radius:3px;background:var(--surf2);color:var(--tx3);'; chips.appendChild(c); }
+        if (aufg) { const c = tx('span','',aufg+' Aufg.'); c.style.cssText='font-size:10px;padding:1px 5px;border-radius:3px;background:var(--surf2);color:var(--tx3);'; chips.appendChild(c); }
+        content.appendChild(chips);
+
+        card.appendChild(content);
+
+        // Löschen-Button
+        const delBtn = btn('✕', '');
+        delBtn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(0,0,0,.3);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;';
+        card.onmouseenter = () => { card.style.transform = 'translateY(-4px)'; card.style.boxShadow = '0 8px 24px rgba(0,0,0,.15)'; delBtn.style.opacity = '1'; };
+        card.onmouseleave = () => { card.style.transform = ''; card.style.boxShadow = '0 2px 8px rgba(0,0,0,.08)'; delBtn.style.opacity = '0'; };
+        delBtn.onclick = e => {
+          e.stopPropagation();
+          if (!confirm('"' + buch.titel + '" löschen?')) return;
+          SCHULBUCHDB = SCHULBUCHDB.filter(b => b.id !== buch.id);
+          saveSchulbuchDB(); renderMain();
+        };
+        card.appendChild(delBtn);
+        card.onclick = () => { aktBuchId = buch.id; renderMain(); };
+        regal.appendChild(card);
+      });
+
+      main.appendChild(regal);
+    });
   }
 
   // ── Buch-Detail ───────────────────────────────────────────────

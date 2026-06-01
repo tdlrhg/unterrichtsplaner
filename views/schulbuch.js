@@ -1190,9 +1190,13 @@ Regeln:
         const card = mk('div', 'card');
         const body = mk('div', 'card-body');
 
-        // Kapitel-Header
+        // Kapitel-Header (mit Einklapp-Toggle)
+        let kapOffen = false;
         const hrow = mk('div', '');
-        hrow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;';
+        hrow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer;';
+        const kapArrow = tx('span', '', '▶');
+        kapArrow.style.cssText = 'font-size:10px;color:var(--tx3);transition:transform .15s;flex-shrink:0;';
+        hrow.appendChild(kapArrow);
         hrow.appendChild(tx('strong', '', 'Kap. ' + kap.nr + ': ' + kap.titel));
         if (kap.seiteVon && kap.seiteBis) hrow.appendChild(tx('span', 'matc-jg', 'S. ' + kap.seiteVon + '–' + kap.seiteBis));
         const aufgCount = (kap.aufgaben || []).length +
@@ -1237,9 +1241,20 @@ Regeln:
         hrow.appendChild(btnGrp);
         body.appendChild(hrow);
 
+        const kapContent = mk('div', '');
+        kapContent.style.display = 'none';
+        body.appendChild(kapContent);
+
+        hrow.onclick = e => {
+          if (e.target.closest('button')) return; // Buttons nicht abfangen
+          kapOffen = !kapOffen;
+          kapArrow.style.transform = kapOffen ? 'rotate(90deg)' : '';
+          kapContent.style.display = kapOffen ? '' : 'none';
+        };
+
         // Direkte Aufgaben am Kapitel (eingeklappt)
         const dirCount = (kap.aufgaben || []).length;
-        if (dirCount) body.appendChild(buildToggleAufgaben(kap.aufgaben, dirCount));
+        if (dirCount) kapContent.appendChild(buildToggleAufgaben(kap.aufgaben, dirCount));
 
         // Unterkapitel
         const ukaps = kap.unterkapitel || [];
@@ -1281,7 +1296,7 @@ Regeln:
             if (uAufgCount) uCard.appendChild(buildToggleAufgaben(ukap.aufgaben, uAufgCount));
             uList.appendChild(uCard);
           });
-          body.appendChild(uList);
+          kapContent.appendChild(uList);
         }
 
         card.appendChild(body);

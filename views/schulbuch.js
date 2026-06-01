@@ -1094,7 +1094,8 @@ Regeln:
         hrow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;';
         hrow.appendChild(tx('strong', '', 'Kap. ' + kap.nr + ': ' + kap.titel));
         if (kap.seiteVon && kap.seiteBis) hrow.appendChild(tx('span', 'matc-jg', 'S. ' + kap.seiteVon + '–' + kap.seiteBis));
-        const aufgCount = (kap.aufgaben || []).length;
+        const aufgCount = (kap.aufgaben || []).length +
+          (kap.unterkapitel || []).reduce((s, u) => s + (u.aufgaben || []).length, 0);
         hrow.appendChild(tx('span', 'matc-klp-count', aufgCount + ' Aufgaben'));
 
         const btnGrp = mk('div', '');

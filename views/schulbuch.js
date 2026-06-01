@@ -130,18 +130,20 @@ function viewSchulbuecher() {
   const KI_PROMPT_VERBATIM = `Du liest Seiten aus einem Unterrichtsmaterial (Arbeitsblätter, Schülerversuche, Lehrerhandreichungen).
 
 Übertrage den VOLLSTÄNDIGEN Text jeder Seite wortwörtlich. Fasse nichts zusammen, lasse nichts weg.
-Erfasse für jede Seite einen Lehrtext-Eintrag mit dem kompletten Originaltext.
 
-Antworte NUR mit validem JSON:
-{"aufgaben": [
-  {"typ":"lehrtext","seite":8,"thema":"M1 – Korrosion auf dem Meer","inhalt":"[vollständiger Originaltext der Seite, einzeilig]","grafik":"[Beschreibung von Abbildungen/Fotos, null wenn keine]"}
-]}
+Antworte in diesem Format — eine Seite = ein Block:
+=== Seite 8 | M1 – Korrosion auf dem Meer ===
+[vollständiger Originaltext der Seite, genau so wie er auf der Seite steht]
+GRAFIK: [kurze Beschreibung von Fotos/Abbildungen, oder "keine"]
+
+=== Seite 9 | M2 – Die Korrosion von Eisen ===
+[vollständiger Text]
+GRAFIK: keine
 
 Regeln:
-- thema: Titel/Überschrift der Seite oder des Materials
-- inhalt: VOLLSTÄNDIGER Originaltext, einzeilig (Zeilenumbrüche als Leerzeichen)
-- grafik: Beschreibung von Bildern, Grafiken, Fotos — null wenn keine vorhanden
-- Eine Seite = ein Eintrag (außer eine Seite hat klar getrennte Abschnitte mit eigenen Titeln)`;
+- Nach === kommt zuerst die Seitenzahl, dann | dann der Titel/die Überschrift der Seite
+- Text vollständig und wörtlich übernehmen
+- Keine JSON, kein Markdown, nur dieses Format`;
 
   const KI_PROMPT_AUFGABEN = `Du analysierst Seiten aus einem Schulbuch oder Unterrichtsmaterial (Gymnasium, Mathematik oder Naturwissenschaften).
 
@@ -207,14 +209,33 @@ Antworte NUR mit validem JSON:
       if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || res.statusText); }
       const data = await res.json();
       const raw = data.content?.[0]?.text || '';
-      let parsed;
-      try {
-        parsed = robustJsonParse(raw);
-      } catch(e) {
-        throw new Error('KI-Antwort konnte nicht als JSON gelesen werden (Seiten ' + (start+1) + '–' + end + ')');
+      let batchAufgaben = [];
+
+      if (verbatim) {
+        // Trennzeichen-Format parsen: === Seite X | Titel ===
+        const blocks2 = raw.split(/\n(?===)/);
+        for (const block of blocks2) {
+          const headerMatch = block.match(/^===\s*Seite\s*(\d+)\s*\|\s*(.+?)\s*===/i);
+          if (!headerMatch) continue;
+          const seite = parseInt(headerMatch[1]) || null;
+          const thema = headerMatch[2].trim();
+          const rest = block.slice(block.indexOf('===', 3) + 3).trim();
+          const grafikMatch = rest.match(/\nGRAFIK:\s*(.+)$/im);
+          const grafik = grafikMatch ? (grafikMatch[1].trim().toLowerCase() === 'keine' ? null : grafikMatch[1].trim()) : null;
+          const inhalt = grafikMatch ? rest.slice(0, grafikMatch.index).trim() : rest;
+          if (inhalt) batchAufgaben.push({ typ: 'lehrtext', seite, thema, inhalt, grafik });
+        }
+        if (!batchAufgaben.length) throw new Error('Keine Einträge erkannt (Seiten ' + (start+1) + '–' + end + ')');
+      } else {
+        let parsed;
+        try {
+          parsed = robustJsonParse(raw);
+        } catch(e) {
+          throw new Error('KI-Antwort konnte nicht als JSON gelesen werden (Seiten ' + (start+1) + '–' + end + ')');
+        }
+        batchAufgaben = parsed.aufgaben || [];
       }
 
-      const batchAufgaben = parsed.aufgaben || [];
       batchAufgaben.forEach(a => { a.id = uid(); });
       allAufgaben.push(...batchAufgaben);
     }

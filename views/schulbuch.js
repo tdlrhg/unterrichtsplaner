@@ -21,7 +21,7 @@ function viewSchulbuecher() {
   // ── Header ────────────────────────────────────────────────────
   const hdr = mk('div', 'c-hdr');
   const left = mk('div', '');
-  left.appendChild(tx('div', 'c-title', 'Schulbücher'));
+  left.appendChild(tx('div', 'c-title', 'Bücher & Sammlungen'));
   const subT = tx('div', 'c-sub', '');
   left.appendChild(subT);
   hdr.appendChild(left);
@@ -240,9 +240,24 @@ Antworte NUR mit validem JSON:
   }
 
   // ── Neues Buch ────────────────────────────────────────────────
+  const BUCH_TYPEN = [
+    { val: 'schulbuch',      icon: '📚', label: 'Schulbuch' },
+    { val: 'sammlung',       icon: '📂', label: 'Materialsammlung' },
+    { val: 'uebungsheft',    icon: '📝', label: 'Übungsheft' },
+    { val: 'aufgabenpool',   icon: '🗃',  label: 'Aufgabenpool' },
+  ];
+  function buchTypIcon(typ) { return (BUCH_TYPEN.find(t => t.val === typ) || BUCH_TYPEN[0]).icon; }
+  function buchTypLabel(typ) { return (BUCH_TYPEN.find(t => t.val === typ) || BUCH_TYPEN[0]).label; }
+
   function showNewBuch() {
-    openOverlay('Neues Schulbuch', 480, (body, close) => {
+    openOverlay('Neues Buch / Sammlung', 480, (body, close) => {
       body.style.display = 'flex'; body.style.flexDirection = 'column'; body.style.gap = '12px';
+
+      const typSel = document.createElement('select'); typSel.className = 'finp';
+      BUCH_TYPEN.forEach(t => {
+        const o = document.createElement('option'); o.value = t.val; o.textContent = t.icon + ' ' + t.label; typSel.appendChild(o);
+      });
+      body.appendChild(field('Typ', typSel));
 
       const titelInp = document.createElement('input'); titelInp.className = 'finp'; titelInp.placeholder = 'z.B. Lambacher Schweizer 7';
       body.appendChild(field('Titel *', titelInp));
@@ -272,7 +287,7 @@ Antworte NUR mit validem JSON:
       saveBtn.onclick = () => {
         const titel = titelInp.value.trim();
         if (!titel) { alert('Bitte einen Titel eingeben.'); return; }
-        const buch = { id: uid(), titel, verlag: verlagInp.value.trim() || null, fach: fachSel.value, jahrgang: jgSel.value, kapitel: [], erstellt: new Date().toISOString() };
+        const buch = { id: uid(), typ: typSel.value, titel, verlag: verlagInp.value.trim() || null, fach: fachSel.value, jahrgang: jgSel.value, kapitel: [], erstellt: new Date().toISOString() };
         SCHULBUCHDB.push(buch);
         saveSchulbuchDB();
         aktBuchId = buch.id;
@@ -918,6 +933,8 @@ Regeln:
       const aufg = countAufgaben(buch);
 
       const topRow = mk('div', 'matc-top-row');
+      const typBadge = tx('span', 'matc-quelle', buchTypIcon(buch.typ) + ' ' + buchTypLabel(buch.typ));
+      topRow.appendChild(typBadge);
       if (buch.verlag) topRow.appendChild(tx('span', 'matc-quelle', buch.verlag));
       topRow.appendChild(tx('span', 'matc-fach-prominent', fachIcon(buch.fach)));
       card.appendChild(topRow);

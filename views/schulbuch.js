@@ -1033,15 +1033,11 @@ Regeln:
   }
 
   const FACH_FARBEN = {
-    mathe:  { bg: '#1e40af', grad: 'linear-gradient(135deg,#1e40af,#3b82f6)', icon: '📐' },
-    bio:    { bg: '#166534', grad: 'linear-gradient(135deg,#166534,#22c55e)', icon: '🌿' },
-    chemie: { bg: '#c2410c', grad: 'linear-gradient(135deg,#c2410c,#f97316)', icon: '🧪' },
+    mathe:  { spine: ['#1e3a8a','#1d4ed8'], text: '#bfdbfe', icon: '📐' },
+    bio:    { spine: ['#14532d','#166534'], text: '#bbf7d0', icon: '🌿' },
+    chemie: { spine: ['#7c2d12','#c2410c'], text: '#fed7aa', icon: '🧪' },
   };
-  const TYP_FARBEN = {
-    schulbuch:   { bg: '#fef3c7', border: '#d97706', text: '#92400e' },
-    sammlung:    { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
-    aufgabenpool:{ bg: '#fef3c7', border: '#d97706', text: '#92400e' },
-  };
+  const TYP_SYMBOL = { schulbuch: '📚', sammlung: '📂', aufgabenpool: '🗃' };
 
   function renderBuchListe() {
     subT.textContent = SCHULBUCHDB.length + ' Bücher';
@@ -1080,79 +1076,71 @@ Regeln:
       main.appendChild(regalHdr);
 
       // Bücherregal
+      const regalWrap = mk('div', '');
+      regalWrap.style.cssText = 'position:relative;margin-bottom:8px;';
+
       const regal = mk('div', '');
-      regal.style.cssText = 'display:flex;flex-wrap:wrap;gap:14px;padding:16px;background:var(--surf2);border-radius:12px;border-bottom:4px solid ' + farbe.bg + ';';
+      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:linear-gradient(to bottom,#2a1f1a,#1a1210);border-radius:10px 10px 0 0;min-height:200px;';
 
       buecher.forEach(buch => {
-        const kap = (buch.kapitel || []).length;
+        const kap = Math.max(1, (buch.kapitel || []).length);
         const aufg = countAufgaben(buch);
-        const typF = TYP_FARBEN[buch.typ] || TYP_FARBEN.schulbuch;
+        // Breite: 40–80px je nach Kapitelanzahl
+        const breite = Math.min(80, Math.max(40, 36 + kap * 4));
+        const hoehe = Math.min(190, Math.max(140, 130 + kap * 3));
 
-        const card = mk('div', '');
-        card.style.cssText = 'width:160px;border-radius:10px;overflow:hidden;background:var(--bg);box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;position:relative;';
-        card.onmouseenter = () => { card.style.transform = 'translateY(-4px)'; card.style.boxShadow = '0 8px 24px rgba(0,0,0,.15)'; };
-        card.onmouseleave = () => { card.style.transform = ''; card.style.boxShadow = '0 2px 8px rgba(0,0,0,.08)'; };
+        const buch_el = mk('div', '');
+        buch_el.style.cssText = `width:${breite}px;height:${hoehe}px;border-radius:3px 6px 6px 3px;cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform .15s,filter .15s;background:linear-gradient(to right,${farbe.spine[0]},${farbe.spine[1]});box-shadow:inset -3px 0 6px rgba(0,0,0,.4),inset 3px 0 4px rgba(255,255,255,.08),2px 2px 8px rgba(0,0,0,.5);overflow:hidden;`;
 
-        // Farbiger oberer Streifen mit Gradient
-        const stripe = mk('div', '');
-        stripe.style.cssText = 'height:80px;background:' + farbe.grad + ';display:flex;align-items:center;justify-content:center;font-size:36px;';
-        stripe.textContent = buchTypIcon(buch.typ);
-        card.appendChild(stripe);
+        // Buchrücken-Linien (Dekoration)
+        const deko = mk('div','');
+        deko.style.cssText = `position:absolute;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(to bottom,transparent,transparent 20px,rgba(255,255,255,.04) 20px,rgba(255,255,255,.04) 21px);pointer-events:none;`;
+        buch_el.appendChild(deko);
 
-        // Inhalt
-        const content = mk('div', '');
-        content.style.cssText = 'padding:10px;flex:1;display:flex;flex-direction:column;gap:6px;';
+        // Titel vertikal
+        const titelEl = tx('div', '', buch.titel || '–');
+        titelEl.style.cssText = `writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;font-weight:700;color:${farbe.text};text-align:center;padding:8px 4px;line-height:1.3;max-height:${hoehe - 40}px;overflow:hidden;z-index:1;`;
+        buch_el.appendChild(titelEl);
 
-        // Typ-Badge
-        const typBadge = tx('span', '', buchTypLabel(buch.typ));
-        typBadge.style.cssText = 'font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;background:' + typF.bg + ';color:' + typF.text + ';border:1px solid ' + typF.border + ';width:fit-content;';
-        content.appendChild(typBadge);
-
-        // Titel
-        const titel = tx('div', '', buch.titel || '–');
-        titel.style.cssText = 'font-weight:700;font-size:13px;line-height:1.3;color:var(--tx1);';
-        content.appendChild(titel);
-
-        // Meta
-        const meta = mk('div', '');
-        meta.style.cssText = 'margin-top:auto;display:flex;flex-wrap:wrap;gap:4px;';
+        // Jahrgang unten
         if (buch.jahrgang) {
-          const jg = tx('span', '', 'Jg. ' + buch.jahrgang);
-          jg.style.cssText = 'font-size:10px;padding:1px 5px;border-radius:3px;background:var(--surf2);color:var(--tx2);';
-          meta.appendChild(jg);
+          const jgEl = tx('div', '', 'Jg.' + buch.jahrgang);
+          jgEl.style.cssText = `position:absolute;bottom:6px;font-size:9px;color:${farbe.text};opacity:.7;z-index:1;`;
+          buch_el.appendChild(jgEl);
         }
-        if (buch.verlag) {
-          const vl = tx('span', '', buch.verlag);
-          vl.style.cssText = 'font-size:10px;color:var(--tx3);';
-          meta.appendChild(vl);
-        }
-        content.appendChild(meta);
 
-        const chips = mk('div', '');
-        chips.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;';
-        if (kap) { const c = tx('span','',kap+' Kap.'); c.style.cssText='font-size:10px;padding:1px 5px;border-radius:3px;background:var(--surf2);color:var(--tx3);'; chips.appendChild(c); }
-        if (aufg) { const c = tx('span','',aufg+' Aufg.'); c.style.cssText='font-size:10px;padding:1px 5px;border-radius:3px;background:var(--surf2);color:var(--tx3);'; chips.appendChild(c); }
-        content.appendChild(chips);
+        // Typ-Symbol oben
+        const typEl = tx('div', '', TYP_SYMBOL[buch.typ] || '📖');
+        typEl.style.cssText = 'position:absolute;top:6px;font-size:14px;z-index:1;';
+        buch_el.appendChild(typEl);
 
-        card.appendChild(content);
+        buch_el.onmouseenter = () => { buch_el.style.transform = 'translateY(-12px)'; buch_el.style.filter = 'brightness(1.2)'; };
+        buch_el.onmouseleave = () => { buch_el.style.transform = ''; buch_el.style.filter = ''; };
 
-        // Löschen-Button
-        const delBtn = btn('✕', '');
-        delBtn.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(0,0,0,.3);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;';
-        card.onmouseenter = () => { card.style.transform = 'translateY(-4px)'; card.style.boxShadow = '0 8px 24px rgba(0,0,0,.15)'; delBtn.style.opacity = '1'; };
-        card.onmouseleave = () => { card.style.transform = ''; card.style.boxShadow = '0 2px 8px rgba(0,0,0,.08)'; delBtn.style.opacity = '0'; };
-        delBtn.onclick = e => {
-          e.stopPropagation();
+        // Tooltip mit Details
+        buch_el.title = buch.titel + (buch.verlag ? ' · ' + buch.verlag : '') + '\n' + kap + ' Kapitel · ' + aufg + ' Aufgaben';
+
+        buch_el.onclick = () => { aktBuchId = buch.id; renderMain(); };
+
+        // Rechtsklick = Löschen (Kontextmenü)
+        buch_el.oncontextmenu = e => {
+          e.preventDefault();
           if (!confirm('"' + buch.titel + '" löschen?')) return;
           SCHULBUCHDB = SCHULBUCHDB.filter(b => b.id !== buch.id);
           saveSchulbuchDB(); renderMain();
         };
-        card.appendChild(delBtn);
-        card.onclick = () => { aktBuchId = buch.id; renderMain(); };
-        regal.appendChild(card);
+
+        regal.appendChild(buch_el);
       });
 
-      main.appendChild(regal);
+      regalWrap.appendChild(regal);
+
+      // Regal-Brett
+      const brett = mk('div', '');
+      brett.style.cssText = 'height:14px;background:linear-gradient(to bottom,#8B5E3C,#5C3D1E);border-radius:0 0 6px 6px;box-shadow:0 4px 8px rgba(0,0,0,.4);';
+      regalWrap.appendChild(brett);
+
+      main.appendChild(regalWrap);
     });
   }
 

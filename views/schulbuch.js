@@ -678,7 +678,10 @@ Antworte NUR mit validem JSON:
       return arow;
     }
 
-    // Lehrtexte separat anzeigen
+    const aufgList = mk('div', '');
+    aufgList.style.cssText = 'display:flex;flex-direction:column;gap:3px;max-height:320px;overflow-y:auto;';
+
+    // Lehrtexte zuerst
     const lehrtexte = aufgaben.filter(a => a.typ === 'lehrtext');
     const aufgabenOnly = aufgaben.filter(a => a.typ !== 'lehrtext');
 
@@ -704,7 +707,7 @@ Antworte NUR mit validem JSON:
       aufgList.appendChild(box);
     });
 
-    // Gruppieren nach Basisnummer (z.B. "17" für "17a", "17b")
+    // Aufgaben gruppieren nach Basisnummer (z.B. "17" für "17a", "17b")
     const groups = [];
     const groupMap = {};
     aufgabenOnly.forEach(aufg => {
@@ -712,9 +715,6 @@ Antworte NUR mit validem JSON:
       if (!groupMap[base]) { groupMap[base] = []; groups.push(base); }
       groupMap[base].push(aufg);
     });
-
-    const aufgList = mk('div', '');
-    aufgList.style.cssText = 'display:flex;flex-direction:column;gap:3px;max-height:320px;overflow-y:auto;';
 
     groups.forEach(base => {
       const gruppe = groupMap[base];

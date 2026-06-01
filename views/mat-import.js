@@ -542,19 +542,26 @@ function buildImportAssistent(subTitle, renderCards) {
         for(let i=1;i<=pageDataURLs2.length;i++){
           const color = SPLIT_COLORS[gi%SPLIT_COLORS.length];
           const curGrpIdx = gi; // Index der aktuellen Gruppe (für Closure)
+          const curType2 = segTypes2[curGrpIdx]!==undefined ? segTypes2[curGrpIdx] : seg.type;
+          const catInfo2 = CAT.find(c=>c.key===curType2)||CAT[0];
           const img=document.createElement('img'); img.src=pageDataURLs2[i-1];
-          img.style.cssText='width:160px;height:auto;display:block;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.15);pointer-events:none;';
+          img.style.cssText='width:160px;height:auto;display:block;border-radius:4px 4px 0 0;box-shadow:0 1px 4px rgba(0,0,0,.15);pointer-events:none;';
           const tw=mk('div','');
-          tw.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px;border-left:3px solid '+color+';padding-left:4px;cursor:pointer;transition:opacity .1s;';
+          tw.style.cssText='display:flex;flex-direction:column;align-items:center;gap:0;cursor:pointer;transition:opacity .1s;border-radius:4px;overflow:hidden;box-shadow:0 0 0 2px '+catInfo2.color+';';
           tw.title = 'Klicken um aktive Kategorie zuzuweisen';
           tw.appendChild(img);
+          // Kategorie-Badge direkt unter dem Bild
+          const catBadge = mk('div','');
+          catBadge.style.cssText='width:100%;text-align:center;font-size:10px;font-weight:700;padding:3px 0;background:'+catInfo2.color+';color:white;';
+          catBadge.textContent = catInfo2.icon+' '+catInfo2.label;
+          tw.appendChild(catBadge);
           tw.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
           // Klick = aktive Kategorie der ganzen Gruppe zuweisen
           tw.onclick=()=>{
             segTypes2[curGrpIdx]=activeCategory;
             renderSplitUI2();
           };
-          tw.onmouseenter=()=>{ tw.style.opacity='.75'; };
+          tw.onmouseenter=()=>{ tw.style.opacity='.8'; };
           tw.onmouseleave=()=>{ tw.style.opacity=''; };
           pagesRow.appendChild(tw);
           if(i<pageDataURLs2.length){

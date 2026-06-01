@@ -85,10 +85,8 @@ function viewDidaktik() {
         const isAct = S._didaktikSel === art.id;
         const item = mk('div', 'did-list-item' + (isAct ? ' active' : ''));
         item.appendChild(tx('div', 'did-list-titel', art.quelle?.titel || '(ohne Titel)'));
-        const metaParts = [];
-        if (art.quelle?.autoren?.length) metaParts.push(art.quelle.autoren.join(', '));
-        if (art.quelle?.jahr) metaParts.push(art.quelle.jahr);
-        if (metaParts.length) item.appendChild(tx('div', 'did-list-meta', metaParts.join(' · ')));
+        const werkLabel = art.quelle?.werk || art.quelle?.zeitschrift || null;
+        if (werkLabel) item.appendChild(tx('div', 'did-list-meta', werkLabel));
         const badges = mk('div', 'did-list-badges');
         const alle = [...(art.kernaussagen||[]), ...(art.muster||[]), ...(art.einwaende||[])];
         const ebenen = [...new Set(alle.flatMap(b => b.planungsebene||[]))];

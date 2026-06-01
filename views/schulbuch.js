@@ -127,6 +127,22 @@ function viewSchulbuecher() {
   }
 
   // ── KI-Extraktion ─────────────────────────────────────────────
+  const KI_PROMPT_VERBATIM = `Du liest Seiten aus einem Unterrichtsmaterial (Arbeitsblätter, Schülerversuche, Lehrerhandreichungen).
+
+Übertrage den VOLLSTÄNDIGEN Text jeder Seite wortwörtlich. Fasse nichts zusammen, lasse nichts weg.
+Erfasse für jede Seite einen Lehrtext-Eintrag mit dem kompletten Originaltext.
+
+Antworte NUR mit validem JSON:
+{"aufgaben": [
+  {"typ":"lehrtext","seite":8,"thema":"M1 – Korrosion auf dem Meer","inhalt":"[vollständiger Originaltext der Seite, einzeilig]","grafik":"[Beschreibung von Abbildungen/Fotos, null wenn keine]"}
+]}
+
+Regeln:
+- thema: Titel/Überschrift der Seite oder des Materials
+- inhalt: VOLLSTÄNDIGER Originaltext, einzeilig (Zeilenumbrüche als Leerzeichen)
+- grafik: Beschreibung von Bildern, Grafiken, Fotos — null wenn keine vorhanden
+- Eine Seite = ein Eintrag (außer eine Seite hat klar getrennte Abschnitte mit eigenen Titeln)`;
+
   const KI_PROMPT_AUFGABEN = `Du analysierst Seiten aus einem Schulbuch oder Unterrichtsmaterial (Gymnasium, Mathematik oder Naturwissenschaften).
 
 Jede Seite enthält entweder Aufgaben, Lehrtext/Erklärungen oder beides. Erfasse BEIDES vollständig.
@@ -156,10 +172,12 @@ Antworte NUR mit validem JSON:
   {"typ":"aufgabe","nr":"1","seite":146,"aufgabenstellung":null,"text":"Löse das Gleichungssystem grafisch und rechnerisch.","schwierigkeit":"○","grafik":null,"kompetenzen":["UF1"]}
 ]}`;
 
-  async function extractAufgaben(images, statusEl) {
+  async function extractAufgaben(images, statusEl, buchTyp) {
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
 
+    const verbatim = buchTyp === 'sammlung' || buchTyp === 'aufgabenpool';
+    const prompt = verbatim ? KI_PROMPT_VERBATIM : KI_PROMPT_AUFGABEN;
     const BATCH = 4; // Seiten pro API-Call
     const allAufgaben = [];
 
@@ -174,7 +192,7 @@ Antworte NUR mit validem JSON:
         blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: resized.split(',')[1] } });
         if (i < batch.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
       }
-      blocks.push({ type: 'text', text: KI_PROMPT_AUFGABEN });
+      blocks.push({ type: 'text', text: prompt });
 
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -373,7 +391,7 @@ Antworte NUR mit validem JSON:
         let aufgaben = [];
         const imgs = uploadWidget.getImages();
         if (imgs.length) {
-          try { aufgaben = await extractAufgaben(imgs, statusEl); }
+          try { aufgaben = await extractAufgaben(imgs, statusEl, buch.typ); }
           catch(e) { statusEl.textContent = 'KI-Fehler: ' + e.message; await new Promise(r => setTimeout(r, 2000)); }
         }
         const kap = {
@@ -415,7 +433,7 @@ Antworte NUR mit validem JSON:
         if (!imgs.length) { alert('Bitte Bilder hochladen.'); return; }
         startBtn.disabled = true;
         try {
-          const neueAufgaben = await extractAufgaben(imgs, statusEl);
+          const neueAufgaben = await extractAufgaben(imgs, statusEl, buch.typ);
           if (!kap.aufgaben) kap.aufgaben = [];
           kap.aufgaben.push(...neueAufgaben);
           sortAufgaben(kap.aufgaben);
@@ -796,7 +814,7 @@ Regeln:
         let aufgaben = [];
         const imgs = uploadWidget.getImages();
         if (imgs.length) {
-          try { aufgaben = await extractAufgaben(imgs, statusEl); }
+          try { aufgaben = await extractAufgaben(imgs, statusEl, buch.typ); }
           catch(e) { statusEl.textContent = 'KI-Fehler: ' + e.message; await new Promise(r => setTimeout(r, 2000)); }
         }
         const ukap = {

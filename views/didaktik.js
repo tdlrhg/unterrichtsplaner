@@ -72,11 +72,11 @@ function viewDidaktik() {
     Object.entries(gruppen).forEach(([grpLabel, artikel]) => {
       // Gruppen-Header
       const grpHdr = mk('div', '');
-      grpHdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 10px 4px;margin-top:4px;';
+      grpHdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:6px 10px 3px;margin-top:8px;border-top:1px solid var(--bord);';
       const grpTitel = tx('span', '', grpLabel);
-      grpTitel.style.cssText = 'font-size:10px;font-weight:700;color:var(--sb-tx2);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      grpTitel.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
       const grpCount = tx('span', '', artikel.length + '');
-      grpCount.style.cssText = 'font-size:10px;font-weight:700;color:var(--sb-tx2);background:rgba(255,255,255,.08);border-radius:8px;padding:1px 6px;flex-shrink:0;';
+      grpCount.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);background:var(--surf2);border-radius:8px;padding:1px 6px;flex-shrink:0;';
       grpHdr.appendChild(grpTitel);
       grpHdr.appendChild(grpCount);
       listCol.appendChild(grpHdr);
@@ -112,9 +112,6 @@ function viewDidaktik() {
         listCol.appendChild(item);
       });
 
-      const sep = mk('div', '');
-      sep.style.cssText = 'height:1px;background:var(--sb-sep);margin:4px 10px;';
-      listCol.appendChild(sep);
     });
   }
   layout.appendChild(listCol);

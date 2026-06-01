@@ -1,0 +1,48 @@
+/* ── Prüfungsplaner – eigene Styles ────────────────────────────── */
+
+/* Topbar-Farbe abweichend vom Hauptplaner */
+.topbar {
+  background: linear-gradient(135deg, #1a0a2e 0%, #4a1078 55%, #7c3aed 100%) !important;
+  box-shadow: 0 2px 16px rgba(124,58,237,.4) !important;
+}
+
+/* Sidebar-Akzentfarbe violett statt magenta */
+:root {
+  --pri: #7c3aed;
+  --pri2: #6d28d9;
+  --sb-active-bg: rgba(124,58,237,.42);
+  --sb-active-tx: #ddd6fe;
+}
+
+/* ── Layout ─────────────────────────────────────────────────────── */
+.pr-layout { display: flex; height: calc(100vh - 52px); }
+.pr-sidebar { width: 280px; background: var(--sb-bg); border-right: none; flex-shrink: 0; display: flex; flex-direction: column; overflow-y: auto; }
+.pr-content { flex: 1; overflow-y: auto; padding: 28px; background: linear-gradient(160deg, rgba(124,58,237,.04) 0%, transparent 300px), var(--bg); box-shadow: inset 4px 0 24px rgba(0,0,0,.06); }
+
+/* ── Sidebar ────────────────────────────────────────────────────── */
+.pr-sb-hdr { padding: 20px 16px 8px; }
+.pr-sb-title { font-family: 'Playfair Display', serif; font-size: 15px; color: #fff; letter-spacing: .02em; background: linear-gradient(90deg, #ffffff 0%, #ddd6fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.pr-sb-sub { font-size: 11px; color: var(--sb-tx2); margin-top: 2px; }
+.pr-sb-sep { border-top: 1px solid var(--sb-sep); margin: 8px 0; }
+
+.pr-item { display: flex; align-items: center; gap: 8px; padding: 8px 14px; margin: 1px 6px; border-radius: 6px; cursor: pointer; transition: background .1s; }
+.pr-item:hover { background: var(--sb-hover); }
+.pr-item.active { background: var(--sb-active-bg); border-left: 3px solid var(--pri); padding-left: 11px; box-shadow: inset 3px 0 12px rgba(124,58,237,.15); }
+.pr-item-icon { font-size: 14px; flex-shrink: 0; }
+.pr-item-label { font-size: 13px; font-weight: 600; color: var(--sb-tx); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pr-item.active .pr-item-label { color: #ddd6fe; }
+.pr-item-sub { font-size: 11px; color: var(--sb-tx2); }
+.pr-item-del { opacity: 0; border: none; background: none; cursor: pointer; color: var(--sb-tx2); font-size: 12px; padding: 2px 4px; border-radius: 4px; }
+.pr-item:hover .pr-item-del { opacity: 1; }
+.pr-item-del:hover { color: #fca5a5; }
+
+.pr-typ-badge { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; flex-shrink: 0; }
+.pr-typ-ka { background: rgba(124,58,237,.3); color: #ddd6fe; }
+.pr-typ-kl { background: rgba(79,70,229,.3); color: #c7d2fe; }
+
+/* ── Back-Link ──────────────────────────────────────────────────── */
+.pr-back { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--sb-tx2); padding: 10px 16px; cursor: pointer; transition: color .1s; text-decoration: none; }
+.pr-back:hover { color: var(--sb-tx); }
+
+/* ── Neue Prüfung Button ────────────────────────────────────────── */
+.pr-new-btn { margin: 8px 12px; }

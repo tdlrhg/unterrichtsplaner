@@ -151,6 +151,16 @@ function buildSidebar() {
     () => { S.view = 'schulbuecher'; S.sel = null; render(); }
   ));
 
+  // ── Prüfungsplaner ────────────────────────────────────────────
+  sb.appendChild(mk('div', 'sb-sep'));
+  const prLink = mk('a', 'sb-item');
+  prLink.href = 'pruefung.html';
+  prLink.style.cssText = 'text-decoration:none;';
+  const prLabel = tx('span', 'sb-item-label', '📋 Prüfungsplaner');
+  prLabel.style.color = 'var(--sb-tx)';
+  prLink.appendChild(prLabel);
+  sb.appendChild(prLink);
+
   // ── Einstellungen ─────────────────────────────────────────────
   sb.appendChild(mk('div', 'sb-sep'));
   sb.appendChild(sbSection('Einstellungen'));

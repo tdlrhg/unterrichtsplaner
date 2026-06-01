@@ -485,14 +485,14 @@ function buildImportAssistent(subTitle, renderCards) {
     async function buildSegSplitter(seg, onDone) {
       const TYPE_OPTS = [{key:'kontext',label:'📋 Kontext'},{key:'material',label:'📄 Schülermaterial'},{key:'didaktik',label:'🎓 Didaktik'},{key:'skip',label:'⊘ Skip'}];
       const wrap = mk('div','');
-      wrap.style.cssText='border:1px solid var(--acc,#6366f1);border-radius:8px;padding:12px;margin-top:8px;background:var(--surf);';
-      const hdrEl=mk('div',''); hdrEl.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:600;';
-      hdrEl.appendChild(tx('span','','✂ '+seg.name+' aufteilen'));
+      wrap.style.cssText='width:100%;flex-basis:100%;border-top:2px solid var(--pri);background:var(--surf);padding:14px;margin-top:4px;border-radius:0 0 8px 8px;';
+      const hdrEl=mk('div',''); hdrEl.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:10px;font-weight:600;font-size:13px;';
+      hdrEl.appendChild(tx('span','','✂ Aufteilen: '+seg.name));
       const cancBtn=btn('Abbrechen','btn btn-ghost btn-xs'); cancBtn.onclick=()=>wrap.remove();
       hdrEl.appendChild(cancBtn); wrap.appendChild(hdrEl);
-      const thumbsWrap=mk('div','mat-upload-thumbs');
-      thumbsWrap.appendChild(tx('div','mat-upload-spin','⏳ Lade Seiten…'));
-      wrap.appendChild(thumbsWrap);
+      const loadStatus = tx('div','','⏳ Lade Seiten…');
+      loadStatus.style.cssText='font-size:13px;color:var(--tx3);padding:8px 0;';
+      wrap.appendChild(loadStatus);
       const splitArea=mk('div',''); wrap.appendChild(splitArea);
 
       const pageDataURLs2=[]; const splitPoints2=new Set();
@@ -502,26 +502,24 @@ function buildImportAssistent(subTitle, renderCards) {
       try {
         const blobUrl=URL.createObjectURL(seg.blob);
         const pdfDoc=await pdfjsLib.getDocument(blobUrl).promise;
-        thumbsWrap.innerHTML='';
+        loadStatus.textContent='⏳ Rendere ' + pdfDoc.numPages + ' Seiten…';
         for(let i=1;i<=pdfDoc.numPages;i++){
           const page=await pdfDoc.getPage(i);
           const vp0=page.getViewport({scale:1});
           const cv=document.createElement('canvas');
-          const vp=page.getViewport({scale:110/vp0.width});
+          const vp=page.getViewport({scale:200/vp0.width});
           cv.width=vp.width; cv.height=vp.height;
           await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
-          const dataURL=cv.toDataURL('image/jpeg',0.75);
+          const dataURL=cv.toDataURL('image/jpeg',0.85);
           cv.width=0; cv.height=0; page.cleanup();
           pageDataURLs2.push(dataURL);
-          const img=document.createElement('img'); img.src=dataURL; img.className='mat-split-thumb';
-          const thumb=mk('div','mat-upload-thumb');
-          thumb.appendChild(img); thumb.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
-          thumbsWrap.appendChild(thumb);
         }
         await pdfDoc.destroy(); URL.revokeObjectURL(blobUrl);
+        loadStatus.remove();
         loadOk=true;
       } catch(e) {
-        thumbsWrap.innerHTML=`<div style="color:#dc2626;font-size:12px;">⚠ ${e.message}</div>`;
+        loadStatus.textContent='⚠ ' + e.message;
+        loadStatus.style.color='#dc2626';
         return wrap;
       }
 
@@ -554,9 +552,12 @@ function buildImportAssistent(subTitle, renderCards) {
           });
           ghdr.appendChild(typRow); groupEl.appendChild(ghdr);
           const pagesRow=mk('div','mat-split-pages-row');
+          pagesRow.style.cssText='display:flex;flex-wrap:wrap;gap:10px;padding:8px;';
           for(let i=g.start;i<=g.end;i++){
-            const img=document.createElement('img'); img.src=pageDataURLs2[i-1]; img.className='mat-split-thumb';
-            const tw=mk('div','mat-split-thumb-wrap'); tw.appendChild(img); tw.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
+            const img=document.createElement('img'); img.src=pageDataURLs2[i-1];
+            img.style.cssText='width:160px;height:auto;display:block;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.15);';
+            const tw=mk('div',''); tw.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px;';
+            tw.appendChild(img); tw.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
             pagesRow.appendChild(tw);
             if(i<pageDataURLs2.length){
               const divEl=mk('div','mat-split-divider'); divEl.dataset.page=String(i);

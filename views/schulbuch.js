@@ -1063,24 +1063,16 @@ Regeln:
       const farbe = FACH_FARBEN[fach] || { bg: '#374151', grad: 'linear-gradient(135deg,#374151,#6b7280)', icon: '📖' };
       const buecher = byFach[fach];
 
-      // Regal-Header
-      const regalHdr = mk('div', '');
-      regalHdr.style.cssText = 'display:flex;align-items:center;gap:10px;margin:24px 0 12px;';
-      const fachPill = mk('div', '');
-      fachPill.style.cssText = 'display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:20px;color:#fff;font-weight:700;font-size:15px;background:' + farbe.bg + ';';
-      fachPill.appendChild(document.createTextNode(farbe.icon + ' ' + fachLabel(fach)));
-      regalHdr.appendChild(fachPill);
-      const fachSub = tx('span', '', buecher.length + (buecher.length === 1 ? ' Buch' : ' Bücher'));
-      fachSub.style.cssText = 'font-size:13px;color:var(--tx3);';
-      regalHdr.appendChild(fachSub);
-      main.appendChild(regalHdr);
 
       // Bücherregal
       const regalWrap = mk('div', '');
-      regalWrap.style.cssText = 'position:relative;margin-bottom:8px;';
+      regalWrap.style.cssText = 'position:relative;';
 
       const regal = mk('div', '');
-      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:linear-gradient(to bottom,#1a1a1f,#0f0f12);border-radius:10px 10px 0 0;min-height:200px;position:relative;overflow:hidden;';
+      const isFirst = fach === faecher[0];
+      const isLast  = fach === faecher[faecher.length - 1];
+      const regalRadius = (isFirst ? '10px 10px' : '0 0') + ' 0 0';
+      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:linear-gradient(to bottom,#1a1a1f,#0f0f12);border-radius:' + regalRadius + ';min-height:200px;position:relative;overflow:hidden;';
 
       // Fach-Schriftzug auf der Regalwand
       const wandText = tx('div', '', fachLabel(fach).toUpperCase());
@@ -1146,7 +1138,8 @@ Regeln:
 
       // Regal-Brett
       const brett = mk('div', '');
-      brett.style.cssText = 'height:14px;background:linear-gradient(to bottom,#8B5E3C,#5C3D1E);border-radius:0 0 6px 6px;box-shadow:0 4px 8px rgba(0,0,0,.4);';
+      const brettRadius = isLast ? '0 0 6px 6px' : '0';
+      brett.style.cssText = 'height:14px;background:linear-gradient(to bottom,#8B5E3C,#5C3D1E);border-radius:' + brettRadius + ';box-shadow:0 4px 8px rgba(0,0,0,.4);';
       regalWrap.appendChild(brett);
 
       main.appendChild(regalWrap);

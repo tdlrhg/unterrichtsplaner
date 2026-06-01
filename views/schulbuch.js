@@ -1080,7 +1080,13 @@ Regeln:
       regalWrap.style.cssText = 'position:relative;margin-bottom:8px;';
 
       const regal = mk('div', '');
-      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:linear-gradient(to bottom,#1a1a1f,#0f0f12);border-radius:10px 10px 0 0;min-height:200px;';
+      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:linear-gradient(to bottom,#1a1a1f,#0f0f12);border-radius:10px 10px 0 0;min-height:200px;position:relative;overflow:hidden;';
+
+      // Fach-Schriftzug auf der Regalwand
+      const wandText = tx('div', '', fachLabel(fach).toUpperCase());
+      wandText.style.cssText = `position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:72px;font-weight:900;letter-spacing:0.15em;color:${farbe.spine[1]};opacity:0.15;white-space:nowrap;pointer-events:none;user-select:none;line-height:1;`;
+
+      regal.appendChild(wandText);
 
       buecher.forEach(buch => {
         const kap = Math.max(1, (buch.kapitel || []).length);
@@ -1090,7 +1096,7 @@ Regeln:
         const hoehe = Math.min(190, Math.max(140, 130 + kap * 3));
 
         const buch_el = mk('div', '');
-        buch_el.style.cssText = `width:${breite}px;height:${hoehe}px;border-radius:3px 6px 6px 3px;cursor:pointer;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform .15s,filter .15s;background:linear-gradient(to right,${farbe.spine[0]},${farbe.spine[1]});box-shadow:inset -3px 0 6px rgba(0,0,0,.4),inset 3px 0 4px rgba(255,255,255,.08),2px 2px 8px rgba(0,0,0,.5);overflow:hidden;`;
+        buch_el.style.cssText = `width:${breite}px;height:${hoehe}px;border-radius:3px 6px 6px 3px;cursor:pointer;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform .15s,filter .15s;background:linear-gradient(to right,${farbe.spine[0]},${farbe.spine[1]});box-shadow:inset -3px 0 6px rgba(0,0,0,.4),inset 3px 0 4px rgba(255,255,255,.08),2px 2px 8px rgba(0,0,0,.5);overflow:hidden;`;
 
         // Buchrücken-Linien (Dekoration)
         const deko = mk('div','');

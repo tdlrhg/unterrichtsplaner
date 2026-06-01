@@ -1,6 +1,57 @@
 // ── Schulbücher-Datenbank ─────────────────────────────────────────
 // SCHULBUCHDB wird in core/state.js deklariert
 
+// Zeichenweiser JSON-String-Reparateur (Steuerzeichen in Strings escapen)
+function repairJsonStrings(s) {
+  let out = '';
+  let inStr = false;
+  let i = 0;
+  while (i < s.length) {
+    const ch = s[i];
+    if (inStr) {
+      if (ch === '\\') { out += ch + (s[i+1] || ''); i += 2; continue; }
+      if (ch === '"') { inStr = false; out += ch; i++; continue; }
+      if (ch === '\n') { out += '\\n'; i++; continue; }
+      if (ch === '\r') { out += '\\r'; i++; continue; }
+      if (ch === '\t') { out += '\\t'; i++; continue; }
+      if (ch.charCodeAt(0) < 0x20) { i++; continue; }
+    } else {
+      if (ch === '"') inStr = true;
+    }
+    out += ch;
+    i++;
+  }
+  return out;
+}
+
+function robustJsonParse(raw) {
+  let jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || '{}';
+  const opens = (jsonStr.match(/\[/g)||[]).length - (jsonStr.match(/\]/g)||[]).length;
+  const opensCurl = (jsonStr.match(/\{/g)||[]).length - (jsonStr.match(/\}/g)||[]).length;
+  jsonStr += ']'.repeat(Math.max(0, opens)) + '}'.repeat(Math.max(0, opensCurl));
+  jsonStr = repairJsonStrings(jsonStr);
+  try { return JSON.parse(jsonStr); }
+  catch(e) {
+    // Fallback: Bracket-Counting
+    const items = [];
+    let depth = 0, start = -1;
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw[i];
+      if (ch === '{') { if (depth === 0) start = i; depth++; }
+      else if (ch === '}') {
+        depth--;
+        if (depth === 0 && start >= 0) {
+          const objStr = repairJsonStrings(raw.slice(start, i + 1));
+          try { const o = JSON.parse(objStr); if (o.typ || o.nr || o.titel) items.push(o); } catch(e2) {}
+          start = -1;
+        }
+      }
+    }
+    if (items.length) return { aufgaben: items };
+    throw new Error('KI-Antwort konnte nicht als JSON gelesen werden');
+  }
+}
+
 function sortAufgaben(aufgaben) {
   aufgaben.sort((a, b) => {
     if ((a.seite || 0) !== (b.seite || 0)) return (a.seite || 0) - (b.seite || 0);
@@ -104,59 +155,11 @@ Antworte NUR mit validem JSON:
     if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || res.statusText); }
     const data = await res.json();
     const raw = data.content?.[0]?.text || '';
-    let jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || '{}';
-
-    // Reparatur 1: offene Klammern schließen (Truncation)
-    const opens = (jsonStr.match(/\[/g)||[]).length - (jsonStr.match(/\]/g)||[]).length;
-    const opensCurl = (jsonStr.match(/\{/g)||[]).length - (jsonStr.match(/\}/g)||[]).length;
-    jsonStr += ']'.repeat(Math.max(0, opens)) + '}'.repeat(Math.max(0, opensCurl));
-
-    // Reparatur 2: Steuerzeichen in Strings escapen — zeichenweise um Strings korrekt zu erkennen
-    function repairJsonStrings(s) {
-      let out = '';
-      let inStr = false;
-      let i = 0;
-      while (i < s.length) {
-        const ch = s[i];
-        if (inStr) {
-          if (ch === '\\') { out += ch + (s[i+1] || ''); i += 2; continue; }
-          if (ch === '"') { inStr = false; out += ch; i++; continue; }
-          // Steuerzeichen innerhalb eines Strings escapen
-          if (ch === '\n') { out += '\\n'; i++; continue; }
-          if (ch === '\r') { out += '\\r'; i++; continue; }
-          if (ch === '\t') { out += '\\t'; i++; continue; }
-          if (ch.charCodeAt(0) < 0x20) { i++; continue; }
-        } else {
-          if (ch === '"') inStr = true;
-        }
-        out += ch;
-        i++;
-      }
-      return out;
-    }
-    jsonStr = repairJsonStrings(jsonStr);
-
     let parsed;
     try {
-      parsed = JSON.parse(jsonStr);
+      parsed = robustJsonParse(raw);
     } catch(e) {
-      // Fallback: einzelne Objekte per Bracket-Counting extrahieren (funktioniert für aufgabe + lehrtext)
-      const items = [];
-      let depth = 0, start = -1;
-      for (let i = 0; i < raw.length; i++) {
-        const ch = raw[i];
-        if (ch === '{') { if (depth === 0) start = i; depth++; }
-        else if (ch === '}') {
-          depth--;
-          if (depth === 0 && start >= 0) {
-            const objStr = repairJsonStrings(raw.slice(start, i + 1));
-            try { const o = JSON.parse(objStr); if (o.typ) items.push(o); } catch(e2) {}
-            start = -1;
-          }
-        }
-      }
-      if (!items.length) throw new Error('KI-Antwort konnte nicht als JSON gelesen werden');
-      parsed = { aufgaben: items };
+      throw new Error('KI-Antwort konnte nicht als JSON gelesen werden');
     }
 
     const aufgaben = parsed.aufgaben || [];
@@ -456,16 +459,7 @@ Regeln:
           if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
           const data = await res.json();
           const raw = data.content?.[0]?.text || '';
-          let jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || '{}';
-          jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
-          let parsed;
-          try { parsed = JSON.parse(jsonStr); }
-          catch(_) {
-            const op = (jsonStr.match(/\[/g)||[]).length-(jsonStr.match(/\]/g)||[]).length;
-            const oc = (jsonStr.match(/\{/g)||[]).length-(jsonStr.match(/\}/g)||[]).length;
-            jsonStr += ']'.repeat(Math.max(0,op))+'}'.repeat(Math.max(0,oc));
-            parsed = JSON.parse(jsonStr);
-          }
+          const parsed = robustJsonParse(raw);
 
           const kapitel = parsed.kapitel || [];
           if (!kapitel.length) throw new Error('Keine Kapitel erkannt.');

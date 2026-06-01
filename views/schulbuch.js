@@ -1080,7 +1080,7 @@ Regeln:
       regalWrap.style.cssText = 'position:relative;margin-bottom:8px;';
 
       const regal = mk('div', '');
-      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:linear-gradient(to bottom,#2a1f1a,#1a1210);border-radius:10px 10px 0 0;min-height:200px;';
+      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:linear-gradient(to bottom,#1a1a1f,#0f0f12);border-radius:10px 10px 0 0;min-height:200px;';
 
       buecher.forEach(buch => {
         const kap = Math.max(1, (buch.kapitel || []).length);

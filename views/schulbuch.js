@@ -375,6 +375,145 @@ Antworte NUR mit validem JSON:
     });
   }
 
+  // ── Inhaltsverzeichnis importieren ───────────────────────────
+  function showInhaltsverzeichnis(buch, onDone) {
+    openOverlay('Kapitelstruktur aus Inhaltsverzeichnis', 560, (body, close) => {
+      body.style.display = 'flex'; body.style.flexDirection = 'column'; body.style.gap = '12px';
+
+      const hint = tx('div', '', 'Lade ein Foto des Inhaltsverzeichnisses hoch. Die KI legt alle Kapitel und Unterkapitel automatisch an.');
+      hint.style.cssText = 'font-size:13px;color:var(--tx2);line-height:1.5;';
+      body.appendChild(hint);
+
+      const uploadWidget = buildImageUpload(body);
+      const statusEl = tx('div', '', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;';
+      body.appendChild(statusEl);
+
+      // Vorschau der erkannten Struktur
+      const previewWrap = mk('div', '');
+      previewWrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;max-height:280px;overflow-y:auto;';
+      body.appendChild(previewWrap);
+
+      const btnRow = mk('div', ''); btnRow.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
+      const kiBtn = btn('✨ KI liest aus', 'btn btn-pri btn-sm');
+      const cancelB = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelB.onclick = close;
+      btnRow.appendChild(kiBtn); btnRow.appendChild(cancelB);
+      body.appendChild(btnRow);
+
+      let erkannteStruktur = null;
+
+      kiBtn.onclick = async () => {
+        const imgs = uploadWidget.getImages();
+        if (!imgs.length) { alert('Bitte ein Bild hochladen.'); return; }
+        const antKey = localStorage.getItem('ant_key');
+        if (!antKey) { alert('Kein API-Key hinterlegt.'); return; }
+
+        kiBtn.disabled = true; kiBtn.textContent = '⏳ Liest…';
+        statusEl.textContent = 'KI liest das Inhaltsverzeichnis…';
+        previewWrap.innerHTML = '';
+
+        const blocks = [];
+        for (const img of imgs) {
+          const resized = await resizeImg(img.dataUrl, 1200, 0.85);
+          blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: resized.split(',')[1] } });
+        }
+        blocks.push({ type: 'text', text: `Lies dieses Inhaltsverzeichnis aus.
+Antworte NUR mit validem JSON — alle Strings einzeilig:
+{"kapitel":[
+  {"nr":"1","titel":"Kapitelname","seiteVon":6,"seiteBis":24,"unterkapitel":[
+    {"nr":"1.1","titel":"Unterkapitelname","seiteVon":6,"seiteBis":12},
+    {"nr":"1.2","titel":"Unterkapitelname","seiteVon":13,"seiteBis":24}
+  ]},
+  {"nr":"2","titel":"Kapitelname","seiteVon":25,"seiteBis":null,"unterkapitel":[]}
+]}
+
+Regeln:
+- nr: Kapitelnummer exakt wie im Buch (z.B. "3" oder "3.2")
+- seiteVon/seiteBis: Seitenzahlen aus dem Verzeichnis, null wenn nicht angegeben
+- unterkapitel: leeres Array [] wenn keine vorhanden
+- Erfasse ALLE Kapitel und Unterkapitel vollständig` });
+
+        try {
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 4000, messages: [{ role: 'user', content: blocks }] }),
+          });
+          if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
+          const data = await res.json();
+          const raw = data.content?.[0]?.text || '';
+          let jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || '{}';
+          jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
+          let parsed;
+          try { parsed = JSON.parse(jsonStr); }
+          catch(_) {
+            const op = (jsonStr.match(/\[/g)||[]).length-(jsonStr.match(/\]/g)||[]).length;
+            const oc = (jsonStr.match(/\{/g)||[]).length-(jsonStr.match(/\}/g)||[]).length;
+            jsonStr += ']'.repeat(Math.max(0,op))+'}'.repeat(Math.max(0,oc));
+            parsed = JSON.parse(jsonStr);
+          }
+
+          const kapitel = parsed.kapitel || [];
+          if (!kapitel.length) throw new Error('Keine Kapitel erkannt.');
+
+          erkannteStruktur = kapitel;
+          statusEl.textContent = '✓ ' + kapitel.length + ' Kapitel erkannt — Vorschau:';
+
+          // Vorschau anzeigen
+          previewWrap.innerHTML = '';
+          kapitel.forEach(k => {
+            const row = mk('div', '');
+            row.style.cssText = 'padding:5px 8px;background:var(--surf2);border-radius:4px;font-size:12px;';
+            const seiten = k.seiteVon ? ' (S. ' + k.seiteVon + (k.seiteBis ? '–' + k.seiteBis : '') + ')' : '';
+            row.appendChild(tx('div', '', k.nr + ' ' + k.titel + seiten));
+            (k.unterkapitel || []).forEach(u => {
+              const sub = mk('div', '');
+              sub.style.cssText = 'padding-left:16px;color:var(--tx2);margin-top:2px;';
+              const useiten = u.seiteVon ? ' (S. ' + u.seiteVon + (u.seiteBis ? '–' + u.seiteBis : '') + ')' : '';
+              sub.textContent = u.nr + ' ' + u.titel + useiten;
+              row.appendChild(sub);
+            });
+            previewWrap.appendChild(row);
+          });
+
+          // Speichern-Button
+          const saveBtn = btn('✓ Alle ' + kapitel.length + ' Kapitel anlegen', 'btn btn-pri btn-sm');
+          saveBtn.onclick = () => {
+            erkannteStruktur.forEach(k => {
+              const kap = {
+                id: uid(),
+                nr: k.nr || '',
+                titel: k.titel || '',
+                seiteVon: k.seiteVon || null,
+                seiteBis: k.seiteBis || null,
+                aufgaben: [],
+                unterkapitel: (k.unterkapitel || []).map(u => ({
+                  id: uid(),
+                  nr: u.nr || '',
+                  titel: u.titel || '',
+                  seiteVon: u.seiteVon || null,
+                  seiteBis: u.seiteBis || null,
+                  aufgaben: [],
+                })),
+              };
+              if (!buch.kapitel) buch.kapitel = [];
+              buch.kapitel.push(kap);
+            });
+            saveSchulbuchDB();
+            close();
+            onDone();
+          };
+          btnRow.innerHTML = '';
+          btnRow.appendChild(saveBtn);
+          btnRow.appendChild(btn('Abbrechen', 'btn btn-ghost btn-sm')).onclick = close;
+
+        } catch(e) {
+          statusEl.textContent = '⚠ ' + e.message;
+          kiBtn.disabled = false; kiBtn.textContent = '✨ KI liest aus';
+        }
+      };
+    });
+  }
+
   // ── Aufgaben einer Seite bearbeiten ───────────────────────────
   function showEditAufgaben(entry, seite, onDone) {
     openOverlay('Aufgaben S. ' + seite + ' bearbeiten', 640, (body, close) => {
@@ -836,8 +975,13 @@ Antworte NUR mit validem JSON:
     const kapSec = mk('div', '');
     kapSec.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin:20px 0 8px 0;';
     kapSec.appendChild(tx('div', 'card-title', 'Kapitel'));
-    const addKapBtn = btn('+ Kapitel hinzufügen', 'btn btn-pri btn-sm');
-    kapSec.appendChild(addKapBtn);
+    const btnRow = mk('div', ''); btnRow.style.cssText = 'display:flex;gap:6px;';
+    const addKapBtn = btn('+ Kapitel', 'btn btn-pri btn-sm');
+    const inhaltsBtn = btn('📋 Aus Inhaltsverzeichnis', 'btn btn-sm');
+    inhaltsBtn.onclick = () => showInhaltsverzeichnis(buch, renderKapitel);
+    btnRow.appendChild(addKapBtn);
+    btnRow.appendChild(inhaltsBtn);
+    kapSec.appendChild(btnRow);
     main.appendChild(kapSec);
 
     const kapitelList = mk('div', '');

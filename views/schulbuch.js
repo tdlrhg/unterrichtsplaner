@@ -1059,6 +1059,11 @@ Regeln:
 
     const faecher = [...fachOrder.filter(f => byFach[f]), ...Object.keys(byFach).filter(f => !fachOrder.includes(f))];
 
+    // Gemeinsamer Rahmen für alle Regale
+    const buecherWand = mk('div', '');
+    buecherWand.style.cssText = 'background:#0f0f12;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);';
+    main.appendChild(buecherWand);
+
     faecher.forEach(fach => {
       const farbe = FACH_FARBEN[fach] || { bg: '#374151', grad: 'linear-gradient(135deg,#374151,#6b7280)', icon: '📖' };
       const buecher = byFach[fach];
@@ -1069,10 +1074,7 @@ Regeln:
       regalWrap.style.cssText = 'position:relative;';
 
       const regal = mk('div', '');
-      const isFirst = fach === faecher[0];
-      const isLast  = fach === faecher[faecher.length - 1];
-      const regalRadius = (isFirst ? '10px 10px' : '0 0') + ' 0 0';
-      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:linear-gradient(to bottom,#1a1a1f,#0f0f12);border-radius:' + regalRadius + ';min-height:200px;position:relative;overflow:hidden;';
+      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:linear-gradient(to bottom,#1a1a1f,#0f0f12);min-height:200px;position:relative;overflow:hidden;';
 
       // Fach-Schriftzug auf der Regalwand
       const wandText = tx('div', '', fachLabel(fach).toUpperCase());
@@ -1143,11 +1145,10 @@ Regeln:
 
       // Regal-Brett
       const brett = mk('div', '');
-      const brettRadius = isLast ? '0 0 8px 8px' : '0';
-      brett.style.cssText = 'height:22px;background:#4a1828;border-radius:' + brettRadius + ';box-shadow:0 6px 12px rgba(0,0,0,.5);';
+      brett.style.cssText = 'height:22px;background:#4a1828;box-shadow:inset 0 2px 4px rgba(0,0,0,.4);';
       regalWrap.appendChild(brett);
 
-      main.appendChild(regalWrap);
+      buecherWand.appendChild(regalWrap);
     });
   }
 

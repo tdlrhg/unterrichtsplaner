@@ -1144,7 +1144,7 @@ Regeln:
       // Regal-Brett
       const brett = mk('div', '');
       const brettRadius = isLast ? '0 0 8px 8px' : '0';
-      brett.style.cssText = 'height:22px;background:linear-gradient(to bottom,#6b2d3e,#3d1525);border-radius:' + brettRadius + ';box-shadow:0 6px 12px rgba(0,0,0,.5);';
+      brett.style.cssText = 'height:22px;background:#4a1828;border-radius:' + brettRadius + ';box-shadow:0 6px 12px rgba(0,0,0,.5);';
       regalWrap.appendChild(brett);
 
       main.appendChild(regalWrap);

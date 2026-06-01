@@ -61,10 +61,10 @@ function viewDidaktik() {
     empty.innerHTML = '<div style="font-size:32px;margin-bottom:12px">📚</div><div style="font-weight:700;margin-bottom:6px">Noch keine Artikel</div><div style="font-size:13px;color:var(--tx3)">Klicke „+ Artikel extrahieren" um loszulegen.</div>';
     listCol.appendChild(empty);
   } else {
-    // Gruppieren nach Quelle (Zeitschrift → Autor → Titel)
+    // Gruppieren nach Werk → Zeitschrift → erster Autor → Titel
     const gruppen = {};
     DIDARTDB.forEach(art => {
-      const grpKey = art.quelle?.zeitschrift || art.quelle?.autoren?.[0] || art.quelle?.titel || 'Sonstige';
+      const grpKey = art.quelle?.werk || art.quelle?.zeitschrift || art.quelle?.autoren?.[0] || art.quelle?.titel || 'Sonstige';
       if (!gruppen[grpKey]) gruppen[grpKey] = [];
       gruppen[grpKey].push(art);
     });
@@ -142,6 +142,31 @@ function buildArtikelDetail(art) {
     art.quelle?.jahr
   ].filter(Boolean).join(' · ');
   if (meta) hdr.appendChild(tx('div', 'did-detail-meta', meta));
+
+  // Werk-Feld (editierbar, für Sammelbände mit Kapitel-Autoren)
+  const werkRow = mk('div', '');
+  werkRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:6px;';
+  werkRow.appendChild(tx('span', '', '📗'));
+  const werkLabel = tx('span', '', 'Werk / Sammelband:');
+  werkLabel.style.cssText = 'font-size:11px;color:var(--tx3);flex-shrink:0;';
+  werkRow.appendChild(werkLabel);
+  const werkInp = document.createElement('input');
+  werkInp.className = 'finp';
+  werkInp.style.cssText = 'font-size:12px;padding:3px 7px;flex:1;';
+  werkInp.placeholder = 'z.B. „Guter Unterricht" (Hrsg. Meyer)';
+  werkInp.value = art.quelle?.werk || '';
+  werkInp.title = 'Buchtitel setzen um mehrere Kapitel eines Sammelbands zu gruppieren';
+  const werkSave = async () => {
+    const val = werkInp.value.trim();
+    if (!art.quelle) art.quelle = {};
+    art.quelle.werk = val || null;
+    await sbUpload('didaktik-artikel.json', DIDARTDB);
+    render();
+  };
+  werkInp.addEventListener('blur', werkSave);
+  werkInp.addEventListener('keydown', e => { if (e.key === 'Enter') { werkInp.blur(); } });
+  werkRow.appendChild(werkInp);
+  hdr.appendChild(werkRow);
 
   const actRow = mk('div', '');
   actRow.style.cssText = 'display:flex;gap:8px;margin-top:10px;';
@@ -363,10 +388,11 @@ Antworte NUR mit einem JSON-Objekt in exakt diesem Format:
 
 {
   "quelle": {
-    "titel": "Vollständiger Artikeltitel",
+    "titel": "Vollständiger Artikeltitel oder Kapiteltitel",
     "autoren": ["Nachname1", "Nachname2"],
     "jahr": 2025,
     "zeitschrift": "Name der Zeitschrift oder null",
+    "werk": "Titel des übergeordneten Buches/Sammelbands oder null (bei Zeitschriftenartikeln null)",
     "ausgabe": "Heft/Band oder null",
     "fach": [],
     "stufe": []

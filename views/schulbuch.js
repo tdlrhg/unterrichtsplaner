@@ -1145,7 +1145,7 @@ Regeln:
 
       // Regal-Brett
       const brett = mk('div', '');
-      brett.style.cssText = 'height:22px;background:#4a1828;box-shadow:inset 0 2px 4px rgba(0,0,0,.4);';
+      brett.style.cssText = 'height:22px;background:#1a0d10;border-top:2px solid rgba(255,255,255,.08);box-shadow:inset 0 -3px 6px rgba(0,0,0,.6);';
       regalWrap.appendChild(brett);
 
       buecherWand.appendChild(regalWrap);

@@ -173,6 +173,7 @@ GRAFIK: keine
 Regeln:
 - Nach === kommt zuerst die Seitenzahl, dann | dann der Titel/die Überschrift der Seite
 - Text vollständig und wörtlich übernehmen
+- Ignoriere Kopf- und Fußzeilen: Website-URLs, Seitennummern im Stil "7 von 22", Verlagsangaben, Druckdaten, Hash-Codes — diese nicht ins inhalt-Feld aufnehmen
 - Keine JSON, kein Markdown, nur dieses Format`;
 
   const KI_PROMPT_AUFGABEN = `Du analysierst Seiten aus einem Schulbuch oder Unterrichtsmaterial (Gymnasium, Mathematik oder Naturwissenschaften).

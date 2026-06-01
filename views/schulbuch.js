@@ -63,23 +63,32 @@ function viewSchulbuecher() {
     }
     blocks.push({ type: 'text', text: `Du analysierst Seiten aus einem Schulbuch (Gymnasium, Mathematik oder Naturwissenschaften).
 
-Extrahiere ALLE Aufgaben vollständig. Jede Teilaufgabe (a, b, c, d …) wird als eigener Eintrag erfasst.
+Jede Seite enthält entweder Aufgaben, Lehrtext/Erklärungen oder beides. Erfasse BEIDES vollständig.
 
-Für jeden Eintrag:
-- nr: Aufgabennummer inkl. Teilaufgabe (z.B. "7a", "7b", "7c") — wenn keine Teilaufgaben, dann nur "7"
+── TYP 1: AUFGABEN ──
+Für jede Aufgabe / Teilaufgabe ein Eintrag mit typ:"aufgabe":
+- nr: Aufgabennummer inkl. Teilaufgabe (z.B. "7a") — bei Hauptaufgabe ohne Buchstabe (z.B. "7")
 - seite: Seitennummer falls erkennbar, sonst null
-- text: Aufgabentext exakt wie im Buch, alles in einer Zeile, Formeln als Text (z.B. "x^2 + 3x - 4 = 0"). Bei Teilaufgaben (a, b, c …): Schreibe bei jeder Teilaufgabe NUR den individuellen Teil (die konkrete Formel oder Frage), NICHT die gemeinsame Aufgabenstellung — die steht im übergeordneten Eintrag. Beispiel: Bei "Aufg. 20: Bestimme welche Zahl… a) 2,8 - [] = -8,2  b) [] - 1,7 = -3,3" trägst du ein: nr:"20a" text:"2,8 - [] = -8,2", nr:"20b" text:"[] - 1,7 = -3,3". Die gemeinsame Aufgabenstellung "Bestimme welche Zahl…" kommt NICHT in den text-Feldern vor.
-- schwierigkeit: Lies das Kreissymbol vor der Aufgabennummer und gib es exakt zurück: "○" (leerer Kreis = einfach), "◒" (halb gefüllt = mittel), "●" (gefüllt = anspruchsvoll). Falls kein Symbol erkennbar, schätze und verwende das passende Symbol.
-- grafik: Kurze Beschreibung des visuellen Elements falls vorhanden (Diagramm, geometrische Figur, Koordinatensystem, Zahlenstrahl mit Werten usw.) — max. 1 Satz, präzise. Null wenn kein relevantes visuelles Element vorhanden.
-- kompetenzen: Array mit Kompetenzkürzel falls erkennbar (z.B. ["UF1","K2"]), sonst []
+- aufgabenstellung: gemeinsame Aufgabenstellung bei Hauptaufgaben-Eintrag, sonst null
+- text: NUR der individuelle Teil bei Teilaufgaben (die Formel/Frage), bei Einzelaufgaben der volle Text. Immer einzeilig, Formeln als Text (z.B. "2x - 1 = -0,5x + 2").
+- schwierigkeit: Kreissymbol exakt: "○" einfach, "◒" mittel, "●" anspruchsvoll
+- grafik: Beschreibung des visuellen Elements (1 Satz), null wenn keins
+- kompetenzen: Array z.B. ["UF1","K2"], sonst []
 
-Wichtig: Nichts weglassen. Auch Beispielaufgaben, Wiederholungsaufgaben und Knobelaufgaben erfassen.
-Alle Strings müssen JSON-valide sein: keine rohen Anführungszeichen, keine Zeilenumbrüche in Stringwerten.
+── TYP 2: LEHRTEXT ──
+Für jeden Abschnitt mit Erklärungen, Definitionen, Musterlösungen oder einführenden Texten ein Eintrag mit typ:"lehrtext":
+- seite: Seitennummer
+- thema: Thema des Abschnitts (z.B. "Gleichsetzungsverfahren")
+- inhalt: Detaillierte Beschreibung — WAS erklärt wird, WIE (welche Methode/Schritte), welche Beispiele verwendet werden, welcher didaktische Ansatz (z.B. Schülerdialog, Musterlösung, Definition). Mindestens 3-5 Sätze. Formeln als Text. Diese Beschreibung soll einen späteren Vergleich mit anderen Schulbüchern ermöglichen.
+- grafik: Beschreibung visueller Elemente (Koordinatensysteme, Diagramme), null wenn keine
+
+Alle Strings JSON-valide: einzeilig, keine rohen Anführungszeichen.
 
 Antworte NUR mit validem JSON:
-{"aufgaben": [{"nr":"20","seite":35,"aufgabenstellung":"Bestimme, welche Zahl in das Kästchen gehört. Eine Umkehraufgabe kann helfen.","text":null,"schwierigkeit":"○","grafik":null,"kompetenzen":[]},{"nr":"20a","seite":35,"aufgabenstellung":null,"text":"2,8 - [] = -8,2","schwierigkeit":"○","grafik":null,"kompetenzen":[]}]}
-
-Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag für die Hauptaufgabe an (z.B. nr:"20") mit der gemeinsamen Aufgabenstellung in "aufgabenstellung" und text:null. Dann folgen die Teilaufgaben (nr:"20a", "20b" …) mit text=individuelle Formel/Frage und aufgabenstellung:null. Aufgaben ohne Teilaufgaben haben aufgabenstellung:null und den vollen Text in "text".` });
+{"aufgaben": [
+  {"typ":"lehrtext","seite":145,"thema":"Gleichsetzungsverfahren","inhalt":"Einführung über Schülerdialog (Anna/Sina) mit Koordinatengraph. Erklärt den Ablauf in drei Schritten: 1) beide Gleichungen nach derselben Variable auflösen, 2) gleichsetzen, 3) nach x auflösen und y berechnen. Musterlösung: I: y-2x=-1, II: 2y+x=4, Umformen zu Ia: y=2x-1, IIa: y=-0,5x+2, Gleichsetzen ergibt x=1,2 und y=1,4.","grafik":"Koordinatensystem mit zwei sich schneidenden Geraden y=2x-1 und y=-0,5x+2"},
+  {"typ":"aufgabe","nr":"1","seite":146,"aufgabenstellung":null,"text":"Löse das Gleichungssystem grafisch und rechnerisch.","schwierigkeit":"○","grafik":null,"kompetenzen":["UF1"]}
+]}` });
 
     if (statusEl) statusEl.textContent = '✨ KI analysiert Aufgaben…';
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -640,10 +649,36 @@ Hinweis: Wenn eine Aufgabe viele Teilaufgaben hat, lege ZUERST einen Eintrag fü
       return arow;
     }
 
+    // Lehrtexte separat anzeigen
+    const lehrtexte = aufgaben.filter(a => a.typ === 'lehrtext');
+    const aufgabenOnly = aufgaben.filter(a => a.typ !== 'lehrtext');
+
+    lehrtexte.forEach(lt => {
+      const box = mk('div', '');
+      box.style.cssText = 'background:linear-gradient(135deg,#fdf4ff,#faf5ff);border:1px solid #e9d5ff;border-left:3px solid #7c3aed;border-radius:6px;padding:8px 12px;margin-bottom:4px;font-size:12px;';
+      const head = mk('div', '');
+      head.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:4px;';
+      head.appendChild(tx('span', '', '📖'));
+      head.appendChild(tx('strong', '', lt.thema || 'Lehrtext'));
+      if (lt.seite) head.appendChild(tx('span', 'matc-jg', 'S. ' + lt.seite));
+      box.appendChild(head);
+      if (lt.inhalt) {
+        const inhalt = tx('p', '', lt.inhalt);
+        inhalt.style.cssText = 'color:var(--tx2);line-height:1.5;margin:0;';
+        box.appendChild(inhalt);
+      }
+      if (lt.grafik) {
+        const grf = tx('p', '', '🖼 ' + lt.grafik);
+        grf.style.cssText = 'color:var(--tx3);font-style:italic;font-size:11px;margin:4px 0 0;';
+        box.appendChild(grf);
+      }
+      aufgList.appendChild(box);
+    });
+
     // Gruppieren nach Basisnummer (z.B. "17" für "17a", "17b")
     const groups = [];
     const groupMap = {};
-    aufgaben.forEach(aufg => {
+    aufgabenOnly.forEach(aufg => {
       const base = aufg.nr.match(/^(\d+)/)?.[1] || aufg.nr;
       if (!groupMap[base]) { groupMap[base] = []; groups.push(base); }
       groupMap[base].push(aufg);

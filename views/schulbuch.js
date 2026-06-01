@@ -127,18 +127,7 @@ function viewSchulbuecher() {
   }
 
   // ── KI-Extraktion ─────────────────────────────────────────────
-  async function extractAufgaben(images, statusEl) {
-    const antKey = localStorage.getItem('ant_key');
-    if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
-
-    if (statusEl) statusEl.textContent = '⏳ Bilder vorbereiten…';
-    const blocks = [];
-    for (let i = 0; i < images.length; i++) {
-      const resized = await resizeImg(images[i].dataUrl, 1200, 0.82);
-      blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: resized.split(',')[1] } });
-      if (i < images.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
-    }
-    blocks.push({ type: 'text', text: `Du analysierst Seiten aus einem Schulbuch (Gymnasium, Mathematik oder Naturwissenschaften).
+  const KI_PROMPT_AUFGABEN = `Du analysierst Seiten aus einem Schulbuch oder Unterrichtsmaterial (Gymnasium, Mathematik oder Naturwissenschaften).
 
 Jede Seite enthält entweder Aufgaben, Lehrtext/Erklärungen oder beides. Erfasse BEIDES vollständig.
 
@@ -165,33 +154,55 @@ Antworte NUR mit validem JSON:
 {"aufgaben": [
   {"typ":"lehrtext","seite":145,"thema":"Gleichsetzungsverfahren","inhalt":"Einführung über Schülerdialog (Anna/Sina) mit Koordinatengraph. Erklärt den Ablauf in drei Schritten: 1) beide Gleichungen nach derselben Variable auflösen, 2) gleichsetzen, 3) nach x auflösen und y berechnen. Musterlösung: I: y-2x=-1, II: 2y+x=4, Umformen zu Ia: y=2x-1, IIa: y=-0,5x+2, Gleichsetzen ergibt x=1,2 und y=1,4.","grafik":"Koordinatensystem mit zwei sich schneidenden Geraden y=2x-1 und y=-0,5x+2"},
   {"typ":"aufgabe","nr":"1","seite":146,"aufgabenstellung":null,"text":"Löse das Gleichungssystem grafisch und rechnerisch.","schwierigkeit":"○","grafik":null,"kompetenzen":["UF1"]}
-]}` });
+]}`;
 
-    if (statusEl) statusEl.textContent = '✨ KI analysiert Aufgaben…';
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': antKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 16000, messages: [{ role: 'user', content: blocks }] }),
-    });
-    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || res.statusText); }
-    const data = await res.json();
-    const raw = data.content?.[0]?.text || '';
-    let parsed;
-    try {
-      parsed = robustJsonParse(raw);
-    } catch(e) {
-      throw new Error('KI-Antwort konnte nicht als JSON gelesen werden');
+  async function extractAufgaben(images, statusEl) {
+    const antKey = localStorage.getItem('ant_key');
+    if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
+
+    const BATCH = 4; // Seiten pro API-Call
+    const allAufgaben = [];
+
+    for (let start = 0; start < images.length; start += BATCH) {
+      const batch = images.slice(start, start + BATCH);
+      const end = Math.min(start + BATCH, images.length);
+      if (statusEl) statusEl.textContent = `⏳ Lese Seite ${start + 1}–${end} von ${images.length}…`;
+
+      const blocks = [];
+      for (let i = 0; i < batch.length; i++) {
+        const resized = await resizeImg(batch[i].dataUrl, 1200, 0.82);
+        blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: resized.split(',')[1] } });
+        if (i < batch.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
+      }
+      blocks.push({ type: 'text', text: KI_PROMPT_AUFGABEN });
+
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': antKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8000, messages: [{ role: 'user', content: blocks }] }),
+      });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || res.statusText); }
+      const data = await res.json();
+      const raw = data.content?.[0]?.text || '';
+      let parsed;
+      try {
+        parsed = robustJsonParse(raw);
+      } catch(e) {
+        throw new Error('KI-Antwort konnte nicht als JSON gelesen werden (Seiten ' + (start+1) + '–' + end + ')');
+      }
+
+      const batchAufgaben = parsed.aufgaben || [];
+      batchAufgaben.forEach(a => { a.id = uid(); });
+      allAufgaben.push(...batchAufgaben);
     }
 
-    const aufgaben = parsed.aufgaben || [];
-    aufgaben.forEach(a => { a.id = uid(); });
-    if (statusEl) statusEl.textContent = '✓ ' + aufgaben.length + ' Aufgaben extrahiert';
-    return aufgaben;
+    if (statusEl) statusEl.textContent = '✓ ' + allAufgaben.length + ' Einträge aus ' + images.length + ' Seiten extrahiert';
+    return allAufgaben;
   }
 
   // ── Image-Upload-Widget ───────────────────────────────────────

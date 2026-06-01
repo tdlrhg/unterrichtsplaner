@@ -126,6 +126,36 @@ function viewSchulbuecher() {
     });
   }
 
+  // ── UI-Helpers ────────────────────────────────────────────────
+  function makeStatusEl() {
+    const el = tx('div', '', '');
+    el.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;';
+    return el;
+  }
+
+  function makeBtnRow(saveLabel, onCancel) {
+    const row = mk('div', ''); row.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
+    const saveBtn = btn(saveLabel, 'btn btn-pri btn-sm');
+    const cancelB = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelB.onclick = onCancel;
+    row.appendChild(saveBtn); row.appendChild(cancelB);
+    return { row, saveBtn };
+  }
+
+  const FACH_OPTS = [['mathe','📐 Mathematik'],['bio','🌿 Biologie'],['chemie','🧪 Chemie']];
+  const JG_OPTS   = ['5','6','7','8','9','10','SII'];
+
+  function makeFachSelect(selected) {
+    const sel = document.createElement('select'); sel.className = 'finp';
+    FACH_OPTS.forEach(([v,l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; if (v === selected) o.selected = true; sel.appendChild(o); });
+    return sel;
+  }
+
+  function makeJahrgangSelect(selected) {
+    const sel = document.createElement('select'); sel.className = 'finp';
+    JG_OPTS.forEach(j => { const o = document.createElement('option'); o.value = j; o.textContent = j === 'SII' ? 'SII (Oberstufe)' : 'Jahrgang ' + j; if (j === selected) o.selected = true; sel.appendChild(o); });
+    return sel;
+  }
+
   // ── KI-Extraktion ─────────────────────────────────────────────
   const KI_PROMPT_VERBATIM = `Du liest Seiten aus einem Unterrichtsmaterial (Arbeitsblätter, Schülerversuche, Lehrerhandreichungen).
 
@@ -174,13 +204,30 @@ Antworte NUR mit validem JSON:
   {"typ":"aufgabe","nr":"1","seite":146,"aufgabenstellung":null,"text":"Löse das Gleichungssystem grafisch und rechnerisch.","schwierigkeit":"○","grafik":null,"kompetenzen":["UF1"]}
 ]}`;
 
+  async function callKI(blocks, maxTokens) {
+    const antKey = localStorage.getItem('ant_key');
+    if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages: [{ role: 'user', content: blocks }] }),
+    });
+    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || res.statusText); }
+    const data = await res.json();
+    return data.content?.[0]?.text || '';
+  }
+
+  function imgBlock(dataUrl) {
+    return { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: dataUrl.split(',')[1] } };
+  }
+
   async function extractAufgaben(images, statusEl, buchTyp) {
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
 
     const verbatim = buchTyp === 'sammlung' || buchTyp === 'aufgabenpool';
     const prompt = verbatim ? KI_PROMPT_VERBATIM : KI_PROMPT_AUFGABEN;
-    const BATCH = 4; // Seiten pro API-Call
+    const BATCH = 4;
     const allAufgaben = [];
 
     for (let start = 0; start < images.length; start += BATCH) {
@@ -188,27 +235,16 @@ Antworte NUR mit validem JSON:
       const end = Math.min(start + BATCH, images.length);
       if (statusEl) statusEl.textContent = `⏳ Lese Seite ${start + 1}–${end} von ${images.length}…`;
 
+      // Alle Bilder im Batch parallel resizen
+      const resized = await Promise.all(batch.map(img => resizeImg(img.dataUrl, 1200, 0.82)));
       const blocks = [];
-      for (let i = 0; i < batch.length; i++) {
-        const resized = await resizeImg(batch[i].dataUrl, 1200, 0.82);
-        blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: resized.split(',')[1] } });
+      resized.forEach((r, i) => {
+        blocks.push(imgBlock(r));
         if (i < batch.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
-      }
+      });
       blocks.push({ type: 'text', text: prompt });
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': antKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8000, messages: [{ role: 'user', content: blocks }] }),
-      });
-      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || res.statusText); }
-      const data = await res.json();
-      const raw = data.content?.[0]?.text || '';
+      const raw = await callKI(blocks, 8000);
       let batchAufgaben = [];
 
       if (verbatim) {
@@ -343,23 +379,13 @@ Antworte NUR mit validem JSON:
       const verlagInp = document.createElement('input'); verlagInp.className = 'finp'; verlagInp.placeholder = 'z.B. Klett';
       body.appendChild(field('Verlag', verlagInp));
 
-      const fachSel = document.createElement('select'); fachSel.className = 'finp';
-      [['mathe','📐 Mathematik'],['bio','🌿 Biologie'],['chemie','🧪 Chemie']].forEach(([v,l]) => {
-        const o = document.createElement('option'); o.value = v; o.textContent = l; fachSel.appendChild(o);
-      });
+      const fachSel = makeFachSelect(null);
       body.appendChild(field('Fach', fachSel));
 
-      const jgSel = document.createElement('select'); jgSel.className = 'finp';
-      ['5','6','7','8','9','10','SII'].forEach(j => {
-        const o = document.createElement('option'); o.value = j; o.textContent = j === 'SII' ? 'SII (Oberstufe)' : 'Jahrgang ' + j; jgSel.appendChild(o);
-      });
-      jgSel.value = '7';
+      const jgSel = makeJahrgangSelect('7');
       body.appendChild(field('Jahrgang', jgSel));
 
-      const row = mk('div', ''); row.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
-      const saveBtn = btn('Anlegen', 'btn btn-pri btn-sm');
-      const cancelB = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelB.onclick = close;
-      row.appendChild(saveBtn); row.appendChild(cancelB);
+      const { row, saveBtn } = makeBtnRow('Anlegen', close);
       body.appendChild(row);
 
       saveBtn.onclick = () => {
@@ -395,7 +421,7 @@ Antworte NUR mit validem JSON:
 
       const uploadWidget = buildImageUpload(body);
 
-      const statusEl = tx('div', '', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;';
+      const statusEl = makeStatusEl();
       body.appendChild(statusEl);
 
       const row = mk('div', ''); row.style.cssText = 'display:flex;gap:8px;';
@@ -439,7 +465,7 @@ Antworte NUR mit validem JSON:
 
       const uploadWidget = buildImageUpload(body);
 
-      const statusEl = tx('div', '', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;';
+      const statusEl = makeStatusEl();
       body.appendChild(statusEl);
 
       const row = mk('div', ''); row.style.cssText = 'display:flex;gap:8px;';
@@ -478,7 +504,7 @@ Antworte NUR mit validem JSON:
       body.appendChild(hint);
 
       const uploadWidget = buildImageUpload(body);
-      const statusEl = tx('div', '', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;';
+      const statusEl = makeStatusEl();
       body.appendChild(statusEl);
 
       // Vorschau der erkannten Struktur
@@ -504,12 +530,10 @@ Antworte NUR mit validem JSON:
         statusEl.textContent = 'KI liest das Inhaltsverzeichnis…';
         previewWrap.innerHTML = '';
 
-        const blocks = [];
-        for (const img of imgs) {
-          const resized = await resizeImg(img.dataUrl, 1200, 0.85);
-          blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: resized.split(',')[1] } });
-        }
-        blocks.push({ type: 'text', text: `Lies dieses Inhaltsverzeichnis aus.
+        const resizedImgs = await Promise.all(imgs.map(img => resizeImg(img.dataUrl, 1200, 0.85)));
+        const blocks = [
+          ...resizedImgs.map(imgBlock),
+          { type: 'text', text: `Lies dieses Inhaltsverzeichnis aus.
 Antworte NUR mit Zeilen im Format: nr|titel|seiteVon|seiteBis
 Eine Zeile pro Kapitel/Unterkapitel. Keine Erklärungen, kein Markdown, keine Leerzeilen.
 
@@ -523,18 +547,11 @@ Beispiel:
 Regeln:
 - nr: exakt wie im Buch (z.B. "3" oder "3.2" oder "A")
 - seiteVon/seiteBis: Zahlen aus dem Verzeichnis, leer lassen wenn nicht angegeben
-- Erfasse ALLE Kapitel und Unterkapitel vollständig` });
+- Erfasse ALLE Kapitel und Unterkapitel vollständig` },
+        ];
 
         try {
-          const res = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 4000, messages: [{ role: 'user', content: blocks }] }),
-          });
-          if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
-          const data = await res.json();
-          const raw = data.content?.[0]?.text || '';
-          console.log('[IVZ] KI-Rohantwort:', raw.slice(0, 1000));
+          const raw = await callKI(blocks, 4000);
 
           // Parse Pipe-Format: nr|titel|seiteVon|seiteBis
           const lines = raw.split('\n').map(l => l.trim()).filter(l => l && l.includes('|'));
@@ -818,7 +835,7 @@ Regeln:
 
       const uploadWidget = buildImageUpload(body);
 
-      const statusEl = tx('div', '', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;';
+      const statusEl = makeStatusEl();
       body.appendChild(statusEl);
 
       const row = mk('div', ''); row.style.cssText = 'display:flex;gap:8px;';
@@ -857,7 +874,6 @@ Regeln:
 
   // ── Aufgaben-Toggle (eingeklappt, aufklappbar) ────────────────
   function buildToggleAufgaben(aufgaben, count) {
-    sortAufgaben(aufgaben); // auch bereits gespeicherte Daten sortieren
     const wrap = mk('div', '');
     wrap.style.cssText = 'margin-top:6px;';
     let offen = false;
@@ -890,12 +906,6 @@ Regeln:
   function buildAufgabenListe(aufgaben) {
     const SC = { '○': '#16a34a', '◒': '#2563eb', '●': '#9d174d' };
 
-    function schwBadge(s) {
-      const sp = tx('span', '', s || '');
-      sp.style.cssText = 'font-size:14px;color:' + (SC[s] || 'var(--tx3)') + ';flex-shrink:0;';
-      return sp;
-    }
-
     function aufgRow(aufg, eingerueckt) {
       const arow = mk('div', '');
       arow.style.cssText = 'display:flex;gap:0;align-items:baseline;padding:3px 8px;border-radius:5px;font-size:13px;' + (eingerueckt ? 'padding-left:32px;' : 'background:var(--surf2);');
@@ -913,7 +923,7 @@ Regeln:
         arow.appendChild(nrSpan);
       } else {
         arow.appendChild(tx('strong', '', 'Aufg. ' + aufg.nr));
-        if (aufg.schwierigkeit) { const sw = schwBadge(aufg.schwierigkeit); sw.style.margin = '0 4px'; arow.appendChild(sw); }
+        if (aufg.schwierigkeit) { const sw = tx('span', '', aufg.schwierigkeit); sw.style.cssText = 'font-size:14px;color:' + (SC[aufg.schwierigkeit] || 'var(--tx3)') + ';flex-shrink:0;margin:0 4px;'; arow.appendChild(sw); }
       }
 
       const textWrap = mk('div', '');
@@ -1125,15 +1135,13 @@ Regeln:
         const verlagInp = document.createElement('input'); verlagInp.className = 'finp'; verlagInp.value = buch.verlag || '';
         body.appendChild(field('Verlag', verlagInp));
 
-        const fachSel = document.createElement('select'); fachSel.className = 'finp';
-        [['mathe','📐 Mathematik'],['bio','🌿 Biologie'],['chemie','🧪 Chemie']].forEach(([v,l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; if (buch.fach === v) o.selected = true; fachSel.appendChild(o); });
+        const fachSel = makeFachSelect(buch.fach);
         body.appendChild(field('Fach', fachSel));
 
-        const jgSel = document.createElement('select'); jgSel.className = 'finp';
-        ['5','6','7','8','9','10','SII'].forEach(j => { const o = document.createElement('option'); o.value = j; o.textContent = j === 'SII' ? 'SII (Oberstufe)' : 'Jahrgang ' + j; if (buch.jahrgang === j) o.selected = true; jgSel.appendChild(o); });
+        const jgSel = makeJahrgangSelect(buch.jahrgang);
         body.appendChild(field('Jahrgang', jgSel));
 
-        const saveBtn = btn('Speichern', 'btn btn-pri btn-sm');
+        const { row, saveBtn } = makeBtnRow('Speichern', close);
         saveBtn.onclick = () => {
           const t = titelInp.value.trim();
           if (!t) { alert('Bitte einen Titel eingeben.'); return; }
@@ -1144,11 +1152,8 @@ Regeln:
           buch.jahrgang = jgSel.value;
           saveSchulbuchDB();
           close();
-          renderBuchDetail(buchId); // neu aufbauen
+          renderBuchDetail(buchId);
         };
-        const cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelBtn.onclick = close;
-        const row = mk('div', ''); row.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
-        row.appendChild(saveBtn); row.appendChild(cancelBtn);
         body.appendChild(row);
       });
     };
@@ -1232,7 +1237,8 @@ Regeln:
         body.appendChild(hrow);
 
         // Direkte Aufgaben am Kapitel (eingeklappt)
-        if (aufgCount) body.appendChild(buildToggleAufgaben(kap.aufgaben, aufgCount));
+        const dirCount = (kap.aufgaben || []).length;
+        if (dirCount) body.appendChild(buildToggleAufgaben(kap.aufgaben, dirCount));
 
         // Unterkapitel
         const ukaps = kap.unterkapitel || [];

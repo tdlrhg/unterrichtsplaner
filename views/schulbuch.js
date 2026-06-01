@@ -25,18 +25,44 @@ function repairJsonStrings(s) {
 }
 
 function robustJsonParse(raw) {
-  let jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || '{}';
+  // Erstes { finden und per Bracket-Counting (String-aware) das Ende bestimmen
+  function extractTopObject(text) {
+    const s = text.indexOf('{');
+    if (s < 0) return null;
+    let depth = 0, inStr = false, esc = false;
+    for (let i = s; i < text.length; i++) {
+      const ch = text[i];
+      if (esc) { esc = false; continue; }
+      if (ch === '\\' && inStr) { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === '{') depth++;
+      else if (ch === '}') { depth--; if (depth === 0) return text.slice(s, i + 1); }
+    }
+    return text.slice(s); // Truncation — schließende Klammern fehlen
+  }
+
+  const extracted = extractTopObject(raw);
+  if (!extracted) throw new Error('Kein JSON in der Antwort');
+
+  // Offene Klammern schließen (Truncation)
+  let jsonStr = extracted;
   const opens = (jsonStr.match(/\[/g)||[]).length - (jsonStr.match(/\]/g)||[]).length;
   const opensCurl = (jsonStr.match(/\{/g)||[]).length - (jsonStr.match(/\}/g)||[]).length;
   jsonStr += ']'.repeat(Math.max(0, opens)) + '}'.repeat(Math.max(0, opensCurl));
   jsonStr = repairJsonStrings(jsonStr);
+
   try { return JSON.parse(jsonStr); }
   catch(e) {
-    // Fallback: Bracket-Counting
+    // Fallback: alle Top-Level-Objekte einzeln extrahieren
     const items = [];
-    let depth = 0, start = -1;
+    let depth = 0, start = -1, inStr = false, esc = false;
     for (let i = 0; i < raw.length; i++) {
       const ch = raw[i];
+      if (esc) { esc = false; continue; }
+      if (ch === '\\' && inStr) { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
       if (ch === '{') { if (depth === 0) start = i; depth++; }
       else if (ch === '}') {
         depth--;

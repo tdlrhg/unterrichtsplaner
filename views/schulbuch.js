@@ -301,7 +301,6 @@ Antworte NUR mit validem JSON:
   const BUCH_TYPEN = [
     { val: 'schulbuch',      icon: '📚', label: 'Schulbuch' },
     { val: 'sammlung',       icon: '📂', label: 'Materialsammlung' },
-    { val: 'uebungsheft',    icon: '📝', label: 'Übungsheft' },
     { val: 'aufgabenpool',   icon: '🗃',  label: 'Aufgabenpool' },
   ];
   function buchTypIcon(typ) { return (BUCH_TYPEN.find(t => t.val === typ) || BUCH_TYPEN[0]).icon; }

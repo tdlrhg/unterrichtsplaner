@@ -1074,7 +1074,7 @@ Regeln:
       regalWrap.style.cssText = 'position:relative;';
 
       const regal = mk('div', '');
-      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:linear-gradient(to bottom,#1a1a1f,#0f0f12);min-height:200px;position:relative;overflow:hidden;';
+      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:#111114;min-height:200px;position:relative;overflow:hidden;';
 
       // Fach-Schriftzug auf der Regalwand
       const wandText = tx('div', '', fachLabel(fach).toUpperCase());

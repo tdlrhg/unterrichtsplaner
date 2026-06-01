@@ -533,44 +533,61 @@ function buildImportAssistent(subTitle, renderCards) {
 
       function renderSplitUI2(){
         splitArea.innerHTML='';
-        getGroups2().forEach((g,gi)=>{
-          const color=SPLIT_COLORS[gi%SPLIT_COLORS.length];
-          const groupEl=mk('div','mat-split-group'); groupEl.style.borderColor=color;
-          const ghdr=mk('div',''); ghdr.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 8px;flex-wrap:wrap;';
-          const nameInp=document.createElement('input'); nameInp.type='text'; nameInp.className='finp'; nameInp.style.flex='1';
-          nameInp.placeholder='Name';
-          nameInp.value=segNames2[gi]!==undefined?segNames2[gi]:(gi===0?seg.name:seg.name+'_'+(gi+1));
-          nameInp.oninput=()=>{segNames2[gi]=nameInp.value;};
-          ghdr.appendChild(nameInp);
-          ghdr.appendChild(tx('span','mat-split-range','S.'+g.start+(g.end>g.start?'–'+g.end:'')));
-          const typRow=mk('div',''); typRow.style.cssText='display:flex;gap:4px;flex-wrap:wrap;';
-          const curType=segTypes2[gi]!==undefined?segTypes2[gi]:seg.type;
-          TYPE_OPTS.forEach(opt=>{
-            const tb=btn(opt.label,'btn btn-xs '+(curType===opt.key?'btn-pri':'btn-ghost'));
-            tb.onclick=()=>{segTypes2[gi]=opt.key;renderSplitUI2();};
-            typRow.appendChild(tb);
-          });
-          ghdr.appendChild(typRow); groupEl.appendChild(ghdr);
-          const pagesRow=mk('div','mat-split-pages-row');
-          pagesRow.style.cssText='display:flex;flex-wrap:wrap;gap:10px;padding:8px;';
-          for(let i=g.start;i<=g.end;i++){
-            const img=document.createElement('img'); img.src=pageDataURLs2[i-1];
-            img.style.cssText='width:160px;height:auto;display:block;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.15);';
-            const tw=mk('div',''); tw.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px;';
-            tw.appendChild(img); tw.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
-            pagesRow.appendChild(tw);
-            if(i<pageDataURLs2.length){
-              const divEl=mk('div','mat-split-divider'); divEl.dataset.page=String(i);
-              const icon=tx('span','mat-split-div-icon',splitPoints2.has(i)?'✂':'+');
-              if(splitPoints2.has(i)) divEl.classList.add('active'); divEl.appendChild(icon);
-              divEl.onclick=()=>{const pg=parseInt(divEl.dataset.page);if(splitPoints2.has(pg))splitPoints2.delete(pg);else splitPoints2.add(pg);renderSplitUI2();};
-              pagesRow.appendChild(divEl);
-            }
+
+        // ── Seiten-Leiste: alle Thumbnails mit klickbaren Trennern ──
+        const pagesRow = mk('div','');
+        pagesRow.style.cssText='display:flex;flex-wrap:wrap;gap:10px;padding:4px 0 12px;';
+        const groups2 = getGroups2();
+        let gi = 0;
+        for(let i=1;i<=pageDataURLs2.length;i++){
+          // Gruppen-Farb-Streifen links am Thumbnail
+          const color = SPLIT_COLORS[gi%SPLIT_COLORS.length];
+          const img=document.createElement('img'); img.src=pageDataURLs2[i-1];
+          img.style.cssText='width:160px;height:auto;display:block;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.15);';
+          const tw=mk('div',''); tw.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px;border-left:3px solid '+color+';padding-left:4px;';
+          tw.appendChild(img); tw.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
+          pagesRow.appendChild(tw);
+          if(i<pageDataURLs2.length){
+            const divEl=mk('div','mat-split-divider'); divEl.dataset.page=String(i);
+            const icon=tx('span','mat-split-div-icon',splitPoints2.has(i)?'✂':'+');
+            if(splitPoints2.has(i)){divEl.classList.add('active'); gi++;}
+            divEl.appendChild(icon);
+            divEl.onclick=()=>{
+              const pg=parseInt(divEl.dataset.page);
+              if(splitPoints2.has(pg)) splitPoints2.delete(pg); else splitPoints2.add(pg);
+              renderSplitUI2();
+            };
+            pagesRow.appendChild(divEl);
           }
-          groupEl.appendChild(pagesRow); splitArea.appendChild(groupEl);
-        });
-        const n=getGroups2().length;
-        const actRow=mk('div',''); actRow.style.cssText='display:flex;gap:8px;margin-top:10px;align-items:center;';
+        }
+        splitArea.appendChild(pagesRow);
+
+        // ── Segment-Zuweisungen (nur wenn gesplittet) ──────────────
+        if(groups2.length > 1 || true) { // immer zeigen für Namen + Typ
+          const segRows = mk('div','');
+          segRows.style.cssText='display:flex;flex-direction:column;gap:6px;margin-bottom:10px;';
+          groups2.forEach((g,gi2)=>{
+            const color=SPLIT_COLORS[gi2%SPLIT_COLORS.length];
+            const row=mk('div',''); row.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 8px;border-left:3px solid '+color+';background:var(--surf2);border-radius:0 4px 4px 0;flex-wrap:wrap;';
+            const nameInp=document.createElement('input'); nameInp.type='text'; nameInp.className='finp'; nameInp.style.cssText='flex:1;min-width:120px;font-size:12px;';
+            nameInp.value=segNames2[gi2]!==undefined?segNames2[gi2]:(gi2===0?seg.name:seg.name+'_'+(gi2+1));
+            nameInp.oninput=()=>{segNames2[gi2]=nameInp.value;};
+            row.appendChild(tx('span','mat-split-range','S.'+g.start+(g.end>g.start?'–'+g.end:'')));
+            row.appendChild(nameInp);
+            const curType=segTypes2[gi2]!==undefined?segTypes2[gi2]:seg.type;
+            TYPE_OPTS.forEach(opt=>{
+              const tb=btn(opt.label,'btn btn-xs '+(curType===opt.key?'btn-pri':'btn-ghost'));
+              tb.onclick=()=>{segTypes2[gi2]=opt.key;renderSplitUI2();};
+              row.appendChild(tb);
+            });
+            segRows.appendChild(row);
+          });
+          splitArea.appendChild(segRows);
+        }
+
+        // ── Speichern ───────────────────────────────────────────────
+        const n=groups2.length;
+        const actRow=mk('div',''); actRow.style.cssText='display:flex;gap:8px;align-items:center;';
         const saveBtn=btn(`✓ ${n} Segment${n!==1?'e':''} übernehmen`,'btn btn-pri btn-sm');
         const saveStatus=tx('span','',''); saveStatus.style.cssText='font-size:12px;color:var(--tx3);';
         saveBtn.onclick=async()=>{
@@ -579,12 +596,12 @@ function buildImportAssistent(subTitle, renderCards) {
           try{
             const pdfBuf2=await seg.blob.arrayBuffer();
             const srcDoc=await PDFLib.PDFDocument.load(pdfBuf2);
-            const groups2=getGroups2(); const newSegs=[];
-            for(let gi=0;gi<groups2.length;gi++){
-              const type2=segTypes2[gi]!==undefined?segTypes2[gi]:seg.type;
+            const newSegs=[];
+            for(let gi2=0;gi2<groups2.length;gi2++){
+              const type2=segTypes2[gi2]!==undefined?segTypes2[gi2]:seg.type;
               if(type2==='skip') continue;
-              const g2=groups2[gi];
-              const name2=(segNames2[gi]?.trim())||(gi===0?seg.name:seg.name+'_'+(gi+1));
+              const g2=groups2[gi2];
+              const name2=(segNames2[gi2]?.trim())||(gi2===0?seg.name:seg.name+'_'+(gi2+1));
               const newDoc=await PDFLib.PDFDocument.create();
               const idxs=[]; for(let pg=g2.start-1;pg<g2.end;pg++) idxs.push(pg);
               const copied=await newDoc.copyPages(srcDoc,idxs); copied.forEach(pg=>newDoc.addPage(pg));

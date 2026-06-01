@@ -1105,11 +1105,11 @@ Regeln:
         body.appendChild(field('Verlag', verlagInp));
 
         const fachSel = document.createElement('select'); fachSel.className = 'finp';
-        ['Ch_GK','Ch_LK','Bio_GK','Bio_LK','Ma_GK','Ma_LK'].forEach(f => { const o = document.createElement('option'); o.value = f; o.textContent = fachIcon(f) + ' ' + fachLabel(f); if (buch.fach === f) o.selected = true; fachSel.appendChild(o); });
+        [['mathe','📐 Mathematik'],['bio','🌿 Biologie'],['chemie','🧪 Chemie']].forEach(([v,l]) => { const o = document.createElement('option'); o.value = v; o.textContent = l; if (buch.fach === v) o.selected = true; fachSel.appendChild(o); });
         body.appendChild(field('Fach', fachSel));
 
         const jgSel = document.createElement('select'); jgSel.className = 'finp';
-        ['5','6','7','8','9','10','EF','Q1','Q2','SII'].forEach(j => { const o = document.createElement('option'); o.value = j; o.textContent = 'Jg. ' + j; if (buch.jahrgang === j) o.selected = true; jgSel.appendChild(o); });
+        ['5','6','7','8','9','10','SII'].forEach(j => { const o = document.createElement('option'); o.value = j; o.textContent = j === 'SII' ? 'SII (Oberstufe)' : 'Jahrgang ' + j; if (buch.jahrgang === j) o.selected = true; jgSel.appendChild(o); });
         body.appendChild(field('Jahrgang', jgSel));
 
         const saveBtn = btn('Speichern', 'btn btn-pri btn-sm');

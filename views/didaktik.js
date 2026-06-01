@@ -99,7 +99,16 @@ function viewDidaktik() {
           badges.appendChild(b);
         });
         item.appendChild(badges);
-        item.onclick = () => { S._didaktikSel = art.id; render(); };
+        item.onclick = () => {
+          S._didaktikSel = art.id;
+          // Aktiv-Klasse ohne render() tauschen
+          listCol.querySelectorAll('.did-list-item').forEach(el => el.classList.remove('active'));
+          item.classList.add('active');
+          // Nur rechte Spalte neu bauen
+          detailCol.innerHTML = '';
+          const found = DIDARTDB.find(a => a.id === art.id);
+          if (found) detailCol.appendChild(buildArtikelDetail(found));
+        };
         listCol.appendChild(item);
       });
 

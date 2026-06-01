@@ -1080,6 +1080,11 @@ Regeln:
 
       regal.appendChild(wandText);
 
+      // Schatten-Overlay am Boden (Bücher werfen Schatten aufs Brett)
+      const bodenSchatten = mk('div', '');
+      bodenSchatten.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(to top,rgba(0,0,0,.6),transparent);pointer-events:none;z-index:2;';
+      regal.appendChild(bodenSchatten);
+
       const TYP_ORDER = { schulbuch: 0, sammlung: 1, aufgabenpool: 2 };
       buecher.sort((a, b) => (TYP_ORDER[a.typ] ?? 1) - (TYP_ORDER[b.typ] ?? 1));
 
@@ -1138,8 +1143,8 @@ Regeln:
 
       // Regal-Brett
       const brett = mk('div', '');
-      const brettRadius = isLast ? '0 0 6px 6px' : '0';
-      brett.style.cssText = 'height:14px;background:linear-gradient(to bottom,#8B5E3C,#5C3D1E);border-radius:' + brettRadius + ';box-shadow:0 4px 8px rgba(0,0,0,.4);';
+      const brettRadius = isLast ? '0 0 8px 8px' : '0';
+      brett.style.cssText = 'height:22px;background:linear-gradient(to bottom,#6b2d3e,#3d1525);border-radius:' + brettRadius + ';box-shadow:0 6px 12px rgba(0,0,0,.5);';
       regalWrap.appendChild(brett);
 
       main.appendChild(regalWrap);

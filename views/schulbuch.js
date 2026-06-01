@@ -461,19 +461,19 @@ Antworte NUR mit validem JSON:
           blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: resized.split(',')[1] } });
         }
         blocks.push({ type: 'text', text: `Lies dieses Inhaltsverzeichnis aus.
-Antworte NUR mit validem JSON — alle Strings einzeilig:
-{"kapitel":[
-  {"nr":"1","titel":"Kapitelname","seiteVon":6,"seiteBis":24,"unterkapitel":[
-    {"nr":"1.1","titel":"Unterkapitelname","seiteVon":6,"seiteBis":12},
-    {"nr":"1.2","titel":"Unterkapitelname","seiteVon":13,"seiteBis":24}
-  ]},
-  {"nr":"2","titel":"Kapitelname","seiteVon":25,"seiteBis":null,"unterkapitel":[]}
-]}
+Antworte NUR mit Zeilen im Format: nr|titel|seiteVon|seiteBis
+Eine Zeile pro Kapitel/Unterkapitel. Keine Erklärungen, kein Markdown, keine Leerzeilen.
+
+Beispiel:
+1|Einführung|6|24
+1.1|Was ist Chemie?|6|12
+1.2|Stoffe und Teilchen|13|24
+2|Atome und Moleküle|25|48
+2.1|Atombau|25|36
 
 Regeln:
-- nr: Kapitelnummer exakt wie im Buch (z.B. "3" oder "3.2")
-- seiteVon/seiteBis: Seitenzahlen aus dem Verzeichnis, null wenn nicht angegeben
-- unterkapitel: leeres Array [] wenn keine vorhanden
+- nr: exakt wie im Buch (z.B. "3" oder "3.2" oder "A")
+- seiteVon/seiteBis: Zahlen aus dem Verzeichnis, leer lassen wenn nicht angegeben
 - Erfasse ALLE Kapitel und Unterkapitel vollständig` });
 
         try {
@@ -485,9 +485,43 @@ Regeln:
           if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
           const data = await res.json();
           const raw = data.content?.[0]?.text || '';
-          const parsed = robustJsonParse(raw);
+          console.log('[IVZ] KI-Rohantwort:', raw.slice(0, 1000));
 
-          const kapitel = parsed.kapitel || [];
+          // Parse Pipe-Format: nr|titel|seiteVon|seiteBis
+          const lines = raw.split('\n').map(l => l.trim()).filter(l => l && l.includes('|'));
+          if (!lines.length) throw new Error('Keine Einträge erkannt.\n\nKI-Antwort: ' + raw.slice(0, 300));
+
+          // Kapitel-Hierarchie aufbauen: Punkt in nr = Unterkapitel
+          const kapitelMap = {};
+          const kapitel = [];
+          for (const line of lines) {
+            const parts = line.split('|');
+            const nr = (parts[0] || '').trim();
+            const titel = (parts[1] || '').trim();
+            const seiteVon = parseInt(parts[2]) || null;
+            const seiteBis = parseInt(parts[3]) || null;
+            if (!nr || !titel) continue;
+            const dotCount = (nr.match(/\./g) || []).length;
+            if (dotCount === 0) {
+              // Hauptkapitel
+              const k = { nr, titel, seiteVon, seiteBis, unterkapitel: [] };
+              kapitelMap[nr] = k;
+              kapitel.push(k);
+            } else {
+              // Unterkapitel — Eltern-Nr ist alles vor dem letzten Punkt
+              const parentNr = nr.slice(0, nr.lastIndexOf('.'));
+              const u = { nr, titel, seiteVon, seiteBis };
+              if (kapitelMap[parentNr]) {
+                kapitelMap[parentNr].unterkapitel.push(u);
+              } else {
+                // Elternteil nicht gefunden → als Hauptkapitel anhängen
+                const k = { nr, titel, seiteVon, seiteBis, unterkapitel: [] };
+                kapitelMap[nr] = k;
+                kapitel.push(k);
+              }
+            }
+          }
+
           if (!kapitel.length) throw new Error('Keine Kapitel erkannt.');
 
           erkannteStruktur = kapitel;

@@ -1078,7 +1078,7 @@ Regeln:
 
       // Fach-Schriftzug auf der Regalwand
       const wandText = tx('div', '', fachLabel(fach).toUpperCase());
-      wandText.style.cssText = `position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:72px;font-weight:900;letter-spacing:0.15em;color:${farbe.spine[1]};opacity:0.15;white-space:nowrap;pointer-events:none;user-select:none;line-height:1;`;
+      wandText.style.cssText = `position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:72px;font-weight:900;letter-spacing:0.15em;color:rgba(255,255,255,0.07);white-space:nowrap;pointer-events:none;user-select:none;line-height:1;`;
 
       regal.appendChild(wandText);
 

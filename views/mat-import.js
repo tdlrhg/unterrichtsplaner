@@ -431,12 +431,12 @@ function buildImportAssistent(subTitle, renderCards) {
           const pdfDoc = await pdfjsLib.getDocument(blobUrl).promise;
           const page = await pdfDoc.getPage(1);
           const vp0 = page.getViewport({ scale: 1 });
-          const scale = 180 / vp0.width;
+          const scale = 360 / vp0.width;
           const vp = page.getViewport({ scale });
           const cv = document.createElement('canvas');
           cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
           await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
-          const dataURL = cv.toDataURL('image/jpeg', 0.88);
+          const dataURL = cv.toDataURL('image/jpeg', 0.90);
           cv.width = 0; cv.height = 0;
           page.cleanup(); await pdfDoc.destroy(); URL.revokeObjectURL(blobUrl);
           const img = document.createElement('img');
@@ -507,10 +507,10 @@ function buildImportAssistent(subTitle, renderCards) {
           const page=await pdfDoc.getPage(i);
           const vp0=page.getViewport({scale:1});
           const cv=document.createElement('canvas');
-          const vp=page.getViewport({scale:200/vp0.width});
+          const vp=page.getViewport({scale:480/vp0.width});
           cv.width=vp.width; cv.height=vp.height;
           await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
-          const dataURL=cv.toDataURL('image/jpeg',0.85);
+          const dataURL=cv.toDataURL('image/jpeg',0.90);
           cv.width=0; cv.height=0; page.cleanup();
           pageDataURLs2.push(dataURL);
         }

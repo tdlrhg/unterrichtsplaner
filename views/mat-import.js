@@ -220,7 +220,7 @@ function buildImportAssistent(subTitle, renderCards) {
   ov.appendChild(dlg);
 
   document.body.style.overflow = 'hidden';
-  function close() { ov.remove(); document.body.style.overflow = ''; }
+  function close() { ov.remove(); document.body.style.overflow = ''; render(); }
   ov.onclick = e => { if (e.target === ov) close(); };
   const _esc = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', _esc); } };
   document.addEventListener('keydown', _esc);

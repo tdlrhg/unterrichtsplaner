@@ -1074,11 +1074,11 @@ Regeln:
       regalWrap.style.cssText = 'position:relative;';
 
       const regal = mk('div', '');
-      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:#111114;height:220px;position:relative;overflow:hidden;';
+      regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:linear-gradient(to bottom,#1a1a1f,#0a0a0e);height:220px;position:relative;overflow:hidden;';
 
       // Fach-Schriftzug auf der Regalwand
       const wandText = tx('div', '', fachLabel(fach).toUpperCase());
-      wandText.style.cssText = `position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:72px;font-weight:900;letter-spacing:0.15em;color:rgba(255,255,255,0.07);white-space:nowrap;pointer-events:none;user-select:none;line-height:1;`;
+      wandText.style.cssText = `position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:72px;font-weight:900;letter-spacing:0.15em;color:${farbe.spine[1]};opacity:0.15;white-space:nowrap;pointer-events:none;user-select:none;line-height:1;`;
 
       regal.appendChild(wandText);
 
@@ -1145,7 +1145,7 @@ Regeln:
 
       // Regal-Brett
       const brett = mk('div', '');
-      brett.style.cssText = 'height:22px;background:#1a0d10;border-top:2px solid rgba(255,255,255,.08);box-shadow:inset 0 -3px 6px rgba(0,0,0,.6);';
+      brett.style.cssText = 'height:22px;background:linear-gradient(to bottom,#6b2d3e,#3d1525);border-top:1px solid rgba(255,255,255,.1);box-shadow:0 4px 10px rgba(0,0,0,.5);';
       regalWrap.appendChild(brett);
 
       buecherWand.appendChild(regalWrap);

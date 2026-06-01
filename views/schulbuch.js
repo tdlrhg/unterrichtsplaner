@@ -1035,12 +1035,12 @@ Regeln:
   const FACH_FARBEN = {
     mathe:  { bg: '#1e40af', grad: 'linear-gradient(135deg,#1e40af,#3b82f6)', icon: '📐' },
     bio:    { bg: '#166534', grad: 'linear-gradient(135deg,#166534,#22c55e)', icon: '🌿' },
-    chemie: { bg: '#6b21a8', grad: 'linear-gradient(135deg,#6b21a8,#a855f7)', icon: '🧪' },
+    chemie: { bg: '#c2410c', grad: 'linear-gradient(135deg,#c2410c,#f97316)', icon: '🧪' },
   };
   const TYP_FARBEN = {
     schulbuch:   { bg: '#fef3c7', border: '#d97706', text: '#92400e' },
     sammlung:    { bg: '#dbeafe', border: '#3b82f6', text: '#1e40af' },
-    aufgabenpool:{ bg: '#f3e8ff', border: '#a855f7', text: '#6b21a8' },
+    aufgabenpool:{ bg: '#fef3c7', border: '#d97706', text: '#92400e' },
   };
 
   function renderBuchListe() {

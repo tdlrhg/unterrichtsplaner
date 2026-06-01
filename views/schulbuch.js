@@ -1193,7 +1193,7 @@ Regeln:
           clearBtn.title = 'Alle Einträge leeren';
           clearBtn.style.color = 'var(--tx2)';
           clearBtn.onclick = () => {
-            if (!confirm('Alle ' + kap.aufgaben.length + ' Einträge aus "' + kap.titel + '" löschen?')) return;
+            if (!confirm('Alle Einträge aus "' + kap.titel + '" löschen?')) return;
             kap.aufgaben = [];
             saveSchulbuchDB(); renderKapitel();
           };

@@ -1087,6 +1087,52 @@ Regeln:
     infoBody.appendChild(titelEl);
     if (buch.verlag) infoBody.appendChild(tx('span', 'c-sub', buch.verlag));
     if (buch.jahrgang) infoBody.appendChild(tx('span', 'matc-jg', 'Jg. ' + buch.jahrgang));
+    infoBody.appendChild(tx('span', 'matc-jg', buchTypIcon(buch.typ) + ' ' + buchTypLabel(buch.typ)));
+
+    const editMetaBtn = btn('✎', 'matc-del');
+    editMetaBtn.title = 'Metadaten bearbeiten'; editMetaBtn.style.cssText = 'color:var(--tx2);margin-left:auto;';
+    editMetaBtn.onclick = () => {
+      openOverlay('Buch bearbeiten', 420, (body, close) => {
+        body.style.display = 'flex'; body.style.flexDirection = 'column'; body.style.gap = '10px';
+
+        const typSel = document.createElement('select'); typSel.className = 'finp';
+        BUCH_TYPEN.forEach(t => { const o = document.createElement('option'); o.value = t.val; o.textContent = t.icon + ' ' + t.label; if (buch.typ === t.val) o.selected = true; typSel.appendChild(o); });
+        body.appendChild(field('Typ', typSel));
+
+        const titelInp = document.createElement('input'); titelInp.className = 'finp'; titelInp.value = buch.titel || '';
+        body.appendChild(field('Titel', titelInp));
+
+        const verlagInp = document.createElement('input'); verlagInp.className = 'finp'; verlagInp.value = buch.verlag || '';
+        body.appendChild(field('Verlag', verlagInp));
+
+        const fachSel = document.createElement('select'); fachSel.className = 'finp';
+        ['Ch_GK','Ch_LK','Bio_GK','Bio_LK','Ma_GK','Ma_LK'].forEach(f => { const o = document.createElement('option'); o.value = f; o.textContent = fachIcon(f) + ' ' + fachLabel(f); if (buch.fach === f) o.selected = true; fachSel.appendChild(o); });
+        body.appendChild(field('Fach', fachSel));
+
+        const jgSel = document.createElement('select'); jgSel.className = 'finp';
+        ['5','6','7','8','9','10','EF','Q1','Q2','SII'].forEach(j => { const o = document.createElement('option'); o.value = j; o.textContent = 'Jg. ' + j; if (buch.jahrgang === j) o.selected = true; jgSel.appendChild(o); });
+        body.appendChild(field('Jahrgang', jgSel));
+
+        const saveBtn = btn('Speichern', 'btn btn-pri btn-sm');
+        saveBtn.onclick = () => {
+          const t = titelInp.value.trim();
+          if (!t) { alert('Bitte einen Titel eingeben.'); return; }
+          buch.typ = typSel.value;
+          buch.titel = t;
+          buch.verlag = verlagInp.value.trim() || null;
+          buch.fach = fachSel.value;
+          buch.jahrgang = jgSel.value;
+          saveSchulbuchDB();
+          close();
+          renderBuchDetail(buchId); // neu aufbauen
+        };
+        const cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelBtn.onclick = close;
+        const row = mk('div', ''); row.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
+        row.appendChild(saveBtn); row.appendChild(cancelBtn);
+        body.appendChild(row);
+      });
+    };
+    infoBody.appendChild(editMetaBtn);
     infoCard.appendChild(infoBody);
     main.appendChild(infoCard);
 

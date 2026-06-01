@@ -1188,6 +1188,18 @@ Regeln:
         editKapBtn.onclick = () => showEditEntry('Kapitel bearbeiten', kap, renderKapitel);
         btnGrp.appendChild(editKapBtn);
 
+        if ((kap.aufgaben || []).length) {
+          const clearBtn = btn('⊘', 'matc-del');
+          clearBtn.title = 'Alle Einträge leeren';
+          clearBtn.style.color = 'var(--tx2)';
+          clearBtn.onclick = () => {
+            if (!confirm('Alle ' + kap.aufgaben.length + ' Einträge aus "' + kap.titel + '" löschen?')) return;
+            kap.aufgaben = [];
+            saveSchulbuchDB(); renderKapitel();
+          };
+          btnGrp.appendChild(clearBtn);
+        }
+
         const delKapBtn = btn('✕', 'matc-del');
         delKapBtn.onclick = () => {
           if (!confirm('Kapitel "' + kap.titel + '" löschen?')) return;

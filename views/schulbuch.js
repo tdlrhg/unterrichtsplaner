@@ -1036,7 +1036,26 @@ Regeln:
     const infoBody = mk('div', 'card-body');
     infoBody.style.cssText = 'display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;';
     infoBody.appendChild(tx('span', '', fachIcon(buch.fach)));
-    infoBody.appendChild(tx('strong', '', buch.titel));
+    const titelEl = tx('strong', '', buch.titel);
+    titelEl.title = 'Klicken zum Bearbeiten';
+    titelEl.style.cursor = 'pointer';
+    titelEl.onclick = () => {
+      const inp = document.createElement('input');
+      inp.className = 'finp';
+      inp.value = buch.titel;
+      inp.style.cssText = 'font-weight:600;font-size:inherit;min-width:200px;';
+      titelEl.replaceWith(inp);
+      inp.focus(); inp.select();
+      const save = () => {
+        const v = inp.value.trim();
+        if (v) { buch.titel = v; subT.textContent = v; scheduleSave(); }
+        inp.replaceWith(titelEl);
+        titelEl.textContent = buch.titel;
+      };
+      inp.onblur = save;
+      inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); save(); } if (e.key === 'Escape') { inp.replaceWith(titelEl); } };
+    };
+    infoBody.appendChild(titelEl);
     if (buch.verlag) infoBody.appendChild(tx('span', 'c-sub', buch.verlag));
     if (buch.jahrgang) infoBody.appendChild(tx('span', 'matc-jg', 'Jg. ' + buch.jahrgang));
     infoCard.appendChild(infoBody);

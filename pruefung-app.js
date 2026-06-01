@@ -22,15 +22,15 @@ function renderPr() {
 // ── Topbar ────────────────────────────────────────────────────────
 function buildPrTopbar() {
   const bar = mk('div', 'topbar');
-  const title = tx('div', 'topbar-title', 'Prüfungsplaner');
-  bar.appendChild(title);
-  const right = mk('div', 'topbar-right');
-  const backLink = mk('a', '');
-  backLink.href = 'index.html';
-  backLink.style.cssText = 'color:rgba(255,255,255,.7);font-size:12px;text-decoration:none;display:flex;align-items:center;gap:4px;';
-  backLink.innerHTML = '← Unterrichtsplaner';
-  right.appendChild(backLink);
-  bar.appendChild(right);
+  const titleWrap = mk('div', '');
+  titleWrap.style.cssText = 'display:flex;align-items:baseline;gap:12px;';
+  titleWrap.appendChild(tx('div', 'topbar-title', 'Prüfungsplaner'));
+  const upLink = mk('a', 'topbar-app-link');
+  upLink.href = 'index.html';
+  upLink.textContent = '📐 Unterrichtsplaner';
+  titleWrap.appendChild(upLink);
+  bar.appendChild(titleWrap);
+  bar.appendChild(mk('div', 'topbar-right'));
   return bar;
 }
 

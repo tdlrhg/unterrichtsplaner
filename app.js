@@ -52,7 +52,14 @@ function refreshTopbar() {
 // ── Topbar ───────────────────────────────────────────────────────
 function buildTopbar() {
   const bar = mk('div', 'topbar');
-  bar.appendChild(tx('div', 'topbar-title', 'Unterrichtsplaner'));
+  const titleWrap = mk('div', '');
+  titleWrap.style.cssText = 'display:flex;align-items:baseline;gap:12px;';
+  titleWrap.appendChild(tx('div', 'topbar-title', 'Unterrichtsplaner'));
+  const prLink = mk('a', 'topbar-app-link');
+  prLink.href = 'pruefung.html';
+  prLink.textContent = '📋 Prüfungsplaner';
+  titleWrap.appendChild(prLink);
+  bar.appendChild(titleWrap);
   const right = mk('div', 'topbar-right');
   if (S.saving) {
     const s = mk('div', '');

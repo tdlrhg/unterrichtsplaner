@@ -302,23 +302,31 @@ function buildExtraktionUI() {
   const body = mk('div', 'card-body');
 
   // Hint
-  const hint = tx('div', '', 'Lade die Seiten als Bilder hoch. Tipp: Klicke auf die „+"-Kachel und wähle alle Seiten auf einmal mit Cmd+Klick aus — dann musst du nicht einzeln ziehen.');
+  const hint = tx('div', '', 'Lade die Seiten als Bilder hoch. Reihenfolge danach per Drag & Drop anpassen.');
   hint.style.cssText = 'font-size:13px;color:var(--tx2);margin-bottom:14px;line-height:1.5;';
   body.appendChild(hint);
 
   // Upload-Bereich
   let uploadedImages = [];
+  let thumbDragSrc = null;
 
   const fileInput = document.createElement('input');
   fileInput.type = 'file'; fileInput.accept = 'image/*'; fileInput.multiple = true;
   fileInput.style.display = 'none';
-  fileInput.onchange = () => { handleFiles(fileInput.files); fileInput.value = ''; };
+  fileInput.onchange = async () => { await handleFiles(fileInput.files); fileInput.value = ''; };
   body.appendChild(fileInput);
 
   const uploadArea = mk('div', 'did-upload-area');
-  uploadArea.ondragover = e => { e.preventDefault(); uploadArea.classList.add('drag-over'); };
+  uploadArea.ondragover = e => {
+    if (thumbDragSrc !== null) return; // Thumbnail-Reorder → uploadArea ignorieren
+    e.preventDefault(); uploadArea.classList.add('drag-over');
+  };
   uploadArea.ondragleave = e => { if (!uploadArea.contains(e.relatedTarget)) uploadArea.classList.remove('drag-over'); };
-  uploadArea.ondrop = e => { e.preventDefault(); uploadArea.classList.remove('drag-over'); handleFiles(e.dataTransfer.files); };
+  uploadArea.ondrop = async e => {
+    if (thumbDragSrc !== null) return;
+    e.preventDefault(); uploadArea.classList.remove('drag-over');
+    await handleFiles(e.dataTransfer.files);
+  };
 
   function resizeImage(dataUrl, maxWidth, quality) {
     return new Promise(resolve => {
@@ -335,33 +343,65 @@ function buildExtraktionUI() {
     });
   }
 
-  function handleFiles(files) {
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = async ev => {
-        const dataUrl = await resizeImage(ev.target.result, 1200, 0.82);
-        uploadedImages.push({ name: file.name, dataUrl, mediaType: 'image/jpeg' });
-        renderUploadArea();
-      };
-      reader.readAsDataURL(file);
-    });
+  // Sequentiell lesen — Reihenfolge bleibt erhalten
+  async function handleFiles(files) {
+    for (const file of Array.from(files).filter(f => f.type.startsWith('image/'))) {
+      const dataUrl = await new Promise((res, rej) => {
+        const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsDataURL(file);
+      });
+      const resized = await resizeImage(dataUrl, 1200, 0.82);
+      uploadedImages.push({ name: file.name, dataUrl: resized, mediaType: 'image/jpeg' });
+      renderUploadArea();
+    }
   }
 
   function renderUploadArea() {
     uploadArea.innerHTML = '';
-    // Thumbnails der hochgeladenen Seiten
     uploadedImages.forEach((img, i) => {
       const wrap = mk('div', 'did-thumb-wrap');
+      wrap.draggable = true;
+      wrap.style.cursor = 'grab';
+
+      // Drag-and-Drop Reordering
+      wrap.addEventListener('dragstart', e => {
+        thumbDragSrc = i;
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => wrap.style.opacity = '0.4', 0);
+      });
+      wrap.addEventListener('dragend', () => {
+        thumbDragSrc = null;
+        wrap.style.opacity = '';
+        uploadArea.querySelectorAll('.did-thumb-wrap').forEach(el => el.classList.remove('did-thumb-drop-target'));
+      });
+      wrap.addEventListener('dragover', e => {
+        if (thumbDragSrc === null || thumbDragSrc === i) return;
+        e.preventDefault(); e.stopPropagation();
+        uploadArea.querySelectorAll('.did-thumb-wrap').forEach(el => el.classList.remove('did-thumb-drop-target'));
+        wrap.classList.add('did-thumb-drop-target');
+      });
+      wrap.addEventListener('dragleave', () => wrap.classList.remove('did-thumb-drop-target'));
+      wrap.addEventListener('drop', e => {
+        e.preventDefault(); e.stopPropagation();
+        wrap.classList.remove('did-thumb-drop-target');
+        if (thumbDragSrc === null || thumbDragSrc === i) return;
+        const [moved] = uploadedImages.splice(thumbDragSrc, 1);
+        uploadedImages.splice(i, 0, moved);
+        thumbDragSrc = null;
+        renderUploadArea();
+      });
+
       const imgEl = document.createElement('img');
       imgEl.src = img.dataUrl; imgEl.className = 'did-thumb';
+      imgEl.style.pointerEvents = 'none'; // verhindert Browser-Drag des Bildes
       const del = mk('button', 'did-thumb-del'); del.textContent = '✕';
       del.onclick = e => { e.stopPropagation(); uploadedImages.splice(i, 1); renderUploadArea(); };
       const lbl = tx('div', 'did-thumb-lbl', 'Seite ' + (i + 1));
       wrap.appendChild(imgEl); wrap.appendChild(del); wrap.appendChild(lbl);
       uploadArea.appendChild(wrap);
     });
-    // „+"-Kachel zum Hinzufügen (immer sichtbar)
+    // „+"-Kachel
     const addTile = mk('div', 'did-thumb-wrap did-thumb-add');
+    addTile.draggable = false;
     addTile.innerHTML = uploadedImages.length
       ? '<div style="font-size:22px;color:var(--tx3)">+</div>'
       : '<div style="font-size:28px;margin-bottom:6px">🖼</div><div style="font-size:12px;font-weight:600;color:var(--tx2)">Seiten ablegen</div><div style="font-size:11px;color:var(--tx3);margin-top:2px">oder klicken</div>';

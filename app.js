@@ -103,12 +103,22 @@ function buildSetup() {
   render();
   let _ghDate = null;
 
+  // Zeitpunkt, zu dem die App gestartet wurde (für Auto-Reload-Erkennung)
+  const _appStarted = Date.now();
+
   async function checkVersion() {
     const v = await fetch('version.json', { cache: 'no-store' }).then(r => r.json()).catch(() => null);
     if (!v) return;
+    const prevStatus = VERSION_STATUS;
     VERSION = v.built;
     if (_ghDate) {
       VERSION_STATUS = new Date(v.built) >= new Date(_ghDate) ? 'current' : 'deploying';
+    }
+    // Auto-Reload: sobald Deployment fertig ist, Seite neu laden
+    // (aber nur wenn die App länger als 10s läuft, damit kein Loop beim ersten Load)
+    if (prevStatus === 'deploying' && VERSION_STATUS === 'current' && Date.now() - _appStarted > 10000) {
+      location.reload(true);
+      return;
     }
     refreshTopbar();
     // Solange noch am Deployen: alle 30s erneut prüfen

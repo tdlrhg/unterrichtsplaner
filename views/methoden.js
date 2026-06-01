@@ -17,6 +17,8 @@ function viewMethoden() {
   hdr.appendChild(left);
 
   const hdrRight = mk('div', 'c-hdr-right');
+  const kiBtn = btn('📷 Aus Bild', 'btn btn-sm');
+  kiBtn.onclick = () => openKiImport();
   const editToggle = btn('Bearbeiten', 'btn btn-sm');
   editToggle.onclick = () => {
     editMode = !editMode;
@@ -28,6 +30,7 @@ function viewMethoden() {
   const addBtn = btn('+ Methode', 'btn btn-sm btn-pri');
   addBtn.style.display = 'none';
   addBtn.onclick = () => openForm(null);
+  hdrRight.appendChild(kiBtn);
   hdrRight.appendChild(editToggle);
   hdrRight.appendChild(addBtn);
   hdr.appendChild(hdrRight);
@@ -343,6 +346,219 @@ function viewMethoden() {
     if (i >= 0) METHDB.splice(i, 1);
     await sbUpload('methoden.json', METHDB);
     refresh();
+  }
+
+  // ── KI-Import aus Bildern ─────────────────────────────────────
+  function openKiImport() {
+    const ov = mk('div', 'meth-overlay');
+    ov.classList.add('open');
+    div.appendChild(ov);
+
+    const panel = mk('div', 'meth-form-panel');
+    panel.style.maxWidth = '560px';
+
+    const fhdr = mk('div', '');
+    fhdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;';
+    fhdr.appendChild(tx('strong', '', '📷 Methoden aus Bild extrahieren'));
+    const xBtn = btn('✕', '');
+    xBtn.style.cssText = 'background:none;border:none;font-size:18px;cursor:pointer;color:var(--tx3);padding:0;';
+    const closeOv = () => ov.remove();
+    xBtn.onclick = closeOv;
+    fhdr.appendChild(xBtn);
+    panel.appendChild(fhdr);
+
+    const body = mk('div', '');
+    body.style.cssText = 'display:flex;flex-direction:column;gap:12px;overflow-y:auto;flex:1;';
+
+    const hint = tx('div', '', 'Lade Seiten aus einem Methodenheft oder -buch hoch. Die KI erkennt alle Methoden und trägt sie direkt ein.');
+    hint.style.cssText = 'font-size:13px;color:var(--tx2);line-height:1.5;';
+    body.appendChild(hint);
+
+    let images = [];
+
+    async function resizeImgKi(dataUrl, maxW, q) {
+      return new Promise(res => {
+        const img = new Image();
+        img.onload = () => {
+          const sc = Math.min(1, maxW / img.width);
+          const cv = document.createElement('canvas');
+          cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          res(cv.toDataURL('image/jpeg', q));
+        };
+        img.src = dataUrl;
+      });
+    }
+
+    const fileInp = document.createElement('input');
+    fileInp.type = 'file'; fileInp.accept = 'image/*'; fileInp.multiple = true; fileInp.style.display = 'none';
+    body.appendChild(fileInp);
+
+    const uploadArea = mk('div', 'did-upload-area');
+
+    async function addFiles(files) {
+      for (const f of Array.from(files)) {
+        const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsDataURL(f); });
+        const resized = await resizeImgKi(dataUrl, 1200, 0.82);
+        images.push({ dataUrl: resized, name: f.name });
+      }
+      renderUpload();
+    }
+
+    function renderUpload() {
+      uploadArea.innerHTML = '';
+      images.forEach((img, i) => {
+        const wrap = mk('div', 'did-thumb-wrap');
+        const imgEl = document.createElement('img');
+        imgEl.src = img.dataUrl; imgEl.className = 'did-thumb';
+        const del = mk('button', 'did-thumb-del'); del.textContent = '✕';
+        del.onclick = e => { e.stopPropagation(); images.splice(i, 1); renderUpload(); };
+        const lbl = tx('div', 'did-thumb-lbl', 'Seite ' + (i + 1));
+        wrap.appendChild(imgEl); wrap.appendChild(del); wrap.appendChild(lbl);
+        uploadArea.appendChild(wrap);
+      });
+      const addTile = mk('div', 'did-thumb-wrap did-thumb-add');
+      addTile.innerHTML = images.length
+        ? '<div style="font-size:22px;color:var(--tx3)">+</div>'
+        : '<div style="font-size:28px;margin-bottom:6px">🖼</div><div style="font-size:12px;font-weight:600;color:var(--tx2)">Seiten ablegen</div><div style="font-size:11px;color:var(--tx3);margin-top:2px">oder klicken</div>';
+      addTile.onclick = () => fileInp.click();
+      uploadArea.appendChild(addTile);
+    }
+
+    uploadArea.ondragover = e => { e.preventDefault(); uploadArea.classList.add('drag-over'); };
+    uploadArea.ondragleave = e => { if (!uploadArea.contains(e.relatedTarget)) uploadArea.classList.remove('drag-over'); };
+    uploadArea.ondrop = async e => { e.preventDefault(); uploadArea.classList.remove('drag-over'); await addFiles(e.dataTransfer.files); };
+    fileInp.onchange = async () => { await addFiles(fileInp.files); fileInp.value = ''; };
+    renderUpload();
+    body.appendChild(uploadArea);
+
+    const actRow = mk('div', '');
+    actRow.style.cssText = 'display:flex;gap:8px;align-items:center;';
+    const extractBtn = btn('✨ KI extrahiert', 'btn btn-pri btn-sm');
+    const cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm');
+    cancelBtn.onclick = closeOv;
+    const statusEl = tx('span', '', '');
+    statusEl.style.cssText = 'font-size:12px;color:var(--tx3);';
+    actRow.appendChild(extractBtn);
+    actRow.appendChild(cancelBtn);
+    actRow.appendChild(statusEl);
+    body.appendChild(actRow);
+
+    extractBtn.onclick = async () => {
+      if (!images.length) { alert('Bitte mindestens ein Bild hochladen.'); return; }
+      const antKey = localStorage.getItem('ant_key');
+      if (!antKey) { alert('Bitte API-Key in den Einstellungen hinterlegen.'); return; }
+
+      extractBtn.disabled = true; extractBtn.textContent = '⏳ Liest…'; statusEl.textContent = '';
+
+      const prompt = `Du analysierst Seiten aus einem Buch oder Heft über Unterrichtsmethoden (Gymnasium).
+Extrahiere ALLE vorhandenen Methoden vollständig.
+
+Antworte NUR mit validem JSON — alle Strings einzeilig:
+{"methoden": [
+  {
+    "name": "Name der Methode",
+    "beschreibung": "Wie läuft sie ab? 2-4 Sätze.",
+    "ziel": "Welches Lernziel oder welche Funktion hat sie?",
+    "hinweise": "Tipps zur Durchführung, Varianten, Stolpersteine",
+    "zeitbedarf": "z.B. 10-15 min oder variabel",
+    "aufwand": 1,
+    "sozialform": [],
+    "phasen": [],
+    "materialtyp": []
+  }
+]}
+
+aufwand: 1=gering 2=mittel 3=hoch 4=sehr hoch
+sozialform: aus ["Einzelarbeit","Partnerarbeit","Gruppenarbeit","Plenum"]
+phasen: aus ["Einstieg","Erarbeitung","Übung","Sicherung"]
+materialtyp: aus ["Kein Material","Texte","Karten","Arbeitsblätter","Experimente","Plakate/Papier","Bilder/Comics","Objekte/Modelle","Digitale Medien"]`;
+
+      try {
+        const contentBlocks = [
+          ...images.map(img => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: img.dataUrl.split(',')[1] } })),
+          { type: 'text', text: prompt },
+        ];
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8000, messages: [{ role: 'user', content: contentBlocks }] }),
+        });
+        if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
+        const data = await res.json();
+        const raw = data.content?.[0]?.text || '';
+        let jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || '{}';
+        jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
+        let parsed;
+        try { parsed = JSON.parse(jsonStr); }
+        catch(_) {
+          const op = (jsonStr.match(/\[/g)||[]).length - (jsonStr.match(/\]/g)||[]).length;
+          const oc = (jsonStr.match(/\{/g)||[]).length - (jsonStr.match(/\}/g)||[]).length;
+          jsonStr += ']'.repeat(Math.max(0, op)) + '}'.repeat(Math.max(0, oc));
+          jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
+          parsed = JSON.parse(jsonStr);
+        }
+        const methoden = (parsed.methoden || []).filter(m => m.name);
+        if (!methoden.length) throw new Error('Keine Methoden erkannt.');
+
+        // Vorschau
+        body.innerHTML = '';
+        const vorschauTitel = tx('div', '', methoden.length + ' Methode' + (methoden.length !== 1 ? 'n' : '') + ' gefunden:');
+        vorschauTitel.style.cssText = 'font-weight:700;font-size:14px;margin-bottom:4px;';
+        body.appendChild(vorschauTitel);
+
+        const list = mk('div', '');
+        list.style.cssText = 'max-height:340px;overflow-y:auto;border:1px solid var(--bord);border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:6px;margin-bottom:12px;';
+        methoden.forEach(m => {
+          const item = mk('div', '');
+          item.style.cssText = 'padding:8px 10px;background:var(--surf2);border-radius:6px;';
+          const nameEl = tx('div', '', m.name);
+          nameEl.style.cssText = 'font-weight:600;font-size:13px;margin-bottom:2px;';
+          item.appendChild(nameEl);
+          if (m.beschreibung) item.appendChild(tx('div', '', m.beschreibung));
+          const chips = mk('div', 'meth-card-chips');
+          (m.phasen||[]).forEach(p => chips.appendChild(tx('span', 'meth-chip meth-chip-phase', p)));
+          (m.sozialform||[]).forEach(s => chips.appendChild(tx('span', 'meth-chip meth-chip-soz', SOZ_ABK[s] || s)));
+          if (chips.children.length) item.appendChild(chips);
+          list.appendChild(item);
+        });
+        body.appendChild(list);
+
+        const saveRow = mk('div', ''); saveRow.style.cssText = 'display:flex;gap:8px;';
+        const saveAllBtn = btn('Alle ' + methoden.length + ' speichern', 'btn btn-pri btn-sm');
+        saveAllBtn.onclick = async () => {
+          saveAllBtn.disabled = true; saveAllBtn.textContent = '⏳ Speichert…';
+          methoden.forEach(m => METHDB.push({
+            id: uid(),
+            name: m.name,
+            beschreibung: m.beschreibung || '',
+            ziel: m.ziel || '',
+            hinweise: m.hinweise || '',
+            zeitbedarf: m.zeitbedarf || 'variabel',
+            aufwand: parseInt(m.aufwand) || 1,
+            sozialform: Array.isArray(m.sozialform) ? m.sozialform : [],
+            phasen: Array.isArray(m.phasen) ? m.phasen : [],
+            materialtyp: Array.isArray(m.materialtyp) ? m.materialtyp : [],
+            quelle: '',
+          }));
+          await sbUpload('methoden.json', METHDB);
+          closeOv();
+          refresh();
+        };
+        const discardBtn2 = btn('Verwerfen', 'btn btn-ghost btn-sm');
+        discardBtn2.onclick = closeOv;
+        saveRow.appendChild(saveAllBtn);
+        saveRow.appendChild(discardBtn2);
+        body.appendChild(saveRow);
+
+      } catch(e) {
+        statusEl.textContent = 'Fehler: ' + e.message;
+        extractBtn.disabled = false; extractBtn.textContent = '✨ KI extrahiert';
+      }
+    };
+
+    panel.appendChild(body);
+    ov.appendChild(panel);
   }
 
   refresh();

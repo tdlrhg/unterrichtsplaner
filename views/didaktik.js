@@ -61,24 +61,51 @@ function viewDidaktik() {
     empty.innerHTML = '<div style="font-size:32px;margin-bottom:12px">📚</div><div style="font-weight:700;margin-bottom:6px">Noch keine Artikel</div><div style="font-size:13px;color:var(--tx3)">Klicke „+ Artikel extrahieren" um loszulegen.</div>';
     listCol.appendChild(empty);
   } else {
+    // Gruppieren nach Quelle (Zeitschrift → Autor → Titel)
+    const gruppen = {};
     DIDARTDB.forEach(art => {
-      const isAct = S._didaktikSel === art.id;
-      const item = mk('div', 'did-list-item' + (isAct ? ' active' : ''));
-      item.appendChild(tx('div', 'did-list-titel', art.quelle?.titel || '(ohne Titel)'));
-      const meta = [art.quelle?.autoren?.join(', '), art.quelle?.jahr].filter(Boolean).join(' · ');
-      if (meta) item.appendChild(tx('div', 'did-list-meta', meta));
-      const badges = mk('div', 'did-list-badges');
-      const alle = [...(art.kernaussagen||[]), ...(art.muster||[]), ...(art.einwaende||[])];
-      const ebenen = [...new Set(alle.flatMap(b => b.planungsebene||[]))];
-      ebenen.forEach(e => {
-        const b = tx('span', 'did-ebene-badge', PLANUNGSEBENE_LABEL[e] || e);
-        b.style.background = PLANUNGSEBENE_FARBE[e] + '22';
-        b.style.color = PLANUNGSEBENE_FARBE[e];
-        badges.appendChild(b);
+      const grpKey = art.quelle?.zeitschrift || art.quelle?.autoren?.[0] || art.quelle?.titel || 'Sonstige';
+      if (!gruppen[grpKey]) gruppen[grpKey] = [];
+      gruppen[grpKey].push(art);
+    });
+
+    Object.entries(gruppen).forEach(([grpLabel, artikel]) => {
+      // Gruppen-Header
+      const grpHdr = mk('div', '');
+      grpHdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 10px 4px;margin-top:4px;';
+      const grpTitel = tx('span', '', grpLabel);
+      grpTitel.style.cssText = 'font-size:10px;font-weight:700;color:var(--sb-tx2);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      const grpCount = tx('span', '', artikel.length + '');
+      grpCount.style.cssText = 'font-size:10px;font-weight:700;color:var(--sb-tx2);background:rgba(255,255,255,.08);border-radius:8px;padding:1px 6px;flex-shrink:0;';
+      grpHdr.appendChild(grpTitel);
+      grpHdr.appendChild(grpCount);
+      listCol.appendChild(grpHdr);
+
+      artikel.forEach(art => {
+        const isAct = S._didaktikSel === art.id;
+        const item = mk('div', 'did-list-item' + (isAct ? ' active' : ''));
+        item.appendChild(tx('div', 'did-list-titel', art.quelle?.titel || '(ohne Titel)'));
+        const metaParts = [];
+        if (art.quelle?.autoren?.length) metaParts.push(art.quelle.autoren.join(', '));
+        if (art.quelle?.jahr) metaParts.push(art.quelle.jahr);
+        if (metaParts.length) item.appendChild(tx('div', 'did-list-meta', metaParts.join(' · ')));
+        const badges = mk('div', 'did-list-badges');
+        const alle = [...(art.kernaussagen||[]), ...(art.muster||[]), ...(art.einwaende||[])];
+        const ebenen = [...new Set(alle.flatMap(b => b.planungsebene||[]))];
+        ebenen.forEach(e => {
+          const b = tx('span', 'did-ebene-badge', PLANUNGSEBENE_LABEL[e] || e);
+          b.style.background = PLANUNGSEBENE_FARBE[e] + '22';
+          b.style.color = PLANUNGSEBENE_FARBE[e];
+          badges.appendChild(b);
+        });
+        item.appendChild(badges);
+        item.onclick = () => { S._didaktikSel = art.id; render(); };
+        listCol.appendChild(item);
       });
-      item.appendChild(badges);
-      item.onclick = () => { S._didaktikSel = art.id; render(); };
-      listCol.appendChild(item);
+
+      const sep = mk('div', '');
+      sep.style.cssText = 'height:1px;background:var(--sb-sep);margin:4px 10px;';
+      listCol.appendChild(sep);
     });
   }
   layout.appendChild(listCol);

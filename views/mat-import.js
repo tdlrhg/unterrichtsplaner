@@ -534,18 +534,28 @@ function buildImportAssistent(subTitle, renderCards) {
       function renderSplitUI2(){
         splitArea.innerHTML='';
 
-        // ── Seiten-Leiste: alle Thumbnails mit klickbaren Trennern ──
+        // ── Seiten-Leiste: Thumbnails klickbar + Trenner ───────────
+        const groups2 = getGroups2();
         const pagesRow = mk('div','');
         pagesRow.style.cssText='display:flex;flex-wrap:wrap;gap:10px;padding:4px 0 12px;';
-        const groups2 = getGroups2();
         let gi = 0;
         for(let i=1;i<=pageDataURLs2.length;i++){
-          // Gruppen-Farb-Streifen links am Thumbnail
           const color = SPLIT_COLORS[gi%SPLIT_COLORS.length];
+          const curGrpIdx = gi; // Index der aktuellen Gruppe (für Closure)
           const img=document.createElement('img'); img.src=pageDataURLs2[i-1];
-          img.style.cssText='width:160px;height:auto;display:block;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.15);';
-          const tw=mk('div',''); tw.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px;border-left:3px solid '+color+';padding-left:4px;';
-          tw.appendChild(img); tw.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
+          img.style.cssText='width:160px;height:auto;display:block;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.15);pointer-events:none;';
+          const tw=mk('div','');
+          tw.style.cssText='display:flex;flex-direction:column;align-items:center;gap:3px;border-left:3px solid '+color+';padding-left:4px;cursor:pointer;transition:opacity .1s;';
+          tw.title = 'Klicken um aktive Kategorie zuzuweisen';
+          tw.appendChild(img);
+          tw.appendChild(tx('div','mat-upload-thumb-nr','S.'+i));
+          // Klick = aktive Kategorie der ganzen Gruppe zuweisen
+          tw.onclick=()=>{
+            segTypes2[curGrpIdx]=activeCategory;
+            renderSplitUI2();
+          };
+          tw.onmouseenter=()=>{ tw.style.opacity='.75'; };
+          tw.onmouseleave=()=>{ tw.style.opacity=''; };
           pagesRow.appendChild(tw);
           if(i<pageDataURLs2.length){
             const divEl=mk('div','mat-split-divider'); divEl.dataset.page=String(i);
@@ -562,28 +572,26 @@ function buildImportAssistent(subTitle, renderCards) {
         }
         splitArea.appendChild(pagesRow);
 
-        // ── Segment-Zuweisungen (nur wenn gesplittet) ──────────────
-        if(groups2.length > 1 || true) { // immer zeigen für Namen + Typ
-          const segRows = mk('div','');
-          segRows.style.cssText='display:flex;flex-direction:column;gap:6px;margin-bottom:10px;';
-          groups2.forEach((g,gi2)=>{
-            const color=SPLIT_COLORS[gi2%SPLIT_COLORS.length];
-            const row=mk('div',''); row.style.cssText='display:flex;align-items:center;gap:8px;padding:6px 8px;border-left:3px solid '+color+';background:var(--surf2);border-radius:0 4px 4px 0;flex-wrap:wrap;';
-            const nameInp=document.createElement('input'); nameInp.type='text'; nameInp.className='finp'; nameInp.style.cssText='flex:1;min-width:120px;font-size:12px;';
-            nameInp.value=segNames2[gi2]!==undefined?segNames2[gi2]:(gi2===0?seg.name:seg.name+'_'+(gi2+1));
-            nameInp.oninput=()=>{segNames2[gi2]=nameInp.value;};
-            row.appendChild(tx('span','mat-split-range','S.'+g.start+(g.end>g.start?'–'+g.end:'')));
-            row.appendChild(nameInp);
-            const curType=segTypes2[gi2]!==undefined?segTypes2[gi2]:seg.type;
-            TYPE_OPTS.forEach(opt=>{
-              const tb=btn(opt.label,'btn btn-xs '+(curType===opt.key?'btn-pri':'btn-ghost'));
-              tb.onclick=()=>{segTypes2[gi2]=opt.key;renderSplitUI2();};
-              row.appendChild(tb);
-            });
-            segRows.appendChild(row);
-          });
-          splitArea.appendChild(segRows);
-        }
+        // ── Segment-Übersicht: Name + aktueller Typ (kein Doppel-Buttonblock) ──
+        const segRows = mk('div','');
+        segRows.style.cssText='display:flex;flex-direction:column;gap:4px;margin-bottom:10px;';
+        groups2.forEach((g,gi2)=>{
+          const color=SPLIT_COLORS[gi2%SPLIT_COLORS.length];
+          const curType=segTypes2[gi2]!==undefined?segTypes2[gi2]:seg.type;
+          const catInfo=CAT.find(c=>c.key===curType)||CAT[0];
+          const row=mk('div',''); row.style.cssText='display:flex;align-items:center;gap:8px;padding:5px 8px;border-left:3px solid '+color+';background:var(--surf2);border-radius:0 4px 4px 0;';
+          const rangeLbl=tx('span','mat-split-range','S.'+g.start+(g.end>g.start?'–'+g.end:''));
+          const nameInp=document.createElement('input'); nameInp.type='text'; nameInp.className='finp';
+          nameInp.style.cssText='flex:1;min-width:100px;font-size:12px;';
+          nameInp.value=segNames2[gi2]!==undefined?segNames2[gi2]:(gi2===0?seg.name:seg.name+'_'+(gi2+1));
+          nameInp.oninput=()=>{segNames2[gi2]=nameInp.value;};
+          const badge=mk('span','');
+          badge.style.cssText='font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:'+catInfo.color+';color:white;white-space:nowrap;';
+          badge.textContent=catInfo.icon+' '+catInfo.label;
+          row.appendChild(rangeLbl); row.appendChild(nameInp); row.appendChild(badge);
+          segRows.appendChild(row);
+        });
+        splitArea.appendChild(segRows);
 
         // ── Speichern ───────────────────────────────────────────────
         const n=groups2.length;

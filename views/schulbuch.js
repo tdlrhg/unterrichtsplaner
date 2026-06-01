@@ -1088,6 +1088,9 @@ Regeln:
 
       regal.appendChild(wandText);
 
+      const TYP_ORDER = { schulbuch: 0, sammlung: 1, aufgabenpool: 2 };
+      buecher.sort((a, b) => (TYP_ORDER[a.typ] ?? 1) - (TYP_ORDER[b.typ] ?? 1));
+
       buecher.forEach(buch => {
         const kap = Math.max(1, (buch.kapitel || []).length);
         const aufg = countAufgaben(buch);

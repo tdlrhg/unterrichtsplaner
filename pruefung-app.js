@@ -80,7 +80,8 @@ function buildPrSidebar() {
       const info = mk('div', ''); info.style.flex = '1'; info.style.minWidth = '0';
       info.appendChild(tx('div', 'pr-item-label', pr.titel || '–'));
       if (pr.kursLabel || pr.datum) {
-        info.appendChild(tx('div', 'pr-item-sub', [pr.kursLabel, pr.datum].filter(Boolean).join(' · ')));
+        const prDatum = pr.datum ? new Date(pr.datum).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' }) : null;
+        info.appendChild(tx('div', 'pr-item-sub', [pr.kursLabel, prDatum].filter(Boolean).join(' · ')));
       }
       row.appendChild(info);
 
@@ -144,13 +145,14 @@ function buildPrDetail(pr) {
   const left = mk('div', '');
   left.appendChild(tx('div', 'c-title', pr.titel || '–'));
   if (pr.thema) left.appendChild(tx('div', '', pr.thema)).style || (left.lastChild.style.cssText = 'font-size:15px;color:var(--tx2);margin-top:2px;');
+  const datumStr = pr.datum ? new Date(pr.datum).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' }) : null;
   const dauerStr = pr.dauerVon
     ? (pr.dauerBis && pr.dauerBis !== pr.dauerVon ? pr.dauerVon + '–' + pr.dauerBis : pr.dauerVon) + ' Min.'
     : null;
   const meta = [
     pr.typ === 'klausur' ? 'Klausur' : 'Klassenarbeit',
     pr.kursLabel,
-    pr.datum,
+    datumStr,
     dauerStr,
   ].filter(Boolean).join(' · ');
   left.appendChild(tx('div', 'c-sub', meta));

@@ -141,7 +141,7 @@ function buildSidebar() {
     () => { S.view = 'methoden'; S.sel = null; render(); }
   ));
   sb.appendChild(sbRow(
-    '📚 Didaktik', null,
+    '🗺️ Didaktik', null,
     S.view === 'didaktik',
     () => { S.view = 'didaktik'; S.sel = null; render(); }
   ));

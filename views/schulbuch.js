@@ -1273,12 +1273,11 @@ Regeln:
         hrow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer;min-height:32px;';
         const kapArrow = tx('span', '', '▶');
         kapArrow.style.cssText = 'font-size:10px;color:var(--tx3);transition:transform .15s;flex-shrink:0;';
-        hrow.appendChild(kapArrow);
-        hrow.appendChild(tx('strong', '', 'Kap. ' + kap.nr + ': ' + kap.titel));
-        if (kap.seiteVon && kap.seiteBis) hrow.appendChild(tx('span', 'matc-jg', 'S. ' + kap.seiteVon + '–' + kap.seiteBis));
         const aufgCount = (kap.aufgaben || []).length +
           (kap.unterkapitel || []).reduce((s, u) => s + (u.aufgaben || []).length, 0);
-        hrow.appendChild(tx('span', 'matc-klp-count', aufgCount + ' Aufgaben'));
+
+        hrow.appendChild(kapArrow);
+        hrow.appendChild(tx('strong', '', 'Kap. ' + kap.nr + ': ' + kap.titel));
 
         const btnGrp = mk('div', '');
         btnGrp.style.cssText = 'display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;';
@@ -1317,6 +1316,13 @@ Regeln:
         btnGrp.appendChild(delKapBtn);
         hrow.appendChild(btnGrp);
         body.appendChild(hrow);
+
+        // Zweite Zeile: Chips
+        const chipRow = mk('div', '');
+        chipRow.style.cssText = 'display:flex;gap:6px;padding:2px 0 0 20px;';
+        if (kap.seiteVon && kap.seiteBis) chipRow.appendChild(tx('span', 'matc-jg', 'S. ' + kap.seiteVon + '–' + kap.seiteBis));
+        if (aufgCount) chipRow.appendChild(tx('span', 'matc-klp-count', aufgCount + ' Aufgaben'));
+        if (chipRow.children.length) body.appendChild(chipRow);
 
         const kapContent = mk('div', '');
         kapContent.style.display = 'none';

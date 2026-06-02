@@ -3,6 +3,9 @@ let PRUEFUNGSDB = [];
 let PR = {
   aktId: null,   // aktuell geöffnete Prüfung
 };
+let PR_VERSION = null;
+let PR_VERSION_STATUS = null;
+const _prStarted = Date.now();
 
 function savePruefungsDB() {
   sbUpload('pruefungen.json', PRUEFUNGSDB).catch(e => console.error('Prüfungen speichern fehlgeschlagen:', e));
@@ -30,7 +33,18 @@ function buildPrTopbar() {
   upLink.textContent = '📐 Unterrichtsplaner';
   titleWrap.appendChild(upLink);
   bar.appendChild(titleWrap);
-  bar.appendChild(mk('div', 'topbar-right'));
+  const right = mk('div', 'topbar-right');
+  if (PR_VERSION) {
+    const d = new Date(PR_VERSION);
+    const label = d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'2-digit' })
+      + ' ' + d.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+    const indicator = PR_VERSION_STATUS === 'current' ? ' ✓' : PR_VERSION_STATUS === 'deploying' ? ' ⏳' : '';
+    const vSpan = tx('span', 'topbar-version', label + indicator);
+    vSpan.title = 'Klicken zum Neu laden'; vSpan.style.cursor = 'pointer';
+    vSpan.onclick = () => location.reload(true);
+    right.appendChild(vSpan);
+  }
+  bar.appendChild(right);
   return bar;
 }
 
@@ -264,6 +278,18 @@ function showNewPruefungModal() {
   ov.classList.add('open');
 }
 
+// ── Version Check ─────────────────────────────────────────────────
+async function prCheckVersion(ghDate) {
+  const v = await fetch('version.json', { cache: 'no-store' }).then(r => r.json()).catch(() => null);
+  if (!v) return;
+  const prev = PR_VERSION_STATUS;
+  PR_VERSION = v.built;
+  if (ghDate) PR_VERSION_STATUS = new Date(v.built) >= new Date(ghDate) ? 'current' : 'deploying';
+  if (prev === 'deploying' && PR_VERSION_STATUS === 'current' && Date.now() - _prStarted > 10000) { location.reload(true); return; }
+  renderPr();
+  if (PR_VERSION_STATUS === 'deploying') setTimeout(() => prCheckVersion(ghDate), 30000);
+}
+
 // ── Init ──────────────────────────────────────────────────────────
 (async () => {
   renderPr(); // Lade-State zeigen
@@ -286,4 +312,10 @@ function showNewPruefungModal() {
   KLPDB = Array.isArray(klpdb) ? klpdb : [];
 
   renderPr();
+
+  // Version prüfen
+  fetch('https://api.github.com/repos/tdlrhg/unterrichtsplaner/commits/main',
+    { headers: { 'Accept': 'application/vnd.github.v3+json' } })
+    .then(r => r.json()).catch(() => null)
+    .then(gh => { prCheckVersion(gh?.commit?.committer?.date || null); });
 })();

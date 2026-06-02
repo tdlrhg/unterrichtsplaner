@@ -667,29 +667,102 @@ function buildPrDetail(pr) {
 // ── Checkliste Detail ─────────────────────────────────────────────
 function buildChecklistDetail(cl) {
   const div = mk('div', '');
+  let editMode = false;
 
-  const hdr = mk('div', 'c-hdr');
-  const left = mk('div', '');
-  left.appendChild(tx('div', 'c-title', cl.titel || '–'));
-  left.appendChild(tx('div', 'c-sub', (cl.lernziele?.length || 0) + ' Lernziele in ' + ([...new Set((cl.lernziele||[]).map(l => l.abschnitt))].length) + ' Abschnitten'));
-  hdr.appendChild(left);
-  div.appendChild(hdr);
+  function render() {
+    div.innerHTML = '';
 
-  const abschnitte = [...new Set((cl.lernziele||[]).map(l => l.abschnitt))];
-  abschnitte.forEach(abschnitt => {
-    const items = cl.lernziele.filter(l => l.abschnitt === abschnitt);
-    const sec = mk('div', ''); sec.style.cssText = 'margin-bottom:16px;';
-    const secHdr = tx('div', '', abschnitt);
-    secHdr.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);padding:6px 0 4px;border-bottom:2px solid var(--pri);margin-bottom:6px;';
-    sec.appendChild(secHdr);
-    items.forEach(lz => {
-      const row = tx('div', '', lz.nr + '. ' + lz.text);
-      row.style.cssText = 'font-size:13px;line-height:1.5;padding:5px 8px;color:var(--tx2);';
-      sec.appendChild(row);
+    // Header
+    const hdr = mk('div', 'c-hdr');
+    const left = mk('div', ''); left.style.flex = '1';
+
+    if (editMode) {
+      const titelInp = document.createElement('input'); titelInp.className = 'finp';
+      titelInp.value = cl.titel || ''; titelInp.style.cssText = 'font-size:20px;font-weight:700;margin-bottom:4px;';
+      titelInp.oninput = () => { cl.titel = titelInp.value.trim(); saveChecklistDB(); };
+      left.appendChild(titelInp);
+    } else {
+      left.appendChild(tx('div', 'c-title', cl.titel || '–'));
+    }
+    left.appendChild(tx('div', 'c-sub', (cl.lernziele?.length || 0) + ' Lernziele in ' + ([...new Set((cl.lernziele||[]).map(l => l.abschnitt))].length) + ' Abschnitten'));
+    hdr.appendChild(left);
+
+    const editBtn = btn(editMode ? '✓ Fertig' : '✎ Bearbeiten', 'btn btn-ghost btn-sm');
+    editBtn.onclick = () => { editMode = !editMode; render(); };
+    hdr.appendChild(editBtn);
+    div.appendChild(hdr);
+
+    // Abschnitte
+    const abschnitte = [...new Set((cl.lernziele||[]).map(l => l.abschnitt))];
+    abschnitte.forEach(abschnitt => {
+      const items = cl.lernziele.filter(l => l.abschnitt === abschnitt);
+      const sec = mk('div', ''); sec.style.cssText = 'margin-bottom:20px;';
+
+      // Abschnitts-Header
+      const secHdrRow = mk('div', ''); secHdrRow.style.cssText = 'display:flex;align-items:center;gap:8px;border-bottom:2px solid var(--pri);margin-bottom:6px;';
+      if (editMode) {
+        const abschnittInp = document.createElement('input'); abschnittInp.className = 'finp';
+        abschnittInp.value = abschnitt; abschnittInp.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);border:none;background:transparent;flex:1;padding:4px 0;';
+        abschnittInp.oninput = () => {
+          cl.lernziele.filter(l => l.abschnitt === abschnitt).forEach(l => l.abschnitt = abschnittInp.value);
+          saveChecklistDB();
+        };
+        secHdrRow.appendChild(abschnittInp);
+      } else {
+        const secHdrTx = tx('div', '', abschnitt);
+        secHdrTx.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);padding:6px 0 4px;flex:1;';
+        secHdrRow.appendChild(secHdrTx);
+      }
+      sec.appendChild(secHdrRow);
+
+      // Lernziele
+      items.forEach(lz => {
+        const row = mk('div', ''); row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:4px 6px;border-radius:5px;';
+        const nrSpan = tx('span', '', lz.nr + '.'); nrSpan.style.cssText = 'color:var(--tx3);font-size:12px;flex-shrink:0;min-width:20px;margin-top:3px;';
+        row.appendChild(nrSpan);
+
+        if (editMode) {
+          const ta = document.createElement('textarea'); ta.className = 'finp';
+          ta.value = lz.text; ta.rows = 2; ta.style.cssText = 'font-size:13px;flex:1;resize:vertical;';
+          ta.oninput = () => { lz.text = ta.value.trim(); saveChecklistDB(); };
+          row.appendChild(ta);
+          const delBtn = btn('✕', 'matc-del'); delBtn.style.cssText = 'color:var(--red);align-self:flex-start;margin-top:4px;';
+          delBtn.onclick = () => { cl.lernziele = cl.lernziele.filter(l => l.id !== lz.id); saveChecklistDB(); render(); };
+          row.appendChild(delBtn);
+        } else {
+          const textSpan = tx('span', '', lz.text); textSpan.style.cssText = 'font-size:13px;line-height:1.5;color:var(--tx2);';
+          row.appendChild(textSpan);
+        }
+        sec.appendChild(row);
+      });
+
+      // Neues Lernziel hinzufügen (nur im Edit-Modus)
+      if (editMode) {
+        const addBtn = btn('+ Lernziel', 'btn btn-ghost btn-xs');
+        addBtn.style.marginTop = '4px';
+        addBtn.onclick = () => {
+          const maxNr = Math.max(0, ...items.map(l => l.nr));
+          cl.lernziele.push({ id: uid(), abschnitt, nr: maxNr + 1, text: 'Neues Lernziel' });
+          saveChecklistDB(); render();
+        };
+        sec.appendChild(addBtn);
+      }
+
+      div.appendChild(sec);
     });
-    div.appendChild(sec);
-  });
 
+    // Neuen Abschnitt hinzufügen (nur im Edit-Modus)
+    if (editMode) {
+      const addSecBtn = btn('+ Abschnitt', 'btn btn-ghost btn-sm');
+      addSecBtn.onclick = () => {
+        cl.lernziele.push({ id: uid(), abschnitt: 'Neuer Abschnitt', nr: 1, text: 'Neues Lernziel' });
+        saveChecklistDB(); render();
+      };
+      div.appendChild(addSecBtn);
+    }
+  }
+
+  render();
   return div;
 }
 

@@ -136,7 +136,7 @@ function buildSidebar() {
     () => { S.view = 'materialien'; S.sel = null; render(); }
   ));
   sb.appendChild(sbRow(
-    '📂 Methoden', null,
+    '🛠️ Methoden', null,
     S.view === 'methoden',
     () => { S.view = 'methoden'; S.sel = null; render(); }
   ));

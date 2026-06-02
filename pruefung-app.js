@@ -1,8 +1,15 @@
 // ── Prüfungsplaner App ────────────────────────────────────────────
 let PRUEFUNGSDB = [];
+let CHECKLISTDB = [];
 let PR = {
-  aktId: null,   // aktuell geöffnete Prüfung
+  aktId: null,        // aktuell geöffnete Prüfung
+  aktCheckId: null,   // aktuell geöffnete Checkliste (wenn kein Prüfung)
+  view: 'pruefung',   // 'pruefung' | 'checkliste'
 };
+
+function saveChecklistDB() {
+  sbUpload('checklisten.json', CHECKLISTDB).catch(e => console.error('Checklisten speichern fehlgeschlagen:', e));
+}
 async function callKI(blocks, maxTokens) {
   const antKey = localStorage.getItem('ant_key');
   if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
@@ -112,10 +119,42 @@ function buildPrSidebar() {
       };
       row.appendChild(del);
 
-      row.onclick = () => { PR.aktId = pr.id; renderPr(); };
+      row.onclick = () => { PR.aktId = pr.id; PR.view = 'pruefung'; renderPr(); };
       sb.appendChild(row);
     });
   }
+
+  // ── Checklisten ───────────────────────────────────────────────
+  sb.appendChild(mk('div', 'pr-sb-sep'));
+  const clHdr = mk('div', 'pr-sb-hdr');
+  clHdr.appendChild(tx('div', 'pr-sb-title', 'Checklisten'));
+  clHdr.appendChild(tx('div', 'pr-sb-sub', CHECKLISTDB.length + ' gespeichert'));
+  sb.appendChild(clHdr);
+
+  const newClBtn = btn('+ Neue Checkliste', 'btn btn-ghost btn-sm pr-new-btn');
+  newClBtn.onclick = () => showNewChecklistModal();
+  sb.appendChild(newClBtn);
+
+  CHECKLISTDB.forEach(cl => {
+    const row = mk('div', 'pr-item' + (PR.view === 'checkliste' && PR.aktCheckId === cl.id ? ' active' : ''));
+    const icon = tx('span', 'pr-item-icon', '☑️');
+    row.appendChild(icon);
+    const info = mk('div', ''); info.style.flex = '1'; info.style.minWidth = '0';
+    info.appendChild(tx('div', 'pr-item-label', cl.titel || '–'));
+    info.appendChild(tx('div', 'pr-item-sub', cl.lernziele?.length + ' Lernziele'));
+    row.appendChild(info);
+    const del = btn('✕', 'pr-item-del');
+    del.onclick = e => {
+      e.stopPropagation();
+      if (!confirm('"' + cl.titel + '" löschen?')) return;
+      CHECKLISTDB = CHECKLISTDB.filter(c => c.id !== cl.id);
+      if (PR.aktCheckId === cl.id) { PR.aktCheckId = null; PR.view = 'pruefung'; }
+      saveChecklistDB(); renderPr();
+    };
+    row.appendChild(del);
+    row.onclick = () => { PR.aktCheckId = cl.id; PR.view = 'checkliste'; PR.aktId = null; renderPr(); };
+    sb.appendChild(row);
+  });
 
   return sb;
 }
@@ -123,11 +162,14 @@ function buildPrSidebar() {
 // ── Content ───────────────────────────────────────────────────────
 function buildPrContent() {
   const c = mk('div', 'pr-content');
-  if (!PR.aktId) {
-    c.appendChild(buildPrEmpty());
-  } else {
+  if (PR.view === 'checkliste' && PR.aktCheckId) {
+    const cl = CHECKLISTDB.find(c => c.id === PR.aktCheckId);
+    if (cl) c.appendChild(buildChecklistDetail(cl));
+  } else if (PR.aktId) {
     const pr = PRUEFUNGSDB.find(p => p.id === PR.aktId);
     if (pr) c.appendChild(buildPrDetail(pr));
+  } else {
+    c.appendChild(buildPrEmpty());
   }
   return c;
 }
@@ -150,26 +192,20 @@ function buildPrEmpty() {
   return wrap;
 }
 
-function buildLernzieleTab(pr) {
-  const div = mk('div', '');
-
-  // ── KI-Extraktion aus Checklist-Bild ────────────────────────────
-  async function extrahiereChecklist(imgs, statusEl) {
-    const antKey = localStorage.getItem('ant_key');
-    if (!antKey) throw new Error('Kein API-Key hinterlegt.');
-    const resized = await Promise.all(imgs.map(img => new Promise((res, rej) => {
-      const image = new Image(); image.onload = () => {
-        const scale = image.width > 1200 ? 1200 / image.width : 1;
-        const c = document.createElement('canvas');
-        c.width = Math.round(image.width * scale); c.height = Math.round(image.height * scale);
-        c.getContext('2d').drawImage(image, 0, 0, c.width, c.height);
-        res(c.toDataURL('image/jpeg', 0.85));
-      }; image.onerror = rej; image.src = img;
-    })));
-
-    const blocks = [
-      ...resized.map(r => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } })),
-      { type: 'text', text: `Lies diese Lernziel-Checkliste aus.
+// ── KI: Checkliste aus Bildern extrahieren ────────────────────────
+async function extrahiereChecklist(imgs) {
+  const resized = await Promise.all(imgs.map(img => new Promise((res, rej) => {
+    const image = new Image(); image.onload = () => {
+      const scale = image.width > 1200 ? 1200 / image.width : 1;
+      const c = document.createElement('canvas');
+      c.width = Math.round(image.width * scale); c.height = Math.round(image.height * scale);
+      c.getContext('2d').drawImage(image, 0, 0, c.width, c.height);
+      res(c.toDataURL('image/jpeg', 0.85));
+    }; image.onerror = rej; image.src = img;
+  })));
+  const blocks = [
+    ...resized.map(r => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } })),
+    { type: 'text', text: `Lies diese Lernziel-Checkliste aus.
 Antworte NUR in diesem Format:
 ABSCHNITT: [Titel des Abschnitts]
 1|[Lernziel-Text]
@@ -181,135 +217,121 @@ Regeln:
 - Jeden Abschnitt mit "ABSCHNITT:" einleiten
 - Jedes Lernziel als Nummer|Text (die "Ich kann..."-Sätze vollständig)
 - Kein Markdown, keine Erklärungen, nur dieses Format` }
-    ];
-
-    const raw = await callKI(blocks, 4000);
-    const lernziele = [];
-    let aktAbschnitt = '';
-    for (const line of raw.split('\n').map(l => l.trim()).filter(Boolean)) {
-      if (line.startsWith('ABSCHNITT:')) {
-        aktAbschnitt = line.slice('ABSCHNITT:'.length).trim();
-      } else if (line.includes('|')) {
-        const [nr, ...rest] = line.split('|');
-        const text = rest.join('|').trim();
-        if (text) lernziele.push({ id: uid(), abschnitt: aktAbschnitt, nr: parseInt(nr) || lernziele.length + 1, text, ausgewaehlt: true });
-      }
+  ];
+  const raw = await callKI(blocks, 4000);
+  const lernziele = [];
+  let aktAbschnitt = '';
+  for (const line of raw.split('\n').map(l => l.trim()).filter(Boolean)) {
+    if (line.startsWith('ABSCHNITT:')) {
+      aktAbschnitt = line.slice('ABSCHNITT:'.length).trim();
+    } else if (line.includes('|')) {
+      const [nr, ...rest] = line.split('|');
+      const text = rest.join('|').trim();
+      if (text) lernziele.push({ id: uid(), abschnitt: aktAbschnitt, nr: parseInt(nr) || lernziele.length + 1, text });
     }
-    return lernziele;
   }
+  return lernziele;
+}
 
-  // ── Lernziele anzeigen / bearbeiten ─────────────────────────────
+// ── Lernziele-Tab ─────────────────────────────────────────────────
+function buildLernzieleTab(pr) {
+  const div = mk('div', '');
+
   function renderLernziele() {
     div.innerHTML = '';
 
-    if (!pr.lernziele || !pr.lernziele.length) {
-      // Leer-Zustand: Upload
-      const emptyWrap = mk('div', '');
-      emptyWrap.style.cssText = 'max-width:520px;';
-
-      const hint = tx('div', '', 'Lade ein Foto oder einen Screenshot deiner Lernziel-Checkliste hoch. Die KI extrahiert alle Abschnitte und Lernziele automatisch.');
+    // Keine Checkliste verknüpft
+    if (!pr.checklistId) {
+      const wrap = mk('div', ''); wrap.style.cssText = 'max-width:520px;';
+      const hint = tx('div', '', !CHECKLISTDB.length
+        ? 'Noch keine Checklisten gespeichert. Lege zuerst eine Checkliste in der Sidebar an.'
+        : 'Wähle eine Checkliste für diese Prüfung:');
       hint.style.cssText = 'font-size:13px;color:var(--tx2);margin-bottom:14px;line-height:1.5;';
-      emptyWrap.appendChild(hint);
+      wrap.appendChild(hint);
 
-      // Upload-Zone
-      let uploadedImgs = [];
-      const zone = mk('div', '');
-      zone.style.cssText = 'border:2px dashed var(--bord);border-radius:8px;padding:24px;text-align:center;cursor:pointer;color:var(--tx3);margin-bottom:10px;';
-      zone.textContent = 'Checklist-Seiten hochladen — hierhin ziehen oder klicken';
-      const fileInp = document.createElement('input'); fileInp.type = 'file'; fileInp.accept = 'image/*'; fileInp.multiple = true; fileInp.style.display = 'none';
-      zone.onclick = () => fileInp.click();
-      zone.ondragover = e => { e.preventDefault(); zone.style.borderColor = 'var(--pri)'; };
-      zone.ondragleave = () => { zone.style.borderColor = 'var(--bord)'; };
-
-      const thumbsRow = mk('div', ''); thumbsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;';
-
-      function addImgs(files) {
-        [...files].forEach(f => {
-          const r = new FileReader(); r.onload = e => { uploadedImgs.push(e.target.result); updateZone(); }; r.readAsDataURL(f);
+      if (CHECKLISTDB.length) {
+        CHECKLISTDB.forEach(cl => {
+          const clBtn = mk('div', '');
+          clBtn.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bord);border-radius:8px;cursor:pointer;margin-bottom:8px;transition:border-color .15s;';
+          clBtn.onmouseenter = () => { clBtn.style.borderColor = 'var(--pri)'; };
+          clBtn.onmouseleave = () => { clBtn.style.borderColor = 'var(--bord)'; };
+          clBtn.appendChild(tx('span', '', '☑️'));
+          const info = mk('div', '');
+          info.appendChild(tx('div', '', cl.titel)); info.lastChild.style.fontWeight = '600';
+          info.appendChild(tx('div', '', cl.lernziele?.length + ' Lernziele')); info.lastChild.style.cssText = 'font-size:12px;color:var(--tx3);';
+          clBtn.appendChild(info);
+          clBtn.onclick = () => {
+            pr.checklistId = cl.id;
+            pr.ausgewaehlteLernziele = cl.lernziele.map(l => l.id); // alle vorausgewählt
+            savePruefungsDB(); renderLernziele();
+          };
+          wrap.appendChild(clBtn);
         });
       }
-      function updateZone() {
-        zone.textContent = uploadedImgs.length ? uploadedImgs.length + ' Seite(n) bereit' : 'Checklist-Seiten hochladen — hierhin ziehen oder klicken';
-        thumbsRow.innerHTML = '';
-        uploadedImgs.forEach((src, i) => {
-          const th = mk('img', ''); th.src = src; th.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;cursor:pointer;'; th.title = 'Klicken zum Entfernen';
-          th.onclick = () => { uploadedImgs.splice(i, 1); updateZone(); }; thumbsRow.appendChild(th);
-        });
-      }
-      zone.ondrop = e => { e.preventDefault(); zone.style.borderColor = 'var(--bord)'; addImgs(e.dataTransfer.files); };
-      fileInp.onchange = () => { addImgs(fileInp.files); fileInp.value = ''; };
 
-      emptyWrap.appendChild(zone); emptyWrap.appendChild(thumbsRow); emptyWrap.appendChild(fileInp);
-
-      const statusEl = mk('div', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;margin-bottom:8px;';
-      emptyWrap.appendChild(statusEl);
-
-      const kiBtn = btn('✨ KI liest Checkliste aus', 'btn btn-pri btn-sm');
-      kiBtn.onclick = async () => {
-        if (!uploadedImgs.length) { alert('Bitte Bilder hochladen.'); return; }
-        kiBtn.disabled = true; statusEl.textContent = '⏳ KI liest Checkliste…';
-        try {
-          const lz = await extrahiereChecklist(uploadedImgs, statusEl);
-          if (!lz.length) throw new Error('Keine Lernziele erkannt.');
-          pr.lernziele = lz;
-          savePruefungsDB();
-          statusEl.textContent = '✓ ' + lz.length + ' Lernziele erkannt';
-          renderLernziele();
-        } catch(e) {
-          statusEl.textContent = '⚠ ' + e.message;
-          kiBtn.disabled = false;
-        }
-      };
-      emptyWrap.appendChild(kiBtn);
-      div.appendChild(emptyWrap);
+      const newClLink = btn('+ Neue Checkliste anlegen', 'btn btn-ghost btn-sm');
+      newClLink.onclick = () => showNewChecklistModal();
+      wrap.appendChild(newClLink);
+      div.appendChild(wrap);
       return;
     }
 
-    // Lernziele vorhanden — nach Abschnitten gruppiert anzeigen
+    // Checkliste verknüpft — Lernziele anzeigen
+    const cl = CHECKLISTDB.find(c => c.id === pr.checklistId);
+    if (!cl) {
+      pr.checklistId = null; pr.ausgewaehlteLernziele = [];
+      savePruefungsDB(); renderLernziele(); return;
+    }
+
+    if (!pr.ausgewaehlteLernziele) pr.ausgewaehlteLernziele = cl.lernziele.map(l => l.id);
+    const selSet = new Set(pr.ausgewaehlteLernziele);
+
     const toolbar = mk('div', '');
     toolbar.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;';
-    const ausgewaehlt = pr.lernziele.filter(l => l.ausgewaehlt).length;
-    const infoSpan = tx('span', '', ausgewaehlt + ' von ' + pr.lernziele.length + ' Lernzielen ausgewählt');
+    const infoSpan = tx('span', '', selSet.size + ' von ' + cl.lernziele.length + ' ausgewählt · ' + cl.titel);
     infoSpan.style.cssText = 'font-size:13px;color:var(--tx2);flex:1;';
     toolbar.appendChild(infoSpan);
     const alleBtn = btn('Alle', 'btn btn-ghost btn-xs');
-    alleBtn.onclick = () => { pr.lernziele.forEach(l => l.ausgewaehlt = true); savePruefungsDB(); renderLernziele(); };
+    alleBtn.onclick = () => { pr.ausgewaehlteLernziele = cl.lernziele.map(l => l.id); savePruefungsDB(); renderLernziele(); };
+    toolbar.appendChild(alleBtn);
     const keineBtn = btn('Keine', 'btn btn-ghost btn-xs');
-    keineBtn.onclick = () => { pr.lernziele.forEach(l => l.ausgewaehlt = false); savePruefungsDB(); renderLernziele(); };
-    const resetBtn = btn('🗑 Neu einlesen', 'btn btn-ghost btn-xs');
-    resetBtn.onclick = () => { if (!confirm('Alle Lernziele löschen und neu einlesen?')) return; pr.lernziele = []; savePruefungsDB(); renderLernziele(); };
-    toolbar.appendChild(alleBtn); toolbar.appendChild(keineBtn); toolbar.appendChild(resetBtn);
+    keineBtn.onclick = () => { pr.ausgewaehlteLernziele = []; savePruefungsDB(); renderLernziele(); };
+    toolbar.appendChild(keineBtn);
+    const wechselnBtn = btn('↩ Checkliste wechseln', 'btn btn-ghost btn-xs');
+    wechselnBtn.onclick = () => { pr.checklistId = null; pr.ausgewaehlteLernziele = []; savePruefungsDB(); renderLernziele(); };
+    toolbar.appendChild(wechselnBtn);
     div.appendChild(toolbar);
 
-    // Abschnitte
-    const abschnitte = [...new Set(pr.lernziele.map(l => l.abschnitt))];
+    const abschnitte = [...new Set(cl.lernziele.map(l => l.abschnitt))];
     abschnitte.forEach(abschnitt => {
-      const items = pr.lernziele.filter(l => l.abschnitt === abschnitt);
-      const sec = mk('div', '');
-      sec.style.cssText = 'margin-bottom:16px;';
-
+      const items = cl.lernziele.filter(l => l.abschnitt === abschnitt);
+      const sec = mk('div', ''); sec.style.cssText = 'margin-bottom:16px;';
       const secHdr = tx('div', '', abschnitt);
       secHdr.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);padding:6px 0 4px;border-bottom:2px solid var(--pri);margin-bottom:6px;';
       sec.appendChild(secHdr);
 
       items.forEach(lz => {
+        const sel = selSet.has(lz.id);
         const row = mk('div', '');
-        row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background .1s;';
+        row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:6px 8px;border-radius:6px;cursor:pointer;';
         row.onmouseenter = () => { row.style.background = 'var(--surf2)'; };
         row.onmouseleave = () => { row.style.background = ''; };
 
-        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!lz.ausgewaehlt;
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = sel;
         cb.style.cssText = 'margin-top:3px;flex-shrink:0;accent-color:var(--pri);width:15px;height:15px;cursor:pointer;';
-        cb.onchange = () => { lz.ausgewaehlt = cb.checked; savePruefungsDB(); infoSpan.textContent = pr.lernziele.filter(l => l.ausgewaehlt).length + ' von ' + pr.lernziele.length + ' Lernzielen ausgewählt'; };
-
+        cb.onchange = () => {
+          if (cb.checked) pr.ausgewaehlteLernziele.push(lz.id);
+          else pr.ausgewaehlteLernziele = pr.ausgewaehlteLernziele.filter(id => id !== lz.id);
+          textSpan.style.color = cb.checked ? 'var(--tx1)' : 'var(--tx3)';
+          infoSpan.textContent = pr.ausgewaehlteLernziele.length + ' von ' + cl.lernziele.length + ' ausgewählt · ' + cl.titel;
+          savePruefungsDB();
+        };
         const nrSpan = tx('span', '', lz.nr + '.'); nrSpan.style.cssText = 'color:var(--tx3);font-size:12px;flex-shrink:0;min-width:18px;';
-        const textSpan = tx('span', '', lz.text); textSpan.style.cssText = 'font-size:13px;line-height:1.5;color:' + (lz.ausgewaehlt ? 'var(--tx1)' : 'var(--tx3)') + ';';
-
-        row.onclick = e => { if (e.target === cb) return; cb.checked = !cb.checked; cb.onchange(); textSpan.style.color = lz.ausgewaehlt ? 'var(--tx1)' : 'var(--tx3)'; };
+        const textSpan = tx('span', '', lz.text); textSpan.style.cssText = 'font-size:13px;line-height:1.5;color:' + (sel ? 'var(--tx1)' : 'var(--tx3)') + ';';
+        row.onclick = e => { if (e.target === cb) return; cb.checked = !cb.checked; cb.onchange(); };
         row.appendChild(cb); row.appendChild(nrSpan); row.appendChild(textSpan);
         sec.appendChild(row);
       });
-
       div.appendChild(sec);
     });
   }
@@ -372,6 +394,114 @@ function buildPrDetail(pr) {
   renderTab();
 
   return div;
+}
+
+// ── Checkliste Detail ─────────────────────────────────────────────
+function buildChecklistDetail(cl) {
+  const div = mk('div', '');
+
+  const hdr = mk('div', 'c-hdr');
+  const left = mk('div', '');
+  left.appendChild(tx('div', 'c-title', cl.titel || '–'));
+  left.appendChild(tx('div', 'c-sub', (cl.lernziele?.length || 0) + ' Lernziele in ' + ([...new Set((cl.lernziele||[]).map(l => l.abschnitt))].length) + ' Abschnitten'));
+  hdr.appendChild(left);
+  div.appendChild(hdr);
+
+  const abschnitte = [...new Set((cl.lernziele||[]).map(l => l.abschnitt))];
+  abschnitte.forEach(abschnitt => {
+    const items = cl.lernziele.filter(l => l.abschnitt === abschnitt);
+    const sec = mk('div', ''); sec.style.cssText = 'margin-bottom:16px;';
+    const secHdr = tx('div', '', abschnitt);
+    secHdr.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);padding:6px 0 4px;border-bottom:2px solid var(--pri);margin-bottom:6px;';
+    sec.appendChild(secHdr);
+    items.forEach(lz => {
+      const row = tx('div', '', lz.nr + '. ' + lz.text);
+      row.style.cssText = 'font-size:13px;line-height:1.5;padding:5px 8px;color:var(--tx2);';
+      sec.appendChild(row);
+    });
+    div.appendChild(sec);
+  });
+
+  return div;
+}
+
+// ── Neue Checkliste Modal ─────────────────────────────────────────
+function showNewChecklistModal() {
+  const ov = mk('div', 'matd-overlay');
+  const pan = mk('div', 'matd-panel'); pan.style.maxWidth = '520px';
+  const phdr = mk('div', 'matd-panel-hdr');
+  phdr.appendChild(tx('span', 'matd-panel-title', 'Neue Checkliste'));
+  const cls = btn('✕', 'btn btn-ghost btn-sm matd-close');
+  const close = () => ov.remove();
+  cls.onclick = close; phdr.appendChild(cls); pan.appendChild(phdr);
+  ov.onclick = e => { if (e.target === ov) close(); };
+
+  const body = mk('div', 'matd-panel-body');
+  body.style.cssText = 'padding:16px;display:flex;flex-direction:column;gap:12px;';
+
+  const titelInp = document.createElement('input'); titelInp.className = 'finp'; titelInp.placeholder = 'z.B. Zuordnungen (7.2)';
+  const fg = mk('div', 'fg'); fg.appendChild(tx('label', 'fl', 'Titel *')); fg.appendChild(titelInp);
+  body.appendChild(fg);
+
+  // Upload
+  let uploadedImgs = [];
+  const zone = mk('div', '');
+  zone.style.cssText = 'border:2px dashed var(--bord);border-radius:8px;padding:20px;text-align:center;cursor:pointer;color:var(--tx3);';
+  zone.textContent = 'Checklist-Seiten hochladen — hierhin ziehen oder klicken';
+  const fileInp = document.createElement('input'); fileInp.type = 'file'; fileInp.accept = 'image/*'; fileInp.multiple = true; fileInp.style.display = 'none';
+  zone.onclick = () => fileInp.click();
+  zone.ondragover = e => { e.preventDefault(); zone.style.borderColor = 'var(--pri)'; };
+  zone.ondragleave = () => { zone.style.borderColor = 'var(--bord)'; };
+  const thumbsRow = mk('div', ''); thumbsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
+
+  function addImgs(files) {
+    [...files].forEach(f => {
+      const r = new FileReader(); r.onload = e => { uploadedImgs.push(e.target.result); updateZone(); }; r.readAsDataURL(f);
+    });
+  }
+  function updateZone() {
+    zone.textContent = uploadedImgs.length ? uploadedImgs.length + ' Seite(n) bereit' : 'Checklist-Seiten hochladen — hierhin ziehen oder klicken';
+    thumbsRow.innerHTML = '';
+    uploadedImgs.forEach((src, i) => {
+      const th = mk('img', ''); th.src = src; th.style.cssText = 'width:55px;height:55px;object-fit:cover;border-radius:4px;cursor:pointer;';
+      th.onclick = () => { uploadedImgs.splice(i, 1); updateZone(); }; thumbsRow.appendChild(th);
+    });
+  }
+  zone.ondrop = e => { e.preventDefault(); zone.style.borderColor = 'var(--bord)'; addImgs(e.dataTransfer.files); };
+  fileInp.onchange = () => { addImgs(fileInp.files); fileInp.value = ''; };
+  body.appendChild(zone); body.appendChild(thumbsRow); body.appendChild(fileInp);
+
+  const statusEl = mk('div', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;';
+  body.appendChild(statusEl);
+
+  const btnRow = mk('div', ''); btnRow.style.cssText = 'display:flex;gap:8px;';
+  const saveBtn = btn('✨ KI liest aus & speichern', 'btn btn-pri btn-sm');
+  const cancelB = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelB.onclick = close;
+  btnRow.appendChild(saveBtn); btnRow.appendChild(cancelB);
+  body.appendChild(btnRow);
+
+  saveBtn.onclick = async () => {
+    const titel = titelInp.value.trim();
+    if (!titel) { alert('Bitte einen Titel eingeben.'); return; }
+    if (!uploadedImgs.length) { alert('Bitte Bilder hochladen.'); return; }
+    saveBtn.disabled = true; statusEl.textContent = '⏳ KI liest Checkliste…';
+    try {
+      const lernziele = await extrahiereChecklist(uploadedImgs, statusEl);
+      if (!lernziele.length) throw new Error('Keine Lernziele erkannt.');
+      const cl = { id: uid(), titel, lernziele, erstellt: new Date().toISOString() };
+      CHECKLISTDB.push(cl);
+      saveChecklistDB();
+      PR.aktCheckId = cl.id; PR.view = 'checkliste'; PR.aktId = null;
+      close(); renderPr();
+    } catch(e) {
+      statusEl.textContent = '⚠ ' + e.message;
+      saveBtn.disabled = false;
+    }
+  };
+
+  pan.appendChild(body); ov.appendChild(pan);
+  document.getElementById('root').appendChild(ov);
+  ov.classList.add('open');
 }
 
 // ── Neue Prüfung Modal ────────────────────────────────────────────
@@ -490,9 +620,10 @@ async function prCheckVersion(ghDate) {
 (async () => {
   renderPr(); // Lade-State zeigen
 
-  const [data, pruefungen, matdb, schulbuecher, klpdb] = await Promise.all([
+  const [data, pruefungen, checklisten, matdb, schulbuecher, klpdb] = await Promise.all([
     sbDownload('data.json').catch(() => ({ fachplanungen: [], kurse: [] })),
     sbDownload('pruefungen.json').catch(() => []),
+    sbDownload('checklisten.json').catch(() => []),
     sbDownload('materialien.json').catch(() => []),
     sbDownload('schulbuecher.json').catch(() => []),
     fetch('klp.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
@@ -503,6 +634,7 @@ async function prCheckVersion(ghDate) {
   if (!S.data.kurse) S.data.kurse = [];
 
   PRUEFUNGSDB = Array.isArray(pruefungen) ? pruefungen : [];
+  CHECKLISTDB = Array.isArray(checklisten) ? checklisten : [];
   MATDB = Array.isArray(matdb) ? matdb : [];
   SCHULBUCHDB = Array.isArray(schulbuecher) ? schulbuecher : [];
   KLPDB = Array.isArray(klpdb) ? klpdb : [];

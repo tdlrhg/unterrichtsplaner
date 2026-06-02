@@ -1,14 +1,19 @@
 // ── Prüfungsplaner App ────────────────────────────────────────────
 let PRUEFUNGSDB = [];
 let CHECKLISTDB = [];
+let ALTE_ARBEITEN_DB = [];
 let PR = {
-  aktId: null,        // aktuell geöffnete Prüfung
-  aktCheckId: null,   // aktuell geöffnete Checkliste (wenn kein Prüfung)
-  view: 'pruefung',   // 'pruefung' | 'checkliste'
+  aktId: null,
+  aktCheckId: null,
+  aktAlteArbeitId: null,
+  view: 'pruefung',   // 'pruefung' | 'checkliste' | 'alte_arbeit'
 };
 
 function saveChecklistDB() {
-  sbUpload('checklisten.json', CHECKLISTDB).catch(e => console.error('Checklisten speichern fehlgeschlagen:', e));
+  sbUpload('checklisten.json', CHECKLISTDB).catch(e => console.error('Checklisten speichern:', e));
+}
+function saveAlteArbeitenDB() {
+  sbUpload('alte_arbeiten.json', ALTE_ARBEITEN_DB).catch(e => console.error('Alte Arbeiten speichern:', e));
 }
 async function callKI(blocks, maxTokens) {
   const antKey = localStorage.getItem('ant_key');
@@ -156,6 +161,38 @@ function buildPrSidebar() {
     sb.appendChild(row);
   });
 
+  // ── Alte Arbeiten ─────────────────────────────────────────────
+  sb.appendChild(mk('div', 'pr-sb-sep'));
+  const aaHdr = mk('div', 'pr-sb-hdr');
+  aaHdr.appendChild(tx('div', 'pr-sb-title', 'Alte Arbeiten'));
+  aaHdr.appendChild(tx('div', 'pr-sb-sub', ALTE_ARBEITEN_DB.length + ' gespeichert'));
+  sb.appendChild(aaHdr);
+
+  const newAaBtn = btn('+ Arbeit hinzufügen', 'btn btn-ghost btn-sm pr-new-btn');
+  newAaBtn.onclick = () => showNeueAlteArbeitModal();
+  sb.appendChild(newAaBtn);
+
+  ALTE_ARBEITEN_DB.forEach(aa => {
+    const row = mk('div', 'pr-item' + (PR.view === 'alte_arbeit' && PR.aktAlteArbeitId === aa.id ? ' active' : ''));
+    row.appendChild(tx('span', 'pr-item-icon', '📝'));
+    const info = mk('div', ''); info.style.flex = '1'; info.style.minWidth = '0';
+    info.appendChild(tx('div', 'pr-item-label', aa.titel || '–'));
+    const sub = [aa.kursLabel, aa.datum ? new Date(aa.datum).toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'}) : null].filter(Boolean).join(' · ');
+    if (sub) info.appendChild(tx('div', 'pr-item-sub', sub));
+    row.appendChild(info);
+    const del = btn('✕', 'pr-item-del');
+    del.onclick = e => {
+      e.stopPropagation();
+      if (!confirm('"' + aa.titel + '" löschen?')) return;
+      ALTE_ARBEITEN_DB = ALTE_ARBEITEN_DB.filter(a => a.id !== aa.id);
+      if (PR.aktAlteArbeitId === aa.id) { PR.aktAlteArbeitId = null; PR.view = 'pruefung'; }
+      saveAlteArbeitenDB(); renderPr();
+    };
+    row.appendChild(del);
+    row.onclick = () => { PR.aktAlteArbeitId = aa.id; PR.view = 'alte_arbeit'; PR.aktId = null; renderPr(); };
+    sb.appendChild(row);
+  });
+
   return sb;
 }
 
@@ -165,6 +202,9 @@ function buildPrContent() {
   if (PR.view === 'checkliste' && PR.aktCheckId) {
     const cl = CHECKLISTDB.find(c => c.id === PR.aktCheckId);
     if (cl) c.appendChild(buildChecklistDetail(cl));
+  } else if (PR.view === 'alte_arbeit' && PR.aktAlteArbeitId) {
+    const aa = ALTE_ARBEITEN_DB.find(a => a.id === PR.aktAlteArbeitId);
+    if (aa) c.appendChild(buildAlteArbeitDetail(aa));
   } else if (PR.aktId) {
     const pr = PRUEFUNGSDB.find(p => p.id === PR.aktId);
     if (pr) c.appendChild(buildPrDetail(pr));
@@ -340,6 +380,232 @@ function buildLernzieleTab(pr) {
   return div;
 }
 
+// ── Alte Arbeit Detail ────────────────────────────────────────────
+function buildAlteArbeitDetail(aa) {
+  const div = mk('div', '');
+  const hdr = mk('div', 'c-hdr');
+  const left = mk('div', '');
+  left.appendChild(tx('div', 'c-title', aa.titel || '–'));
+  const sub = [aa.kursLabel, aa.datum ? new Date(aa.datum).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : null, aa.dauer ? aa.dauer + ' Min.' : null].filter(Boolean).join(' · ');
+  if (sub) left.appendChild(tx('div', 'c-sub', sub));
+  hdr.appendChild(left); div.appendChild(hdr);
+
+  if (aa.seiten?.length) {
+    aa.seiten.forEach(s => {
+      const card = mk('div', 'card');
+      const body = mk('div', 'card-body');
+      if (s.thema) { const h = tx('div', '', s.thema); h.style.cssText = 'font-weight:600;margin-bottom:6px;'; body.appendChild(h); }
+      const p = tx('p', '', s.inhalt || '');
+      p.style.cssText = 'font-size:13px;line-height:1.6;color:var(--tx2);white-space:pre-wrap;';
+      body.appendChild(p);
+      card.appendChild(body); div.appendChild(card);
+    });
+  }
+  return div;
+}
+
+// ── Neue Alte Arbeit Modal ────────────────────────────────────────
+function showNeueAlteArbeitModal() {
+  const ov = mk('div', 'matd-overlay');
+  const pan = mk('div', 'matd-panel'); pan.style.maxWidth = '520px';
+  const phdr = mk('div', 'matd-panel-hdr');
+  phdr.appendChild(tx('span', 'matd-panel-title', 'Alte Arbeit hinzufügen'));
+  const cls = btn('✕', 'btn btn-ghost btn-sm matd-close');
+  const close = () => ov.remove(); cls.onclick = close; phdr.appendChild(cls); pan.appendChild(phdr);
+  ov.onclick = e => { if (e.target === ov) close(); };
+
+  const body = mk('div', 'matd-panel-body');
+  body.style.cssText = 'padding:16px;display:flex;flex-direction:column;gap:10px;';
+
+  function field(label, inp) { const fg = mk('div','fg'); fg.appendChild(tx('label','fl',label)); fg.appendChild(inp); return fg; }
+
+  const titelInp = document.createElement('input'); titelInp.className = 'finp'; titelInp.placeholder = 'z.B. Klassenarbeit 3 – Terme';
+  body.appendChild(field('Titel *', titelInp));
+
+  const kursSel = document.createElement('select'); kursSel.className = 'finp';
+  const noK = document.createElement('option'); noK.value = ''; noK.textContent = '– kein Kurs –'; kursSel.appendChild(noK);
+  (S.data?.kurse || []).forEach(k => {
+    const fp = (S.data?.fachplanungen||[]).find(f => f.id === k.fachplanungId);
+    const o = document.createElement('option'); o.value = k.id;
+    o.textContent = k.klasse + ' · ' + (fp ? fp.fach : '?') + ' ' + k.schuljahr;
+    kursSel.appendChild(o);
+  });
+  body.appendChild(field('Kurs', kursSel));
+
+  const datumInp = document.createElement('input'); datumInp.type = 'date'; datumInp.className = 'finp';
+  body.appendChild(field('Datum', datumInp));
+
+  const dauerInp = document.createElement('input'); dauerInp.type = 'number'; dauerInp.className = 'finp'; dauerInp.placeholder = 'Minuten'; dauerInp.step = 5;
+  body.appendChild(field('Dauer (Min.)', dauerInp));
+
+  // Upload
+  let uploadedImgs = [];
+  const zone = mk('div',''); zone.style.cssText = 'border:2px dashed var(--bord);border-radius:8px;padding:20px;text-align:center;cursor:pointer;color:var(--tx3);';
+  zone.textContent = 'Seiten der Arbeit hochladen — hierhin ziehen oder klicken';
+  const fileInp = document.createElement('input'); fileInp.type='file'; fileInp.accept='image/*'; fileInp.multiple=true; fileInp.style.display='none';
+  zone.onclick = () => fileInp.click();
+  zone.ondragover = e => { e.preventDefault(); zone.style.borderColor='var(--pri)'; };
+  zone.ondragleave = () => { zone.style.borderColor='var(--bord)'; };
+  const thumbsRow = mk('div',''); thumbsRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px;';
+  function addImgs(files) { [...files].forEach(f => { const r=new FileReader(); r.onload=e=>{uploadedImgs.push(e.target.result);updateZone();}; r.readAsDataURL(f); }); }
+  function updateZone() {
+    zone.textContent = uploadedImgs.length ? uploadedImgs.length+' Seite(n) bereit' : 'Seiten der Arbeit hochladen — hierhin ziehen oder klicken';
+    thumbsRow.innerHTML='';
+    uploadedImgs.forEach((src,i)=>{ const th=mk('img',''); th.src=src; th.style.cssText='width:55px;height:55px;object-fit:cover;border-radius:4px;cursor:pointer;'; th.onclick=()=>{uploadedImgs.splice(i,1);updateZone();}; thumbsRow.appendChild(th); });
+  }
+  zone.ondrop = e => { e.preventDefault(); zone.style.borderColor='var(--bord)'; addImgs(e.dataTransfer.files); };
+  fileInp.onchange = () => { addImgs(fileInp.files); fileInp.value=''; };
+  body.appendChild(zone); body.appendChild(thumbsRow); body.appendChild(fileInp);
+
+  const statusEl = mk('div',''); statusEl.style.cssText='font-size:13px;color:var(--tx2);min-height:18px;';
+  body.appendChild(statusEl);
+
+  const btnRow = mk('div',''); btnRow.style.cssText='display:flex;gap:8px;';
+  const saveBtn = btn('✨ KI liest aus & speichern', 'btn btn-pri btn-sm');
+  const cancelB = btn('Abbrechen','btn btn-ghost btn-sm'); cancelB.onclick=close;
+  btnRow.appendChild(saveBtn); btnRow.appendChild(cancelB); body.appendChild(btnRow);
+
+  saveBtn.onclick = async () => {
+    const titel = titelInp.value.trim();
+    if (!titel) { alert('Bitte Titel eingeben.'); return; }
+    if (!uploadedImgs.length) { alert('Bitte Seiten hochladen.'); return; }
+    saveBtn.disabled = true;
+
+    const kursId = kursSel.value || null;
+    const kurs = kursId ? (S.data?.kurse||[]).find(k=>k.id===kursId) : null;
+    const fp = kurs ? (S.data?.fachplanungen||[]).find(f=>f.id===kurs.fachplanungId) : null;
+
+    try {
+      // Verbatim-Extraktion (wie Materialsammlungen)
+      const seiten = [];
+      for (let i = 0; i < uploadedImgs.length; i += 4) {
+        const batch = uploadedImgs.slice(i, i+4);
+        statusEl.textContent = `⏳ Lese Seite ${i+1}–${Math.min(i+4,uploadedImgs.length)} von ${uploadedImgs.length}…`;
+        const resized = await Promise.all(batch.map(img => new Promise((res,rej) => {
+          const image=new Image(); image.onload=()=>{
+            const scale=image.width>1200?1200/image.width:1;
+            const c=document.createElement('canvas'); c.width=Math.round(image.width*scale); c.height=Math.round(image.height*scale);
+            c.getContext('2d').drawImage(image,0,0,c.width,c.height); res(c.toDataURL('image/jpeg',0.85));
+          }; image.onerror=rej; image.src=img;
+        })));
+        const blocks = [
+          ...resized.map((r,j) => [
+            { type:'image', source:{type:'base64',media_type:'image/jpeg',data:r.split(',')[1]} },
+            ...(j<batch.length-1?[{type:'text',text:'--- Nächste Seite ---'}]:[])
+          ]).flat(),
+          { type:'text', text:`Lies diese Seiten einer Klassenarbeit wortwörtlich aus.
+Antworte im Format:
+=== Seite ${i+1} | [Titel/Überschrift der Seite] ===
+[vollständiger Text]
+GRAFIK: [Beschreibung oder "keine"]
+
+Kopf-/Fußzeilen, Seitenzahlen und Schul-URLs weglassen.` }
+        ];
+        const raw = await callKI(blocks, 6000);
+        const bloecke = raw.split(/\n(?===)/);
+        for (const block of bloecke) {
+          const m = block.match(/^===\s*Seite\s*(\d+)\s*\|\s*(.+?)\s*===/i);
+          if (!m) continue;
+          const rest = block.slice(block.indexOf('===',3)+3).trim();
+          const grafikM = rest.match(/\nGRAFIK:\s*(.+)$/im);
+          const grafik = grafikM ? (grafikM[1].trim().toLowerCase()==='keine'?null:grafikM[1].trim()) : null;
+          const inhalt = grafikM ? rest.slice(0,grafikM.index).trim() : rest;
+          seiten.push({ seite: parseInt(m[1]), thema: m[2].trim(), inhalt, grafik });
+        }
+      }
+
+      const aa = {
+        id: uid(), titel,
+        kursId, kursLabel: kurs ? kurs.klasse+(fp?' · '+fp.fach:'') : null,
+        datum: datumInp.value || null,
+        dauer: dauerInp.value ? parseInt(dauerInp.value) : null,
+        seiten, erstellt: new Date().toISOString(),
+      };
+      ALTE_ARBEITEN_DB.push(aa);
+      saveAlteArbeitenDB();
+      PR.aktAlteArbeitId = aa.id; PR.view = 'alte_arbeit'; PR.aktId = null;
+      close(); renderPr();
+    } catch(e) {
+      statusEl.textContent = '⚠ ' + e.message;
+      saveBtn.disabled = false;
+    }
+  };
+
+  pan.appendChild(body); ov.appendChild(pan);
+  document.getElementById('root').appendChild(ov);
+  ov.classList.add('open');
+}
+
+// ── Quellen-Tab ───────────────────────────────────────────────────
+function buildQuellenTab(pr) {
+  const div = mk('div', '');
+  if (!pr.quellen) pr.quellen = { kapitel: [], material: [], alteArbeiten: [] };
+
+  // ── Alte Arbeiten ──────────────────────────────────────────────
+  const aaHdr = tx('div', '', 'Alte Arbeiten als Vorlage');
+  aaHdr.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);padding:6px 0 4px;border-bottom:2px solid var(--pri);margin-bottom:8px;';
+  div.appendChild(aaHdr);
+
+  if (!ALTE_ARBEITEN_DB.length) {
+    const hint = tx('div', '', 'Noch keine alten Arbeiten gespeichert.');
+    hint.style.cssText = 'font-size:13px;color:var(--tx3);margin-bottom:16px;';
+    div.appendChild(hint);
+  } else {
+    ALTE_ARBEITEN_DB.forEach(aa => {
+      const row = mk('div',''); row.style.cssText='display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:6px;cursor:pointer;';
+      row.onmouseenter=()=>{row.style.background='var(--surf2)';}; row.onmouseleave=()=>{row.style.background='';};
+      const cb = document.createElement('input'); cb.type='checkbox'; cb.style.cssText='accent-color:var(--pri);width:15px;height:15px;flex-shrink:0;';
+      cb.checked = pr.quellen.alteArbeiten.includes(aa.id);
+      cb.onchange = () => {
+        if (cb.checked) pr.quellen.alteArbeiten.push(aa.id);
+        else pr.quellen.alteArbeiten = pr.quellen.alteArbeiten.filter(id=>id!==aa.id);
+        savePruefungsDB();
+      };
+      const info = mk('div','');
+      info.appendChild(tx('div','',aa.titel)); info.lastChild.style.cssText='font-size:13px;font-weight:500;';
+      if (aa.kursLabel) { info.appendChild(tx('div','',aa.kursLabel)); info.lastChild.style.cssText='font-size:11px;color:var(--tx3);'; }
+      row.onclick = e => { if(e.target===cb)return; cb.checked=!cb.checked; cb.onchange(); };
+      row.appendChild(cb); row.appendChild(info);
+      div.appendChild(row);
+    });
+  }
+
+  // ── Schulbücher ────────────────────────────────────────────────
+  div.appendChild(mk('div','').setAttribute||(() => {
+    const spacer = mk('div',''); spacer.style.height='16px'; div.appendChild(spacer);
+  })());
+  const sbHdr = tx('div', '', 'Schulbuch-Kapitel');
+  sbHdr.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);padding:6px 0 4px;border-bottom:2px solid var(--pri);margin-bottom:8px;margin-top:8px;';
+  div.appendChild(sbHdr);
+
+  if (!SCHULBUCHDB.length) {
+    div.appendChild(tx('div','','Keine Schulbücher in der Datenbank.')).style.cssText='font-size:13px;color:var(--tx3);';
+  } else {
+    SCHULBUCHDB.forEach(buch => {
+      const buchHdr = tx('div','', (buch.titel||'–'));
+      buchHdr.style.cssText='font-size:12px;font-weight:600;color:var(--tx2);margin:6px 0 3px 0;';
+      div.appendChild(buchHdr);
+      (buch.kapitel||[]).forEach(kap => {
+        const row = mk('div',''); row.style.cssText='display:flex;align-items:center;gap:10px;padding:3px 8px;border-radius:5px;cursor:pointer;';
+        row.onmouseenter=()=>{row.style.background='var(--surf2)';}; row.onmouseleave=()=>{row.style.background='';};
+        const cb = document.createElement('input'); cb.type='checkbox'; cb.style.cssText='accent-color:var(--pri);width:14px;height:14px;flex-shrink:0;';
+        cb.checked = pr.quellen.kapitel.includes(kap.id);
+        cb.onchange = () => {
+          if (cb.checked) pr.quellen.kapitel.push(kap.id);
+          else pr.quellen.kapitel = pr.quellen.kapitel.filter(id=>id!==kap.id);
+          savePruefungsDB();
+        };
+        const lbl = tx('span','', 'Kap. '+kap.nr+': '+kap.titel+(kap.seiteVon&&kap.seiteBis?' (S.'+kap.seiteVon+'–'+kap.seiteBis+')':''));
+        lbl.style.cssText='font-size:12px;color:var(--tx2);';
+        row.onclick=e=>{if(e.target===cb)return;cb.checked=!cb.checked;cb.onchange();};
+        row.appendChild(cb); row.appendChild(lbl); div.appendChild(row);
+      });
+    });
+  }
+
+  return div;
+}
+
 function buildPrDetail(pr) {
   const div = mk('div', '');
 
@@ -372,6 +638,7 @@ function buildPrDetail(pr) {
 
   const TABS = [
     { id: 'lernziele', label: '📋 Lernziele' },
+    { id: 'quellen',   label: '📚 Quellen' },
     { id: 'aufgaben',  label: '✏️ Aufgaben' },
     { id: 'vorschau',  label: '👁 Vorschau' },
   ];
@@ -385,6 +652,7 @@ function buildPrDetail(pr) {
     });
     tabContent.innerHTML = '';
     if (aktiverTab === 'lernziele') tabContent.appendChild(buildLernzieleTab(pr));
+    else if (aktiverTab === 'quellen') tabContent.appendChild(buildQuellenTab(pr));
     else {
       const ph = tx('div', '', aktiverTab === 'aufgaben' ? 'Aufgaben — folgt' : 'Vorschau — folgt');
       ph.style.cssText = 'padding:40px;text-align:center;color:var(--tx3);';
@@ -620,10 +888,11 @@ async function prCheckVersion(ghDate) {
 (async () => {
   renderPr(); // Lade-State zeigen
 
-  const [data, pruefungen, checklisten, matdb, schulbuecher, klpdb] = await Promise.all([
+  const [data, pruefungen, checklisten, alteArbeiten, matdb, schulbuecher, klpdb] = await Promise.all([
     sbDownload('data.json').catch(() => ({ fachplanungen: [], kurse: [] })),
     sbDownload('pruefungen.json').catch(() => []),
     sbDownload('checklisten.json').catch(() => []),
+    sbDownload('alte_arbeiten.json').catch(() => []),
     sbDownload('materialien.json').catch(() => []),
     sbDownload('schulbuecher.json').catch(() => []),
     fetch('klp.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
@@ -635,6 +904,7 @@ async function prCheckVersion(ghDate) {
 
   PRUEFUNGSDB = Array.isArray(pruefungen) ? pruefungen : [];
   CHECKLISTDB = Array.isArray(checklisten) ? checklisten : [];
+  ALTE_ARBEITEN_DB = Array.isArray(alteArbeiten) ? alteArbeiten : [];
   MATDB = Array.isArray(matdb) ? matdb : [];
   SCHULBUCHDB = Array.isArray(schulbuecher) ? schulbuecher : [];
   KLPDB = Array.isArray(klpdb) ? klpdb : [];

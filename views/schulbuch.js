@@ -357,7 +357,7 @@ Antworte NUR mit validem JSON:
 
   // ── Neues Buch ────────────────────────────────────────────────
   const BUCH_TYPEN = [
-    { val: 'schulbuch',      icon: '📚', label: 'Schulbuch' },
+    { val: 'schulbuch',      icon: '📖', label: 'Schulbuch' },
     { val: 'sammlung',       icon: '📂', label: 'Materialsammlung' },
     { val: 'aufgabenpool',   icon: '🗃',  label: 'Aufgabenpool' },
   ];

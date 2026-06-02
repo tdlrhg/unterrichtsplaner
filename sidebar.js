@@ -146,7 +146,7 @@ function buildSidebar() {
     () => { S.view = 'didaktik'; S.sel = null; render(); }
   ));
   sb.appendChild(sbRow(
-    '📚 Bücher & Sammlungen', null,
+    '📖 Bücher & Sammlungen', null,
     S.view === 'schulbuecher',
     () => { S.view = 'schulbuecher'; S.sel = null; render(); }
   ));

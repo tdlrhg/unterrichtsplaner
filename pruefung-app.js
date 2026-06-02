@@ -3,6 +3,19 @@ let PRUEFUNGSDB = [];
 let PR = {
   aktId: null,   // aktuell geöffnete Prüfung
 };
+async function callKI(blocks, maxTokens) {
+  const antKey = localStorage.getItem('ant_key');
+  if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages: [{ role: 'user', content: blocks }] }),
+  });
+  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || res.statusText); }
+  const data = await res.json();
+  return data.content?.[0]?.text || '';
+}
+
 let PR_VERSION = null;
 let PR_VERSION_STATUS = null;
 const _prStarted = Date.now();
@@ -137,6 +150,174 @@ function buildPrEmpty() {
   return wrap;
 }
 
+function buildLernzieleTab(pr) {
+  const div = mk('div', '');
+
+  // ── KI-Extraktion aus Checklist-Bild ────────────────────────────
+  async function extrahiereChecklist(imgs, statusEl) {
+    const antKey = localStorage.getItem('ant_key');
+    if (!antKey) throw new Error('Kein API-Key hinterlegt.');
+    const resized = await Promise.all(imgs.map(img => new Promise((res, rej) => {
+      const image = new Image(); image.onload = () => {
+        const scale = image.width > 1200 ? 1200 / image.width : 1;
+        const c = document.createElement('canvas');
+        c.width = Math.round(image.width * scale); c.height = Math.round(image.height * scale);
+        c.getContext('2d').drawImage(image, 0, 0, c.width, c.height);
+        res(c.toDataURL('image/jpeg', 0.85));
+      }; image.onerror = rej; image.src = img;
+    })));
+
+    const blocks = [
+      ...resized.map(r => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } })),
+      { type: 'text', text: `Lies diese Lernziel-Checkliste aus.
+Antworte NUR in diesem Format:
+ABSCHNITT: [Titel des Abschnitts]
+1|[Lernziel-Text]
+2|[Lernziel-Text]
+ABSCHNITT: [Titel des nächsten Abschnitts]
+1|[Lernziel-Text]
+
+Regeln:
+- Jeden Abschnitt mit "ABSCHNITT:" einleiten
+- Jedes Lernziel als Nummer|Text (die "Ich kann..."-Sätze vollständig)
+- Kein Markdown, keine Erklärungen, nur dieses Format` }
+    ];
+
+    const raw = await callKI(blocks, 4000);
+    const lernziele = [];
+    let aktAbschnitt = '';
+    for (const line of raw.split('\n').map(l => l.trim()).filter(Boolean)) {
+      if (line.startsWith('ABSCHNITT:')) {
+        aktAbschnitt = line.slice('ABSCHNITT:'.length).trim();
+      } else if (line.includes('|')) {
+        const [nr, ...rest] = line.split('|');
+        const text = rest.join('|').trim();
+        if (text) lernziele.push({ id: uid(), abschnitt: aktAbschnitt, nr: parseInt(nr) || lernziele.length + 1, text, ausgewaehlt: true });
+      }
+    }
+    return lernziele;
+  }
+
+  // ── Lernziele anzeigen / bearbeiten ─────────────────────────────
+  function renderLernziele() {
+    div.innerHTML = '';
+
+    if (!pr.lernziele || !pr.lernziele.length) {
+      // Leer-Zustand: Upload
+      const emptyWrap = mk('div', '');
+      emptyWrap.style.cssText = 'max-width:520px;';
+
+      const hint = tx('div', '', 'Lade ein Foto oder einen Screenshot deiner Lernziel-Checkliste hoch. Die KI extrahiert alle Abschnitte und Lernziele automatisch.');
+      hint.style.cssText = 'font-size:13px;color:var(--tx2);margin-bottom:14px;line-height:1.5;';
+      emptyWrap.appendChild(hint);
+
+      // Upload-Zone
+      let uploadedImgs = [];
+      const zone = mk('div', '');
+      zone.style.cssText = 'border:2px dashed var(--bord);border-radius:8px;padding:24px;text-align:center;cursor:pointer;color:var(--tx3);margin-bottom:10px;';
+      zone.textContent = 'Checklist-Seiten hochladen — hierhin ziehen oder klicken';
+      const fileInp = document.createElement('input'); fileInp.type = 'file'; fileInp.accept = 'image/*'; fileInp.multiple = true; fileInp.style.display = 'none';
+      zone.onclick = () => fileInp.click();
+      zone.ondragover = e => { e.preventDefault(); zone.style.borderColor = 'var(--pri)'; };
+      zone.ondragleave = () => { zone.style.borderColor = 'var(--bord)'; };
+
+      const thumbsRow = mk('div', ''); thumbsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;';
+
+      function addImgs(files) {
+        [...files].forEach(f => {
+          const r = new FileReader(); r.onload = e => { uploadedImgs.push(e.target.result); updateZone(); }; r.readAsDataURL(f);
+        });
+      }
+      function updateZone() {
+        zone.textContent = uploadedImgs.length ? uploadedImgs.length + ' Seite(n) bereit' : 'Checklist-Seiten hochladen — hierhin ziehen oder klicken';
+        thumbsRow.innerHTML = '';
+        uploadedImgs.forEach((src, i) => {
+          const th = mk('img', ''); th.src = src; th.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;cursor:pointer;'; th.title = 'Klicken zum Entfernen';
+          th.onclick = () => { uploadedImgs.splice(i, 1); updateZone(); }; thumbsRow.appendChild(th);
+        });
+      }
+      zone.ondrop = e => { e.preventDefault(); zone.style.borderColor = 'var(--bord)'; addImgs(e.dataTransfer.files); };
+      fileInp.onchange = () => { addImgs(fileInp.files); fileInp.value = ''; };
+
+      emptyWrap.appendChild(zone); emptyWrap.appendChild(thumbsRow); emptyWrap.appendChild(fileInp);
+
+      const statusEl = mk('div', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;margin-bottom:8px;';
+      emptyWrap.appendChild(statusEl);
+
+      const kiBtn = btn('✨ KI liest Checkliste aus', 'btn btn-pri btn-sm');
+      kiBtn.onclick = async () => {
+        if (!uploadedImgs.length) { alert('Bitte Bilder hochladen.'); return; }
+        kiBtn.disabled = true; statusEl.textContent = '⏳ KI liest Checkliste…';
+        try {
+          const lz = await extrahiereChecklist(uploadedImgs, statusEl);
+          if (!lz.length) throw new Error('Keine Lernziele erkannt.');
+          pr.lernziele = lz;
+          savePruefungsDB();
+          statusEl.textContent = '✓ ' + lz.length + ' Lernziele erkannt';
+          renderLernziele();
+        } catch(e) {
+          statusEl.textContent = '⚠ ' + e.message;
+          kiBtn.disabled = false;
+        }
+      };
+      emptyWrap.appendChild(kiBtn);
+      div.appendChild(emptyWrap);
+      return;
+    }
+
+    // Lernziele vorhanden — nach Abschnitten gruppiert anzeigen
+    const toolbar = mk('div', '');
+    toolbar.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;';
+    const ausgewaehlt = pr.lernziele.filter(l => l.ausgewaehlt).length;
+    const infoSpan = tx('span', '', ausgewaehlt + ' von ' + pr.lernziele.length + ' Lernzielen ausgewählt');
+    infoSpan.style.cssText = 'font-size:13px;color:var(--tx2);flex:1;';
+    toolbar.appendChild(infoSpan);
+    const alleBtn = btn('Alle', 'btn btn-ghost btn-xs');
+    alleBtn.onclick = () => { pr.lernziele.forEach(l => l.ausgewaehlt = true); savePruefungsDB(); renderLernziele(); };
+    const keineBtn = btn('Keine', 'btn btn-ghost btn-xs');
+    keineBtn.onclick = () => { pr.lernziele.forEach(l => l.ausgewaehlt = false); savePruefungsDB(); renderLernziele(); };
+    const resetBtn = btn('🗑 Neu einlesen', 'btn btn-ghost btn-xs');
+    resetBtn.onclick = () => { if (!confirm('Alle Lernziele löschen und neu einlesen?')) return; pr.lernziele = []; savePruefungsDB(); renderLernziele(); };
+    toolbar.appendChild(alleBtn); toolbar.appendChild(keineBtn); toolbar.appendChild(resetBtn);
+    div.appendChild(toolbar);
+
+    // Abschnitte
+    const abschnitte = [...new Set(pr.lernziele.map(l => l.abschnitt))];
+    abschnitte.forEach(abschnitt => {
+      const items = pr.lernziele.filter(l => l.abschnitt === abschnitt);
+      const sec = mk('div', '');
+      sec.style.cssText = 'margin-bottom:16px;';
+
+      const secHdr = tx('div', '', abschnitt);
+      secHdr.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);padding:6px 0 4px;border-bottom:2px solid var(--pri);margin-bottom:6px;';
+      sec.appendChild(secHdr);
+
+      items.forEach(lz => {
+        const row = mk('div', '');
+        row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background .1s;';
+        row.onmouseenter = () => { row.style.background = 'var(--surf2)'; };
+        row.onmouseleave = () => { row.style.background = ''; };
+
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!lz.ausgewaehlt;
+        cb.style.cssText = 'margin-top:3px;flex-shrink:0;accent-color:var(--pri);width:15px;height:15px;cursor:pointer;';
+        cb.onchange = () => { lz.ausgewaehlt = cb.checked; savePruefungsDB(); infoSpan.textContent = pr.lernziele.filter(l => l.ausgewaehlt).length + ' von ' + pr.lernziele.length + ' Lernzielen ausgewählt'; };
+
+        const nrSpan = tx('span', '', lz.nr + '.'); nrSpan.style.cssText = 'color:var(--tx3);font-size:12px;flex-shrink:0;min-width:18px;';
+        const textSpan = tx('span', '', lz.text); textSpan.style.cssText = 'font-size:13px;line-height:1.5;color:' + (lz.ausgewaehlt ? 'var(--tx1)' : 'var(--tx3)') + ';';
+
+        row.onclick = e => { if (e.target === cb) return; cb.checked = !cb.checked; cb.onchange(); textSpan.style.color = lz.ausgewaehlt ? 'var(--tx1)' : 'var(--tx3)'; };
+        row.appendChild(cb); row.appendChild(nrSpan); row.appendChild(textSpan);
+        sec.appendChild(row);
+      });
+
+      div.appendChild(sec);
+    });
+  }
+
+  renderLernziele();
+  return div;
+}
+
 function buildPrDetail(pr) {
   const div = mk('div', '');
 
@@ -159,23 +340,36 @@ function buildPrDetail(pr) {
   hdr.appendChild(left);
   div.appendChild(hdr);
 
-  // Tabs (Platzhalter)
-  const tabs = ['📋 Lernziele', '✏️ Aufgaben', '👁 Vorschau'];
+  // Tabs
+  let aktiverTab = 'lernziele';
   const tabRow = mk('div', '');
-  tabRow.style.cssText = 'display:flex;gap:8px;margin-bottom:20px;';
-  tabs.forEach(t => {
-    const tb = btn(t, 'btn btn-ghost btn-sm');
-    tabRow.appendChild(tb);
-  });
+  tabRow.style.cssText = 'display:flex;gap:6px;margin-bottom:20px;border-bottom:2px solid var(--bord);padding-bottom:8px;';
+  const tabContent = mk('div', '');
   div.appendChild(tabRow);
+  div.appendChild(tabContent);
 
-  // Platzhalter
-  const placeholder = mk('div', 'card');
-  const pb = mk('div', 'card-body');
-  pb.style.cssText = 'text-align:center;padding:40px;color:var(--tx3);';
-  pb.textContent = 'Wird aufgebaut…';
-  placeholder.appendChild(pb);
-  div.appendChild(placeholder);
+  const TABS = [
+    { id: 'lernziele', label: '📋 Lernziele' },
+    { id: 'aufgaben',  label: '✏️ Aufgaben' },
+    { id: 'vorschau',  label: '👁 Vorschau' },
+  ];
+
+  function renderTab() {
+    tabRow.innerHTML = '';
+    TABS.forEach(t => {
+      const tb = btn(t.label, 'btn btn-sm ' + (aktiverTab === t.id ? 'btn-pri' : 'btn-ghost'));
+      tb.onclick = () => { aktiverTab = t.id; renderTab(); };
+      tabRow.appendChild(tb);
+    });
+    tabContent.innerHTML = '';
+    if (aktiverTab === 'lernziele') tabContent.appendChild(buildLernzieleTab(pr));
+    else {
+      const ph = tx('div', '', aktiverTab === 'aufgaben' ? 'Aufgaben — folgt' : 'Vorschau — folgt');
+      ph.style.cssText = 'padding:40px;text-align:center;color:var(--tx3);';
+      tabContent.appendChild(ph);
+    }
+  }
+  renderTab();
 
   return div;
 }

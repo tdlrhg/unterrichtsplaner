@@ -1252,7 +1252,7 @@ Regeln:
     main.appendChild(kapSec);
 
     const kapitelList = mk('div', '');
-    kapitelList.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+    kapitelList.style.cssText = 'display:flex;flex-direction:column;gap:3px;';
     main.appendChild(kapitelList);
 
     function renderKapitel() {

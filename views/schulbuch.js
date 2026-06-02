@@ -1265,11 +1265,12 @@ Regeln:
       buch.kapitel.forEach(kap => {
         const card = mk('div', 'card');
         const body = mk('div', 'card-body');
+        body.style.padding = '8px 12px';
 
         // Kapitel-Header (mit Einklapp-Toggle)
         let kapOffen = false;
         const hrow = mk('div', '');
-        hrow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer;';
+        hrow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer;min-height:32px;';
         const kapArrow = tx('span', '', '▶');
         kapArrow.style.cssText = 'font-size:10px;color:var(--tx3);transition:transform .15s;flex-shrink:0;';
         hrow.appendChild(kapArrow);

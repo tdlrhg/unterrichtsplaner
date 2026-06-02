@@ -129,12 +129,15 @@ function buildPrDetail(pr) {
   const hdr = mk('div', 'c-hdr');
   const left = mk('div', '');
   left.appendChild(tx('div', 'c-title', pr.titel || '–'));
+  if (pr.thema) left.appendChild(tx('div', '', pr.thema)).style || (left.lastChild.style.cssText = 'font-size:15px;color:var(--tx2);margin-top:2px;');
+  const dauerStr = pr.dauerVon
+    ? (pr.dauerBis && pr.dauerBis !== pr.dauerVon ? pr.dauerVon + '–' + pr.dauerBis : pr.dauerVon) + ' Min.'
+    : null;
   const meta = [
     pr.typ === 'klausur' ? 'Klausur' : 'Klassenarbeit',
     pr.kursLabel,
     pr.datum,
-    pr.dauer ? pr.dauer + ' Min.' : null,
-    pr.punkte ? pr.punkte + ' Pkt.' : null,
+    dauerStr,
   ].filter(Boolean).join(' · ');
   left.appendChild(tx('div', 'c-sub', meta));
   hdr.appendChild(left);
@@ -184,8 +187,11 @@ function showNewPruefungModal() {
     return fg;
   }
 
-  const titelInp = document.createElement('input'); titelInp.className = 'finp'; titelInp.placeholder = 'z.B. Klassenarbeit 2 – Rationale Zahlen';
+  const titelInp = document.createElement('input'); titelInp.className = 'finp'; titelInp.placeholder = 'z.B. Klassenarbeit 5';
   body.appendChild(field('Titel *', titelInp));
+
+  const themaInp = document.createElement('input'); themaInp.className = 'finp'; themaInp.placeholder = 'z.B. Lineare Gleichungssysteme, Terme';
+  body.appendChild(field('Thema', themaInp));
 
   const typSel = document.createElement('select'); typSel.className = 'finp';
   [['klassenarbeit','📝 Klassenarbeit'],['klausur','📋 Klausur']].forEach(([v,l]) => {
@@ -207,12 +213,15 @@ function showNewPruefungModal() {
   const datumInp = document.createElement('input'); datumInp.type = 'date'; datumInp.className = 'finp';
   body.appendChild(field('Datum', datumInp));
 
-  const row2 = mk('div', ''); row2.style.cssText = 'display:flex;gap:8px;';
-  const dauerInp = document.createElement('input'); dauerInp.type = 'number'; dauerInp.className = 'finp'; dauerInp.placeholder = 'Minuten'; dauerInp.value = '45';
-  const punkteInp = document.createElement('input'); punkteInp.type = 'number'; punkteInp.className = 'finp'; punkteInp.placeholder = 'Punkte'; punkteInp.value = '50';
-  row2.appendChild(dauerInp); row2.appendChild(punkteInp);
-  const row2fg = mk('div', 'fg'); row2fg.appendChild(tx('label', 'fl', 'Dauer (Min.) · Punkte')); row2fg.appendChild(row2);
-  body.appendChild(row2fg);
+  const dauerRow = mk('div', ''); dauerRow.style.cssText = 'display:flex;gap:8px;align-items:center;';
+  const dauerVonInp = document.createElement('input'); dauerVonInp.type = 'number'; dauerVonInp.className = 'finp'; dauerVonInp.placeholder = 'von'; dauerVonInp.min = 5; dauerVonInp.step = 5; dauerVonInp.value = '45';
+  const dauerBisInp = document.createElement('input'); dauerBisInp.type = 'number'; dauerBisInp.className = 'finp'; dauerBisInp.placeholder = 'bis'; dauerBisInp.min = 5; dauerBisInp.step = 5; dauerBisInp.value = '45';
+  dauerRow.appendChild(dauerVonInp);
+  dauerRow.appendChild(tx('span', '', '–'));
+  dauerRow.appendChild(dauerBisInp);
+  dauerRow.appendChild(tx('span', '', 'Min.'));
+  const dauerFg = mk('div', 'fg'); dauerFg.appendChild(tx('label', 'fl', 'Dauer')); dauerFg.appendChild(dauerRow);
+  body.appendChild(dauerFg);
 
   const btnRow = mk('div', ''); btnRow.style.cssText = 'display:flex;gap:8px;margin-top:4px;';
   const saveBtn = btn('Anlegen', 'btn btn-pri btn-sm');
@@ -226,15 +235,18 @@ function showNewPruefungModal() {
     const kursId = kursSel.value || null;
     const kurs = kursId ? (S.data?.kurse || []).find(k => k.id === kursId) : null;
     const fp = kurs ? (S.data?.fachplanungen || []).find(f => f.id === kurs.fachplanungId) : null;
+    const dauerVon = dauerVonInp.value ? parseInt(dauerVonInp.value) : null;
+    const dauerBis = dauerBisInp.value ? parseInt(dauerBisInp.value) : null;
     const pr = {
       id: uid(),
       titel,
+      thema: themaInp.value.trim() || null,
       typ: typSel.value,
       kursId,
       kursLabel: kurs ? kurs.klasse + (fp ? ' · ' + fp.fach : '') : null,
       datum: datumInp.value || null,
-      dauer: dauerInp.value ? parseInt(dauerInp.value) : 45,
-      punkte: punkteInp.value ? parseInt(punkteInp.value) : 50,
+      dauerVon,
+      dauerBis: dauerBis && dauerBis >= dauerVon ? dauerBis : dauerVon,
       lernziele: [],
       aufgaben: [],
       erstellt: new Date().toISOString(),

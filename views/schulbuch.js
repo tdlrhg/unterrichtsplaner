@@ -1283,6 +1283,8 @@ Regeln:
     kapitelList.style.cssText = 'display:flex;flex-direction:column;gap:3px;';
     main.appendChild(kapitelList);
 
+    const offeneKapitel = new Set(); // merkt sich offene Kapitel über re-renders
+
     function renderKapitel() {
       kapitelList.innerHTML = '';
       if (!(buch.kapitel || []).length) {
@@ -1296,7 +1298,7 @@ Regeln:
         body.style.padding = '8px 12px';
 
         // Kapitel-Header (mit Einklapp-Toggle)
-        let kapOffen = false;
+        let kapOffen = offeneKapitel.has(kap.id);
         const hrow = mk('div', '');
         hrow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer;min-height:32px;';
         const kapArrow = tx('span', '', '▶');
@@ -1311,7 +1313,7 @@ Regeln:
         btnGrp.style.cssText = 'display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;';
 
         const addUkapBtn = btn('+ Unterkapitel', 'btn btn-ghost btn-xs');
-        addUkapBtn.onclick = () => showAddUnterkapitel(buch, kap, renderKapitel);
+        addUkapBtn.onclick = () => showAddUnterkapitel(buch, kap, () => { offeneKapitel.add(kap.id); renderKapitel(); });
         btnGrp.appendChild(addUkapBtn);
 
         const moreBtn = btn('+ Seiten', 'btn btn-ghost btn-xs');
@@ -1353,12 +1355,14 @@ Regeln:
         if (chipRow.children.length) body.appendChild(chipRow);
 
         const kapContent = mk('div', '');
-        kapContent.style.display = 'none';
+        kapContent.style.display = kapOffen ? '' : 'none';
+        if (kapOffen) kapArrow.style.transform = 'rotate(90deg)';
         body.appendChild(kapContent);
 
         hrow.onclick = e => {
           if (e.target.closest('button')) return; // Buttons nicht abfangen
           kapOffen = !kapOffen;
+          if (kapOffen) offeneKapitel.add(kap.id); else offeneKapitel.delete(kap.id);
           kapArrow.style.transform = kapOffen ? 'rotate(90deg)' : '';
           kapContent.style.display = kapOffen ? '' : 'none';
         };

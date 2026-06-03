@@ -454,23 +454,64 @@ function buildAlteArbeitDetail(aa) {
   if (sub) left.appendChild(tx('div', 'c-sub', sub));
   hdr.appendChild(left); div.appendChild(hdr);
 
-  // Neue Aufgaben-Darstellung
+  // Neue Aufgaben-Darstellung — gruppiert wie Schulbuch
   if (aa.aufgaben?.length) {
+    const wrap = mk('div',''); wrap.style.cssText='display:flex;flex-direction:column;gap:3px;';
+    div.appendChild(wrap);
+
+    // Gruppieren nach (Seite + Basisnummer)
+    const groupMap = {}, groups = [];
     aa.aufgaben.forEach(a => {
-      const card = mk('div', 'card');
-      const body = mk('div', 'card-body');
-      body.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
-      const topRow = mk('div',''); topRow.style.cssText='display:flex;align-items:baseline;gap:10px;';
-      const nrSpan = tx('span','', 'Aufgabe ' + (a.nr || '?'));
-      nrSpan.style.cssText='font-weight:700;font-size:14px;';
-      topRow.appendChild(nrSpan);
-      if (a.punkte) { const pt = tx('span','', a.punkte + ' P'); pt.style.cssText='font-size:11px;color:var(--tx3);'; topRow.appendChild(pt); }
-      if (a.seite) { const s = tx('span','', 'S. ' + a.seite); s.style.cssText='font-size:11px;color:var(--tx3);margin-left:auto;'; topRow.appendChild(s); }
-      body.appendChild(topRow);
-      if (a.aufgabenstellung) { const as = tx('div','', a.aufgabenstellung); as.style.cssText='font-size:13px;color:var(--tx2);font-style:italic;'; body.appendChild(as); }
-      if (a.text) { const t = tx('div','', a.text); t.style.cssText='font-size:13px;color:var(--tx1);line-height:1.5;'; body.appendChild(t); }
-      if (a.grafik) { const g = tx('div','', '🖼 ' + a.grafik); g.style.cssText='font-size:11px;color:var(--tx3);'; body.appendChild(g); }
-      card.appendChild(body); div.appendChild(card);
+      const nrStr = a.nr != null ? String(a.nr) : '?';
+      const base = nrStr.match(/^([\d]+)/)?.[1] || nrStr;
+      const key = (a.seite ?? '?') + '_' + base;
+      if (!groupMap[key]) { groupMap[key] = { base, seite: a.seite, aufgaben: [] }; groups.push(key); }
+      groupMap[key].aufgaben.push(a);
+    });
+
+    groups.forEach(key => {
+      const { base, seite, aufgaben: gruppe } = groupMap[key];
+      const card = mk('div','card');
+      const body = mk('div','card-body'); body.style.padding = '8px 12px';
+
+      // Header-Zeile
+      const hrow = mk('div',''); hrow.style.cssText='display:flex;align-items:baseline;gap:8px;margin-bottom:4px;';
+      hrow.appendChild(tx('strong','','Aufgabe ' + base));
+      const hauptEintrag = gruppe.find(a => String(a.nr) === base);
+      const gesamtP = gruppe.reduce((s,a) => s + (a.punkte||0), 0);
+      if (gesamtP) { const pt = tx('span','',gesamtP+' P'); pt.style.cssText='font-size:11px;color:var(--tx3);'; hrow.appendChild(pt); }
+      const spacer = mk('span',''); spacer.style.flex='1'; hrow.appendChild(spacer);
+      if (seite) { const s = tx('span','matc-jg','S. '+seite); hrow.appendChild(s); }
+      body.appendChild(hrow);
+
+      // Gemeinsame Aufgabenstellung
+      const stellung = hauptEintrag?.aufgabenstellung || (gruppe.length === 1 ? gruppe[0].aufgabenstellung : null);
+      if (stellung) { const st = tx('div','',stellung); st.style.cssText='font-size:13px;color:var(--tx2);font-style:italic;margin-bottom:6px;'; body.appendChild(st); }
+
+      const teilaufgaben = gruppe.filter(a => String(a.nr) !== base);
+      const anzeigeGruppe = teilaufgaben.length ? teilaufgaben : (hauptEintrag ? [] : gruppe);
+
+      // Einzelne Aufgabe ohne Teilaufgaben
+      if (gruppe.length === 1) {
+        const a = gruppe[0];
+        if (a.text) { const t = tx('div','',a.text); t.style.cssText='font-size:13px;color:var(--tx1);line-height:1.5;'; body.appendChild(t); }
+        if (a.grafik) { const g = tx('div','','🖼 '+a.grafik); g.style.cssText='font-size:11px;color:var(--tx3);margin-top:3px;'; body.appendChild(g); }
+      } else {
+        // Teilaufgaben eingerückt
+        anzeigeGruppe.forEach(a => {
+          const urow = mk('div',''); urow.style.cssText='display:flex;gap:8px;align-items:baseline;padding:4px 0;border-top:1px solid var(--bord);font-size:13px;';
+          const nrS = tx('strong','',String(a.nr||'?')); nrS.style.cssText='flex-shrink:0;min-width:32px;color:var(--tx2);';
+          urow.appendChild(nrS);
+          const col = mk('div',''); col.style.cssText='flex:1;display:flex;flex-direction:column;gap:2px;';
+          if (a.aufgabenstellung) { const as = tx('span','',a.aufgabenstellung); as.style.cssText='font-style:italic;color:var(--tx2);'; col.appendChild(as); }
+          if (a.text) { const t = tx('span','',a.text); t.style.color='var(--tx1)'; col.appendChild(t); }
+          if (a.grafik) { const g = tx('span','','🖼 '+a.grafik); g.style.cssText='font-size:11px;color:var(--tx3);'; col.appendChild(g); }
+          urow.appendChild(col);
+          if (a.punkte) { const pt = tx('span','',a.punkte+'P'); pt.style.cssText='flex-shrink:0;font-size:11px;color:var(--tx3);'; urow.appendChild(pt); }
+          body.appendChild(urow);
+        });
+      }
+      card.appendChild(body); wrap.appendChild(card);
     });
   // Rückwärtskompatibilität: alte seiten-Daten
   } else if (aa.seiten?.length) {

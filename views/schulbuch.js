@@ -150,10 +150,37 @@ function viewSchulbuecher() {
     return sel;
   }
 
-  function makeJahrgangSelect(selected) {
-    const sel = document.createElement('select'); sel.className = 'finp';
-    JG_OPTS.forEach(j => { const o = document.createElement('option'); o.value = j; o.textContent = j === 'SII' ? 'SII (Oberstufe)' : 'Jahrgang ' + j; if (j === selected) o.selected = true; sel.appendChild(o); });
-    return sel;
+  // Jahrgang: normalisiere alten string → array
+  function jgNorm(val) {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    return [val];
+  }
+  function jgLabel(val) {
+    const arr = jgNorm(val);
+    if (!arr.length) return '';
+    return 'Jg. ' + arr.map(j => j === 'SII' ? 'SII' : j).join(', ');
+  }
+
+  // Checkboxen-Widget für Mehrfach-Jahrgang
+  function makeJahrgangMulti(selected) {
+    const selArr = jgNorm(selected);
+    const wrap = mk('div', '');
+    wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;';
+    JG_OPTS.forEach(j => {
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px;padding:3px 8px;border-radius:5px;border:1px solid var(--bord);white-space:nowrap;';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = j;
+      cb.checked = selArr.includes(j);
+      cb.style.cssText = 'accent-color:var(--pri);';
+      cb.onchange = () => { lbl.style.background = cb.checked ? 'var(--pri-dim,#2a1030)' : ''; lbl.style.borderColor = cb.checked ? 'var(--pri)' : 'var(--bord)'; };
+      if (cb.checked) { lbl.style.background = 'var(--pri-dim,#2a1030)'; lbl.style.borderColor = 'var(--pri)'; }
+      lbl.appendChild(cb);
+      lbl.appendChild(document.createTextNode(j === 'SII' ? 'SII' : j));
+      wrap.appendChild(lbl);
+    });
+    wrap.getValue = () => Array.from(wrap.querySelectorAll('input[type=checkbox]')).filter(c => c.checked).map(c => c.value);
+    return wrap;
   }
 
   // ── KI-Extraktion ─────────────────────────────────────────────
@@ -383,8 +410,8 @@ Antworte NUR mit validem JSON:
       const fachSel = makeFachSelect(null);
       body.appendChild(field('Fach', fachSel));
 
-      const jgSel = makeJahrgangSelect('7');
-      body.appendChild(field('Jahrgang', jgSel));
+      const jgMulti = makeJahrgangMulti(['7']);
+      body.appendChild(field('Jahrgang(e)', jgMulti));
 
       const { row, saveBtn } = makeBtnRow('Anlegen', close);
       body.appendChild(row);
@@ -392,7 +419,7 @@ Antworte NUR mit validem JSON:
       saveBtn.onclick = () => {
         const titel = titelInp.value.trim();
         if (!titel) { alert('Bitte einen Titel eingeben.'); return; }
-        const buch = { id: uid(), typ: typSel.value, titel, verlag: verlagInp.value.trim() || null, fach: fachSel.value, jahrgang: jgSel.value, kapitel: [], erstellt: new Date().toISOString() };
+        const buch = { id: uid(), typ: typSel.value, titel, verlag: verlagInp.value.trim() || null, fach: fachSel.value, jahrgang: jgMulti.getValue(), kapitel: [], erstellt: new Date().toISOString() };
         SCHULBUCHDB.push(buch);
         saveSchulbuchDB();
         aktBuchId = buch.id;
@@ -1111,8 +1138,9 @@ Regeln:
         buch_el.appendChild(titelEl);
 
         // Jahrgang unten
-        if (buch.jahrgang) {
-          const jgEl = tx('div', '', 'Jg.' + buch.jahrgang);
+        const jgArr = jgNorm(buch.jahrgang);
+        if (jgArr.length) {
+          const jgEl = tx('div', '', 'Jg.' + jgArr.join('/'));
           jgEl.style.cssText = `position:absolute;bottom:6px;font-size:9px;color:${farbe.text};opacity:.7;z-index:1;`;
           buch_el.appendChild(jgEl);
         }
@@ -1193,7 +1221,7 @@ Regeln:
     };
     infoBody.appendChild(titelEl);
     if (buch.verlag) infoBody.appendChild(tx('span', 'c-sub', buch.verlag));
-    if (buch.jahrgang) infoBody.appendChild(tx('span', 'matc-jg', 'Jg. ' + buch.jahrgang));
+    if (jgNorm(buch.jahrgang).length) infoBody.appendChild(tx('span', 'matc-jg', jgLabel(buch.jahrgang)));
     infoBody.appendChild(tx('span', 'matc-jg', buchTypIcon(buch.typ) + ' ' + buchTypLabel(buch.typ)));
 
     const editMetaBtn = btn('✎', 'matc-del');
@@ -1215,8 +1243,8 @@ Regeln:
         const fachSel = makeFachSelect(buch.fach);
         body.appendChild(field('Fach', fachSel));
 
-        const jgSel = makeJahrgangSelect(buch.jahrgang);
-        body.appendChild(field('Jahrgang', jgSel));
+        const jgMulti = makeJahrgangMulti(buch.jahrgang);
+        body.appendChild(field('Jahrgang(e)', jgMulti));
 
         const { row, saveBtn } = makeBtnRow('Speichern', close);
         saveBtn.onclick = () => {
@@ -1226,7 +1254,7 @@ Regeln:
           buch.titel = t;
           buch.verlag = verlagInp.value.trim() || null;
           buch.fach = fachSel.value;
-          buch.jahrgang = jgSel.value;
+          buch.jahrgang = jgMulti.getValue();
           saveSchulbuchDB();
           close();
           renderBuchDetail(buchId);

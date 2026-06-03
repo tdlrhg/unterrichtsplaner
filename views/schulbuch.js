@@ -945,12 +945,13 @@ Regeln:
         arow.appendChild(sym);
 
         // Nur den Buchstaben-Teil der Nr extrahieren (z.B. "20a" → "a")
-        const buchstabe = aufg.nr.replace(/^\d+/, '') || aufg.nr;
+        const nrStr2 = aufg.nr != null ? String(aufg.nr) : '?';
+        const buchstabe = nrStr2.replace(/^\d+/, '') || nrStr2;
         const nrSpan = tx('strong', '', buchstabe);
         nrSpan.style.cssText = 'width:20px;flex-shrink:0;';
         arow.appendChild(nrSpan);
       } else {
-        arow.appendChild(tx('strong', '', 'Aufg. ' + aufg.nr));
+        arow.appendChild(tx('strong', '', 'Aufg. ' + (aufg.nr ?? '?')));
         if (aufg.schwierigkeit) { const sw = tx('span', '', aufg.schwierigkeit); sw.style.cssText = 'font-size:14px;color:' + (SC[aufg.schwierigkeit] || 'var(--tx3)') + ';flex-shrink:0;margin:0 4px;'; arow.appendChild(sw); }
       }
 
@@ -1006,7 +1007,8 @@ Regeln:
     const groups = [];
     const groupMap = {};
     aufgabenOnly.forEach(aufg => {
-      const base = aufg.nr.match(/^(\d+)/)?.[1] || aufg.nr;
+      const nrStr = aufg.nr != null ? String(aufg.nr) : '?';
+      const base = nrStr.match(/^(\d+)/)?.[1] || nrStr;
       if (!groupMap[base]) { groupMap[base] = []; groups.push(base); }
       groupMap[base].push(aufg);
     });
@@ -1390,7 +1392,7 @@ Regeln:
             uBtnGrp.style.cssText = 'display:flex;align-items:center;gap:4px;margin-left:auto;flex-shrink:0;';
 
             const uMoreBtn = btn('+ Seiten', 'btn btn-ghost btn-xs');
-            uMoreBtn.onclick = () => showAddSeiten(buch, ukap, renderKapitel);
+            uMoreBtn.onclick = () => showAddSeiten(buch, ukap, () => { offeneKapitel.add(kap.id); renderKapitel(); });
             uBtnGrp.appendChild(uMoreBtn);
 
             const uEditBtn = btn('✎', 'matc-del');

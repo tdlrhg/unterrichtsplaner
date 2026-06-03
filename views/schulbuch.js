@@ -226,7 +226,7 @@ Antworte NUR mit validem JSON:
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
 
-    const verbatim = buchTyp === 'sammlung' || buchTyp === 'aufgabenpool';
+    const verbatim = buchTyp === 'sammlung';
     const prompt = verbatim ? KI_PROMPT_VERBATIM : KI_PROMPT_AUFGABEN;
     const BATCH = 4;
     const allAufgaben = [];

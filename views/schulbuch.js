@@ -1410,7 +1410,11 @@ Regeln:
             uHrow.appendChild(uBtnGrp);
             uCard.appendChild(uHrow);
 
-            if (uAufgCount) uCard.appendChild(buildToggleAufgaben(ukap.aufgaben, uAufgCount));
+            if (uAufgCount) {
+              const uAufgWrap = mk('div',''); uAufgWrap.style.marginTop = '6px';
+              uAufgWrap.appendChild(buildAufgabenListe(ukap.aufgaben));
+              uCard.appendChild(uAufgWrap);
+            }
             uList.appendChild(uCard);
           });
           kapContent.appendChild(uList);

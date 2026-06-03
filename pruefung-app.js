@@ -28,6 +28,24 @@ async function callKI(blocks, maxTokens) {
   return data.content?.[0]?.text || '';
 }
 
+// PDF → Array von dataURL-Strings (eine pro Seite)
+async function pdfToImages(file, scale = 1.5) {
+  const blobUrl = URL.createObjectURL(file);
+  const pdfDoc = await pdfjsLib.getDocument(blobUrl).promise;
+  const images = [];
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
+    const page = await pdfDoc.getPage(i);
+    const vp = page.getViewport({ scale });
+    const cv = document.createElement('canvas');
+    cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+    await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+    images.push(cv.toDataURL('image/jpeg', 0.88));
+    cv.width = 0; cv.height = 0; page.cleanup();
+  }
+  await pdfDoc.destroy(); URL.revokeObjectURL(blobUrl);
+  return images;
+}
+
 let PR_VERSION = null;
 let PR_VERSION_STATUS = null;
 const _prStarted = Date.now();
@@ -129,69 +147,27 @@ function buildPrSidebar() {
     });
   }
 
-  // ── Checklisten ───────────────────────────────────────────────
+  // ── Datenbanken ───────────────────────────────────────────────
   sb.appendChild(mk('div', 'pr-sb-sep'));
-  const clHdr = mk('div', 'pr-sb-hdr');
-  clHdr.appendChild(tx('div', 'pr-sb-title', 'Checklisten'));
-  clHdr.appendChild(tx('div', 'pr-sb-sub', CHECKLISTDB.length + ' gespeichert'));
-  sb.appendChild(clHdr);
+  sb.appendChild(tx('div', 'pr-sb-hdr', '')).appendChild(tx('div', 'pr-sb-title', 'Datenbanken'));
 
-  const newClBtn = btn('+ Neue Checkliste', 'btn btn-ghost btn-sm pr-new-btn');
-  newClBtn.onclick = () => showNewChecklistModal();
-  sb.appendChild(newClBtn);
+  const clLink = mk('div', 'pr-item' + (PR.view === 'checklisten_overview' ? ' active' : ''));
+  clLink.appendChild(tx('span', 'pr-item-icon', '☑️'));
+  const clInfo = mk('div', ''); clInfo.style.flex = '1';
+  clInfo.appendChild(tx('div', 'pr-item-label', 'Checklisten'));
+  clInfo.appendChild(tx('div', 'pr-item-sub', CHECKLISTDB.length + ' gespeichert'));
+  clLink.appendChild(clInfo);
+  clLink.onclick = () => { PR.view = 'checklisten_overview'; PR.aktId = null; renderPr(); };
+  sb.appendChild(clLink);
 
-  CHECKLISTDB.forEach(cl => {
-    const row = mk('div', 'pr-item' + (PR.view === 'checkliste' && PR.aktCheckId === cl.id ? ' active' : ''));
-    const icon = tx('span', 'pr-item-icon', '☑️');
-    row.appendChild(icon);
-    const info = mk('div', ''); info.style.flex = '1'; info.style.minWidth = '0';
-    info.appendChild(tx('div', 'pr-item-label', cl.titel || '–'));
-    info.appendChild(tx('div', 'pr-item-sub', cl.lernziele?.length + ' Lernziele'));
-    row.appendChild(info);
-    const del = btn('✕', 'pr-item-del');
-    del.onclick = e => {
-      e.stopPropagation();
-      if (!confirm('"' + cl.titel + '" löschen?')) return;
-      CHECKLISTDB = CHECKLISTDB.filter(c => c.id !== cl.id);
-      if (PR.aktCheckId === cl.id) { PR.aktCheckId = null; PR.view = 'pruefung'; }
-      saveChecklistDB(); renderPr();
-    };
-    row.appendChild(del);
-    row.onclick = () => { PR.aktCheckId = cl.id; PR.view = 'checkliste'; PR.aktId = null; renderPr(); };
-    sb.appendChild(row);
-  });
-
-  // ── Alte Arbeiten ─────────────────────────────────────────────
-  sb.appendChild(mk('div', 'pr-sb-sep'));
-  const aaHdr = mk('div', 'pr-sb-hdr');
-  aaHdr.appendChild(tx('div', 'pr-sb-title', 'Alte Arbeiten'));
-  aaHdr.appendChild(tx('div', 'pr-sb-sub', ALTE_ARBEITEN_DB.length + ' gespeichert'));
-  sb.appendChild(aaHdr);
-
-  const newAaBtn = btn('+ Arbeit hinzufügen', 'btn btn-ghost btn-sm pr-new-btn');
-  newAaBtn.onclick = () => showNeueAlteArbeitModal();
-  sb.appendChild(newAaBtn);
-
-  ALTE_ARBEITEN_DB.forEach(aa => {
-    const row = mk('div', 'pr-item' + (PR.view === 'alte_arbeit' && PR.aktAlteArbeitId === aa.id ? ' active' : ''));
-    row.appendChild(tx('span', 'pr-item-icon', '📝'));
-    const info = mk('div', ''); info.style.flex = '1'; info.style.minWidth = '0';
-    info.appendChild(tx('div', 'pr-item-label', aa.titel || '–'));
-    const sub = [aa.kursLabel, aa.datum ? new Date(aa.datum).toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'}) : null].filter(Boolean).join(' · ');
-    if (sub) info.appendChild(tx('div', 'pr-item-sub', sub));
-    row.appendChild(info);
-    const del = btn('✕', 'pr-item-del');
-    del.onclick = e => {
-      e.stopPropagation();
-      if (!confirm('"' + aa.titel + '" löschen?')) return;
-      ALTE_ARBEITEN_DB = ALTE_ARBEITEN_DB.filter(a => a.id !== aa.id);
-      if (PR.aktAlteArbeitId === aa.id) { PR.aktAlteArbeitId = null; PR.view = 'pruefung'; }
-      saveAlteArbeitenDB(); renderPr();
-    };
-    row.appendChild(del);
-    row.onclick = () => { PR.aktAlteArbeitId = aa.id; PR.view = 'alte_arbeit'; PR.aktId = null; renderPr(); };
-    sb.appendChild(row);
-  });
+  const aaLink = mk('div', 'pr-item' + (PR.view === 'alte_arbeiten_overview' ? ' active' : ''));
+  aaLink.appendChild(tx('span', 'pr-item-icon', '📝'));
+  const aaInfo = mk('div', ''); aaInfo.style.flex = '1';
+  aaInfo.appendChild(tx('div', 'pr-item-label', 'Alte Arbeiten'));
+  aaInfo.appendChild(tx('div', 'pr-item-sub', ALTE_ARBEITEN_DB.length + ' gespeichert'));
+  aaLink.appendChild(aaInfo);
+  aaLink.onclick = () => { PR.view = 'alte_arbeiten_overview'; PR.aktId = null; renderPr(); };
+  sb.appendChild(aaLink);
 
   return sb;
 }
@@ -199,9 +175,13 @@ function buildPrSidebar() {
 // ── Content ───────────────────────────────────────────────────────
 function buildPrContent() {
   const c = mk('div', 'pr-content');
-  if (PR.view === 'checkliste' && PR.aktCheckId) {
-    const cl = CHECKLISTDB.find(c => c.id === PR.aktCheckId);
+  if (PR.view === 'checklisten_overview') {
+    c.appendChild(buildChecklistenOverview());
+  } else if (PR.view === 'checkliste' && PR.aktCheckId) {
+    const cl = CHECKLISTDB.find(x => x.id === PR.aktCheckId);
     if (cl) c.appendChild(buildChecklistDetail(cl));
+  } else if (PR.view === 'alte_arbeiten_overview') {
+    c.appendChild(buildAlteArbeitenOverview());
   } else if (PR.view === 'alte_arbeit' && PR.aktAlteArbeitId) {
     const aa = ALTE_ARBEITEN_DB.find(a => a.id === PR.aktAlteArbeitId);
     if (aa) c.appendChild(buildAlteArbeitDetail(aa));
@@ -442,12 +422,23 @@ function showNeueAlteArbeitModal() {
   let uploadedImgs = [];
   const zone = mk('div',''); zone.style.cssText = 'border:2px dashed var(--bord);border-radius:8px;padding:20px;text-align:center;cursor:pointer;color:var(--tx3);';
   zone.textContent = 'Seiten der Arbeit hochladen — hierhin ziehen oder klicken';
-  const fileInp = document.createElement('input'); fileInp.type='file'; fileInp.accept='image/*'; fileInp.multiple=true; fileInp.style.display='none';
+  const fileInp = document.createElement('input'); fileInp.type='file'; fileInp.accept='image/*,.pdf'; fileInp.multiple=true; fileInp.style.display='none';
   zone.onclick = () => fileInp.click();
   zone.ondragover = e => { e.preventDefault(); zone.style.borderColor='var(--pri)'; };
   zone.ondragleave = () => { zone.style.borderColor='var(--bord)'; };
   const thumbsRow = mk('div',''); thumbsRow.style.cssText='display:flex;flex-wrap:wrap;gap:6px;';
-  function addImgs(files) { [...files].forEach(f => { const r=new FileReader(); r.onload=e=>{uploadedImgs.push(e.target.result);updateZone();}; r.readAsDataURL(f); }); }
+  async function addImgs(files) {
+    for (const f of files) {
+      if (f.type === 'application/pdf' || f.name.endsWith('.pdf')) {
+        zone.textContent = '⏳ PDF wird eingelesen…';
+        const pages = await pdfToImages(f);
+        uploadedImgs.push(...pages);
+      } else {
+        await new Promise(res => { const r=new FileReader(); r.onload=e=>{uploadedImgs.push(e.target.result);res();}; r.readAsDataURL(f); });
+      }
+    }
+    updateZone();
+  }
   function updateZone() {
     zone.textContent = uploadedImgs.length ? uploadedImgs.length+' Seite(n) bereit' : 'Seiten der Arbeit hochladen — hierhin ziehen oder klicken';
     thumbsRow.innerHTML='';
@@ -665,6 +656,88 @@ function buildPrDetail(pr) {
 }
 
 // ── Checkliste Detail ─────────────────────────────────────────────
+function buildChecklistenOverview() {
+  const div = mk('div', '');
+  const hdr = mk('div', 'c-hdr');
+  const left = mk('div', ''); left.style.flex = '1';
+  left.appendChild(tx('div', 'c-title', 'Checklisten'));
+  left.appendChild(tx('div', 'c-sub', CHECKLISTDB.length + ' gespeichert'));
+  hdr.appendChild(left);
+  const newBtn = btn('+ Neue Checkliste', 'btn btn-pri btn-sm');
+  newBtn.onclick = () => showNewChecklistModal();
+  hdr.appendChild(newBtn);
+  div.appendChild(hdr);
+
+  if (!CHECKLISTDB.length) {
+    const empty = tx('div', '', 'Noch keine Checklisten. Lade eine Checkliste hoch und die KI liest sie aus.');
+    empty.style.cssText = 'padding:40px;text-align:center;color:var(--tx3);';
+    div.appendChild(empty);
+    return div;
+  }
+
+  const grid = mk('div', '');
+  grid.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-top:8px;';
+  CHECKLISTDB.forEach(cl => {
+    const row = mk('div', 'card');
+    const body = mk('div', 'card-body');
+    body.style.cssText = 'display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 14px;';
+    body.appendChild(tx('span', '', '☑️'));
+    const info = mk('div', ''); info.style.flex = '1';
+    info.appendChild(tx('div', '', cl.titel || '–')).style.fontWeight = '600';
+    const abschnitte = [...new Set((cl.lernziele||[]).map(l => l.abschnitt))].length;
+    info.appendChild(tx('div', '', (cl.lernziele?.length||0) + ' Lernziele · ' + abschnitte + ' Abschnitte')).style.cssText = 'font-size:12px;color:var(--tx3);';
+    body.appendChild(info);
+    const del = btn('✕', 'matc-del'); del.style.color = 'var(--tx3)';
+    del.onclick = e => { e.stopPropagation(); if (!confirm('"'+cl.titel+'" löschen?')) return; CHECKLISTDB=CHECKLISTDB.filter(c=>c.id!==cl.id); saveChecklistDB(); renderPr(); };
+    body.appendChild(del);
+    body.onclick = e => { if (e.target===del||del.contains(e.target)) return; PR.view='checkliste'; PR.aktCheckId=cl.id; renderPr(); };
+    row.appendChild(body); grid.appendChild(row);
+  });
+  div.appendChild(grid);
+  return div;
+}
+
+function buildAlteArbeitenOverview() {
+  const div = mk('div', '');
+  const hdr = mk('div', 'c-hdr');
+  const left = mk('div', ''); left.style.flex = '1';
+  left.appendChild(tx('div', 'c-title', 'Alte Arbeiten'));
+  left.appendChild(tx('div', 'c-sub', ALTE_ARBEITEN_DB.length + ' gespeichert'));
+  hdr.appendChild(left);
+  const newBtn = btn('+ Arbeit hinzufügen', 'btn btn-pri btn-sm');
+  newBtn.onclick = () => showNeueAlteArbeitModal();
+  hdr.appendChild(newBtn);
+  div.appendChild(hdr);
+
+  if (!ALTE_ARBEITEN_DB.length) {
+    const empty = tx('div', '', 'Noch keine alten Arbeiten. Lade Fotos oder PDFs deiner früheren Klassenarbeiten hoch.');
+    empty.style.cssText = 'padding:40px;text-align:center;color:var(--tx3);';
+    div.appendChild(empty);
+    return div;
+  }
+
+  const grid = mk('div', '');
+  grid.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-top:8px;';
+  ALTE_ARBEITEN_DB.forEach(aa => {
+    const row = mk('div', 'card');
+    const body = mk('div', 'card-body');
+    body.style.cssText = 'display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 14px;';
+    body.appendChild(tx('span', '', '📝'));
+    const info = mk('div', ''); info.style.flex = '1';
+    info.appendChild(tx('div', '', aa.titel || '–')).style.fontWeight = '600';
+    const sub = [aa.kursLabel, aa.datum ? new Date(aa.datum).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : null, aa.dauer ? aa.dauer+' Min.' : null].filter(Boolean).join(' · ');
+    if (sub) info.appendChild(tx('div', '', sub)).style.cssText = 'font-size:12px;color:var(--tx3);';
+    body.appendChild(info);
+    const del = btn('✕', 'matc-del'); del.style.color = 'var(--tx3)';
+    del.onclick = e => { e.stopPropagation(); if (!confirm('"'+aa.titel+'" löschen?')) return; ALTE_ARBEITEN_DB=ALTE_ARBEITEN_DB.filter(a=>a.id!==aa.id); saveAlteArbeitenDB(); renderPr(); };
+    body.appendChild(del);
+    body.onclick = e => { if (e.target===del||del.contains(e.target)) return; PR.view='alte_arbeit'; PR.aktAlteArbeitId=aa.id; renderPr(); };
+    row.appendChild(body); grid.appendChild(row);
+  });
+  div.appendChild(grid);
+  return div;
+}
+
 function buildChecklistDetail(cl) {
   const div = mk('div', '');
   let editMode = false;
@@ -789,16 +862,23 @@ function showNewChecklistModal() {
   const zone = mk('div', '');
   zone.style.cssText = 'border:2px dashed var(--bord);border-radius:8px;padding:20px;text-align:center;cursor:pointer;color:var(--tx3);';
   zone.textContent = 'Checklist-Seiten hochladen — hierhin ziehen oder klicken';
-  const fileInp = document.createElement('input'); fileInp.type = 'file'; fileInp.accept = 'image/*'; fileInp.multiple = true; fileInp.style.display = 'none';
+  const fileInp = document.createElement('input'); fileInp.type = 'file'; fileInp.accept = 'image/*,.pdf'; fileInp.multiple = true; fileInp.style.display = 'none';
   zone.onclick = () => fileInp.click();
   zone.ondragover = e => { e.preventDefault(); zone.style.borderColor = 'var(--pri)'; };
   zone.ondragleave = () => { zone.style.borderColor = 'var(--bord)'; };
   const thumbsRow = mk('div', ''); thumbsRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
 
-  function addImgs(files) {
-    [...files].forEach(f => {
-      const r = new FileReader(); r.onload = e => { uploadedImgs.push(e.target.result); updateZone(); }; r.readAsDataURL(f);
-    });
+  async function addImgs(files) {
+    for (const f of files) {
+      if (f.type === 'application/pdf' || f.name.endsWith('.pdf')) {
+        zone.textContent = '⏳ PDF wird eingelesen…';
+        const pages = await pdfToImages(f);
+        uploadedImgs.push(...pages);
+      } else {
+        await new Promise(res => { const r=new FileReader(); r.onload=e=>{uploadedImgs.push(e.target.result);res();}; r.readAsDataURL(f); });
+      }
+    }
+    updateZone();
   }
   function updateZone() {
     zone.textContent = uploadedImgs.length ? uploadedImgs.length + ' Seite(n) bereit' : 'Checklist-Seiten hochladen — hierhin ziehen oder klicken';

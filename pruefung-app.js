@@ -721,6 +721,184 @@ function buildQuellenTab(pr) {
   return div;
 }
 
+// ── Aufgaben-Tab: KI-Generierung ─────────────────────────────────
+function buildAufgabenGenTab(pr) {
+  const div = mk('div', '');
+  if (!pr.genAufgaben) pr.genAufgaben = [];
+
+  // ── Referenzzeitraum ──────────────────────────────────────────
+  const zeitRow = mk('div', '');
+  zeitRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:20px;font-size:13px;color:var(--tx2);flex-wrap:wrap;';
+  zeitRow.appendChild(tx('span', '', 'Die KI nutzt die Arbeiten der letzten'));
+  const jahrInp = document.createElement('input');
+  jahrInp.type = 'number'; jahrInp.step = '0.5'; jahrInp.min = '0.5'; jahrInp.max = '10';
+  jahrInp.value = pr.referenzJahre ?? 2;
+  jahrInp.style.cssText = 'width:58px;padding:4px 8px;border:1px solid var(--bord);border-radius:5px;background:var(--surf2);color:var(--tx1);font-size:13px;text-align:center;';
+  jahrInp.onchange = () => { pr.referenzJahre = parseFloat(jahrInp.value) || 2; savePruefungsDB(); };
+  zeitRow.appendChild(jahrInp);
+  zeitRow.appendChild(tx('span', '', 'Jahre als Referenz für den Kompositionsstil.'));
+  div.appendChild(zeitRow);
+
+  const statusEl = mk('div', '');
+  statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;margin:8px 0 16px;';
+
+  const genBtn = btn('✨ Aufgaben generieren', 'btn btn-pri btn-sm');
+  div.appendChild(genBtn);
+  div.appendChild(statusEl);
+
+  const aufgabenWrap = mk('div', '');
+  aufgabenWrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
+  div.appendChild(aufgabenWrap);
+
+  function renderGenAufgaben() {
+    aufgabenWrap.innerHTML = '';
+    if (!pr.genAufgaben.length) return;
+    pr.genAufgaben.forEach(aufg => {
+      const card = mk('div', 'card');
+      const body = mk('div', 'card-body');
+      // Header
+      const hrow = mk('div', '');
+      hrow.style.cssText = 'display:flex;align-items:baseline;gap:10px;margin-bottom:6px;';
+      const titSpan = tx('strong', '', 'Aufgabe ' + aufg.nr + (aufg.thema ? ': ' + aufg.thema : ''));
+      hrow.appendChild(titSpan);
+      if (aufg.gesamtpunkte) {
+        const pt = tx('span', '', aufg.gesamtpunkte + ' P');
+        pt.style.cssText = 'font-size:11px;color:var(--tx3);';
+        hrow.appendChild(pt);
+      }
+      body.appendChild(hrow);
+      if (aufg.aufgabenstellung) {
+        const as = tx('div', '', aufg.aufgabenstellung);
+        as.style.cssText = 'font-size:13px;color:var(--tx2);font-style:italic;margin-bottom:8px;';
+        body.appendChild(as);
+      }
+      // Unteraufgaben
+      const SC = { '○': '#16a34a', '◒': '#2563eb', '●': '#9d174d' };
+      (aufg.unteraufgaben || []).forEach(ua => {
+        const urow = mk('div', '');
+        urow.style.cssText = 'display:flex;gap:10px;align-items:baseline;padding:5px 0;border-top:1px solid var(--bord);font-size:13px;';
+        const nrS = tx('strong', '', ua.nr || ''); nrS.style.cssText = 'flex-shrink:0;min-width:28px;';
+        urow.appendChild(nrS);
+        if (ua.schwierigkeit) {
+          const sw = tx('span', '', ua.schwierigkeit);
+          sw.style.cssText = 'flex-shrink:0;color:' + (SC[ua.schwierigkeit] || 'var(--tx3)') + ';';
+          urow.appendChild(sw);
+        }
+        const utxt = tx('span', '', ua.text || ''); utxt.style.cssText = 'flex:1;color:var(--tx2);';
+        urow.appendChild(utxt);
+        if (ua.typ) { const ty = tx('span', 'matc-jg', ua.typ); urow.appendChild(ty); }
+        if (ua.punkte) { const pu = tx('span', '', ua.punkte + ' P'); pu.style.cssText = 'flex-shrink:0;font-size:11px;color:var(--tx3);'; urow.appendChild(pu); }
+        body.appendChild(urow);
+      });
+      card.appendChild(body); aufgabenWrap.appendChild(card);
+    });
+  }
+  renderGenAufgaben();
+
+  genBtn.onclick = async () => {
+    genBtn.disabled = true;
+    statusEl.textContent = '⏳ Sammle Quellen…';
+    try {
+      const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+      const cutoff = new Date(Date.now() - (pr.referenzJahre ?? 2) * msPerYear);
+
+      // Referenz-Arbeiten (Kompositionsstil)
+      const refArbeiten = ALTE_ARBEITEN_DB.filter(aa => aa.datum && new Date(aa.datum) >= cutoff);
+
+      // Quellen-Arbeiten (Ideenpool)
+      const quellenAA = (pr.quellen?.alteArbeiten || [])
+        .map(id => ALTE_ARBEITEN_DB.find(aa => aa.id === id)).filter(Boolean);
+
+      // Schulbuch-Kapitel (Ideenpool)
+      const quellenKap = [];
+      (pr.quellen?.kapitel || []).forEach(kapId => {
+        SCHULBUCHDB.forEach(buch => {
+          (buch.kapitel || []).forEach(kap => {
+            if (kap.id === kapId) quellenKap.push({ buch: buch.titel, kap });
+            (kap.unterkapitel || []).forEach(u => { if (u.id === kapId) quellenKap.push({ buch: buch.titel, kap: u }); });
+          });
+        });
+      });
+
+      // Lernziele
+      const lernziele = [];
+      (pr.ausgewaehlteLernziele || []).forEach(lzId => {
+        CHECKLISTDB.forEach(cl => {
+          (cl.lernziele || []).forEach(lz => { if (lz.id === lzId) lernziele.push(lz.text); });
+        });
+      });
+
+      // Prompt
+      let prompt = 'Du bist ein erfahrener Gymnasiallehrer und entwirfst eine Klassenarbeit.\n\n';
+
+      if (refArbeiten.length) {
+        prompt += `## KOMPOSITIONSSTIL\nAnalysiere diese ${refArbeiten.length} aktuelle${refArbeiten.length > 1 ? 'n' : ''} Referenzarbeit${refArbeiten.length > 1 ? 'en' : ''} und übernimm deren Aufbau, Schwierigkeitsverteilung und Aufgabentypen:\n`;
+        refArbeiten.forEach(aa => {
+          prompt += `\n### ${aa.titel}${aa.datum ? ' (' + new Date(aa.datum).getFullYear() + ')' : ''}\n`;
+          (aa.aufgaben || []).slice(0, 30).forEach(a => {
+            prompt += `- Aufg. ${a.nr ?? '?'}: ${a.aufgabenstellung || a.text || ''} [${a.punkte ?? '?'} P, ${a.schwierigkeit || '?'}]\n`;
+          });
+        });
+        prompt += '\n';
+      } else {
+        prompt += '## KOMPOSITIONSSTIL\nKeine Referenzarbeiten im gewählten Zeitraum. Vorgaben: 4–6 Hauptaufgaben, 40–50 % Reproduktion (○), 10–15 % Transfer (●), Rest Anwendung (◒), Progression leicht→schwer.\n\n';
+      }
+
+      if (lernziele.length) {
+        prompt += '## LERNZIELE (alle abdecken)\n';
+        lernziele.forEach((lz, i) => { prompt += `${i + 1}. ${lz}\n`; });
+        prompt += '\n';
+      }
+
+      if (pr.thema) prompt += `## THEMA\n${pr.thema}\n\n`;
+
+      const ideenPool = [];
+      quellenAA.forEach(aa => (aa.aufgaben || []).forEach(a => {
+        if (a.text || a.aufgabenstellung) ideenPool.push(`[${aa.titel}] ${a.aufgabenstellung || ''} ${a.text || ''}`.trim());
+      }));
+      quellenKap.forEach(({ buch, kap }) => (kap.aufgaben || []).forEach(a => {
+        if (a.text || a.aufgabenstellung) ideenPool.push(`[${buch} / ${kap.titel}] ${a.aufgabenstellung || ''} ${a.text || ''}`.trim());
+      }));
+
+      if (ideenPool.length) {
+        prompt += `## AUFGABEN-IDEENPOOL (adaptiere passende Ideen — nicht 1:1 kopieren, neue Zahlen verwenden)\n`;
+        ideenPool.slice(0, 50).forEach(idea => { prompt += `- ${idea}\n`; });
+        prompt += '\n';
+      }
+
+      prompt += `## FORMAT
+Antworte NUR mit validem JSON:
+{"aufgaben":[
+  {"nr":1,"thema":"Thema","aufgabenstellung":"Gemeinsame Einleitung oder null","gesamtpunkte":8,"unteraufgaben":[
+    {"nr":"1a","text":"Aufgabentext","punkte":2,"schwierigkeit":"○","typ":"Rechnung"},
+    {"nr":"1b","text":"Aufgabentext","punkte":3,"schwierigkeit":"◒","typ":"Sachaufgabe"},
+    {"nr":"1c","text":"Aufgabentext","punkte":3,"schwierigkeit":"●","typ":"Begründung"}
+  ]}
+]}
+Schwierigkeit: "○" Reproduktion/einfach · "◒" Anwendung/mittel · "●" Transfer/schwer
+Typen: "Rechnung" · "Sachaufgabe" · "Begründung" · "Multiple Choice" · "Diagramm" · "Lückentext"
+Unteraufgaben sind thematisch verbunden, aber RECHNERISCH UNABHÄNGIG (eigene neue Zahlen).`;
+
+      statusEl.textContent = '⏳ KI generiert Aufgaben…';
+      const raw = await callKI([{ type: 'text', text: prompt }], 6000);
+
+      let parsed;
+      try { parsed = robustJsonParsePr(raw); }
+      catch (e) { throw new Error('KI-Antwort konnte nicht gelesen werden'); }
+
+      pr.genAufgaben = parsed.aufgaben || [];
+      savePruefungsDB();
+      renderGenAufgaben();
+      statusEl.textContent = '✓ ' + pr.genAufgaben.length + ' Aufgaben generiert';
+    } catch (e) {
+      statusEl.textContent = '⚠ ' + e.message;
+    }
+    genBtn.disabled = false;
+  };
+
+  return div;
+}
+
 function buildPrDetail(pr) {
   const div = mk('div', '');
 
@@ -768,8 +946,9 @@ function buildPrDetail(pr) {
     tabContent.innerHTML = '';
     if (aktiverTab === 'lernziele') tabContent.appendChild(buildLernzieleTab(pr));
     else if (aktiverTab === 'quellen') tabContent.appendChild(buildQuellenTab(pr));
+    else if (aktiverTab === 'aufgaben') tabContent.appendChild(buildAufgabenGenTab(pr));
     else {
-      const ph = tx('div', '', aktiverTab === 'aufgaben' ? 'Aufgaben — folgt' : 'Vorschau — folgt');
+      const ph = tx('div', '', 'Vorschau — folgt');
       ph.style.cssText = 'padding:40px;text-align:center;color:var(--tx3);';
       tabContent.appendChild(ph);
     }

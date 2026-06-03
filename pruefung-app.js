@@ -562,15 +562,13 @@ function buildQuellenTab(pr) {
   }
 
   // ── Schulbücher ────────────────────────────────────────────────
-  div.appendChild(mk('div','').setAttribute||(() => {
-    const spacer = mk('div',''); spacer.style.height='16px'; div.appendChild(spacer);
-  })());
+  const spacer = mk('div',''); spacer.style.height='16px'; div.appendChild(spacer);
   const sbHdr = tx('div', '', 'Schulbuch-Kapitel');
-  sbHdr.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);padding:6px 0 4px;border-bottom:2px solid var(--pri);margin-bottom:8px;margin-top:8px;';
+  sbHdr.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);padding:6px 0 4px;border-bottom:2px solid var(--pri);margin-bottom:8px;';
   div.appendChild(sbHdr);
 
   if (!SCHULBUCHDB.length) {
-    div.appendChild(tx('div','','Keine Schulbücher in der Datenbank.')).style.cssText='font-size:13px;color:var(--tx3);';
+    const noSb = tx('div','','Keine Schulbücher in der Datenbank.'); noSb.style.cssText='font-size:13px;color:var(--tx3);'; div.appendChild(noSb);
   } else {
     SCHULBUCHDB.forEach(buch => {
       const buchHdr = tx('div','', (buch.titel||'–'));

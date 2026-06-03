@@ -1003,23 +1003,19 @@ Regeln:
       aufgList.appendChild(box);
     });
 
-    // Aufgaben gruppieren nach Basisnummer (z.B. "17" für "17a", "17b")
+    // Gruppieren nach (Seite + Basisnummer) — Aufg. 1 auf S.17 und Aufg. 1 auf S.19 bleiben getrennt
     const groupMap = {};
+    const groups = []; // Reihenfolge = Einfügereihenfolge (= Seitenreihenfolge, da sortAufgaben vorher läuft)
     aufgabenOnly.forEach(aufg => {
       const nrStr = aufg.nr != null ? String(aufg.nr) : '?';
       const base = nrStr.match(/^(\d+)/)?.[1] || nrStr;
-      if (!groupMap[base]) groupMap[base] = [];
-      groupMap[base].push(aufg);
-    });
-    // Numerisch sortierte Gruppen
-    const groups = Object.keys(groupMap).sort((a, b) => {
-      const na = parseInt(a), nb = parseInt(b);
-      if (!isNaN(na) && !isNaN(nb)) return na - nb;
-      return a.localeCompare(b, 'de', { numeric: true });
+      const key = (aufg.seite ?? '?') + '_' + base;
+      if (!groupMap[key]) { groupMap[key] = { base, seite: aufg.seite, aufgaben: [] }; groups.push(key); }
+      groupMap[key].aufgaben.push(aufg);
     });
 
-    groups.forEach(base => {
-      const gruppe = groupMap[base];
+    groups.forEach(key => {
+      const { base, seite, aufgaben: gruppe } = groupMap[key];
       if (gruppe.length === 1) {
         // Einzelne Aufgabe → flach anzeigen
         aufgList.appendChild(aufgRow(gruppe[0], false));
@@ -1041,10 +1037,8 @@ Regeln:
           const spacer = mk('span', ''); spacer.style.flex = '1';
           header.appendChild(spacer);
         }
-        // Alle Seitenzahlen der Gruppe anzeigen
-        const seiten = [...new Set(gruppe.map(a => a.seite).filter(Boolean))].sort((a,b) => a-b);
-        if (seiten.length) {
-          const s = tx('span', 'matc-jg', 'S. ' + seiten.join(', '));
+        if (seite) {
+          const s = tx('span', 'matc-jg', 'S. ' + seite);
           s.style.flexShrink = '0';
           header.appendChild(s);
         }

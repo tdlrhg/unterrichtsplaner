@@ -444,7 +444,11 @@ function buildLernzieleTab(pr) {
 function buildAlteArbeitDetail(aa) {
   const div = mk('div', '');
   const hdr = mk('div', 'c-hdr');
-  const left = mk('div', '');
+  const left = mk('div', ''); left.style.flex = '1';
+  const backBtn = btn('← Alte Arbeiten', 'btn btn-ghost btn-sm');
+  backBtn.style.marginBottom = '4px';
+  backBtn.onclick = () => { PR.view = 'alte_arbeiten_overview'; PR.aktAlteArbeitId = null; renderPr(); };
+  left.appendChild(backBtn);
   left.appendChild(tx('div', 'c-title', aa.titel || '–'));
   const sub = [aa.kursLabel, aa.datum ? new Date(aa.datum).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : null, aa.dauer ? aa.dauer + ' Min.' : null].filter(Boolean).join(' · ');
   if (sub) left.appendChild(tx('div', 'c-sub', sub));
@@ -859,6 +863,10 @@ function buildChecklistDetail(cl) {
     // Header
     const hdr = mk('div', 'c-hdr');
     const left = mk('div', ''); left.style.flex = '1';
+    const backBtn = btn('← Checklisten', 'btn btn-ghost btn-sm');
+    backBtn.style.marginBottom = '4px';
+    backBtn.onclick = () => { PR.view = 'checklisten_overview'; PR.aktCheckId = null; renderPr(); };
+    left.appendChild(backBtn);
 
     if (editMode) {
       const titelInp = document.createElement('input'); titelInp.className = 'finp';

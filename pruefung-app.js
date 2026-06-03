@@ -82,6 +82,18 @@ Antworte NUR mit validem JSON:
 ]}`;
 let CHECKLISTDB = [];
 let ALTE_ARBEITEN_DB = [];
+
+const KOMPOSITIONSSTIL_DEFAULT = `4–7 Hauptaufgaben, jeweils mit Teilaufgaben.
+Teilaufgaben sind thematisch verbunden, aber rechnerisch unabhängig (neue Zahlen pro Teilaufgabe).
+Punkteverteilung: 40–50 % Reproduktion/einfache Anwendung (○), 10–15 % schwieriger Transfer (●), Rest mittlere Anwendung (◒).
+Progression: gesamt leicht→schwer, auch innerhalb jeder Aufgabe leicht→schwer.
+Abwechslungsreiche Aufgabentypen: Rechnung, Sachaufgabe, Multiple Choice, Diagramm, Begründung/Erklärung.`;
+
+let KOMPOSITIONSSTIL = KOMPOSITIONSSTIL_DEFAULT;
+
+function saveKompositionsstil() {
+  sbUpload('kompositionsstil.json', { text: KOMPOSITIONSSTIL }).catch(() => {});
+}
 let PR = {
   aktId: null,
   aktCheckId: null,
@@ -780,6 +792,30 @@ function buildAufgabenGenTab(pr) {
   zeitRow.appendChild(tx('span', '', 'Jahre als Referenz für den Kompositionsstil.'));
   div.appendChild(zeitRow);
 
+  // ── Kompositionsstil ─────────────────────────────────────────
+  const stilSec = mk('div', '');
+  stilSec.style.cssText = 'margin-bottom:20px;';
+  const stilHdr = mk('div', '');
+  stilHdr.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px;';
+  stilHdr.appendChild(tx('span', '', 'Mein Kompositionsstil'));
+  stilHdr.lastChild.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);';
+  const resetBtn = btn('Zurücksetzen', 'btn btn-ghost btn-xs');
+  resetBtn.style.marginLeft = 'auto';
+  stilHdr.appendChild(resetBtn);
+  stilSec.appendChild(stilHdr);
+
+  const stilArea = document.createElement('textarea');
+  stilArea.value = KOMPOSITIONSSTIL;
+  stilArea.style.cssText = 'width:100%;min-height:110px;padding:10px;font-size:13px;line-height:1.6;border:1px solid var(--bord);border-radius:6px;background:var(--surf2);color:var(--tx1);resize:vertical;box-sizing:border-box;';
+  stilArea.oninput = () => { KOMPOSITIONSSTIL = stilArea.value; saveKompositionsstil(); };
+  resetBtn.onclick = () => { KOMPOSITIONSSTIL = KOMPOSITIONSSTIL_DEFAULT; stilArea.value = KOMPOSITIONSSTIL; saveKompositionsstil(); };
+  stilSec.appendChild(stilArea);
+
+  const stilHint = tx('div', '', 'Gilt für alle Prüfungen. Die KI nutzt dies zusätzlich zur Analyse deiner Referenzarbeiten.');
+  stilHint.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:4px;';
+  stilSec.appendChild(stilHint);
+  div.appendChild(stilSec);
+
   const statusEl = mk('div', '');
   statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;margin:8px 0 16px;';
 
@@ -872,8 +908,11 @@ function buildAufgabenGenTab(pr) {
       // Prompt
       let prompt = 'Du bist ein erfahrener Gymnasiallehrer und entwirfst eine Klassenarbeit.\n\n';
 
+      // Kompositionsstil immer einbauen
+      prompt += `## MEIN KOMPOSITIONSSTIL (verbindliche Vorgaben)\n${KOMPOSITIONSSTIL}\n\n`;
+
       if (refArbeiten.length) {
-        prompt += `## KOMPOSITIONSSTIL\nAnalysiere diese ${refArbeiten.length} aktuelle${refArbeiten.length > 1 ? 'n' : ''} Referenzarbeit${refArbeiten.length > 1 ? 'en' : ''} und übernimm deren Aufbau, Schwierigkeitsverteilung und Aufgabentypen:\n`;
+        prompt += `## REFERENZARBEITEN (analysiere Aufbau und Stil dieser ${refArbeiten.length} aktuellen Arbeit${refArbeiten.length > 1 ? 'en' : ''})\n`;
         refArbeiten.forEach(aa => {
           prompt += `\n### ${aa.titel}${aa.datum ? ' (' + new Date(aa.datum).getFullYear() + ')' : ''}\n`;
           (aa.aufgaben || []).slice(0, 30).forEach(a => {
@@ -881,8 +920,6 @@ function buildAufgabenGenTab(pr) {
           });
         });
         prompt += '\n';
-      } else {
-        prompt += '## KOMPOSITIONSSTIL\nKeine Referenzarbeiten im gewählten Zeitraum. Vorgaben: 4–6 Hauptaufgaben, 40–50 % Reproduktion (○), 10–15 % Transfer (●), Rest Anwendung (◒), Progression leicht→schwer.\n\n';
       }
 
       if (lernziele.length) {
@@ -1389,7 +1426,7 @@ async function prCheckVersion(ghDate) {
 (async () => {
   renderPr(); // Lade-State zeigen
 
-  const [data, pruefungen, checklisten, alteArbeiten, matdb, schulbuecher, klpdb] = await Promise.all([
+  const [data, pruefungen, checklisten, alteArbeiten, matdb, schulbuecher, klpdb, stilJson] = await Promise.all([
     sbDownload('data.json').catch(() => ({ fachplanungen: [], kurse: [] })),
     sbDownload('pruefungen.json').catch(() => []),
     sbDownload('checklisten.json').catch(() => []),
@@ -1397,6 +1434,7 @@ async function prCheckVersion(ghDate) {
     sbDownload('materialien.json').catch(() => []),
     sbDownload('schulbuecher.json').catch(() => []),
     fetch('klp.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
+    sbDownload('kompositionsstil.json').catch(() => null),
   ]);
 
   S.data = data || { fachplanungen: [], kurse: [] };
@@ -1409,6 +1447,7 @@ async function prCheckVersion(ghDate) {
   MATDB = Array.isArray(matdb) ? matdb : [];
   SCHULBUCHDB = Array.isArray(schulbuecher) ? schulbuecher : [];
   KLPDB = Array.isArray(klpdb) ? klpdb : [];
+  if (stilJson?.text) KOMPOSITIONSSTIL = stilJson.text;
 
   renderPr();
 

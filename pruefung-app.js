@@ -1,5 +1,85 @@
 // ── Prüfungsplaner App ────────────────────────────────────────────
 let PRUEFUNGSDB = [];
+
+// ── JSON-Repair-Helfer (analog zu schulbuch.js) ───────────────────
+function repairJsonStringsPr(s) {
+  let out = ''; let inStr = false; let i = 0;
+  while (i < s.length) {
+    const ch = s[i];
+    if (inStr) {
+      if (ch === '\\') { out += ch + (s[i+1] || ''); i += 2; continue; }
+      if (ch === '"') { inStr = false; out += ch; i++; continue; }
+      if (ch === '\n') { out += '\\n'; i++; continue; }
+      if (ch === '\r') { out += '\\r'; i++; continue; }
+      if (ch === '\t') { out += '\\t'; i++; continue; }
+      if (ch.charCodeAt(0) < 0x20) { i++; continue; }
+    } else { if (ch === '"') inStr = true; }
+    out += ch; i++;
+  }
+  return out;
+}
+function robustJsonParsePr(raw) {
+  function extractTop(text) {
+    const s = text.indexOf('{'); if (s < 0) return null;
+    let depth = 0, inStr = false, esc = false;
+    for (let i = s; i < text.length; i++) {
+      const ch = text[i];
+      if (esc) { esc = false; continue; }
+      if (ch === '\\' && inStr) { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === '{') depth++;
+      else if (ch === '}') { depth--; if (depth === 0) return text.slice(s, i + 1); }
+    }
+    return text.slice(s);
+  }
+  const extracted = extractTop(raw);
+  if (!extracted) throw new Error('Kein JSON in der Antwort');
+  let jsonStr = extracted;
+  const opens = (jsonStr.match(/\[/g)||[]).length - (jsonStr.match(/\]/g)||[]).length;
+  const opensCurl = (jsonStr.match(/\{/g)||[]).length - (jsonStr.match(/\}/g)||[]).length;
+  jsonStr += ']'.repeat(Math.max(0,opens)) + '}'.repeat(Math.max(0,opensCurl));
+  jsonStr = repairJsonStringsPr(jsonStr);
+  try { return JSON.parse(jsonStr); } catch(e) {
+    const items = [];
+    let depth = 0, start = -1, inStr = false, esc = false;
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw[i];
+      if (esc) { esc = false; continue; }
+      if (ch === '\\' && inStr) { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === '{') { if (depth === 0) start = i; depth++; }
+      else if (ch === '}') { depth--; if (depth === 0 && start >= 0) {
+        const objStr = repairJsonStringsPr(raw.slice(start, i + 1));
+        try { const o = JSON.parse(objStr); if (o.typ || o.nr) items.push(o); } catch(e2) {}
+        start = -1;
+      }}
+    }
+    if (items.length) return { aufgaben: items };
+    throw new Error('KI-Antwort konnte nicht als JSON gelesen werden');
+  }
+}
+
+// Prompt für Alte Arbeiten
+const KI_PROMPT_ALTE_ARBEIT = `Du analysierst Seiten einer Klassenarbeit (Gymnasium, Mathematik oder Naturwissenschaften).
+
+Extrahiere jede Aufgabe und Teilaufgabe als eigenen Eintrag.
+
+Für jede Aufgabe / Teilaufgabe:
+- nr: Aufgabennummer inkl. Teilaufgabe (z.B. "3b") — Hauptaufgabe ohne Buchstabe (z.B. "3")
+- seite: Seitennummer falls erkennbar, sonst null
+- aufgabenstellung: gemeinsame Aufgabenstellung bei Hauptaufgaben, sonst null
+- text: der Aufgabentext (Teilaufgabe: nur der individuelle Teil; Einzelaufgabe: voller Text). Formeln als Text, z.B. "2x - 1 = 5". Einzeilig.
+- punkte: Punktzahl falls auf der Arbeit angegeben, sonst null
+- grafik: kurze Beschreibung eines Fotos/Diagramms (1 Satz), null wenn keins
+
+Antworte NUR mit validem JSON:
+{"aufgaben": [
+  {"nr":"1","seite":1,"aufgabenstellung":"Löse die folgenden Gleichungen.","text":null,"punkte":8,"grafik":null},
+  {"nr":"1a","seite":1,"aufgabenstellung":null,"text":"3x + 5 = 14","punkte":2,"grafik":null},
+  {"nr":"1b","seite":1,"aufgabenstellung":null,"text":"2x - 1 = -0,5x + 5","punkte":3,"grafik":null}
+]}`;
 let CHECKLISTDB = [];
 let ALTE_ARBEITEN_DB = [];
 let PR = {
@@ -370,7 +450,26 @@ function buildAlteArbeitDetail(aa) {
   if (sub) left.appendChild(tx('div', 'c-sub', sub));
   hdr.appendChild(left); div.appendChild(hdr);
 
-  if (aa.seiten?.length) {
+  // Neue Aufgaben-Darstellung
+  if (aa.aufgaben?.length) {
+    aa.aufgaben.forEach(a => {
+      const card = mk('div', 'card');
+      const body = mk('div', 'card-body');
+      body.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+      const topRow = mk('div',''); topRow.style.cssText='display:flex;align-items:baseline;gap:10px;';
+      const nrSpan = tx('span','', 'Aufgabe ' + (a.nr || '?'));
+      nrSpan.style.cssText='font-weight:700;font-size:14px;';
+      topRow.appendChild(nrSpan);
+      if (a.punkte) { const pt = tx('span','', a.punkte + ' P'); pt.style.cssText='font-size:11px;color:var(--tx3);'; topRow.appendChild(pt); }
+      if (a.seite) { const s = tx('span','', 'S. ' + a.seite); s.style.cssText='font-size:11px;color:var(--tx3);margin-left:auto;'; topRow.appendChild(s); }
+      body.appendChild(topRow);
+      if (a.aufgabenstellung) { const as = tx('div','', a.aufgabenstellung); as.style.cssText='font-size:13px;color:var(--tx2);font-style:italic;'; body.appendChild(as); }
+      if (a.text) { const t = tx('div','', a.text); t.style.cssText='font-size:13px;color:var(--tx1);line-height:1.5;'; body.appendChild(t); }
+      if (a.grafik) { const g = tx('div','', '🖼 ' + a.grafik); g.style.cssText='font-size:11px;color:var(--tx3);'; body.appendChild(g); }
+      card.appendChild(body); div.appendChild(card);
+    });
+  // Rückwärtskompatibilität: alte seiten-Daten
+  } else if (aa.seiten?.length) {
     aa.seiten.forEach(s => {
       const card = mk('div', 'card');
       const body = mk('div', 'card-body');
@@ -467,11 +566,12 @@ function showNeueAlteArbeitModal() {
     const fp = kurs ? (S.data?.fachplanungen||[]).find(f=>f.id===kurs.fachplanungId) : null;
 
     try {
-      // Verbatim-Extraktion (wie Materialsammlungen)
-      const seiten = [];
+      // Aufgaben-Extraktion (JSON, mit Nummer + Punkte)
+      const allAufgaben = [];
       for (let i = 0; i < uploadedImgs.length; i += 4) {
         const batch = uploadedImgs.slice(i, i+4);
-        statusEl.textContent = `⏳ Lese Seite ${i+1}–${Math.min(i+4,uploadedImgs.length)} von ${uploadedImgs.length}…`;
+        const end = Math.min(i+4, uploadedImgs.length);
+        statusEl.textContent = `⏳ Lese Seite ${i+1}–${end} von ${uploadedImgs.length}…`;
         const resized = await Promise.all(batch.map(img => new Promise((res,rej) => {
           const image=new Image(); image.onload=()=>{
             const scale=image.width>1200?1200/image.width:1;
@@ -484,33 +584,22 @@ function showNeueAlteArbeitModal() {
             { type:'image', source:{type:'base64',media_type:'image/jpeg',data:r.split(',')[1]} },
             ...(j<batch.length-1?[{type:'text',text:'--- Nächste Seite ---'}]:[])
           ]).flat(),
-          { type:'text', text:`Lies diese Seiten einer Klassenarbeit wortwörtlich aus.
-Antworte im Format:
-=== Seite ${i+1} | [Titel/Überschrift der Seite] ===
-[vollständiger Text]
-GRAFIK: [Beschreibung oder "keine"]
-
-Kopf-/Fußzeilen, Seitenzahlen und Schul-URLs weglassen.` }
+          { type:'text', text: KI_PROMPT_ALTE_ARBEIT }
         ];
         const raw = await callKI(blocks, 6000);
-        const bloecke = raw.split(/\n(?===)/);
-        for (const block of bloecke) {
-          const m = block.match(/^===\s*Seite\s*(\d+)\s*\|\s*(.+?)\s*===/i);
-          if (!m) continue;
-          const rest = block.slice(block.indexOf('===',3)+3).trim();
-          const grafikM = rest.match(/\nGRAFIK:\s*(.+)$/im);
-          const grafik = grafikM ? (grafikM[1].trim().toLowerCase()==='keine'?null:grafikM[1].trim()) : null;
-          const inhalt = grafikM ? rest.slice(0,grafikM.index).trim() : rest;
-          seiten.push({ seite: parseInt(m[1]), thema: m[2].trim(), inhalt, grafik });
-        }
+        let parsed;
+        try { parsed = robustJsonParsePr(raw); }
+        catch(e) { throw new Error('KI-Antwort konnte nicht gelesen werden (Seiten ' + (i+1) + '–' + end + ')'); }
+        (parsed.aufgaben || []).forEach(a => { a.id = uid(); allAufgaben.push(a); });
       }
+      statusEl.textContent = '✓ ' + allAufgaben.length + ' Aufgaben aus ' + uploadedImgs.length + ' Seiten extrahiert';
 
       const aa = {
         id: uid(), titel,
         kursId, kursLabel: kurs ? kurs.klasse+(fp?' · '+fp.fach:'') : null,
         datum: datumInp.value || null,
         dauer: dauerInp.value ? parseInt(dauerInp.value) : null,
-        seiten, erstellt: new Date().toISOString(),
+        aufgaben: allAufgaben, erstellt: new Date().toISOString(),
       };
       ALTE_ARBEITEN_DB.push(aa);
       saveAlteArbeitenDB();

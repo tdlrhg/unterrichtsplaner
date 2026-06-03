@@ -1004,13 +1004,18 @@ Regeln:
     });
 
     // Aufgaben gruppieren nach Basisnummer (z.B. "17" für "17a", "17b")
-    const groups = [];
     const groupMap = {};
     aufgabenOnly.forEach(aufg => {
       const nrStr = aufg.nr != null ? String(aufg.nr) : '?';
       const base = nrStr.match(/^(\d+)/)?.[1] || nrStr;
-      if (!groupMap[base]) { groupMap[base] = []; groups.push(base); }
+      if (!groupMap[base]) groupMap[base] = [];
       groupMap[base].push(aufg);
+    });
+    // Numerisch sortierte Gruppen
+    const groups = Object.keys(groupMap).sort((a, b) => {
+      const na = parseInt(a), nb = parseInt(b);
+      if (!isNaN(na) && !isNaN(nb)) return na - nb;
+      return a.localeCompare(b, 'de', { numeric: true });
     });
 
     groups.forEach(base => {
@@ -1020,7 +1025,6 @@ Regeln:
         aufgList.appendChild(aufgRow(gruppe[0], false));
       } else {
         // Gruppe → Kopfzeile + eingerückte Teilaufgaben
-        // Hauptaufgaben-Eintrag (ohne Buchstabe) als Header verwenden falls vorhanden
         const hauptEintrag = gruppe.find(a => a.nr === base);
         const teilaufgaben = gruppe.filter(a => a.nr !== base);
         const anzeigeGruppe = teilaufgaben.length ? teilaufgaben : gruppe;
@@ -1037,8 +1041,10 @@ Regeln:
           const spacer = mk('span', ''); spacer.style.flex = '1';
           header.appendChild(spacer);
         }
-        if (gruppe[0].seite) {
-          const s = tx('span', 'matc-jg', 'S. ' + gruppe[0].seite);
+        // Alle Seitenzahlen der Gruppe anzeigen
+        const seiten = [...new Set(gruppe.map(a => a.seite).filter(Boolean))].sort((a,b) => a-b);
+        if (seiten.length) {
+          const s = tx('span', 'matc-jg', 'S. ' + seiten.join(', '));
           s.style.flexShrink = '0';
           header.appendChild(s);
         }

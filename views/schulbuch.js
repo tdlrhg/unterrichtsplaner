@@ -78,6 +78,28 @@ function robustJsonParse(raw) {
   }
 }
 
+// Zählt nur Einträge die auch ein Symbol bekommen (keine Lehrtexte, keine reinen Header-Einträge)
+function countSichtbareAufgaben(aufgaben) {
+  const arr = (aufgaben || []).filter(a => a.typ !== 'lehrtext');
+  if (!arr.length) return 0;
+  const groupMap = {};
+  arr.forEach(a => {
+    const nrStr = a.nr != null ? String(a.nr) : '?';
+    const base = nrStr.match(/^(\d+)/)?.[1] || nrStr;
+    const key = (a.seite ?? '?') + '_' + base;
+    if (!groupMap[key]) groupMap[key] = [];
+    groupMap[key].push(a);
+  });
+  let count = 0;
+  Object.values(groupMap).forEach(gruppe => {
+    const nrStr0 = gruppe[0].nr != null ? String(gruppe[0].nr) : '?';
+    const base = nrStr0.match(/^(\d+)/)?.[1] || nrStr0;
+    const teilaufgaben = gruppe.filter(a => String(a.nr ?? '?') !== base);
+    count += teilaufgaben.length > 0 ? teilaufgaben.length : gruppe.length;
+  });
+  return count;
+}
+
 function sortAufgaben(aufgaben) {
   aufgaben.sort((a, b) => {
     if ((a.seite || 0) !== (b.seite || 0)) return (a.seite || 0) - (b.seite || 0);
@@ -1305,8 +1327,8 @@ Regeln:
         hrow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;cursor:pointer;min-height:32px;';
         const kapArrow = tx('span', '', '▶');
         kapArrow.style.cssText = 'font-size:10px;color:var(--tx3);transition:transform .15s;flex-shrink:0;';
-        const aufgCount = (kap.aufgaben || []).length +
-          (kap.unterkapitel || []).reduce((s, u) => s + (u.aufgaben || []).length, 0);
+        const aufgCount = countSichtbareAufgaben(kap.aufgaben) +
+          (kap.unterkapitel || []).reduce((s, u) => s + countSichtbareAufgaben(u.aufgaben), 0);
 
         hrow.appendChild(kapArrow);
         hrow.appendChild(tx('strong', '', 'Kap. ' + kap.nr + ': ' + kap.titel));

@@ -532,33 +532,53 @@ function buildQuellenTab(pr) {
   const div = mk('div', '');
   if (!pr.quellen) pr.quellen = { kapitel: [], material: [], alteArbeiten: [] };
 
+  // Fach der Prüfung ermitteln (für Filterung)
+  const prKurs = pr.kursId ? (S.data?.kurse||[]).find(k=>k.id===pr.kursId) : null;
+  const prFp   = prKurs ? (S.data?.fachplanungen||[]).find(f=>f.id===prKurs.fachplanungId) : null;
+  const prFach = prFp?.fach || null;
+
   // ── Alte Arbeiten ──────────────────────────────────────────────
   const aaHdr = tx('div', '', 'Alte Arbeiten als Vorlage');
   aaHdr.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);padding:6px 0 4px;border-bottom:2px solid var(--pri);margin-bottom:8px;';
   div.appendChild(aaHdr);
+
+  // Alte Arbeiten nach Klasse gruppieren
+  const aaGleiche  = ALTE_ARBEITEN_DB.filter(aa => aa.kursId && aa.kursId === pr.kursId);
+  const aaAndere   = ALTE_ARBEITEN_DB.filter(aa => !(aa.kursId && aa.kursId === pr.kursId));
+
+  function addAaRow(aa) {
+    const row = mk('div',''); row.style.cssText='display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:6px;cursor:pointer;';
+    row.onmouseenter=()=>{row.style.background='var(--surf2)';}; row.onmouseleave=()=>{row.style.background='';};
+    const cb = document.createElement('input'); cb.type='checkbox'; cb.style.cssText='accent-color:var(--pri);width:15px;height:15px;flex-shrink:0;';
+    cb.checked = pr.quellen.alteArbeiten.includes(aa.id);
+    cb.onchange = () => {
+      if (cb.checked) pr.quellen.alteArbeiten.push(aa.id);
+      else pr.quellen.alteArbeiten = pr.quellen.alteArbeiten.filter(id=>id!==aa.id);
+      savePruefungsDB();
+    };
+    const info = mk('div','');
+    info.appendChild(tx('div','',aa.titel)); info.lastChild.style.cssText='font-size:13px;font-weight:500;';
+    if (aa.kursLabel) { info.appendChild(tx('div','',aa.kursLabel)); info.lastChild.style.cssText='font-size:11px;color:var(--tx3);'; }
+    row.onclick = e => { if(e.target===cb)return; cb.checked=!cb.checked; cb.onchange(); };
+    row.appendChild(cb); row.appendChild(info);
+    div.appendChild(row);
+  }
 
   if (!ALTE_ARBEITEN_DB.length) {
     const hint = tx('div', '', 'Noch keine alten Arbeiten gespeichert.');
     hint.style.cssText = 'font-size:13px;color:var(--tx3);margin-bottom:16px;';
     div.appendChild(hint);
   } else {
-    ALTE_ARBEITEN_DB.forEach(aa => {
-      const row = mk('div',''); row.style.cssText='display:flex;align-items:center;gap:10px;padding:5px 8px;border-radius:6px;cursor:pointer;';
-      row.onmouseenter=()=>{row.style.background='var(--surf2)';}; row.onmouseleave=()=>{row.style.background='';};
-      const cb = document.createElement('input'); cb.type='checkbox'; cb.style.cssText='accent-color:var(--pri);width:15px;height:15px;flex-shrink:0;';
-      cb.checked = pr.quellen.alteArbeiten.includes(aa.id);
-      cb.onchange = () => {
-        if (cb.checked) pr.quellen.alteArbeiten.push(aa.id);
-        else pr.quellen.alteArbeiten = pr.quellen.alteArbeiten.filter(id=>id!==aa.id);
-        savePruefungsDB();
-      };
-      const info = mk('div','');
-      info.appendChild(tx('div','',aa.titel)); info.lastChild.style.cssText='font-size:13px;font-weight:500;';
-      if (aa.kursLabel) { info.appendChild(tx('div','',aa.kursLabel)); info.lastChild.style.cssText='font-size:11px;color:var(--tx3);'; }
-      row.onclick = e => { if(e.target===cb)return; cb.checked=!cb.checked; cb.onchange(); };
-      row.appendChild(cb); row.appendChild(info);
-      div.appendChild(row);
-    });
+    if (aaGleiche.length) {
+      const gl = tx('div','','Diese Klasse'); gl.style.cssText='font-size:11px;color:var(--tx3);font-weight:600;margin:4px 0 2px 8px;';
+      div.appendChild(gl);
+      aaGleiche.forEach(addAaRow);
+    }
+    if (aaAndere.length) {
+      const an = tx('div','','Andere'); an.style.cssText='font-size:11px;color:var(--tx3);font-weight:600;margin:8px 0 2px 8px;';
+      div.appendChild(an);
+      aaAndere.forEach(addAaRow);
+    }
   }
 
   // ── Schulbücher ────────────────────────────────────────────────
@@ -567,10 +587,14 @@ function buildQuellenTab(pr) {
   sbHdr.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);padding:6px 0 4px;border-bottom:2px solid var(--pri);margin-bottom:8px;';
   div.appendChild(sbHdr);
 
-  if (!SCHULBUCHDB.length) {
-    const noSb = tx('div','','Keine Schulbücher in der Datenbank.'); noSb.style.cssText='font-size:13px;color:var(--tx3);'; div.appendChild(noSb);
+  // Nur Bücher zum gleichen Fach anzeigen
+  const passendeBuecher = SCHULBUCHDB.filter(b => !prFach || b.fach === prFach);
+
+  if (!passendeBuecher.length) {
+    const noSb = tx('div','', prFach ? 'Keine Schulbücher für dieses Fach.' : 'Keine Schulbücher in der Datenbank.');
+    noSb.style.cssText='font-size:13px;color:var(--tx3);'; div.appendChild(noSb);
   } else {
-    SCHULBUCHDB.forEach(buch => {
+    passendeBuecher.forEach(buch => {
       const buchHdr = tx('div','', (buch.titel||'–'));
       buchHdr.style.cssText='font-size:12px;font-weight:600;color:var(--tx2);margin:6px 0 3px 0;';
       div.appendChild(buchHdr);

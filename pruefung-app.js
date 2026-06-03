@@ -629,6 +629,15 @@ function buildQuellenTab(pr) {
   const prKurs = pr.kursId ? (S.data?.kurse||[]).find(k=>k.id===pr.kursId) : null;
   const prFp   = prKurs ? (S.data?.fachplanungen||[]).find(f=>f.id===prKurs.fachplanungId) : null;
   const prFach = prFp?.fach || null;
+  // Fachplanung-Code ('M','Ch','Bio',...) → Schulbuch-Code ('mathe','chemie','bio')
+  function toSchulbuchFach(f) {
+    if (!f) return null;
+    if (f === 'M') return 'mathe';
+    if (f.startsWith('Ch')) return 'chemie';
+    if (f.startsWith('Bio')) return 'bio';
+    return null;
+  }
+  const prFachSb = toSchulbuchFach(prFach);
 
   // ── Alte Arbeiten ──────────────────────────────────────────────
   const aaHdr = tx('div', '', 'Alte Arbeiten als Vorlage');
@@ -681,10 +690,10 @@ function buildQuellenTab(pr) {
   div.appendChild(sbHdr);
 
   // Nur Bücher zum gleichen Fach anzeigen
-  const passendeBuecher = SCHULBUCHDB.filter(b => !prFach || b.fach === prFach);
+  const passendeBuecher = SCHULBUCHDB.filter(b => !prFachSb || b.fach === prFachSb);
 
   if (!passendeBuecher.length) {
-    const noSb = tx('div','', prFach ? 'Keine Schulbücher für dieses Fach.' : 'Keine Schulbücher in der Datenbank.');
+    const noSb = tx('div','', prFachSb ? 'Keine Schulbücher für dieses Fach.' : 'Keine Schulbücher in der Datenbank.');
     noSb.style.cssText='font-size:13px;color:var(--tx3);'; div.appendChild(noSb);
   } else {
     passendeBuecher.forEach(buch => {

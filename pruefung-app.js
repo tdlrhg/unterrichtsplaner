@@ -807,6 +807,102 @@ function buildAufgabenGenTab(pr) {
   if (!pr.genAufgaben) pr.genAufgaben = [];
   if (!pr.strukturVorschlag) pr.strukturVorschlag = [];
   if (!pr.feinstruktur) pr.feinstruktur = [];
+  if (typeof pr.grobstrukturLocked !== 'boolean') pr.grobstrukturLocked = !!pr.feinstruktur.length;
+
+  function getActiveTasks() {
+    return pr.strukturVorschlag.filter(a => !a._removed);
+  }
+  function ensureTaskMeta() {
+    pr.strukturVorschlag.forEach(aufg => {
+      if (!aufg.taskId) aufg.taskId = uid();
+      if (typeof aufg._grobUnlocked !== 'boolean') aufg._grobUnlocked = !pr.grobstrukturLocked;
+      if (typeof aufg._needsFeinUpdate !== 'boolean') aufg._needsFeinUpdate = false;
+    });
+    const aktive = getActiveTasks();
+    pr.feinstruktur.forEach((fs, idx) => {
+      if (!fs.taskId && aktive[idx]) fs.taskId = aktive[idx].taskId;
+    });
+    pr.genAufgaben.forEach((ga, idx) => {
+      if (!ga.taskId) {
+        const fsMatch = pr.feinstruktur.find(fs => fs.nr === ga.nr) || pr.feinstruktur[idx];
+        ga.taskId = fsMatch?.taskId || aktive[idx]?.taskId || uid();
+      }
+    });
+  }
+  function syncDerivedOrder() {
+    const order = getActiveTasks().map(a => a.taskId);
+    const orderIdx = id => {
+      const idx = order.indexOf(id);
+      return idx < 0 ? 9999 : idx;
+    };
+    pr.feinstruktur.sort((a, b) => orderIdx(a.taskId) - orderIdx(b.taskId));
+    pr.genAufgaben.sort((a, b) => orderIdx(a.taskId) - orderIdx(b.taskId));
+    pr.feinstruktur.forEach((fs, idx) => { fs.nr = idx + 1; });
+    pr.genAufgaben.forEach((ga, idx) => {
+      ga.nr = idx + 1;
+      const fs = pr.feinstruktur.find(x => x.taskId === ga.taskId);
+      if (fs) ga.titel = fs.titel;
+    });
+  }
+  function invalidateGeneratedTask(taskId) {
+    pr.genAufgaben = pr.genAufgaben.filter(ga => ga.taskId !== taskId);
+  }
+  function markTaskDirty(aufg) {
+    aufg._needsFeinUpdate = true;
+    invalidateGeneratedTask(aufg.taskId);
+    savePruefungsDB();
+  }
+  function buildFeinstrukturPrompt(aufg, aufgNr, lernziele, ideenPool) {
+    let p = `Du planst Aufgabe ${aufgNr} einer Klassenarbeit.\n`;
+    p += `Thema/Titel: ${aufg.titel}\n`;
+    p += `Beschreibung: ${aufg.beschreibung}\n`;
+    p += `Zeit: ${aufg.zeitMinuten ?? '?'} Min, ${aufg.gesamtpunkte ?? '?'} Punkte\n`;
+    p += `Aufgabentypen: ${(aufg.typen||[]).join(', ')}\n`;
+    const anf2 = aufg.anforderung || {};
+    const erlaubt2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) > 0);
+    const verboten2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) === 0);
+    if (erlaubt2.length) {
+      p += `\n## ANFORDERUNGSBEREICHE — VERBINDLICH\nErlaubt: ${erlaubt2.join(', ')}\n`;
+      if (verboten2.length) p += `VERBOTEN (keinesfalls verwenden): ${verboten2.join(', ')}\n`;
+    }
+    p += '\n';
+    if (lernziele.length) { p += 'Relevante Lernziele:\n'; lernziele.slice(0,8).forEach(lz => { p += `- ${lz}\n`; }); p += '\n'; }
+    const relevanteIdeen = ideenPool.filter(idea => idea.toLowerCase().includes((aufg.titel||'').toLowerCase().split(' ')[0])).slice(0,8);
+    if (relevanteIdeen.length) { p += 'Ähnliche Aufgaben aus Quellen (zur Inspiration):\n'; relevanteIdeen.forEach(idea => { p += `- ${idea}\n`; }); p += '\n'; }
+    p += `Beschreibe die Unteraufgaben in kompakter Kurzform.
+Für jede Unteraufgabe mit Pfeil: zuerst Anforderungsbereich (NUR erlaubte: ${erlaubt2.length ? erlaubt2.join(', ') : 'alle'}), dann | dann Kennung: Vorgabe → Schülertätigkeit.
+Allgemeine Hinweise (Gesamtzahl, Reihenfolge) als eigene Zeile ohne Pfeil und ohne |.
+
+FORMAT (genau so, kein Fließtext):
+anforderungsbereich|Kennung: Vorgabe → Schülertätigkeit · ggf. weiteres
+
+Antworte NUR mit reinem JSON:
+{"spezifikation":"5 Unteraufgaben, steigend schwerer\\nreproduktion|1a–1c: Bruch → Dezimalzahl · Prozent\\nleichteAnwendung|1d–1e: Dezimalzahl → Bruch · Prozent\\nmittlereAnwendung|1f: Sachtext (Prozentwert gegeben) → Grundwert berechnen"}`;
+    return p;
+  }
+  async function generateFeinstrukturForTask(aufg, aufgNr, lernziele, ideenPool) {
+    let spezifikation = '';
+    try {
+      const raw = await callKI([{ type: 'text', text: buildFeinstrukturPrompt(aufg, aufgNr, lernziele, ideenPool) }], 1500);
+      const parsed = parseKI(raw);
+      spezifikation = parsed.spezifikation || '';
+    } catch (parseErr) {
+      spezifikation = '⚠ KI-Fehler: ' + parseErr.message.slice(0, 80);
+    }
+    return {
+      taskId: aufg.taskId,
+      nr: aufgNr,
+      titel: aufg.titel,
+      zeitMinuten: aufg.zeitMinuten,
+      gesamtpunkte: aufg.gesamtpunkte,
+      typen: aufg.typen,
+      anforderung: aufg.anforderung,
+      spezifikation,
+    };
+  }
+
+  ensureTaskMeta();
+  syncDerivedOrder();
 
   const AB_KEY_MAP = {
     reproduktion:      { letter: 'R', color: '#16a34a', title: 'Reproduktion' },
@@ -1038,6 +1134,7 @@ function buildAufgabenGenTab(pr) {
     if (!pr.strukturVorschlag.length) { updateGesamt(); return; }
     let posNr = 0;
     pr.strukturVorschlag.forEach((aufg, idx) => {
+      const taskUnlocked = !pr.grobstrukturLocked || !!aufg._grobUnlocked;
       if (!aufg._removed) posNr++;
       const card = mk('div', '');
       card.style.cssText = 'border:1px solid var(--bord);border-radius:8px;background:var(--surf2);padding:10px 12px;display:flex;gap:0;' + (aufg._removed ? 'opacity:.35;' : '');
@@ -1045,14 +1142,15 @@ function buildAufgabenGenTab(pr) {
       // Linke Spalte: Drag-Handle + Stempel
       const leftCol = mk('div', ''); leftCol.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;margin-right:10px;flex-shrink:0;';
       const dragHandle = tx('div', '', '⠿'); // braille dots = drag indicator
-      dragHandle.title = 'Reihenfolge ändern';
-      dragHandle.style.cssText = 'font-size:16px;color:var(--tx3);cursor:grab;user-select:none;line-height:1;';
+      dragHandle.title = taskUnlocked ? 'Reihenfolge ändern' : 'Grobstruktur gesperrt';
+      dragHandle.style.cssText = 'font-size:16px;color:var(--tx3);cursor:' + (taskUnlocked ? 'grab' : 'not-allowed') + ';user-select:none;line-height:1;' + (taskUnlocked ? '' : 'opacity:.45;');
       leftCol.appendChild(dragHandle);
-      const stempel = makeStempel(aufg.anforderung, key => {
+      const stempel = makeStempel(aufg.anforderung, taskUnlocked ? key => {
         if (!aufg.anforderung) aufg.anforderung = {};
         aufg.anforderung[key] = aufg.anforderung[key] ? 0 : 1;
-        savePruefungsDB(); renderStruktur(); renderAFBBanner();
-      });
+        if (pr.grobstrukturLocked) markTaskDirty(aufg); else savePruefungsDB();
+        renderStruktur(); renderAFBBanner();
+      } : null);
       leftCol.appendChild(stempel);
       card.appendChild(leftCol);
 
@@ -1063,33 +1161,99 @@ function buildAufgabenGenTab(pr) {
       const hrow = mk('div', ''); hrow.style.cssText = 'display:flex;align-items:baseline;gap:8px;margin-bottom:4px;';
       hrow.appendChild(tx('strong', '', 'Aufgabe ' + (aufg._removed ? '–' : posNr) + ': ' + (aufg.titel || '–')));
       const spacer = mk('span', ''); spacer.style.flex = '1'; hrow.appendChild(spacer);
+      if (pr.grobstrukturLocked) {
+        const lockBtn = btn(taskUnlocked ? '🔓' : '🔒', 'btn btn-ghost btn-xs');
+        lockBtn.title = taskUnlocked ? 'Aufgabe wieder sperren' : 'Diese Aufgabe zum Überarbeiten entsperren';
+        lockBtn.onclick = () => {
+          aufg._grobUnlocked = !aufg._grobUnlocked;
+          if (!aufg._grobUnlocked) aufg._needsFeinUpdate = false;
+          savePruefungsDB();
+          renderStruktur();
+        };
+        hrow.appendChild(lockBtn);
+      }
       const toggleBtn = btn(aufg._removed ? '+ Aufnehmen' : '✕', 'btn btn-ghost btn-xs');
       toggleBtn.title = aufg._removed ? 'Wieder aufnehmen' : 'Aufgabe streichen';
-      toggleBtn.onclick = () => { aufg._removed = !aufg._removed; savePruefungsDB(); renderStruktur(); renderAFBBanner(); };
+      toggleBtn.disabled = !taskUnlocked;
+      toggleBtn.style.opacity = taskUnlocked ? '1' : '.45';
+      toggleBtn.onclick = () => {
+        aufg._removed = !aufg._removed;
+        if (pr.grobstrukturLocked) markTaskDirty(aufg); else savePruefungsDB();
+        syncDerivedOrder();
+        renderStruktur(); renderAFBBanner();
+      };
       hrow.appendChild(toggleBtn);
       rightCol.appendChild(hrow);
 
       if (aufg.beschreibung) { const b = tx('div', '', aufg.beschreibung); b.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;margin-bottom:8px;'; rightCol.appendChild(b); }
+      if (pr.grobstrukturLocked && !taskUnlocked) {
+        const lockHint = tx('div', '', 'Grobstruktur gesperrt');
+        lockHint.style.cssText = 'font-size:11px;color:var(--tx3);margin-bottom:8px;';
+        rightCol.appendChild(lockHint);
+      }
+      if (pr.grobstrukturLocked && taskUnlocked) {
+        const unlockHint = tx('div', '', aufg._needsFeinUpdate ? 'Aenderungen offen - Feinplanung fuer diese Aufgabe neu laufen lassen.' : 'Diese Aufgabe ist entsperrt.');
+        unlockHint.style.cssText = 'font-size:11px;color:var(--pri);margin-bottom:8px;';
+        rightCol.appendChild(unlockHint);
+      }
 
       // Regler Zeit + Punkte
-      function makeSlider(label, unit, val, min, max, onChange) {
+      function makeSlider(label, unit, val, min, max, disabled, onChange) {
         const wrap = mk('div', ''); wrap.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:4px;';
         const lbl = tx('span', '', label); lbl.style.cssText = 'font-size:11px;color:var(--tx3);width:38px;flex-shrink:0;';
         wrap.appendChild(lbl);
         const slider = document.createElement('input'); slider.type = 'range';
         slider.min = min; slider.max = max; slider.step = 1; slider.value = val;
-        slider.style.cssText = 'flex:1;accent-color:var(--pri);height:4px;cursor:pointer;';
+        slider.disabled = disabled;
+        slider.style.cssText = 'flex:1;accent-color:var(--pri);height:4px;cursor:' + (disabled ? 'not-allowed' : 'pointer') + ';' + (disabled ? 'opacity:.45;' : '');
         const valEl = tx('span', '', val + ' ' + unit);
-        valEl.style.cssText = 'font-size:12px;font-weight:600;width:48px;text-align:right;flex-shrink:0;';
+        valEl.style.cssText = 'font-size:12px;font-weight:600;width:48px;text-align:right;flex-shrink:0;' + (disabled ? 'opacity:.45;' : '');
         slider.oninput = () => { const n = parseInt(slider.value); valEl.textContent = n + ' ' + unit; onChange(n); updateGesamt(); };
         wrap.appendChild(slider); wrap.appendChild(valEl);
         return wrap;
       }
-      rightCol.appendChild(makeSlider('⏱ Zeit', 'Min', aufg.zeitMinuten || 5, 1, 30, v => { aufg.zeitMinuten = v; savePruefungsDB(); }));
-      rightCol.appendChild(makeSlider('Punkte', 'P', aufg.gesamtpunkte || 8, 2, 25, v => { aufg.gesamtpunkte = v; savePruefungsDB(); }));
+      rightCol.appendChild(makeSlider('⏱ Zeit', 'Min', aufg.zeitMinuten || 5, 1, 30, !taskUnlocked, v => {
+        aufg.zeitMinuten = v;
+        if (pr.grobstrukturLocked) markTaskDirty(aufg); else savePruefungsDB();
+      }));
+      rightCol.appendChild(makeSlider('Punkte', 'P', aufg.gesamtpunkte || 8, 2, 25, !taskUnlocked, v => {
+        aufg.gesamtpunkte = v;
+        if (pr.grobstrukturLocked) markTaskDirty(aufg); else savePruefungsDB();
+      }));
+
+      if (pr.grobstrukturLocked && taskUnlocked) {
+        const refreshBtn = btn('↺ Feinplanung fuer diese Aufgabe', 'btn btn-pri btn-xs');
+        refreshBtn.onclick = async () => {
+          refreshBtn.disabled = true;
+          refreshBtn.textContent = '⏳';
+          try {
+            const { lernziele, ideenPool } = buildKontext();
+            const aktive = getActiveTasks();
+            const aufgNr = aktive.findIndex(a => a.taskId === aufg.taskId) + 1;
+            statusEl.textContent = `⏳ Feinstruktur fuer Aufgabe ${aufgNr} wird aktualisiert...`;
+            const fsEntry = await generateFeinstrukturForTask(aufg, aufgNr, lernziele, ideenPool);
+            const fsIdx = pr.feinstruktur.findIndex(fs => fs.taskId === aufg.taskId);
+            if (fsIdx > -1) pr.feinstruktur[fsIdx] = fsEntry;
+            else pr.feinstruktur.push(fsEntry);
+            invalidateGeneratedTask(aufg.taskId);
+            aufg._grobUnlocked = false;
+            aufg._needsFeinUpdate = false;
+            syncDerivedOrder();
+            savePruefungsDB();
+            renderStruktur(); renderFeinstruktur(); renderGenAufgaben(); renderAFBBanner();
+            switchSubTab(2);
+            statusEl.textContent = `✓ Feinstruktur fuer Aufgabe ${aufgNr} aktualisiert.`;
+          } catch (e) {
+            statusEl.textContent = '⚠ ' + e.message;
+          }
+          refreshBtn.disabled = false;
+          refreshBtn.textContent = '↺ Feinplanung fuer diese Aufgabe';
+        };
+        rightCol.appendChild(refreshBtn);
+      }
 
       card.appendChild(rightCol);
-      addDragHandlers(card, dragHandle, idx);
+      if (taskUnlocked) addDragHandlers(card, dragHandle, idx);
       strukturWrap.appendChild(card);
     });
     updateGesamt();
@@ -1104,6 +1268,9 @@ function buildAufgabenGenTab(pr) {
   zuFeinBtn.style.display = pr.strukturVorschlag.length ? '' : 'none';
   btnRow1.appendChild(zuFeinBtn);
   panel1.appendChild(btnRow1);
+  const lockInfo = tx('div', '', '');
+  lockInfo.style.cssText = 'font-size:12px;color:var(--tx3);margin-bottom:10px;';
+  panel1.appendChild(lockInfo);
 
   // ── Panels in div einsetzen ───────────────────────────────────
   // ── AFB-Auswertungsbalken (dauerhaft sichtbar) ────────────────
@@ -1247,9 +1414,10 @@ function buildAufgabenGenTab(pr) {
 
   function renderFeinstruktur() {
     feinWrap.innerHTML = '';
-    const zuBearbeiten = pr.strukturVorschlag.filter(a => !a._removed);
+    syncDerivedOrder();
+    const zuBearbeiten = getActiveTasks();
     pr.feinstruktur.forEach((fs, idx) => {
-      const sv = zuBearbeiten[idx];
+      const sv = zuBearbeiten.find(a => a.taskId === fs.taskId) || zuBearbeiten[idx];
       const card = mk('div', '');
       card.style.cssText = 'border-radius:10px;background:var(--surf2);overflow:hidden;';
 
@@ -1362,10 +1530,11 @@ function buildAufgabenGenTab(pr) {
           const raw = await callKI([{ type: 'text', text: p }], 3000);
           const parsed = parseKI(raw);
           // Vorhandenen Eintrag für diese Aufgabe ersetzen oder neu anlegen
-          const existingIdx = pr.genAufgaben.findIndex(a => a.nr === fs.nr);
-          const entry = { nr: fs.nr, titel: fs.titel, zeitMinuten: fs.zeitMinuten, gesamtpunkte: fs.gesamtpunkte, aufgabenstellung: parsed.aufgabenstellung || null, unteraufgaben: parsed.unteraufgaben || [] };
+          const existingIdx = pr.genAufgaben.findIndex(a => a.taskId === fs.taskId);
+          const entry = { taskId: fs.taskId, nr: fs.nr, titel: fs.titel, zeitMinuten: fs.zeitMinuten, gesamtpunkte: fs.gesamtpunkte, aufgabenstellung: parsed.aufgabenstellung || null, unteraufgaben: parsed.unteraufgaben || [] };
           if (existingIdx > -1) pr.genAufgaben[existingIdx] = entry;
           else pr.genAufgaben.push(entry);
+          syncDerivedOrder();
           savePruefungsDB(); renderGenAufgaben(); renderAFBBanner();
           switchSubTab(3);
         } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
@@ -1686,6 +1855,9 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
     });
   }
   renderGenAufgaben(); renderAFBBanner();
+  lockInfo.textContent = pr.grobstrukturLocked
+    ? 'Grobstruktur ist nach der ersten Feinplanung gesperrt. Zum Aendern einzelne Aufgaben entsperren.'
+    : 'Zeit und Punkte hier grob anpassen, dann einmal die Feinplanung fuer alle Aufgaben laufen lassen.';
 
   // ── Handler: Stufe 1 — Grobstruktur ──────────────────────────
   strukturBtn.onclick = async () => {
@@ -1721,12 +1893,20 @@ anforderung: Punktverteilung auf vier Bereiche (Summe = gesamtpunkte, 0 wenn nic
 reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
       const raw = await callKI([{ type: 'text', text: p }], 2000);
       const parsed = parseKI(raw);
-      pr.strukturVorschlag = (parsed.hauptaufgaben || []).map(a => ({ ...a, _removed: false }));
+      pr.strukturVorschlag = (parsed.hauptaufgaben || []).map(a => ({
+        ...a,
+        taskId: uid(),
+        _removed: false,
+        _grobUnlocked: true,
+        _needsFeinUpdate: false,
+      }));
+      pr.grobstrukturLocked = false;
       pr.feinstruktur = []; pr.genAufgaben = [];
       switchSubTab(1);
       savePruefungsDB();
       renderStruktur(); renderAFBBanner();
       zuFeinBtn.style.display = '';
+      lockInfo.textContent = 'Zeit und Punkte hier grob anpassen, dann einmal die Feinplanung fuer alle Aufgaben laufen lassen.';
       const gesamtzeit = pr.strukturVorschlag.reduce((s, a) => s + (a.zeitMinuten || 0), 0);
       const zeitHinweis = gesamtzeit ? ` (${gesamtzeit} Min. gesamt)` : '';
       statusEl.textContent = '✓ ' + pr.strukturVorschlag.length + ' Aufgaben vorgeschlagen' + zeitHinweis + '. Streiche unerwünschte, dann → Feinstruktur.';
@@ -1736,7 +1916,7 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
 
   // ── Handler: Stufe 2 — Feinstruktur ──────────────────────────
   zuFeinBtn.onclick = async () => {
-    const zuBearbeiten = pr.strukturVorschlag.filter(a => !a._removed);
+    const zuBearbeiten = getActiveTasks();
     if (!zuBearbeiten.length) { statusEl.textContent = '⚠ Keine Aufgaben ausgewählt.'; return; }
     zuFeinBtn.disabled = true; strukturBtn.disabled = true;
     pr.feinstruktur = []; switchSubTab(2);
@@ -1746,48 +1926,22 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
         const aufg = zuBearbeiten[i];
         const aufgNr = i + 1;
         statusEl.textContent = `⏳ Feinstruktur für Aufgabe ${aufgNr}… (${aufgNr}/${zuBearbeiten.length})`;
-        let p = `Du planst Aufgabe ${aufgNr} einer Klassenarbeit.\n`;
-        p += `Thema/Titel: ${aufg.titel}\n`;
-        p += `Beschreibung: ${aufg.beschreibung}\n`;
-        p += `Zeit: ${aufg.zeitMinuten ?? '?'} Min, ${aufg.gesamtpunkte ?? '?'} Punkte\n`;
-        p += `Aufgabentypen: ${(aufg.typen||[]).join(', ')}\n`;
-        const anf2 = aufg.anforderung || {};
-        const erlaubt2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) > 0);
-        const verboten2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) === 0);
-        if (erlaubt2.length) {
-          p += `\n## ANFORDERUNGSBEREICHE — VERBINDLICH\nErlaubt: ${erlaubt2.join(', ')}\n`;
-          if (verboten2.length) p += `VERBOTEN (keinesfalls verwenden): ${verboten2.join(', ')}\n`;
-        }
-        p += '\n';
-        if (lernziele.length) { p += 'Relevante Lernziele:\n'; lernziele.slice(0,8).forEach(lz => { p += `- ${lz}\n`; }); p += '\n'; }
-        const relevanteIdeen = ideenPool.filter(idea => idea.toLowerCase().includes((aufg.titel||'').toLowerCase().split(' ')[0])).slice(0,8);
-        if (relevanteIdeen.length) { p += 'Ähnliche Aufgaben aus Quellen (zur Inspiration):\n'; relevanteIdeen.forEach(idea => { p += `- ${idea}\n`; }); p += '\n'; }
-        p += `Beschreibe die Unteraufgaben in kompakter Kurzform.
-Für jede Unteraufgabe mit Pfeil: zuerst Anforderungsbereich (NUR erlaubte: ${erlaubt2.length ? erlaubt2.join(', ') : 'alle'}), dann | dann Kennung: Vorgabe → Schülertätigkeit.
-Allgemeine Hinweise (Gesamtzahl, Reihenfolge) als eigene Zeile ohne Pfeil und ohne |.
-
-FORMAT (genau so, kein Fließtext):
-anforderungsbereich|Kennung: Vorgabe → Schülertätigkeit · ggf. weiteres
-
-Antworte NUR mit reinem JSON:
-{"spezifikation":"5 Unteraufgaben, steigend schwerer\\nreproduktion|1a–1c: Bruch → Dezimalzahl · Prozent\\nleichteAnwendung|1d–1e: Dezimalzahl → Bruch · Prozent\\nmittlereAnwendung|1f: Sachtext (Prozentwert gegeben) → Grundwert berechnen"}`;
-        let spezifikation = '';
-        try {
-          const raw = await callKI([{ type: 'text', text: p }], 1500);
-          const parsed = parseKI(raw);
-          spezifikation = parsed.spezifikation || '';
-        } catch(parseErr) {
-          spezifikation = '⚠ KI-Fehler: ' + parseErr.message.slice(0, 80);
-        }
-        pr.feinstruktur.push({
-          nr: aufgNr, titel: aufg.titel,
-          zeitMinuten: aufg.zeitMinuten, gesamtpunkte: aufg.gesamtpunkte,
-          typen: aufg.typen, anforderung: aufg.anforderung,
-          spezifikation,
-        });
+        pr.feinstruktur.push(await generateFeinstrukturForTask(aufg, aufgNr, lernziele, ideenPool));
         savePruefungsDB();
         renderFeinstruktur(); renderAFBBanner();
       }
+      pr.grobstrukturLocked = true;
+      pr.strukturVorschlag.forEach(aufg => {
+        aufg._grobUnlocked = false;
+        aufg._needsFeinUpdate = false;
+      });
+      syncDerivedOrder();
+      savePruefungsDB();
+      renderStruktur();
+      renderFeinstruktur();
+      renderGenAufgaben();
+      renderAFBBanner();
+      lockInfo.textContent = 'Grobstruktur ist nach der ersten Feinplanung gesperrt. Zum Aendern einzelne Aufgaben entsperren.';
       statusEl.textContent = '✓ Feinstruktur fertig. Korrigiere wenn nötig, dann → Aufgaben generieren.';
     } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
     zuFeinBtn.disabled = false; strukturBtn.disabled = false;
@@ -1824,16 +1978,17 @@ Unteraufgaben rechnerisch unabhängig (neue Zahlen).`;
         const raw = await callKI([{ type: 'text', text: p }], 3000);
         const parsed = parseKI(raw);
         pr.genAufgaben.push({
-          nr: fs.nr, titel: fs.titel, zeitMinuten: fs.zeitMinuten, gesamtpunkte: fs.gesamtpunkte,
+          taskId: fs.taskId, nr: fs.nr, titel: fs.titel, zeitMinuten: fs.zeitMinuten, gesamtpunkte: fs.gesamtpunkte,
           aufgabenstellung: parsed.aufgabenstellung || null,
           unteraufgaben: parsed.unteraufgaben || [],
         });
+        syncDerivedOrder();
         savePruefungsDB();
         renderGenAufgaben(); renderAFBBanner();
       }
       statusEl.textContent = '✓ ' + pr.genAufgaben.length + ' Aufgaben generiert';
     } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
-    ausarbeitenBtn.disabled = false; strukturBtn.disabled = false;
+    zuAufgBtn.disabled = false; strukturBtn.disabled = false;
   };
 
   return div;

@@ -1457,7 +1457,7 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
         const addRow = mk('button', '');
         addRow.textContent = '+ Zeile';
         addRow.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:4px 0 8px;text-align:left;';
-        addRow.onclick = () => { const ls = getLines(); ls.push(''); saveLines(ls); buildList(); listWrap.querySelectorAll('textarea')[ls.length - 1]?.focus(); };
+        addRow.onclick = () => { const ls = getLines(); ls.push('reproduktion| → '); saveLines(ls); buildList(); const inps = listWrap.querySelectorAll('input[type=text]'); const last = inps[inps.length-1]; if (last) { last.style.display='block'; last.focus(); last.select(); } };
         listWrap.appendChild(addRow);
       }
 

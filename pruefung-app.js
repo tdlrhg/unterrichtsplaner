@@ -1138,18 +1138,24 @@ function buildAufgabenGenTab(pr) {
     if (!t.total) return;
     const z = pr.afbZiele || { afb1: { min: 30, max: 50 }, afb2: { min: 35, max: 50 }, afb3: { min: 15, max: 25 } };
     const rows = [
-      { key: 'afb1', label: 'AFB I',   color: '#ca8a04', punkte: t.afb1 },
-      { key: 'afb2', label: 'AFB II',  color: '#ea580c', punkte: t.afb2 },
-      { key: 'afb3', label: 'AFB III', color: '#dc2626', punkte: t.afb3 },
+      { key: 'afb1', badges: ['reproduktion','leichteAnwendung'],  color: '#ca8a04', punkte: t.afb1 },
+      { key: 'afb2', badges: ['mittlereAnwendung'],                color: '#ea580c', punkte: t.afb2 },
+      { key: 'afb3', badges: ['transfer'],                         color: '#dc2626', punkte: t.afb3 },
     ];
     const grid = mk('div', '');
     grid.style.cssText = 'display:grid;grid-template-columns:52px 1fr 44px 80px;gap:4px 8px;align-items:center;padding:10px 14px;background:var(--surf2);border-radius:8px;border:1px solid var(--bord);';
-    rows.forEach(({ key, label, color, punkte }) => {
+    rows.forEach(({ key, badges, color, punkte }) => {
       const pct = t.total ? Math.round(punkte / t.total * 100) : 0;
       const ziel = z[key] || { min: 0, max: 100 };
       const ok = pct >= ziel.min && pct <= ziel.max;
-      const lbl = tx('span', '', label);
-      lbl.style.cssText = `font-size:12px;font-weight:700;color:${color};`;
+      const lbl = mk('div', ''); lbl.style.cssText = 'display:flex;gap:3px;align-items:center;';
+      badges.forEach(bkey => {
+        const cfg = AB_KEY_MAP[bkey];
+        const b = tx('div', '', cfg.letter);
+        b.style.cssText = `width:18px;height:18px;border-radius:50%;background:${cfg.color};color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;`;
+        b.title = cfg.title;
+        lbl.appendChild(b);
+      });
       grid.appendChild(lbl);
       const barWrap = mk('div', '');
       barWrap.style.cssText = 'position:relative;height:10px;background:var(--bord);border-radius:5px;overflow:visible;';

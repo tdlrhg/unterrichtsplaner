@@ -36,6 +36,16 @@ function robustJsonParsePr(raw) {
   const extracted = extractTop(raw);
   if (!extracted) throw new Error('Kein JSON in der Antwort');
   let jsonStr = extracted;
+  // Offenen String schließen (falls Antwort mitten in einem String abgeschnitten wurde)
+  let inStr2 = false, esc2 = false;
+  for (let i = 0; i < jsonStr.length; i++) {
+    const c = jsonStr[i];
+    if (esc2) { esc2 = false; continue; }
+    if (c === '\\' && inStr2) { esc2 = true; continue; }
+    if (c === '"') inStr2 = !inStr2;
+  }
+  if (inStr2) jsonStr += '"'; // offenen String schließen
+  // Offene Klammern schließen
   const opens = (jsonStr.match(/\[/g)||[]).length - (jsonStr.match(/\]/g)||[]).length;
   const opensCurl = (jsonStr.match(/\{/g)||[]).length - (jsonStr.match(/\}/g)||[]).length;
   jsonStr += ']'.repeat(Math.max(0,opens)) + '}'.repeat(Math.max(0,opensCurl));
@@ -948,7 +958,8 @@ function buildAufgabenGenTab(pr) {
 
       if (ideenPool.length) {
         prompt += `## AUFGABEN-IDEENPOOL (adaptiere passende Ideen — nicht 1:1 kopieren, neue Zahlen verwenden)\n`;
-        ideenPool.slice(0, 50).forEach(idea => { prompt += `- ${idea}\n`; });
+        // Ideen auf 120 Zeichen kürzen um Prompt-Länge zu begrenzen
+        ideenPool.slice(0, 40).forEach(idea => { prompt += `- ${idea.slice(0, 120)}\n`; });
         prompt += '\n';
       }
 

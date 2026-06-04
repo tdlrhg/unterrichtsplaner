@@ -1094,7 +1094,7 @@ function buildAufgabenGenTab(pr) {
     });
     updateGesamt();
   }
-  renderStruktur(); renderAFBBanner();
+  renderStruktur();
   panel1.appendChild(gesamtEl);
 
   const btnRow1 = mk('div', ''); btnRow1.style.cssText = 'display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;margin-top:8px;';

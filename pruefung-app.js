@@ -835,6 +835,25 @@ function buildAufgabenGenTab(pr) {
   function isTaskFeinLocked(taskId) {
     return !!pr.feinstruktur.find(fs => fs.taskId === taskId)?._feinLocked;
   }
+  function styleLockButton(el, isLocked, compact = false) {
+    el.style.cssText = [
+      'border:none',
+      `background:${isLocked ? '#dc2626' : '#16a34a'}`,
+      'color:#fff',
+      'cursor:pointer',
+      `font-size:${compact ? '13px' : '15px'}`,
+      `padding:${compact ? '4px 8px' : '5px 10px'}`,
+      'border-radius:999px',
+      'font-weight:700',
+      'line-height:1',
+      'box-shadow:0 1px 2px rgba(0,0,0,.12)',
+      'flex-shrink:0',
+      'display:inline-flex',
+      'align-items:center',
+      'justify-content:center',
+      `min-width:${compact ? '34px' : '40px'}`,
+    ].join(';');
+  }
   function syncDerivedOrder() {
     const order = getActiveTasks().map(a => a.taskId);
     const orderIdx = id => {
@@ -1230,7 +1249,8 @@ Antworte NUR mit reinem JSON:
       hrow.appendChild(tx('strong', '', 'Aufgabe ' + (aufg._removed ? '–' : posNr) + ': ' + (aufg.titel || '–')));
       const spacer = mk('span', ''); spacer.style.flex = '1'; hrow.appendChild(spacer);
       if (pr.grobstrukturLocked) {
-        const lockBtn = btn(feinLocked ? '🔐' : (taskUnlocked ? '🔓' : '🔒'), 'btn btn-ghost btn-xs');
+        const lockBtn = btn(feinLocked ? '🔐' : (taskUnlocked ? '🔓' : '🔒'), '');
+        styleLockButton(lockBtn, feinLocked || !taskUnlocked, true);
         lockBtn.title = feinLocked ? 'Feinstruktur dieser Aufgabe ist gesperrt' : (taskUnlocked ? 'Aufgabe wieder sperren' : 'Diese Aufgabe zum Überarbeiten entsperren');
         lockBtn.onclick = () => {
           if (feinLocked) return;
@@ -1514,7 +1534,8 @@ Antworte NUR mit reinem JSON:
       titel.style.cssText = 'font-size:14px;font-weight:700;color:var(--tx1);flex:1;';
       head.appendChild(titel);
 
-      const feinLockBtn = btn(feinLocked ? '🔐' : '🔓', 'btn btn-ghost btn-xs');
+      const feinLockBtn = btn(feinLocked ? '🔐 Gesperrt' : '🔓 Offen', '');
+      styleLockButton(feinLockBtn, feinLocked, false);
       feinLockBtn.title = feinLocked ? 'Diese Feinstruktur ist gesperrt' : 'Diese Feinstruktur sperren';
       feinLockBtn.onclick = () => {
         fs._feinLocked = !fs._feinLocked;

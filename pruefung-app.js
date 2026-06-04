@@ -1285,14 +1285,24 @@ function buildAufgabenGenTab(pr) {
           row.style.cssText = 'display:flex;align-items:flex-start;gap:6px;padding:3px 0;';
 
           if (hasPfeil) {
-            // AFB-Präfix parsen: "reproduktion|1a: Vorgabe → Ergänzung"
-            let afbKey = null, lineRest = line;
+            // AFB-Präfix parsen: "reproduktion|1a: Vorgabe → Ergänzung" oder "reproduktion|1a: Vorgabe → Ergänzung|4"
+            let afbKey = null, lineRest = line, zeilenPunkte = null;
             const pipeIdx = line.indexOf('|');
             if (pipeIdx > -1) {
               const candidate = line.slice(0, pipeIdx).trim();
-              if (AB_KEY_MAP[candidate]) { afbKey = candidate; lineRest = line.slice(pipeIdx + 1).trim(); }
+              if (AB_KEY_MAP[candidate]) {
+                afbKey = candidate;
+                lineRest = line.slice(pipeIdx + 1).trim();
+                // Punkte am Ende: "content|4"
+                const lastPipe = lineRest.lastIndexOf('|');
+                if (lastPipe > -1) {
+                  const maybeP = lineRest.slice(lastPipe + 1).trim();
+                  if (/^\d+$/.test(maybeP)) { zeilenPunkte = parseInt(maybeP); lineRest = lineRest.slice(0, lastPipe).trim(); }
+                }
+              }
             }
             const abCfg2 = afbKey ? AB_KEY_MAP[afbKey] : null;
+            const buildLine = () => (afbKey ? afbKey + '|' : '') + lineRest + (zeilenPunkte != null ? '|' + zeilenPunkte : '');
 
             // Badge
             const badge2 = tx('div', '', abCfg2 ? abCfg2.letter : '·');
@@ -1329,17 +1339,31 @@ function buildAufgabenGenTab(pr) {
             eEl.style.cssText = 'color:var(--tx3);';
             preview.appendChild(eEl);
 
-            // Klick öffnet Inline-Editor (zeigt nur Teil nach |)
+            // Punkte-Feld
+            const pInp = document.createElement('input');
+            pInp.type = 'number'; pInp.min = 1; pInp.max = 20; pInp.step = 1;
+            pInp.value = zeilenPunkte ?? '';
+            pInp.placeholder = 'P';
+            pInp.style.cssText = 'width:38px;font-size:11px;font-family:inherit;border:1px solid var(--bord);border-radius:4px;background:var(--surf2);color:var(--tx1);padding:1px 4px;text-align:center;flex-shrink:0;';
+            pInp.title = 'Punkte für diese Teilaufgabe';
+            pInp.oninput = () => {
+              zeilenPunkte = pInp.value ? parseInt(pInp.value) : null;
+              const ls = getLines(); ls[li] = buildLine(); saveLines(ls);
+            };
+            row.appendChild(pInp);
+
+            // Klick öffnet Inline-Editor (zeigt nur Inhalt ohne AFB-Präfix und Punkte)
             const inp = document.createElement('input');
             inp.type = 'text'; inp.value = lineRest;
             inp.style.cssText = 'flex:1;font-size:13px;font-family:inherit;border:none;outline:none;background:var(--surf);color:var(--tx1);padding:2px 4px;border-radius:4px;display:none;';
-            inp.oninput = () => { const ls = getLines(); ls[li] = (afbKey ? afbKey + '|' : '') + inp.value; saveLines(ls); };
+            inp.oninput = () => { lineRest = inp.value; const ls = getLines(); ls[li] = buildLine(); saveLines(ls); };
             inp.onblur = () => { buildList(); };
             inp.onkeydown = e => {
               if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
               if (e.key === 'Escape') { inp.blur(); }
             };
-            preview.onclick = () => { preview.style.display = 'none'; inp.style.display = ''; inp.focus(); inp.select(); };
+            preview.onclick = () => { preview.style.display = 'none'; inp.style.display = 'block'; pInp.style.display = 'none'; inp.focus(); inp.select(); };
+            inp.onblur = () => { pInp.style.display = ''; buildList(); };
             row.appendChild(preview);
             row.appendChild(inp);
 

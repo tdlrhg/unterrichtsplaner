@@ -577,7 +577,7 @@ Antworte NUR mit reinem JSON:
         slider.style.cssText = 'flex:1;accent-color:var(--pri);height:4px;cursor:' + (disabled ? 'not-allowed' : 'pointer') + ';' + (disabled ? 'opacity:.45;' : '');
         const valEl = tx('span', '', val + ' ' + unit);
         valEl.style.cssText = 'font-size:12px;font-weight:600;width:48px;text-align:right;flex-shrink:0;' + (disabled ? 'opacity:.45;' : '');
-        slider.oninput = () => { const n = parseInt(slider.value); valEl.textContent = n + ' ' + unit; onChange(n); updateGesamt(); };
+        slider.oninput = () => { const n = parseInt(slider.value); valEl.textContent = n + ' ' + unit; onChange(n); updateGesamt(); renderAFBBanner(); };
         wrap.appendChild(slider); wrap.appendChild(valEl);
         return wrap;
       }

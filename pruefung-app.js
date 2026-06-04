@@ -1078,20 +1078,48 @@ function buildAufgabenGenTab(pr) {
 
   function renderFeinstruktur() {
     feinWrap.innerHTML = '';
-    pr.feinstruktur.forEach(fs => {
-      const card = mk('div', 'card');
-      const body = mk('div', 'card-body'); body.style.padding = '10px 12px';
-      const hrow = mk('div', ''); hrow.style.cssText = 'display:flex;align-items:baseline;gap:8px;margin-bottom:6px;';
-      hrow.appendChild(tx('strong', '', 'Aufgabe ' + fs.nr + ': ' + (fs.titel || '')));
-      const meta3 = [fs.zeitMinuten ? '⏱ ' + fs.zeitMinuten + ' Min' : null, fs.gesamtpunkte ? fs.gesamtpunkte + ' P' : null].filter(Boolean).join(' · ');
-      if (meta3) { const m = tx('span', '', meta3); m.style.cssText = 'font-size:11px;color:var(--tx3);'; hrow.appendChild(m); }
-      body.appendChild(hrow);
+    pr.feinstruktur.forEach((fs, idx) => {
+      const card = mk('div', '');
+      card.style.cssText = 'border-radius:10px;background:var(--surf2);overflow:hidden;';
+
+      // Kopfzeile
+      const head = mk('div', '');
+      head.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(124,58,237,.06);border-bottom:1px solid var(--bord);';
+
+      // Nummer-Badge
+      const nrBadge = tx('div', '', String(fs.nr));
+      nrBadge.style.cssText = 'width:24px;height:24px;border-radius:50%;background:var(--pri);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      head.appendChild(nrBadge);
+
+      // Titel
+      const titel = tx('span', '', fs.titel || '–');
+      titel.style.cssText = 'font-size:14px;font-weight:700;color:var(--tx1);flex:1;';
+      head.appendChild(titel);
+
+      // Zeit- und Punkte-Chips
+      if (fs.zeitMinuten) {
+        const zt = tx('span', '', '⏱ ' + fs.zeitMinuten + ' Min');
+        zt.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(37,99,235,.1);color:#2563eb;flex-shrink:0;';
+        head.appendChild(zt);
+      }
+      if (fs.gesamtpunkte) {
+        const pt = tx('span', '', fs.gesamtpunkte + ' P');
+        pt.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(124,58,237,.12);color:var(--pri);flex-shrink:0;';
+        head.appendChild(pt);
+      }
+      card.appendChild(head);
+
+      // Spezifikation-Textarea
       const area = document.createElement('textarea');
       area.value = fs.spezifikation || '';
-      area.style.cssText = 'width:100%;min-height:80px;padding:8px;font-size:13px;line-height:1.5;border:1px solid var(--bord);border-radius:5px;background:var(--surf2);color:var(--tx1);resize:vertical;box-sizing:border-box;';
-      area.oninput = () => { fs.spezifikation = area.value; savePruefungsDB(); };
-      body.appendChild(area);
-      card.appendChild(body); feinWrap.appendChild(card);
+      area.placeholder = 'Spezifikation der Aufgabe…';
+      area.style.cssText = 'width:100%;padding:12px 14px;font-size:13px;font-family:inherit;line-height:1.7;border:none;outline:none;background:transparent;color:var(--tx1);resize:none;box-sizing:border-box;overflow:hidden;';
+      area.rows = 1;
+      const autoGrow = () => { area.style.height = 'auto'; area.style.height = area.scrollHeight + 'px'; };
+      area.oninput = () => { fs.spezifikation = area.value; savePruefungsDB(); autoGrow(); };
+      card.appendChild(area);
+      feinWrap.appendChild(card);
+      requestAnimationFrame(autoGrow);
     });
   }
   renderFeinstruktur();

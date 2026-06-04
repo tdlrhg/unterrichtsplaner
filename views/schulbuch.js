@@ -529,7 +529,7 @@ Antworte NUR mit validem JSON:
         if (!imgs.length) { alert('Bitte Bilder hochladen.'); return; }
         startBtn.disabled = true;
         try {
-          const neueAufgaben = await extractAufgaben(imgs, statusEl, buch.typ);
+          const neueAufgaben = await extractAufgaben(imgs, statusEl, kap.typ || buch.typ);
           if (!kap.aufgaben) kap.aufgaben = [];
           kap.aufgaben.push(...neueAufgaben);
           sortAufgaben(kap.aufgaben);
@@ -792,6 +792,17 @@ Regeln:
       const sFg = mk('div', 'fg'); sFg.appendChild(tx('label', 'fl', 'Seitenbereich')); sFg.appendChild(sRow);
       body.appendChild(sFg);
 
+      // Optionaler Typ-Override für Unterkapitel
+      const typSel = document.createElement('select'); typSel.className = 'finp';
+      const noTyp = document.createElement('option'); noTyp.value = ''; noTyp.textContent = '— wie Buch —'; typSel.appendChild(noTyp);
+      BUCH_TYPEN.forEach(t => {
+        const o = document.createElement('option'); o.value = t.val;
+        o.textContent = t.icon + ' ' + t.label + ' (Extraktion)';
+        if (entry.typ === t.val) o.selected = true;
+        typSel.appendChild(o);
+      });
+      body.appendChild(field('Extraktions-Modus', typSel));
+
       // ── Seiten-Checkliste ──────────────────────────────────────
       const seitenSec = mk('div', '');
       body.appendChild(seitenSec);
@@ -858,6 +869,7 @@ Regeln:
         entry.titel = titel;
         entry.seiteVon = vonInp.value ? parseInt(vonInp.value) : null;
         entry.seiteBis = bisInp.value ? parseInt(bisInp.value) : null;
+        entry.typ = typSel.value || undefined;
         saveSchulbuchDB();
         close();
         onDone();

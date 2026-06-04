@@ -1296,8 +1296,9 @@ Antworte NUR mit reinem JSON:
         const erlaubt = Object.keys(AB_KEY_MAP).filter(k => (anf[k] || 0) > 0);
         const verboten = Object.keys(AB_KEY_MAP).filter(k => (anf[k] || 0) === 0);
         let p = `Du planst eine Klassenarbeit über "${pr.thema || pr.titel || '?'}".\n`;
-        p += `Schlage eine EINZELNE Aufgabe vor als Alternative zu: "${aufg.titel}: ${aufg.beschreibung}"\n`;
-        p += `Zeit: ${aufg.zeitMinuten ?? '?'} Min, ${aufg.gesamtpunkte ?? '?'} Punkte\n`;
+        p += `Bisher geplante Aufgabe (NICHT wiederholen, NICHT variieren): "${aufg.titel}"\n\n`;
+        p += `Schlage eine ANDERE Aufgabe mit einem ANDEREN Themenbereich vor, der ebenfalls zum Lerngebiet passt.\n`;
+        p += `Gleiche Rahmenbedingungen: Zeit: ${aufg.zeitMinuten ?? '?'} Min, ${aufg.gesamtpunkte ?? '?'} Punkte\n`;
         if (erlaubt.length) p += `Anforderungsbereiche – Erlaubt: ${erlaubt.join(', ')} | VERBOTEN: ${verboten.join(', ')}\n`;
         p += `\nAntworte NUR mit reinem JSON:\n{"titel":"Kurzer Titel","beschreibung":"Was Schüler hier tun (1 Satz)"}`;
         try {

@@ -812,6 +812,7 @@ function buildAufgabenGenTab(pr) {
   const panel1 = mk('div', '');
   const panel2 = mk('div', '');
   const panel3 = mk('div', '');
+  const panel4 = mk('div', '');
   let aktiverSubTab = pr.genAufgaben.length ? 3 : pr.feinstruktur.length ? 2 : 1;
 
   const subTabBar = mk('div', '');
@@ -819,9 +820,7 @@ function buildAufgabenGenTab(pr) {
 
   function switchSubTab(n) {
     aktiverSubTab = n;
-    panel1.style.display = n === 1 ? '' : 'none';
-    panel2.style.display = n === 2 ? '' : 'none';
-    panel3.style.display = n === 3 ? '' : 'none';
+    [panel1, panel2, panel3, panel4].forEach((p, i) => { p.style.display = i + 1 === n ? '' : 'none'; });
     subTabBar.querySelectorAll('.ag-subtab').forEach((b, i) => {
       const active = i + 1 === n;
       b.style.borderBottom = active ? '2px solid var(--pri)' : '2px solid transparent';
@@ -834,6 +833,7 @@ function buildAufgabenGenTab(pr) {
     ['① Grobstruktur', 1],
     ['② Feinstruktur', 2],
     ['③ Aufgaben',     3],
+    ['⚙ Einstellungen', 4],
   ].forEach(([label, n]) => {
     const b = mk('button', 'btn btn-ghost btn-sm ag-subtab');
     b.textContent = label;
@@ -853,7 +853,7 @@ function buildAufgabenGenTab(pr) {
   jahrInp.onchange = () => { pr.referenzJahre = parseFloat(jahrInp.value) || 2; savePruefungsDB(); };
   zeitRow.appendChild(jahrInp);
   zeitRow.appendChild(tx('span', '', 'Jahre als Referenz für den Kompositionsstil.'));
-  panel1.appendChild(zeitRow);
+  panel4.appendChild(zeitRow);
 
   // ── Kompositionsstil ─────────────────────────────────────────
   const stilSec = mk('div', '');
@@ -877,7 +877,7 @@ function buildAufgabenGenTab(pr) {
   const stilHint = tx('div', '', 'Gilt für alle Prüfungen. Die KI nutzt dies zusätzlich zur Analyse deiner Referenzarbeiten.');
   stilHint.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:4px;';
   stilSec.appendChild(stilHint);
-  panel1.appendChild(stilSec);
+  panel4.appendChild(stilSec);
 
   const statusEl = mk('div', '');
   statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;margin:8px 0 12px;';
@@ -1063,6 +1063,7 @@ function buildAufgabenGenTab(pr) {
   div.appendChild(panel1);
   div.appendChild(panel2);
   div.appendChild(panel3);
+  div.appendChild(panel4);
   switchSubTab(aktiverSubTab);
 
   // ════════════════════════════════════════════════════════════════

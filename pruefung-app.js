@@ -1569,13 +1569,19 @@ anforderungsbereich|Kennung: Vorgabe → Schülertätigkeit · ggf. weiteres
 
 Antworte NUR mit reinem JSON:
 {"spezifikation":"5 Unteraufgaben, steigend schwerer\\nreproduktion|1a–1c: Bruch → Dezimalzahl · Prozent\\nleichteAnwendung|1d–1e: Dezimalzahl → Bruch · Prozent\\nmittlereAnwendung|1f: Sachtext (Prozentwert gegeben) → Grundwert berechnen"}`;
-        const raw = await callKI([{ type: 'text', text: p }], 1500);
-        const parsed = parseKI(raw);
+        let spezifikation = '';
+        try {
+          const raw = await callKI([{ type: 'text', text: p }], 1500);
+          const parsed = parseKI(raw);
+          spezifikation = parsed.spezifikation || '';
+        } catch(parseErr) {
+          spezifikation = '⚠ KI-Fehler: ' + parseErr.message.slice(0, 80);
+        }
         pr.feinstruktur.push({
           nr: aufgNr, titel: aufg.titel,
           zeitMinuten: aufg.zeitMinuten, gesamtpunkte: aufg.gesamtpunkte,
           typen: aufg.typen,
-          spezifikation: parsed.spezifikation || '',
+          spezifikation,
         });
         savePruefungsDB();
         renderFeinstruktur(); renderAFBBanner();

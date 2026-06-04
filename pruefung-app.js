@@ -1292,7 +1292,26 @@ function buildAufgabenGenTab(pr) {
         return wrap;
       };
       head.appendChild(makeFeinSlider('⏱', 'Min', fs.zeitMinuten || 5, 1, 45, '#2563eb', v => { fs.zeitMinuten = v; if (sv) sv.zeitMinuten = v; savePruefungsDB(); }));
-      head.appendChild(makeFeinSlider('', 'P', fs.gesamtpunkte || 8, 2, 30, '#7c3aed', v => { fs.gesamtpunkte = v; if (sv) sv.gesamtpunkte = v; savePruefungsDB(); }));
+
+      // Punkte-Chip mit Update-Funktion
+      const pktWrap = mk('div', ''); pktWrap.style.cssText = 'display:flex;align-items:center;gap:4px;flex-shrink:0;';
+      const pktValEl = tx('span', '', (fs.gesamtpunkte || 8) + ' P');
+      pktValEl.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#7c3aed1a;color:#7c3aed;cursor:pointer;';
+      const pktSlider = document.createElement('input'); pktSlider.type = 'range';
+      pktSlider.min = 2; pktSlider.max = 30; pktSlider.step = 1; pktSlider.value = fs.gesamtpunkte || 8;
+      pktSlider.style.cssText = 'width:70px;accent-color:#7c3aed;height:3px;display:none;';
+      pktValEl.onclick = () => { pktSlider.style.display = pktSlider.style.display ? '' : 'none'; };
+      pktSlider.oninput = () => { fs.gesamtpunkte = parseInt(pktSlider.value); if (sv) sv.gesamtpunkte = fs.gesamtpunkte; pktValEl.textContent = fs.gesamtpunkte + ' P'; savePruefungsDB(); renderAFBBanner(); };
+      pktSlider.onblur = () => { pktSlider.style.display = 'none'; };
+      pktWrap.appendChild(pktValEl); pktWrap.appendChild(pktSlider);
+      head.appendChild(pktWrap);
+
+      // Funktion zum Aktualisieren des Punkte-Chips aus Zeilenpunkten
+      const updatePunkteSum = (listWrap) => {
+        const sum = Array.from(listWrap.querySelectorAll('input[type=number]'))
+          .reduce((s, inp) => s + (parseInt(inp.value) || 0), 0);
+        if (sum > 0) { pktValEl.textContent = sum + ' P'; pktSlider.value = sum; fs.gesamtpunkte = sum; if (sv) sv.gesamtpunkte = sum; savePruefungsDB(); renderAFBBanner(); }
+      };
 
       // ↺ Diese Aufgabe einzeln neu generieren
       const cardRegenBtn = mk('button', '');
@@ -1408,7 +1427,7 @@ function buildAufgabenGenTab(pr) {
             pInp.oninput = () => {
               zeilenPunkte = pInp.value ? parseInt(pInp.value) : null;
               const ls = getLines(); ls[li] = buildLine(); saveLines(ls);
-              renderAFBBanner();
+              updatePunkteSum(listWrap);
             };
             row.appendChild(pInp);
 

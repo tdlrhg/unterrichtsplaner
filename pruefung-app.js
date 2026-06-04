@@ -199,6 +199,21 @@ function buildPrTopbar() {
 function buildPrSidebar() {
   const sb = mk('div', 'pr-sidebar');
 
+  // Resize-Handle (wie Hauptplaner)
+  const resizeHandle = mk('div', 'sb-resize-handle');
+  sb.appendChild(resizeHandle);
+  const savedW = localStorage.getItem('pr_sb_width');
+  if (savedW) sb.style.width = savedW + 'px';
+  resizeHandle.addEventListener('mousedown', e => {
+    e.preventDefault();
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    const onMove = e => { sb.style.width = Math.min(400, Math.max(160, e.clientX - sb.getBoundingClientRect().left)) + 'px'; };
+    const onUp = () => { localStorage.setItem('pr_sb_width', parseInt(sb.style.width)); document.body.style.cursor = ''; document.body.style.userSelect = ''; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+
   // Titel
   const hdr = mk('div', 'pr-sb-hdr');
   hdr.appendChild(tx('div', 'pr-sb-title', 'Prüfungen'));
@@ -898,63 +913,96 @@ function buildAufgabenGenTab(pr) {
     if (zMin) gesamtEl.textContent += ` (Ziel: ${zMin}${zMax !== zMin ? '–'+zMax : ''} Min.)`;
   }
 
-  // Anforderungsbereich-Farben
-  const AB_FARBEN = { reproduktion:'#16a34a', leichteAnwendung:'#2563eb', mittlereAnwendung:'#d97706', transfer:'#9d174d' };
-  const AB_LABEL  = { reproduktion:'Reproduktion', leichteAnwendung:'Leichte Anw.', mittlereAnwendung:'Mittlere Anw.', transfer:'Transfer' };
+  // Anforderungs-Stempel
+  const AB_CFG = [
+    { key: 'reproduktion',     letter: 'R', color: '#16a34a', title: 'Reproduktion' },
+    { key: 'leichteAnwendung', letter: 'A', color: '#ca8a04', title: 'Leichte Anwendung' },
+    { key: 'mittlereAnwendung',letter: 'A', color: '#ea580c', title: 'Mittlere Anwendung' },
+    { key: 'transfer',         letter: 'T', color: '#dc2626', title: 'Transfer' },
+  ];
+  function makeStempel(anforderung) {
+    const wrap = mk('div', ''); wrap.style.cssText = 'display:flex;flex-direction:column;gap:3px;align-items:center;flex-shrink:0;margin-right:4px;padding-top:2px;';
+    let any = false;
+    AB_CFG.forEach(cfg => {
+      if (!anforderung?.[cfg.key]) return;
+      any = true;
+      const s = tx('div', '', cfg.letter);
+      s.title = cfg.title;
+      s.style.cssText = `width:22px;height:22px;border-radius:50%;background:${cfg.color};color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;`;
+      wrap.appendChild(s);
+    });
+    return any ? wrap : null;
+  }
+
+  // Drag-to-Reorder
+  let dragSrc = null;
+  function addDragHandlers(el, index) {
+    el.draggable = true;
+    el.ondragstart = e => { dragSrc = index; el.style.opacity = '.5'; e.dataTransfer.effectAllowed = 'move'; };
+    el.ondragend = () => { el.style.opacity = ''; };
+    el.ondragover = e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; el.style.background = 'var(--surf)'; };
+    el.ondragleave = () => { el.style.background = ''; };
+    el.ondrop = e => {
+      e.preventDefault(); el.style.background = '';
+      if (dragSrc === null || dragSrc === index) return;
+      const arr = pr.strukturVorschlag;
+      const [moved] = arr.splice(dragSrc, 1);
+      arr.splice(index, 0, moved);
+      savePruefungsDB(); renderStruktur();
+    };
+  }
 
   function renderStruktur() {
     strukturWrap.innerHTML = '';
     if (!pr.strukturVorschlag.length) { updateGesamt(); return; }
-    pr.strukturVorschlag.forEach(aufg => {
+    pr.strukturVorschlag.forEach((aufg, idx) => {
       const card = mk('div', '');
-      card.style.cssText = 'border:1px solid var(--bord);border-radius:8px;background:var(--surf2);padding:10px 12px;' + (aufg._removed ? 'opacity:.35;' : '');
+      card.style.cssText = 'border:1px solid var(--bord);border-radius:8px;background:var(--surf2);padding:10px 12px;display:flex;gap:0;' + (aufg._removed ? 'opacity:.35;' : '');
+
+      // Linke Spalte: Drag-Handle + Stempel
+      const leftCol = mk('div', ''); leftCol.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;margin-right:10px;flex-shrink:0;';
+      const dragHandle = tx('div', '', '⠿'); // braille dots = drag indicator
+      dragHandle.title = 'Reihenfolge ändern';
+      dragHandle.style.cssText = 'font-size:16px;color:var(--tx3);cursor:grab;user-select:none;line-height:1;';
+      leftCol.appendChild(dragHandle);
+      const stempel = makeStempel(aufg.anforderung);
+      if (stempel) leftCol.appendChild(stempel);
+      card.appendChild(leftCol);
+
+      // Rechte Spalte: Inhalt
+      const rightCol = mk('div', ''); rightCol.style.flex = '1';
 
       // Titelzeile + Streichen-Button
       const hrow = mk('div', ''); hrow.style.cssText = 'display:flex;align-items:baseline;gap:8px;margin-bottom:4px;';
-      const titEl = tx('strong', '', 'Aufgabe ' + aufg.nr + ': ' + (aufg.titel || '–'));
-      hrow.appendChild(titEl);
+      hrow.appendChild(tx('strong', '', 'Aufgabe ' + aufg.nr + ': ' + (aufg.titel || '–')));
       const spacer = mk('span', ''); spacer.style.flex = '1'; hrow.appendChild(spacer);
       const toggleBtn = btn(aufg._removed ? '+ Aufnehmen' : '✕', 'btn btn-ghost btn-xs');
       toggleBtn.title = aufg._removed ? 'Wieder aufnehmen' : 'Aufgabe streichen';
       toggleBtn.onclick = () => { aufg._removed = !aufg._removed; savePruefungsDB(); renderStruktur(); };
       hrow.appendChild(toggleBtn);
-      card.appendChild(hrow);
+      rightCol.appendChild(hrow);
 
-      // Beschreibung
-      if (aufg.beschreibung) { const b = tx('div', '', aufg.beschreibung); b.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;margin-bottom:8px;'; card.appendChild(b); }
-
-      // Anforderungsbereiche (Balken)
-      const anf = aufg.anforderung;
-      if (anf) {
-        const total = Object.values(anf).reduce((s, v) => s + (v || 0), 0);
-        if (total > 0) {
-          const bar = mk('div', ''); bar.style.cssText = 'display:flex;height:6px;border-radius:3px;overflow:hidden;margin-bottom:4px;gap:1px;';
-          const legend = mk('div', ''); legend.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
-          Object.entries(anf).forEach(([k, v]) => {
-            if (!v) return;
-            const seg = mk('div', ''); seg.style.cssText = `flex:${v};background:${AB_FARBEN[k]||'#999'};`; bar.appendChild(seg);
-            const leg = tx('span', '', AB_LABEL[k] + ' ' + v + 'P'); leg.style.cssText = `font-size:10px;color:${AB_FARBEN[k]||'#999'};`; legend.appendChild(leg);
-          });
-          card.appendChild(bar); card.appendChild(legend);
-        }
-      }
+      if (aufg.beschreibung) { const b = tx('div', '', aufg.beschreibung); b.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;margin-bottom:8px;'; rightCol.appendChild(b); }
 
       // Regler Zeit + Punkte
-      function makeSlider(label, val, min, max, step, onChange) {
+      function makeSlider(label, unit, val, min, max, onChange) {
         const wrap = mk('div', ''); wrap.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:4px;';
-        wrap.appendChild(tx('span', '', label)).style || (wrap.lastChild.style.cssText = 'font-size:11px;color:var(--tx3);width:38px;flex-shrink:0;');
+        const lbl = tx('span', '', label); lbl.style.cssText = 'font-size:11px;color:var(--tx3);width:38px;flex-shrink:0;';
+        wrap.appendChild(lbl);
         const slider = document.createElement('input'); slider.type = 'range';
-        slider.min = min; slider.max = max; slider.step = step; slider.value = val;
+        slider.min = min; slider.max = max; slider.step = 1; slider.value = val;
         slider.style.cssText = 'flex:1;accent-color:var(--pri);height:4px;cursor:pointer;';
-        const valEl = tx('span', '', val + (label.includes('Min') ? ' Min' : ' P'));
-        valEl.style.cssText = 'font-size:12px;font-weight:600;width:42px;text-align:right;flex-shrink:0;';
-        slider.oninput = () => { const n = parseInt(slider.value); valEl.textContent = n + (label.includes('Min') ? ' Min' : ' P'); onChange(n); updateGesamt(); };
+        const valEl = tx('span', '', val + ' ' + unit);
+        valEl.style.cssText = 'font-size:12px;font-weight:600;width:48px;text-align:right;flex-shrink:0;';
+        slider.oninput = () => { const n = parseInt(slider.value); valEl.textContent = n + ' ' + unit; onChange(n); updateGesamt(); };
         wrap.appendChild(slider); wrap.appendChild(valEl);
         return wrap;
       }
-      card.appendChild(makeSlider('⏱ Zeit', aufg.zeitMinuten || 5, 1, 30, 1, v => { aufg.zeitMinuten = v; savePruefungsDB(); }));
-      card.appendChild(makeSlider('Punkte', aufg.gesamtpunkte || 8, 2, 25, 1, v => { aufg.gesamtpunkte = v; savePruefungsDB(); }));
+      rightCol.appendChild(makeSlider('⏱ Zeit', 'Min', aufg.zeitMinuten || 5, 1, 30, v => { aufg.zeitMinuten = v; savePruefungsDB(); }));
+      rightCol.appendChild(makeSlider('Punkte', 'P', aufg.gesamtpunkte || 8, 2, 25, v => { aufg.gesamtpunkte = v; savePruefungsDB(); }));
 
+      card.appendChild(rightCol);
+      addDragHandlers(card, idx);
       strukturWrap.appendChild(card);
     });
     updateGesamt();

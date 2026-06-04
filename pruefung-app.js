@@ -1639,12 +1639,20 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
         p += `Thema/Titel: ${aufg.titel}\n`;
         p += `Beschreibung: ${aufg.beschreibung}\n`;
         p += `Zeit: ${aufg.zeitMinuten ?? '?'} Min, ${aufg.gesamtpunkte ?? '?'} Punkte\n`;
-        p += `Aufgabentypen: ${(aufg.typen||[]).join(', ')}\n\n`;
+        p += `Aufgabentypen: ${(aufg.typen||[]).join(', ')}\n`;
+        const anf2 = aufg.anforderung || {};
+        const erlaubt2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) > 0);
+        const verboten2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) === 0);
+        if (erlaubt2.length) {
+          p += `\n## ANFORDERUNGSBEREICHE — VERBINDLICH\nErlaubt: ${erlaubt2.join(', ')}\n`;
+          if (verboten2.length) p += `VERBOTEN (keinesfalls verwenden): ${verboten2.join(', ')}\n`;
+        }
+        p += '\n';
         if (lernziele.length) { p += 'Relevante Lernziele:\n'; lernziele.slice(0,8).forEach(lz => { p += `- ${lz}\n`; }); p += '\n'; }
         const relevanteIdeen = ideenPool.filter(idea => idea.toLowerCase().includes((aufg.titel||'').toLowerCase().split(' ')[0])).slice(0,8);
         if (relevanteIdeen.length) { p += 'Ähnliche Aufgaben aus Quellen (zur Inspiration):\n'; relevanteIdeen.forEach(idea => { p += `- ${idea}\n`; }); p += '\n'; }
         p += `Beschreibe die Unteraufgaben in kompakter Kurzform.
-Für jede Unteraufgabe mit Pfeil: zuerst Anforderungsbereich (einer von: reproduktion, leichteAnwendung, mittlereAnwendung, transfer), dann | dann Kennung: Vorgabe → Schülertätigkeit.
+Für jede Unteraufgabe mit Pfeil: zuerst Anforderungsbereich (NUR erlaubte: ${erlaubt2.length ? erlaubt2.join(', ') : 'alle'}), dann | dann Kennung: Vorgabe → Schülertätigkeit.
 Allgemeine Hinweise (Gesamtzahl, Reihenfolge) als eigene Zeile ohne Pfeil und ohne |.
 
 FORMAT (genau so, kein Fließtext):
@@ -1663,7 +1671,7 @@ Antworte NUR mit reinem JSON:
         pr.feinstruktur.push({
           nr: aufgNr, titel: aufg.titel,
           zeitMinuten: aufg.zeitMinuten, gesamtpunkte: aufg.gesamtpunkte,
-          typen: aufg.typen,
+          typen: aufg.typen, anforderung: aufg.anforderung,
           spezifikation,
         });
         savePruefungsDB();
@@ -1686,8 +1694,14 @@ Antworte NUR mit reinem JSON:
         let p = `Erstelle konkrete Aufgabe ${fs.nr} "${fs.titel}" für eine Klassenarbeit.\n\n`;
         p += `## PÄDAGOGISCHE SPEZIFIKATION\n${fs.spezifikation}\n\n`;
         p += `Zeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte gesamt\n`;
-        p += `Aufgabentypen: ${(fs.typen||[]).join(', ')}\n\n`;
-        p += `## WICHTIG\n- Unteraufgaben rechnerisch unabhängig (neue Zahlen pro Unteraufgabe)\n- Progression leicht→schwer innerhalb der Aufgabe\n- Konkrete Zahlen und Texte — kein Platzhalter\n\n`;
+        p += `Aufgabentypen: ${(fs.typen||[]).join(', ')}\n`;
+        const anf3 = fs.anforderung || {};
+        const erlaubt3 = Object.keys(AB_KEY_MAP).filter(k => (anf3[k] || 0) > 0);
+        const verboten3 = Object.keys(AB_KEY_MAP).filter(k => (anf3[k] || 0) === 0);
+        if (erlaubt3.length) {
+          p += `\n## ANFORDERUNGSBEREICHE — VERBINDLICH\nErlaubt: ${erlaubt3.join(', ')}\nVERBOTEN (niemals verwenden): ${verboten3.join(', ')}\n`;
+        }
+        p += `\n## WICHTIG\n- Unteraufgaben rechnerisch unabhängig (neue Zahlen pro Unteraufgabe)\n- Progression leicht→schwer innerhalb der Aufgabe\n- Konkrete Zahlen und Texte — kein Platzhalter\n\n`;
         p += `Antworte NUR mit reinem JSON:
 {"aufgabenstellung":null,"unteraufgaben":[
   {"nr":"${fs.nr}a","titel":null,"text":"konkreter Aufgabentext mit Zahlen","punkte":3,"anforderungsbereich":"reproduktion","typ":"Rechnung"},

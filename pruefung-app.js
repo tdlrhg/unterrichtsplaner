@@ -1111,22 +1111,33 @@ function buildAufgabenGenTab(pr) {
   afbBanner.style.cssText = 'margin-bottom:12px;';
 
   function calcAFB() {
-    const t = { afb1: 0, afb2: 0, afb3: 0, total: 0 };
+    const t = { afb1: 0, afb2: 0, afb3: 0, total: 0, min1: 0, min2: 0, min3: 0 };
     if (pr.genAufgaben.length) {
-      pr.genAufgaben.forEach(a => (a.unteraufgaben || []).forEach(ua => {
-        const p = ua.punkte || 0;
-        if (ua.anforderungsbereich === 'reproduktion' || ua.anforderungsbereich === 'leichteAnwendung') t.afb1 += p;
-        else if (ua.anforderungsbereich === 'mittlereAnwendung') t.afb2 += p;
-        else if (ua.anforderungsbereich === 'transfer') t.afb3 += p;
-        t.total += p;
-      }));
+      pr.genAufgaben.forEach(a => {
+        const uas = a.unteraufgaben || [];
+        const taskP = uas.reduce((s, ua) => s + (ua.punkte || 0), 0);
+        const taskMin = a.zeitMinuten || 0;
+        uas.forEach(ua => {
+          const p = ua.punkte || 0;
+          const minAnteil = taskP ? taskMin * p / taskP : 0;
+          if (ua.anforderungsbereich === 'reproduktion' || ua.anforderungsbereich === 'leichteAnwendung') { t.afb1 += p; t.min1 += minAnteil; }
+          else if (ua.anforderungsbereich === 'mittlereAnwendung') { t.afb2 += p; t.min2 += minAnteil; }
+          else if (ua.anforderungsbereich === 'transfer') { t.afb3 += p; t.min3 += minAnteil; }
+          t.total += p;
+        });
+      });
     } else {
       pr.strukturVorschlag.filter(a => !a._removed).forEach(a => {
         const anf = a.anforderung || {};
-        t.afb1 += (anf.reproduktion || 0) + (anf.leichteAnwendung || 0);
-        t.afb2 += anf.mittlereAnwendung || 0;
-        t.afb3 += anf.transfer || 0;
-        t.total += a.gesamtpunkte || 0;
+        const p1 = (anf.reproduktion || 0) + (anf.leichteAnwendung || 0);
+        const p2 = anf.mittlereAnwendung || 0;
+        const p3 = anf.transfer || 0;
+        const taskP = (a.gesamtpunkte || 0);
+        const taskMin = a.zeitMinuten || 0;
+        t.afb1 += p1; t.min1 += taskP ? taskMin * p1 / taskP : 0;
+        t.afb2 += p2; t.min2 += taskP ? taskMin * p2 / taskP : 0;
+        t.afb3 += p3; t.min3 += taskP ? taskMin * p3 / taskP : 0;
+        t.total += taskP;
       });
     }
     return t;
@@ -1138,13 +1149,13 @@ function buildAufgabenGenTab(pr) {
     if (!t.total) return;
     const z = pr.afbZiele || { afb1: { min: 30, max: 50 }, afb2: { min: 35, max: 50 }, afb3: { min: 15, max: 25 } };
     const rows = [
-      { key: 'afb1', badges: ['reproduktion','leichteAnwendung'],  color: '#ca8a04', punkte: t.afb1 },
-      { key: 'afb2', badges: ['mittlereAnwendung'],                color: '#ea580c', punkte: t.afb2 },
-      { key: 'afb3', badges: ['transfer'],                         color: '#dc2626', punkte: t.afb3 },
+      { key: 'afb1', badges: ['reproduktion','leichteAnwendung'],  color: '#ca8a04', punkte: t.afb1, min: t.min1 },
+      { key: 'afb2', badges: ['mittlereAnwendung'],                color: '#ea580c', punkte: t.afb2, min: t.min2 },
+      { key: 'afb3', badges: ['transfer'],                         color: '#dc2626', punkte: t.afb3, min: t.min3 },
     ];
     const grid = mk('div', '');
-    grid.style.cssText = 'display:grid;grid-template-columns:52px 1fr 44px 80px;gap:4px 8px;align-items:center;padding:10px 14px;background:var(--surf2);border-radius:8px;border:1px solid var(--bord);';
-    rows.forEach(({ key, badges, color, punkte }) => {
+    grid.style.cssText = 'display:grid;grid-template-columns:52px 1fr 70px 44px 70px;gap:4px 8px;align-items:center;padding:10px 14px;background:var(--surf2);border-radius:8px;border:1px solid var(--bord);';
+    rows.forEach(({ key, badges, color, punkte, min }) => {
       const pct = t.total ? Math.round(punkte / t.total * 100) : 0;
       const ziel = z[key] || { min: 0, max: 100 };
       const ok = pct >= ziel.min && pct <= ziel.max;
@@ -1167,6 +1178,11 @@ function buildAufgabenGenTab(pr) {
       fillBar.style.cssText = `position:absolute;left:0;width:${Math.min(pct, 100)}%;height:100%;background:${ok ? color : '#ef4444'};border-radius:5px;transition:width .3s;`;
       barWrap.appendChild(fillBar);
       grid.appendChild(barWrap);
+      const pmEl = mk('div', ''); pmEl.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:1px;';
+      const pEl = tx('span', '', punkte + ' P'); pEl.style.cssText = `font-size:11px;font-weight:700;color:${color};`;
+      const mEl = tx('span', '', Math.round(min) + ' Min'); mEl.style.cssText = 'font-size:10px;color:var(--tx3);';
+      pmEl.appendChild(pEl); pmEl.appendChild(mEl);
+      grid.appendChild(pmEl);
       const pctEl = tx('span', '', pct + ' %');
       pctEl.style.cssText = `font-size:12px;font-weight:700;color:${ok ? color : '#ef4444'};text-align:right;`;
       grid.appendChild(pctEl);

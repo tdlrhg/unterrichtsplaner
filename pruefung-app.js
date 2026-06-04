@@ -1110,6 +1110,26 @@ function buildAufgabenGenTab(pr) {
   const afbBanner = mk('div', '');
   afbBanner.style.cssText = 'margin-bottom:12px;';
 
+  function parseFeinPunkte() {
+    // Liest Zeilenpunkte aus pr.feinstruktur
+    const result = [];
+    pr.feinstruktur.forEach(fs => {
+      (fs.spezifikation || '').split('\n').forEach(line => {
+        if (!line.includes('→')) return;
+        const pipeIdx = line.indexOf('|');
+        if (pipeIdx < 0) return;
+        const afbKey = line.slice(0, pipeIdx).trim();
+        if (!AB_KEY_MAP[afbKey]) return;
+        const rest = line.slice(pipeIdx + 1);
+        const lastPipe = rest.lastIndexOf('|');
+        if (lastPipe < 0) return;
+        const maybeP = rest.slice(lastPipe + 1).trim();
+        if (/^\d+$/.test(maybeP)) result.push({ afbKey, punkte: parseInt(maybeP) });
+      });
+    });
+    return result;
+  }
+
   function calcAFB() {
     const t = { afb1: 0, afb2: 0, afb3: 0, total: 0, min1: 0, min2: 0, min3: 0 };
     if (pr.genAufgaben.length) {
@@ -1127,18 +1147,29 @@ function buildAufgabenGenTab(pr) {
         });
       });
     } else {
-      pr.strukturVorschlag.filter(a => !a._removed).forEach(a => {
-        const anf = a.anforderung || {};
-        const p1 = (anf.reproduktion || 0) + (anf.leichteAnwendung || 0);
-        const p2 = anf.mittlereAnwendung || 0;
-        const p3 = anf.transfer || 0;
-        const taskP = (a.gesamtpunkte || 0);
-        const taskMin = a.zeitMinuten || 0;
-        t.afb1 += p1; t.min1 += taskP ? taskMin * p1 / taskP : 0;
-        t.afb2 += p2; t.min2 += taskP ? taskMin * p2 / taskP : 0;
-        t.afb3 += p3; t.min3 += taskP ? taskMin * p3 / taskP : 0;
-        t.total += taskP;
-      });
+      const feinPunkte = parseFeinPunkte();
+      if (feinPunkte.length) {
+        // Feinstruktur-Zeilenpunkte vorhanden → diese verwenden
+        feinPunkte.forEach(({ afbKey, punkte }) => {
+          if (afbKey === 'reproduktion' || afbKey === 'leichteAnwendung') t.afb1 += punkte;
+          else if (afbKey === 'mittlereAnwendung') t.afb2 += punkte;
+          else if (afbKey === 'transfer') t.afb3 += punkte;
+          t.total += punkte;
+        });
+      } else {
+        pr.strukturVorschlag.filter(a => !a._removed).forEach(a => {
+          const anf = a.anforderung || {};
+          const p1 = (anf.reproduktion || 0) + (anf.leichteAnwendung || 0);
+          const p2 = anf.mittlereAnwendung || 0;
+          const p3 = anf.transfer || 0;
+          const taskP = (a.gesamtpunkte || 0);
+          const taskMin = a.zeitMinuten || 0;
+          t.afb1 += p1; t.min1 += taskP ? taskMin * p1 / taskP : 0;
+          t.afb2 += p2; t.min2 += taskP ? taskMin * p2 / taskP : 0;
+          t.afb3 += p3; t.min3 += taskP ? taskMin * p3 / taskP : 0;
+          t.total += taskP;
+        });
+      }
     }
     return t;
   }
@@ -1377,6 +1408,7 @@ function buildAufgabenGenTab(pr) {
             pInp.oninput = () => {
               zeilenPunkte = pInp.value ? parseInt(pInp.value) : null;
               const ls = getLines(); ls[li] = buildLine(); saveLines(ls);
+              renderAFBBanner();
             };
             row.appendChild(pInp);
 

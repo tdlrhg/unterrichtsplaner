@@ -985,7 +985,10 @@ loesung: kurze Musterloesung oder Ergebnis in 1 Zeile`;
         listWrap.innerHTML = '';
         const lines = getLines();
         lines.forEach((line, li) => {
-          const hasPfeil = line.includes('→');
+          // Zeile gilt als strukturiert wenn → vorhanden ODER wenn ein gültiger AFB-Schlüssel als Präfix steht
+          const _pipeCheck = line.indexOf('|');
+          const _potentialKey = _pipeCheck > -1 ? line.slice(0, _pipeCheck).trim().replace(/^[-–•]\s*/, '') : null;
+          const hasPfeil = line.includes('→') || !!(_potentialKey && AB_KEY_MAP[_potentialKey]);
           const row = mk('div', '');
           row.style.cssText = 'display:flex;align-items:flex-start;gap:6px;padding:3px 0;';
 
@@ -1038,12 +1041,14 @@ loesung: kurze Musterloesung oder Ergebnis in 1 Zeile`;
             const vEl = tx('span', '', vorgabe || '');
             vEl.style.cssText = 'font-weight:700;color:var(--tx1);';
             preview.appendChild(vEl);
-            const arrEl = tx('span', '', '→');
-            arrEl.style.cssText = 'color:var(--pri);font-weight:700;flex-shrink:0;';
-            preview.appendChild(arrEl);
-            const eEl = tx('span', '', ergaenzung || '');
-            eEl.style.cssText = 'color:var(--tx3);';
-            preview.appendChild(eEl);
+            if (line.includes('→')) {
+              const arrEl = tx('span', '', '→');
+              arrEl.style.cssText = 'color:var(--pri);font-weight:700;flex-shrink:0;';
+              preview.appendChild(arrEl);
+              const eEl = tx('span', '', ergaenzung || '');
+              eEl.style.cssText = 'color:var(--tx3);';
+              preview.appendChild(eEl);
+            }
 
             // Punkte-Feld
             const pInp = document.createElement('input');

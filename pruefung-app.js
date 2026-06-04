@@ -1001,7 +1001,13 @@ function buildAufgabenGenTab(pr) {
     statusEl.textContent = '⏳ KI schlägt Grobstruktur vor…';
     try {
       const { refArbeiten, lernziele, ideenPool } = buildKontext();
+      const dauerMin = pr.dauerVon || null;
+      const dauerMax = pr.dauerBis || pr.dauerVon || null;
       let p = 'Du entwirfst eine Klassenarbeit. Schlage NUR die Hauptaufgaben vor — keine Unteraufgaben, keine Details.\n\n';
+      if (dauerMin) {
+        p += `## ZEITVORGABE (verbindlich)\nDie Klassenarbeit dauert ${dauerMin}${dauerMax && dauerMax !== dauerMin ? '–' + dauerMax : ''} Minuten. `;
+        p += `Die Summe aller zeitMinuten-Werte MUSS in diesem Bereich liegen. Plane entsprechend viele und kurze Aufgaben.\n\n`;
+      }
       p += `## KOMPOSITIONSSTIL\n${KOMPOSITIONSSTIL}\n\n`;
       if (refArbeiten.length) {
         p += '## REFERENZARBEITEN\n';
@@ -1026,7 +1032,9 @@ function buildAufgabenGenTab(pr) {
       savePruefungsDB();
       renderStruktur();
       zuFeinBtn.style.display = '';
-      statusEl.textContent = '✓ ' + pr.strukturVorschlag.length + ' Aufgaben vorgeschlagen. Streiche unerwünschte, dann → Feinstruktur.';
+      const gesamtzeit = pr.strukturVorschlag.reduce((s, a) => s + (a.zeitMinuten || 0), 0);
+      const zeitHinweis = gesamtzeit ? ` (${gesamtzeit} Min. gesamt)` : '';
+      statusEl.textContent = '✓ ' + pr.strukturVorschlag.length + ' Aufgaben vorgeschlagen' + zeitHinweis + '. Streiche unerwünschte, dann → Feinstruktur.';
     } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
     strukturBtn.disabled = false;
   };

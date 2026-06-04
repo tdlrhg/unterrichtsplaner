@@ -131,15 +131,24 @@ Antworte NUR mit reinem JSON:
       spezifikation,
     };
   }
+  // Prüft ob eine Zeile eine strukturierte AFB-Aufgabenzeile ist (hat AFB-Präfix, mit oder ohne →)
+  function isAfbLine(line) {
+    const pipeIdx = line.indexOf('|');
+    if (pipeIdx < 0) return false;
+    const afbKey = line.slice(0, pipeIdx).trim();
+    return !!AB_KEY_MAP[afbKey];
+  }
   function countSpecStats(specText) {
     const lines = (specText || '').split('\n').map(l => l.replace(/^[-–•]\s*/, '').trim()).filter(Boolean);
     let teilaufgaben = 0;
     let punkte = 0;
     lines.forEach(line => {
-      if (!line.includes('→')) return;
+      if (!isAfbLine(line)) return;
       teilaufgaben++;
       const lastPipe = line.lastIndexOf('|');
-      if (lastPipe > -1) {
+      // lastPipe muss hinter dem ersten | liegen (sonst ist es nur der AFB-Trenner)
+      const firstPipe = line.indexOf('|');
+      if (lastPipe > firstPipe) {
         const maybeP = line.slice(lastPipe + 1).trim();
         if (/^\d+$/.test(maybeP)) punkte += parseInt(maybeP);
       }
@@ -148,7 +157,7 @@ Antworte NUR mit reinem JSON:
   }
   function distributePointsAcrossSpec(fs) {
     const lines = (fs.spezifikation || '').split('\n').map(l => l.replace(/^[-–•]\s*/, '').trim()).filter(Boolean);
-    const idxs = lines.map((line, idx) => line.includes('→') ? idx : -1).filter(idx => idx > -1);
+    const idxs = lines.map((line, idx) => isAfbLine(line) ? idx : -1).filter(idx => idx > -1);
     if (!idxs.length || !fs.gesamtpunkte) return false;
     const base = Math.floor(fs.gesamtpunkte / idxs.length);
     let rest = fs.gesamtpunkte - base * idxs.length;
@@ -647,18 +656,18 @@ Antworte NUR mit reinem JSON:
   afbBanner.style.cssText = 'margin-bottom:12px;';
 
   function parseFeinPunkte() {
-    // Liest Zeilenpunkte aus pr.feinstruktur
+    // Liest Zeilenpunkte aus pr.feinstruktur (AFB-Zeilen mit oder ohne →)
     const result = [];
     pr.feinstruktur.forEach(fs => {
       (fs.spezifikation || '').split('\n').forEach(line => {
-        if (!line.includes('→')) return;
-        const pipeIdx = line.indexOf('|');
+        const stripped = line.trim().replace(/^[-–•]\s*/, '');
+        const pipeIdx = stripped.indexOf('|');
         if (pipeIdx < 0) return;
-        const afbKey = line.slice(0, pipeIdx).trim().replace(/^[-–•]\s*/, '');
+        const afbKey = stripped.slice(0, pipeIdx).trim();
         if (!AB_KEY_MAP[afbKey]) return;
-        const rest = line.slice(pipeIdx + 1);
+        const rest = stripped.slice(pipeIdx + 1);
         const lastPipe = rest.lastIndexOf('|');
-        if (lastPipe < 0) return;
+        if (lastPipe < 0) return; // kein Punkte-Anhang
         const maybeP = rest.slice(lastPipe + 1).trim();
         if (/^\d+$/.test(maybeP)) result.push({ afbKey, punkte: parseInt(maybeP) });
       });

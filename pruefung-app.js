@@ -858,6 +858,14 @@ function buildAufgabenGenTab(pr) {
     invalidateGeneratedTask(aufg.taskId);
     savePruefungsDB();
   }
+  function syncTaskAcrossViews(taskId, patch) {
+    const sv = pr.strukturVorschlag.find(a => a.taskId === taskId);
+    if (sv) Object.assign(sv, patch);
+    const fs = pr.feinstruktur.find(a => a.taskId === taskId);
+    if (fs) Object.assign(fs, patch);
+    const ga = pr.genAufgaben.find(a => a.taskId === taskId);
+    if (ga) Object.assign(ga, patch);
+  }
   function buildFeinstrukturPrompt(aufg, aufgNr, lernziele, ideenPool) {
     let p = `Du planst Aufgabe ${aufgNr} einer Klassenarbeit.\n`;
     p += `Thema/Titel: ${aufg.titel}\n`;
@@ -1532,7 +1540,12 @@ Antworte NUR mit reinem JSON:
         wrap.appendChild(valEl); wrap.appendChild(slider);
         return wrap;
       };
-      head.appendChild(makeFeinSlider('⏱', 'Min', fs.zeitMinuten || 5, 1, 45, '#2563eb', feinLocked, v => { fs.zeitMinuten = v; if (sv) sv.zeitMinuten = v; savePruefungsDB(); }));
+      head.appendChild(makeFeinSlider('⏱', 'Min', fs.zeitMinuten || 5, 1, 45, '#2563eb', feinLocked, v => {
+        syncTaskAcrossViews(fs.taskId, { zeitMinuten: v });
+        savePruefungsDB();
+        renderStruktur();
+        renderGenAufgaben();
+      }));
 
       // Punkte-Chip mit Update-Funktion
       const pktWrap = mk('div', ''); pktWrap.style.cssText = 'display:flex;align-items:center;gap:4px;flex-shrink:0;';
@@ -1543,7 +1556,15 @@ Antworte NUR mit reinem JSON:
       pktSlider.disabled = feinLocked;
       pktSlider.style.cssText = 'width:70px;accent-color:#7c3aed;height:3px;display:none;';
       pktValEl.onclick = () => { if (!feinLocked) pktSlider.style.display = pktSlider.style.display ? '' : 'none'; };
-      pktSlider.oninput = () => { fs.gesamtpunkte = parseInt(pktSlider.value); if (sv) sv.gesamtpunkte = fs.gesamtpunkte; pktValEl.textContent = fs.gesamtpunkte + ' P'; savePruefungsDB(); renderAFBBanner(); };
+      pktSlider.oninput = () => {
+        const n = parseInt(pktSlider.value);
+        syncTaskAcrossViews(fs.taskId, { gesamtpunkte: n });
+        pktValEl.textContent = n + ' P';
+        savePruefungsDB();
+        renderStruktur();
+        renderGenAufgaben();
+        renderAFBBanner();
+      };
       pktSlider.onblur = () => { pktSlider.style.display = 'none'; };
       pktWrap.appendChild(pktValEl); pktWrap.appendChild(pktSlider);
       head.appendChild(pktWrap);
@@ -1552,7 +1573,14 @@ Antworte NUR mit reinem JSON:
       const updatePunkteSum = (listWrap) => {
         const sum = Array.from(listWrap.querySelectorAll('input[type=number]'))
           .reduce((s, inp) => s + (parseInt(inp.value) || 0), 0);
-        if (sum > 0) { pktValEl.textContent = sum + ' P'; pktSlider.value = Math.min(sum, 30); fs.gesamtpunkte = sum; if (sv) sv.gesamtpunkte = sum; savePruefungsDB(); }
+        if (sum > 0) {
+          pktValEl.textContent = sum + ' P';
+          pktSlider.value = Math.min(sum, 30);
+          syncTaskAcrossViews(fs.taskId, { gesamtpunkte: sum });
+          savePruefungsDB();
+          renderStruktur();
+          renderGenAufgaben();
+        }
         renderAFBBanner();
       };
 

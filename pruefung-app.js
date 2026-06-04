@@ -1136,22 +1136,66 @@ function buildAufgabenGenTab(pr) {
         listWrap.innerHTML = '';
         const lines = getLines();
         lines.forEach((line, li) => {
+          const hasPfeil = line.includes('→');
           const row = mk('div', '');
           row.style.cssText = 'display:flex;align-items:flex-start;gap:6px;padding:3px 0;';
-          const bullet = tx('span', '', '–');
-          bullet.style.cssText = 'color:var(--pri);font-weight:700;flex-shrink:0;padding-top:3px;font-size:13px;';
-          row.appendChild(bullet);
-          const inp = document.createElement('textarea');
-          inp.value = line;
-          inp.rows = 1;
-          inp.style.cssText = 'flex:1;font-size:13px;font-family:inherit;line-height:1.5;border:none;outline:none;background:transparent;color:var(--tx1);resize:none;overflow:hidden;padding:0;';
-          const grow = () => { inp.style.height = 'auto'; inp.style.height = inp.scrollHeight + 'px'; };
-          inp.oninput = () => { const ls = getLines(); ls[li] = inp.value; saveLines(ls); grow(); };
-          inp.onkeydown = e => {
-            if (e.key === 'Enter') { e.preventDefault(); const ls = getLines(); ls.splice(li + 1, 0, ''); saveLines(ls); buildList(); listWrap.querySelectorAll('textarea')[li + 1]?.focus(); }
-            if (e.key === 'Backspace' && inp.value === '' && lines.length > 1) { e.preventDefault(); const ls = getLines(); ls.splice(li, 1); saveLines(ls); buildList(); listWrap.querySelectorAll('textarea')[Math.max(0, li - 1)]?.focus(); }
-          };
-          row.appendChild(inp);
+
+          if (hasPfeil) {
+            // Strukturierte Anzeige: Kennung · Vorgabe → Ergänzung
+            const colonIdx = line.indexOf(':');
+            const kennung = colonIdx > -1 ? line.slice(0, colonIdx).trim() : '';
+            const rest = colonIdx > -1 ? line.slice(colonIdx + 1).trim() : line;
+            const [vorgabe, ergaenzung] = rest.split('→').map(s => s.trim());
+
+            const preview = mk('div', '');
+            preview.style.cssText = 'flex:1;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;padding:2px 0;font-size:13px;cursor:text;';
+            if (kennung) {
+              const kEl = tx('span', '', kennung + ':');
+              kEl.style.cssText = 'font-weight:700;color:var(--tx2);flex-shrink:0;';
+              preview.appendChild(kEl);
+            }
+            const vEl = tx('span', '', vorgabe || '');
+            vEl.style.cssText = 'font-weight:700;color:var(--tx1);';
+            preview.appendChild(vEl);
+            const arrEl = tx('span', '', '→');
+            arrEl.style.cssText = 'color:var(--pri);font-weight:700;flex-shrink:0;';
+            preview.appendChild(arrEl);
+            const eEl = tx('span', '', ergaenzung || '');
+            eEl.style.cssText = 'color:var(--tx3);';
+            preview.appendChild(eEl);
+
+            // Klick öffnet Inline-Editor
+            const inp = document.createElement('input');
+            inp.type = 'text'; inp.value = line;
+            inp.style.cssText = 'flex:1;font-size:13px;font-family:inherit;border:none;outline:none;background:var(--surf);color:var(--tx1);padding:2px 4px;border-radius:4px;display:none;';
+            inp.oninput = () => { const ls = getLines(); ls[li] = inp.value; saveLines(ls); };
+            inp.onblur = () => { buildList(); };
+            inp.onkeydown = e => {
+              if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+              if (e.key === 'Escape') { inp.blur(); }
+            };
+            preview.onclick = () => { preview.style.display = 'none'; inp.style.display = ''; inp.focus(); inp.select(); };
+            row.appendChild(preview);
+            row.appendChild(inp);
+          } else {
+            // Einfache Textzeile (Hinweis, Gesamtanzahl etc.)
+            const bullet = tx('span', '', '–');
+            bullet.style.cssText = 'color:var(--tx3);flex-shrink:0;padding-top:3px;font-size:13px;';
+            row.appendChild(bullet);
+            const inp = document.createElement('textarea');
+            inp.value = line;
+            inp.rows = 1;
+            inp.style.cssText = 'flex:1;font-size:13px;font-family:inherit;line-height:1.5;border:none;outline:none;background:transparent;color:var(--tx2);resize:none;overflow:hidden;padding:0;font-style:italic;';
+            const grow = () => { inp.style.height = 'auto'; inp.style.height = inp.scrollHeight + 'px'; };
+            inp.oninput = () => { const ls = getLines(); ls[li] = inp.value; saveLines(ls); grow(); };
+            inp.onkeydown = e => {
+              if (e.key === 'Enter') { e.preventDefault(); const ls = getLines(); ls.splice(li + 1, 0, ''); saveLines(ls); buildList(); listWrap.querySelectorAll('textarea')[li + 1]?.focus(); }
+              if (e.key === 'Backspace' && inp.value === '' && lines.length > 1) { e.preventDefault(); const ls = getLines(); ls.splice(li, 1); saveLines(ls); buildList(); listWrap.querySelectorAll('textarea')[Math.max(0, li - 1)]?.focus(); }
+            };
+            row.appendChild(inp);
+            requestAnimationFrame(grow);
+          }
+
           const del = mk('button', '');
           del.textContent = '✕';
           del.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:2px 4px;flex-shrink:0;opacity:0;transition:opacity .1s;';
@@ -1160,7 +1204,6 @@ function buildAufgabenGenTab(pr) {
           del.onclick = () => { const ls = getLines(); ls.splice(li, 1); saveLines(ls); buildList(); };
           row.appendChild(del);
           listWrap.appendChild(row);
-          requestAnimationFrame(grow);
         });
         // + neue Zeile
         const addRow = mk('button', '');
@@ -1288,14 +1331,15 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
         if (lernziele.length) { p += 'Relevante Lernziele:\n'; lernziele.slice(0,8).forEach(lz => { p += `- ${lz}\n`; }); p += '\n'; }
         const relevanteIdeen = ideenPool.filter(idea => idea.toLowerCase().includes((aufg.titel||'').toLowerCase().split(' ')[0])).slice(0,8);
         if (relevanteIdeen.length) { p += 'Ähnliche Aufgaben aus Quellen (zur Inspiration):\n'; relevanteIdeen.forEach(idea => { p += `- ${idea}\n`; }); p += '\n'; }
-        p += `Beschreibe auf Deutsch in 3-6 Stichpunkten, was du für diese Aufgabe planst:
-- Wie viele Unteraufgaben und in welcher Reihenfolge?
-- Welche konkreten Fähigkeiten übt jede Unteraufgabe?
-- Welche Varianten / Besonderheiten sollen vorkommen?
-- Wie steigt die Schwierigkeit?
+        p += `Beschreibe die Unteraufgaben in kompakter Kurzform.
+Für jede Unteraufgabe: Kennung, dann was VORGEGEBEN ist, Pfeil →, dann was Schüler ERGÄNZEN/TUN sollen.
+Allgemeine Hinweise (Anzahl, Schwierigkeit) als eigene Zeile ohne Pfeil.
+
+FORMAT (genau so, kein Fließtext):
+Kennung: Vorgabe → Schülertätigkeit · ggf. weiteres
 
 Antworte NUR mit reinem JSON:
-{"spezifikation":"- 5 Unteraufgaben\\n- 1a: negative Zahlen addieren (z.B. −12 + (−8))\\n- 1b: negative Zahlen subtrahieren (z.B. 15 − (−6))\\n- 1c: über die Null hinweg (z.B. −7 + 10)\\n- 1d+1e: gemischte Terme mit drei Summanden"}`;
+{"spezifikation":"5 Unteraufgaben, steigend schwerer\\n1a–1c: Bruch → Dezimalzahl · Prozent\\n1d–1e: Dezimalzahl → Bruch · Prozent\\n1f: Sachtext (Prozentwert gegeben) → Grundwert berechnen"}`;
         const raw = await callKI([{ type: 'text', text: p }], 1500);
         const parsed = parseKI(raw);
         pr.feinstruktur.push({

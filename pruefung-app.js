@@ -1120,17 +1120,59 @@ function buildAufgabenGenTab(pr) {
       }
       card.appendChild(head);
 
-      // Spezifikation-Textarea
-      const area = document.createElement('textarea');
-      area.value = fs.spezifikation || '';
-      area.placeholder = 'Spezifikation der Aufgabe…';
-      area.style.cssText = 'width:100%;padding:12px 14px;font-size:13px;font-family:inherit;line-height:1.7;border:none;outline:none;background:transparent;color:var(--tx1);resize:none;box-sizing:border-box;overflow:hidden;';
-      area.rows = 1;
-      const autoGrow = () => { area.style.height = 'auto'; area.style.height = area.scrollHeight + 'px'; };
-      area.oninput = () => { fs.spezifikation = area.value; savePruefungsDB(); autoGrow(); };
-      card.appendChild(area);
+      // Spezifikation als editierbare Stichpunktliste
+      const listWrap = mk('div', '');
+      listWrap.style.cssText = 'padding:8px 14px 4px;display:flex;flex-direction:column;gap:2px;';
+
+      function getLines() {
+        return (fs.spezifikation || '').split('\n').map(l => l.replace(/^[-–•]\s*/, '').trim()).filter(l => l);
+      }
+      function saveLines(lines) {
+        fs.spezifikation = lines.map(l => '- ' + l).join('\n');
+        savePruefungsDB();
+      }
+
+      function buildList() {
+        listWrap.innerHTML = '';
+        const lines = getLines();
+        lines.forEach((line, li) => {
+          const row = mk('div', '');
+          row.style.cssText = 'display:flex;align-items:flex-start;gap:6px;padding:3px 0;';
+          const bullet = tx('span', '', '–');
+          bullet.style.cssText = 'color:var(--pri);font-weight:700;flex-shrink:0;padding-top:3px;font-size:13px;';
+          row.appendChild(bullet);
+          const inp = document.createElement('textarea');
+          inp.value = line;
+          inp.rows = 1;
+          inp.style.cssText = 'flex:1;font-size:13px;font-family:inherit;line-height:1.5;border:none;outline:none;background:transparent;color:var(--tx1);resize:none;overflow:hidden;padding:0;';
+          const grow = () => { inp.style.height = 'auto'; inp.style.height = inp.scrollHeight + 'px'; };
+          inp.oninput = () => { const ls = getLines(); ls[li] = inp.value; saveLines(ls); grow(); };
+          inp.onkeydown = e => {
+            if (e.key === 'Enter') { e.preventDefault(); const ls = getLines(); ls.splice(li + 1, 0, ''); saveLines(ls); buildList(); listWrap.querySelectorAll('textarea')[li + 1]?.focus(); }
+            if (e.key === 'Backspace' && inp.value === '' && lines.length > 1) { e.preventDefault(); const ls = getLines(); ls.splice(li, 1); saveLines(ls); buildList(); listWrap.querySelectorAll('textarea')[Math.max(0, li - 1)]?.focus(); }
+          };
+          row.appendChild(inp);
+          const del = mk('button', '');
+          del.textContent = '✕';
+          del.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:2px 4px;flex-shrink:0;opacity:0;transition:opacity .1s;';
+          row.onmouseenter = () => del.style.opacity = '1';
+          row.onmouseleave = () => del.style.opacity = '0';
+          del.onclick = () => { const ls = getLines(); ls.splice(li, 1); saveLines(ls); buildList(); };
+          row.appendChild(del);
+          listWrap.appendChild(row);
+          requestAnimationFrame(grow);
+        });
+        // + neue Zeile
+        const addRow = mk('button', '');
+        addRow.textContent = '+ Zeile';
+        addRow.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:4px 0 8px;text-align:left;';
+        addRow.onclick = () => { const ls = getLines(); ls.push(''); saveLines(ls); buildList(); listWrap.querySelectorAll('textarea')[ls.length - 1]?.focus(); };
+        listWrap.appendChild(addRow);
+      }
+
+      buildList();
+      card.appendChild(listWrap);
       feinWrap.appendChild(card);
-      requestAnimationFrame(autoGrow);
     });
   }
   renderFeinstruktur();

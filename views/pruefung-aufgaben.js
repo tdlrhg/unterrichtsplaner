@@ -903,6 +903,15 @@ Antworte NUR mit reinem JSON:
           fs.gesamtpunkte = sum; // nur Feinstruktur
           savePruefungsDB();
         }
+        // Stats-Chip am Kartenende mitaktualisieren
+        const chip = listWrap.querySelector('.fs-stats-chip');
+        if (chip) {
+          const stats = countSpecStats(fs.spezifikation);
+          const ok = !fs.gesamtpunkte || stats.punkte === fs.gesamtpunkte;
+          chip.textContent = `${stats.teilaufgaben} Teilaufgaben · ${stats.punkte || 0} / ${fs.gesamtpunkte || 0} P`;
+          chip.style.background = ok ? 'rgba(22,163,74,.1)' : 'rgba(239,68,68,.08)';
+          chip.style.color = ok ? '#15803d' : '#dc2626';
+        }
         renderAFBBanner();
       };
 
@@ -1193,7 +1202,7 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
         const stats = countSpecStats(fs.spezifikation);
         const infoRow = mk('div', '');
         infoRow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:2px 0 10px;';
-        const statsChip = tx('span', '', `${stats.teilaufgaben} Teilaufgaben · ${stats.punkte || 0} / ${fs.gesamtpunkte || 0} P`);
+        const statsChip = tx('span', 'fs-stats-chip', `${stats.teilaufgaben} Teilaufgaben · ${stats.punkte || 0} / ${fs.gesamtpunkte || 0} P`);
         const statsOk = !fs.gesamtpunkte || stats.punkte === fs.gesamtpunkte;
         statsChip.style.cssText = `font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:${statsOk ? 'rgba(22,163,74,.1)' : 'rgba(239,68,68,.08)'};color:${statsOk ? '#15803d' : '#dc2626'};`;
         infoRow.appendChild(statsChip);

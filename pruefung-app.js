@@ -836,8 +836,13 @@ function buildAufgabenGenTab(pr) {
       // Header
       const hrow = mk('div', '');
       hrow.style.cssText = 'display:flex;align-items:baseline;gap:10px;margin-bottom:6px;';
-      const titSpan = tx('strong', '', 'Aufgabe ' + aufg.nr + (aufg.thema ? ': ' + aufg.thema : ''));
+      const titSpan = tx('strong', '', 'Aufgabe ' + aufg.nr + (aufg.titel ? ': ' + aufg.titel : aufg.thema ? ': ' + aufg.thema : ''));
       hrow.appendChild(titSpan);
+      if (aufg.zeitMinuten) {
+        const zt = tx('span', '', '⏱ ' + aufg.zeitMinuten + ' Min');
+        zt.style.cssText = 'font-size:11px;color:var(--tx3);';
+        hrow.appendChild(zt);
+      }
       if (aufg.gesamtpunkte) {
         const pt = tx('span', '', aufg.gesamtpunkte + ' P');
         pt.style.cssText = 'font-size:11px;color:var(--tx3);';
@@ -861,8 +866,11 @@ function buildAufgabenGenTab(pr) {
           sw.style.cssText = 'flex-shrink:0;color:' + (SC[ua.schwierigkeit] || 'var(--tx3)') + ';';
           urow.appendChild(sw);
         }
-        const utxt = tx('span', '', ua.text || ''); utxt.style.cssText = 'flex:1;color:var(--tx2);';
-        urow.appendChild(utxt);
+        const col = mk('div', ''); col.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:1px;';
+        if (ua.titel) { const tit = tx('span', '', ua.titel); tit.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx2);'; col.appendChild(tit); }
+        const utxt = tx('span', '', ua.text || ''); utxt.style.cssText = 'color:var(--tx2);';
+        col.appendChild(utxt);
+        urow.appendChild(col);
         if (ua.typ) { const ty = tx('span', 'matc-jg', ua.typ); urow.appendChild(ty); }
         if (ua.punkte) { const pu = tx('span', '', ua.punkte + ' P'); pu.style.cssText = 'flex-shrink:0;font-size:11px;color:var(--tx3);'; urow.appendChild(pu); }
         body.appendChild(urow);
@@ -947,15 +955,16 @@ function buildAufgabenGenTab(pr) {
       prompt += `## FORMAT
 Antworte NUR mit reinem JSON — kein Markdown, keine Erklärungen, kein \`\`\`json:
 {"aufgaben":[
-  {"nr":1,"thema":"Thema","aufgabenstellung":"Gemeinsame Einleitung oder null","gesamtpunkte":8,"unteraufgaben":[
-    {"nr":"1a","text":"Aufgabentext","punkte":2,"schwierigkeit":"○","typ":"Rechnung"},
-    {"nr":"1b","text":"Aufgabentext","punkte":3,"schwierigkeit":"◒","typ":"Sachaufgabe"},
-    {"nr":"1c","text":"Aufgabentext","punkte":3,"schwierigkeit":"●","typ":"Begründung"}
+  {"nr":1,"titel":"Titel der Aufgabe","zeitMinuten":10,"aufgabenstellung":"Gemeinsame Einleitung oder null","gesamtpunkte":8,"unteraufgaben":[
+    {"nr":"1a","titel":null,"text":"Aufgabentext","punkte":2,"schwierigkeit":"○","typ":"Rechnung"},
+    {"nr":"1b","titel":"Titel der Unteraufgabe","text":"Aufgabentext","punkte":3,"schwierigkeit":"◒","typ":"Sachaufgabe"},
+    {"nr":"1c","titel":"Titel der Unteraufgabe","text":"Aufgabentext","punkte":3,"schwierigkeit":"●","typ":"Begründung"}
   ]}
 ]}
 Schwierigkeit: "○" Reproduktion/einfach · "◒" Anwendung/mittel · "●" Transfer/schwer
 Typen: "Rechnung" · "Sachaufgabe" · "Begründung" · "Multiple Choice" · "Diagramm" · "Lückentext"
-Unteraufgaben sind thematisch verbunden, aber RECHNERISCH UNABHÄNGIG (eigene neue Zahlen).`;
+Unteraufgaben sind thematisch verbunden, aber RECHNERISCH UNABHÄNGIG (eigene neue Zahlen).
+titel bei Unteraufgaben: null wenn Typ "Rechnung", sonst kurzer beschreibender Titel.`;
 
       statusEl.textContent = '⏳ KI generiert Aufgaben…';
       const raw = await callKI([{ type: 'text', text: prompt }], 10000);

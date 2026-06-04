@@ -1295,10 +1295,12 @@ Antworte NUR mit reinem JSON:
         const anf = aufg.anforderung || {};
         const erlaubt = Object.keys(AB_KEY_MAP).filter(k => (anf[k] || 0) > 0);
         const verboten = Object.keys(AB_KEY_MAP).filter(k => (anf[k] || 0) === 0);
-        let p = `Du planst eine Klassenarbeit über "${pr.thema || pr.titel || '?'}".\n`;
-        p += `Bisher geplante Aufgabe (NICHT wiederholen, NICHT variieren): "${aufg.titel}"\n\n`;
-        p += `Schlage eine ANDERE Aufgabe mit einem ANDEREN Themenbereich vor, der ebenfalls zum Lerngebiet passt.\n`;
-        p += `Gleiche Rahmenbedingungen: Zeit: ${aufg.zeitMinuten ?? '?'} Min, ${aufg.gesamtpunkte ?? '?'} Punkte\n`;
+        const alleTitel = pr.strukturVorschlag.filter(a => !a._removed).map(a => a.titel).filter(Boolean);
+        let p = `Du planst eine Klassenarbeit über "${pr.thema || pr.titel || '?'}".\n\n`;
+        p += `Folgende Themen sind bereits vergeben — schlage KEINES davon vor:\n`;
+        alleTitel.forEach(t => { p += `- ${t}\n`; });
+        p += `\nGesucht: eine neue Aufgabe mit einem ANDEREN Themenbereich, der zum Lerngebiet passt aber noch nicht vorkommt.\n`;
+        p += `Rahmenbedingungen: ${aufg.zeitMinuten ?? '?'} Min, ${aufg.gesamtpunkte ?? '?'} Punkte\n`;
         if (erlaubt.length) p += `Anforderungsbereiche – Erlaubt: ${erlaubt.join(', ')} | VERBOTEN: ${verboten.join(', ')}\n`;
         p += `\nAntworte NUR mit reinem JSON:\n{"titel":"Kurzer Titel","beschreibung":"Was Schüler hier tun (1 Satz)"}`;
         try {

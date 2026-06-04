@@ -900,6 +900,59 @@ Antworte NUR mit reinem JSON:
       spezifikation,
     };
   }
+  function countSpecStats(specText) {
+    const lines = (specText || '').split('\n').map(l => l.replace(/^[-–•]\s*/, '').trim()).filter(Boolean);
+    let teilaufgaben = 0;
+    let punkte = 0;
+    lines.forEach(line => {
+      if (!line.includes('→')) return;
+      teilaufgaben++;
+      const lastPipe = line.lastIndexOf('|');
+      if (lastPipe > -1) {
+        const maybeP = line.slice(lastPipe + 1).trim();
+        if (/^\d+$/.test(maybeP)) punkte += parseInt(maybeP);
+      }
+    });
+    return { teilaufgaben, punkte };
+  }
+  function distributePointsAcrossSpec(fs) {
+    const lines = (fs.spezifikation || '').split('\n').map(l => l.replace(/^[-–•]\s*/, '').trim()).filter(Boolean);
+    const idxs = lines.map((line, idx) => line.includes('→') ? idx : -1).filter(idx => idx > -1);
+    if (!idxs.length || !fs.gesamtpunkte) return false;
+    const base = Math.floor(fs.gesamtpunkte / idxs.length);
+    let rest = fs.gesamtpunkte - base * idxs.length;
+    idxs.forEach((lineIdx, pos) => {
+      let line = lines[lineIdx];
+      const lastPipe = line.lastIndexOf('|');
+      if (lastPipe > -1) {
+        const maybeP = line.slice(lastPipe + 1).trim();
+        if (/^\d+$/.test(maybeP)) line = line.slice(0, lastPipe).trim();
+      }
+      const p = base + (rest > 0 ? 1 : 0);
+      if (rest > 0) rest--;
+      lines[lineIdx] = line + '|' + p;
+    });
+    fs.spezifikation = lines.map(l => '- ' + l).join('\n');
+    return true;
+  }
+  async function reviseFeinstrukturTask(fs, instruction, label) {
+    const erlaubt = Object.keys(AB_KEY_MAP).filter(k => (fs.anforderung?.[k] || 0) > 0);
+    let p = `Du überarbeitest die Feinstruktur einer einzelnen Klassenarbeits-Aufgabe.\n\n`;
+    p += `Aufgabe ${fs.nr}: ${fs.titel}\n`;
+    p += `Zeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
+    if (erlaubt.length) p += `Erlaubte Anforderungsbereiche: ${erlaubt.join(', ')}\n`;
+    p += `\nAKTUELLE FEINSTRUKTUR\n${fs.spezifikation}\n\n`;
+    p += `AUFTRAG\n${instruction}\n\n`;
+    p += `WICHTIG\n- Behalte Thema und Grundidee der Aufgabe bei\n- Überarbeite nur die Feinstruktur, nicht die ganze Klassenarbeit\n- Wenn Punkteangaben vorhanden sind, liefere weiter Punkte pro Teilaufgabe mit |Zahl\n- Verwende nur diese Anforderungsbereiche: ${erlaubt.length ? erlaubt.join(', ') : 'reproduktion, leichteAnwendung, mittlereAnwendung, transfer'}\n- Gib nur die neue Feinstruktur zurück, kein Kommentar\n\n`;
+    p += `Antworte NUR mit reinem JSON:\n{"spezifikation":"reproduktion|1a: ... → ...|2\\nleichteAnwendung|1b: ... → ...|3"}`;
+    statusEl.textContent = `⏳ Feinstruktur wird überarbeitet (${label})...`;
+    const raw = await callKI([{ type: 'text', text: p }], 1800);
+    const parsed = parseKI(raw);
+    if (!parsed.spezifikation) throw new Error('Keine neue Feinstruktur erhalten');
+    fs.spezifikation = parsed.spezifikation;
+    invalidateGeneratedTask(fs.taskId);
+    savePruefungsDB();
+  }
 
   ensureTaskMeta();
   syncDerivedOrder();
@@ -1739,6 +1792,50 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
         addRow.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:4px 0 8px;text-align:left;';
         addRow.onclick = () => { const ls = getLines(); ls.push('reproduktion| → '); saveLines(ls); buildList(); const inps = listWrap.querySelectorAll('input[type=text]'); const last = inps[inps.length-1]; if (last) { last.style.display='block'; last.focus(); last.select(); } };
         listWrap.appendChild(addRow);
+
+        const stats = countSpecStats(fs.spezifikation);
+        const infoRow = mk('div', '');
+        infoRow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:2px 0 10px;';
+        const statsChip = tx('span', '', `${stats.teilaufgaben} Teilaufgaben · ${stats.punkte || 0} / ${fs.gesamtpunkte || 0} P`);
+        const statsOk = !fs.gesamtpunkte || stats.punkte === fs.gesamtpunkte;
+        statsChip.style.cssText = `font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:${statsOk ? 'rgba(22,163,74,.1)' : 'rgba(239,68,68,.08)'};color:${statsOk ? '#15803d' : '#dc2626'};`;
+        infoRow.appendChild(statsChip);
+        if (!statsOk) {
+          const distBtn = btn('Punkte verteilen', 'btn btn-ghost btn-xs');
+          distBtn.onclick = () => {
+            if (distributePointsAcrossSpec(fs)) {
+              savePruefungsDB();
+              buildList();
+              updatePunkteSum(listWrap);
+            }
+          };
+          infoRow.appendChild(distBtn);
+        }
+        listWrap.appendChild(infoRow);
+
+        const actionRow = mk('div', '');
+        actionRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;padding:0 0 10px;';
+        [
+          { label: 'Klarer', instruction: 'Formuliere die Teilaufgaben klarer und operatorenklarer. Behalte Niveau und Punkteverteilung moeglichst bei.' },
+          { label: '+ Transfer', instruction: 'Erhoehe den Transferanteil leicht. Mindestens eine spaetere Teilaufgabe soll anspruchsvoller werden. Behalte Gesamtidee und Gesamtpunkte bei.' },
+          { label: '+ Teilaufgaben', instruction: 'Teile die Aufgabe feiner auf und erhoehe die Zahl der Teilaufgaben leicht. Behalte Gesamtpunkte und Progression bei.' },
+          { label: 'Kompakter', instruction: 'Vereinfache die innere Struktur leicht und fasse sie kompakter. Weniger Redundanz, klarer Aufbau, gleiche Grundidee.' },
+        ].forEach(({ label, instruction }) => {
+          const b = btn(label, 'btn btn-ghost btn-xs');
+          b.onclick = async () => {
+            b.disabled = true;
+            try {
+              await reviseFeinstrukturTask(fs, instruction, label);
+              renderFeinstruktur();
+              renderAFBBanner();
+            } catch (e) {
+              statusEl.textContent = '⚠ ' + e.message;
+            }
+            b.disabled = false;
+          };
+          actionRow.appendChild(b);
+        });
+        listWrap.appendChild(actionRow);
       }
 
       buildList();

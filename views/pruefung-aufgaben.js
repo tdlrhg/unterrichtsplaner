@@ -82,7 +82,7 @@ function buildAufgabenGenTab(pr) {
     const ga = pr.genAufgaben.find(a => a.taskId === taskId);
     if (ga) Object.assign(ga, patch);
   }
-  function buildFeinstrukturPrompt(aufg, aufgNr, lernziele, ideenPool) {
+  function buildFeinstrukturPrompt(aufg, aufgNr, lernziele, quellenTexte) {
     let p = `Du planst Aufgabe ${aufgNr} einer Klassenarbeit.\n`;
     p += `Thema/Titel: ${aufg.titel}\n`;
     p += `Beschreibung: ${aufg.beschreibung}\n`;
@@ -96,9 +96,10 @@ function buildAufgabenGenTab(pr) {
       if (verboten2.length) p += `VERBOTEN (keinesfalls verwenden): ${verboten2.join(', ')}\n`;
     }
     p += '\n';
-    if (lernziele.length) { p += 'Relevante Lernziele:\n'; lernziele.slice(0,8).forEach(lz => { p += `- ${lz}\n`; }); p += '\n'; }
-    const relevanteIdeen = ideenPool.filter(idea => idea.toLowerCase().includes((aufg.titel||'').toLowerCase().split(' ')[0])).slice(0,8);
-    if (relevanteIdeen.length) { p += 'Ähnliche Aufgaben aus Quellen (zur Inspiration):\n'; relevanteIdeen.forEach(idea => { p += `- ${idea}\n`; }); p += '\n'; }
+    if (lernziele.length) { p += '## LERNZIELE\n'; lernziele.slice(0,8).forEach(lz => { p += `- ${lz}\n`; }); p += '\n'; }
+    if (quellenTexte.trim()) {
+      p += `## AUFGABEN AUS DEINEN QUELLEN\nOrientiere dich an Schwierigkeitsgrad, Aufgabentypen und Formulierungen dieser Vorlagen:\n${quellenTexte}\n`;
+    }
     p += `Beschreibe die Unteraufgaben in kompakter Kurzform.
 Für jede Unteraufgabe mit Pfeil: zuerst Anforderungsbereich (NUR erlaubte: ${erlaubt2.length ? erlaubt2.join(', ') : 'alle'}), dann | dann Kennung: Vorgabe → Schülertätigkeit.
 Allgemeine Hinweise (Gesamtzahl, Reihenfolge) als eigene Zeile ohne Pfeil und ohne |.
@@ -110,10 +111,10 @@ Antworte NUR mit reinem JSON:
 {"spezifikation":"5 Unteraufgaben, steigend schwerer\\nreproduktion|1a–1c: Bruch → Dezimalzahl · Prozent\\nleichteAnwendung|1d–1e: Dezimalzahl → Bruch · Prozent\\nmittlereAnwendung|1f: Sachtext (Prozentwert gegeben) → Grundwert berechnen"}`;
     return p;
   }
-  async function generateFeinstrukturForTask(aufg, aufgNr, lernziele, ideenPool) {
+  async function generateFeinstrukturForTask(aufg, aufgNr, lernziele, quellenTexte) {
     let spezifikation = '';
     try {
-      const raw = await callKI([{ type: 'text', text: buildFeinstrukturPrompt(aufg, aufgNr, lernziele, ideenPool) }], 1500);
+      const raw = await callKI([{ type: 'text', text: buildFeinstrukturPrompt(aufg, aufgNr, lernziele, quellenTexte) }], 1500);
       const parsed = parseKI(raw);
       spezifikation = parsed.spezifikation || '';
     } catch (parseErr) {
@@ -328,14 +329,42 @@ Antworte NUR mit reinem JSON:
     (pr.ausgewaehlteLernziele || []).forEach(lzId => {
       CHECKLISTDB.forEach(cl => { (cl.lernziele || []).forEach(lz => { if (lz.id === lzId) lernziele.push(lz.text); }); });
     });
-    const ideenPool = [];
-    quellenAA.forEach(aa => (aa.aufgaben || []).forEach(a => {
-      if (a.text || a.aufgabenstellung) ideenPool.push(`[${aa.titel}] ${(a.aufgabenstellung || '') + ' ' + (a.text || '')}`.trim().slice(0, 120));
-    }));
-    quellenKap.forEach(({ buch, kap }) => (kap.aufgaben || []).forEach(a => {
-      if (a.text || a.aufgabenstellung) ideenPool.push(`[${buch}/${kap.titel}] ${(a.aufgabenstellung || '') + ' ' + (a.text || '')}`.trim().slice(0, 120));
-    }));
-    return { refArbeiten, lernziele, ideenPool };
+    // Quellen als strukturierten Text aufbereiten — vollständige Aufgaben, nach Quelle geordnet
+    let quellenTexte = '';
+    quellenAA.forEach(aa => {
+      const aufgaben = (aa.aufgaben || []).filter(a => a.text || a.aufgabenstellung);
+      if (!aufgaben.length) return;
+      quellenTexte += `\n### ${aa.titel}${aa.dauer ? ' (' + aa.dauer + ' Min)' : ''}\n`;
+      // Hauptaufgaben gruppieren
+      const hauptNrSet = new Set(aufgaben.map(a => String(a.nr || '').match(/^\d+/)?.[0]).filter(Boolean));
+      hauptNrSet.forEach(base => {
+        const gruppe = aufgaben.filter(a => String(a.nr || '').match(/^\d+/)?.[0] === base);
+        const haupt = gruppe.find(a => String(a.nr) === base);
+        const gesamtP = gruppe.reduce((s, a) => s + (a.punkte || 0), 0);
+        quellenTexte += `Aufgabe ${base}${gesamtP ? ' · ' + gesamtP + 'P' : ''}`;
+        if (haupt?.aufgabenstellung) quellenTexte += `: ${haupt.aufgabenstellung}`;
+        quellenTexte += '\n';
+        gruppe.filter(a => String(a.nr) !== base).forEach(a => {
+          quellenTexte += `  ${a.nr}${a.punkte ? ' · ' + a.punkte + 'P' : ''}: ${a.aufgabenstellung || ''}${a.text ? ' ' + a.text : ''}\n`;
+        });
+        if (gruppe.length === 1 && haupt?.text) quellenTexte += `  ${haupt.text}\n`;
+      });
+      // Aufgaben ohne erkennbare Nummer
+      aufgaben.filter(a => !String(a.nr || '').match(/^\d+/)).forEach(a => {
+        quellenTexte += `  – ${a.aufgabenstellung || ''}${a.text ? ' ' + a.text : ''}\n`;
+      });
+    });
+    quellenKap.forEach(({ buch, kap }) => {
+      const aufgaben = (kap.aufgaben || []).filter(a => a.text || a.aufgabenstellung);
+      if (!aufgaben.length) return;
+      quellenTexte += `\n### ${buch} / ${kap.titel}\n`;
+      aufgaben.slice(0, 40).forEach(a => {
+        const nr = a.nr ? `${a.nr}` : '–';
+        const p = a.punkte ? ` · ${a.punkte}P` : '';
+        quellenTexte += `  ${nr}${p}: ${a.aufgabenstellung || ''}${a.text ? ' ' + a.text : ''}\n`;
+      });
+    });
+    return { refArbeiten, lernziele, quellenTexte };
   }
 
   function parseKI(raw) {
@@ -567,11 +596,11 @@ Antworte NUR mit reinem JSON:
           refreshBtn.disabled = true;
           refreshBtn.textContent = '⏳';
           try {
-            const { lernziele, ideenPool } = buildKontext();
+            const { lernziele, quellenTexte } = buildKontext();
             const aktive = getActiveTasks();
             const aufgNr = aktive.findIndex(a => a.taskId === aufg.taskId) + 1;
             statusEl.textContent = `⏳ Feinstruktur fuer Aufgabe ${aufgNr} wird aktualisiert...`;
-            const fsEntry = await generateFeinstrukturForTask(aufg, aufgNr, lernziele, ideenPool);
+            const fsEntry = await generateFeinstrukturForTask(aufg, aufgNr, lernziele, quellenTexte);
             const fsIdx = pr.feinstruktur.findIndex(fs => fs.taskId === aufg.taskId);
             if (fsIdx > -1) pr.feinstruktur[fsIdx] = fsEntry;
             else pr.feinstruktur.push(fsEntry);
@@ -879,14 +908,15 @@ Antworte NUR mit reinem JSON:
         if (feinLocked) return;
         cardRegenBtn.textContent = '⏳'; cardRegenBtn.disabled = true;
         const aufg = sv || {};
-        const { lernziele, ideenPool } = buildKontext();
+        const { lernziele, quellenTexte } = buildKontext();
         const anf2 = aufg.anforderung || {};
         const erlaubt2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) > 0);
         const verboten2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) === 0);
         let p = `Du planst Aufgabe ${fs.nr} einer Klassenarbeit.\n`;
         p += `Thema/Titel: ${fs.titel}\nZeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
         if (erlaubt2.length) { p += `\n## ANFORDERUNGSBEREICHE — VERBINDLICH\nErlaubt: ${erlaubt2.join(', ')}\nVERBOTEN: ${verboten2.join(', ')}\n`; }
-        if (lernziele.length) { p += '\nLernziele:\n'; lernziele.slice(0,6).forEach(lz => { p += `- ${lz}\n`; }); }
+        if (lernziele.length) { p += '\n## LERNZIELE\n'; lernziele.slice(0,6).forEach(lz => { p += `- ${lz}\n`; }); }
+        if (quellenTexte.trim()) { p += `\n## AUFGABEN AUS DEINEN QUELLEN\n${quellenTexte}\n`; }
         p += `\nBeschreibe die Unteraufgaben in kompakter Kurzform.\nFür jede Unteraufgabe: NUR erlaubte Anforderungsbereiche (${erlaubt2.join(', ')}), dann | dann Kennung: Vorgabe → Schülertätigkeit.\n`;
         p += `\nAntworte NUR mit reinem JSON:\n{"spezifikation":"reproduktion|1a: ... → ...\\nleichteAnwendung|1b: ... → ..."}`;
         try {
@@ -1322,7 +1352,7 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
     strukturBtn.disabled = true;
     statusEl.textContent = '⏳ KI schlägt Grobstruktur vor…';
     try {
-      const { refArbeiten, lernziele, ideenPool } = buildKontext();
+      const { refArbeiten, lernziele, quellenTexte } = buildKontext();
       const dauerMin = pr.dauerVon || null;
       const dauerMax = pr.dauerBis || pr.dauerVon || null;
       let p = 'Du entwirfst eine Klassenarbeit. Schlage NUR die Hauptaufgaben vor — keine Unteraufgaben, keine Details.\n\n';
@@ -1332,16 +1362,19 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
       }
       p += `## KOMPOSITIONSSTIL\n${KOMPOSITIONSSTIL}\n\n`;
       if (refArbeiten.length) {
-        p += '## REFERENZARBEITEN\n';
+        p += '## REFERENZARBEITEN (Stil & Struktur)\n';
         refArbeiten.forEach(aa => {
-          const aufgNr = [...new Set((aa.aufgaben||[]).map(a => (String(a.nr||'')).match(/^\d+/)?.[0]).filter(Boolean))];
-          p += `${aa.titel}: ${aufgNr.length} Hauptaufgaben\n`;
+          const hauptNrSet = [...new Set((aa.aufgaben||[]).map(a => (String(a.nr||'')).match(/^\d+/)?.[0]).filter(Boolean))];
+          const gesamtP = (aa.aufgaben||[]).reduce((s,a) => s + (a.punkte||0), 0);
+          p += `${aa.titel}: ${hauptNrSet.length} Hauptaufgaben${gesamtP ? ', ' + gesamtP + ' P gesamt' : ''}${aa.dauer ? ', ' + aa.dauer + ' Min' : ''}\n`;
         });
         p += '\n';
       }
       if (lernziele.length) { p += '## LERNZIELE\n'; lernziele.forEach((lz,i) => { p += `${i+1}. ${lz}\n`; }); p += '\n'; }
       if (pr.thema) p += `## THEMA\n${pr.thema}\n\n`;
-      if (ideenPool.length) { p += '## IDEENPOOL (Themen)\n'; ideenPool.slice(0,20).forEach(idea => { p += `- ${idea}\n`; }); p += '\n'; }
+      if (quellenTexte.trim()) {
+        p += `## AUFGABEN AUS DEINEN QUELLEN\nNutze diese Vorlagen als Ausgangspunkt für Themen, Typen und Schwierigkeitsgrad:\n${quellenTexte}\n`;
+      }
       p += `Antworte NUR mit reinem JSON:
 {"hauptaufgaben":[
   {"nr":1,"titel":"Kurzer Titel","beschreibung":"Was Schüler hier tun (1 Satz)","zeitMinuten":8,"gesamtpunkte":10,"typen":["Rechnung","Multiple Choice"],
@@ -1378,13 +1411,13 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
     if (!zuBearbeiten.length) { statusEl.textContent = '⚠ Keine Aufgaben ausgewählt.'; return; }
     zuFeinBtn.disabled = true; strukturBtn.disabled = true;
     pr.feinstruktur = []; switchSubTab(2);
-    const { lernziele, ideenPool } = buildKontext();
+    const { lernziele, quellenTexte } = buildKontext();
     try {
       for (let i = 0; i < zuBearbeiten.length; i++) {
         const aufg = zuBearbeiten[i];
         const aufgNr = i + 1;
         statusEl.textContent = `⏳ Feinstruktur für Aufgabe ${aufgNr}… (${aufgNr}/${zuBearbeiten.length})`;
-        pr.feinstruktur.push(await generateFeinstrukturForTask(aufg, aufgNr, lernziele, ideenPool));
+        pr.feinstruktur.push(await generateFeinstrukturForTask(aufg, aufgNr, lernziele, quellenTexte));
         savePruefungsDB();
         renderFeinstruktur(); renderAFBBanner();
       }

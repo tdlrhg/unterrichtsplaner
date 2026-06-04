@@ -808,6 +808,40 @@ function buildAufgabenGenTab(pr) {
   if (!pr.strukturVorschlag) pr.strukturVorschlag = [];
   if (!pr.feinstruktur) pr.feinstruktur = [];
 
+  // ── Sub-Tab-Gerüst ────────────────────────────────────────────
+  const panel1 = mk('div', '');
+  const panel2 = mk('div', '');
+  const panel3 = mk('div', '');
+  let aktiverSubTab = pr.genAufgaben.length ? 3 : pr.feinstruktur.length ? 2 : 1;
+
+  const subTabBar = mk('div', '');
+  subTabBar.style.cssText = 'display:flex;gap:0;border-bottom:2px solid var(--bord);margin-bottom:18px;';
+
+  function switchSubTab(n) {
+    aktiverSubTab = n;
+    panel1.style.display = n === 1 ? '' : 'none';
+    panel2.style.display = n === 2 ? '' : 'none';
+    panel3.style.display = n === 3 ? '' : 'none';
+    subTabBar.querySelectorAll('.ag-subtab').forEach((b, i) => {
+      const active = i + 1 === n;
+      b.style.borderBottom = active ? '2px solid var(--pri)' : '2px solid transparent';
+      b.style.color = active ? 'var(--pri)' : 'var(--tx2)';
+      b.style.fontWeight = active ? '700' : '400';
+    });
+  }
+
+  [
+    ['① Grobstruktur', 1],
+    ['② Feinstruktur', 2],
+    ['③ Aufgaben',     3],
+  ].forEach(([label, n]) => {
+    const b = mk('button', 'btn btn-ghost btn-sm ag-subtab');
+    b.textContent = label;
+    b.style.cssText = 'border-radius:6px 6px 0 0;border-bottom:2px solid transparent;margin-bottom:-2px;padding:6px 14px;font-size:13px;';
+    b.onclick = () => switchSubTab(n);
+    subTabBar.appendChild(b);
+  });
+
   // ── Referenzzeitraum ──────────────────────────────────────────
   const zeitRow = mk('div', '');
   zeitRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;color:var(--tx2);flex-wrap:wrap;';
@@ -819,7 +853,7 @@ function buildAufgabenGenTab(pr) {
   jahrInp.onchange = () => { pr.referenzJahre = parseFloat(jahrInp.value) || 2; savePruefungsDB(); };
   zeitRow.appendChild(jahrInp);
   zeitRow.appendChild(tx('span', '', 'Jahre als Referenz für den Kompositionsstil.'));
-  div.appendChild(zeitRow);
+  panel1.appendChild(zeitRow);
 
   // ── Kompositionsstil ─────────────────────────────────────────
   const stilSec = mk('div', '');
@@ -843,7 +877,7 @@ function buildAufgabenGenTab(pr) {
   const stilHint = tx('div', '', 'Gilt für alle Prüfungen. Die KI nutzt dies zusätzlich zur Analyse deiner Referenzarbeiten.');
   stilHint.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:4px;';
   stilSec.appendChild(stilHint);
-  div.appendChild(stilSec);
+  panel1.appendChild(stilSec);
 
   const statusEl = mk('div', '');
   statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;margin:8px 0 12px;';
@@ -895,9 +929,8 @@ function buildAufgabenGenTab(pr) {
   // ════════════════════════════════════════════════════════════════
   // STUFE 1: Grobstruktur
   // ════════════════════════════════════════════════════════════════
-  div.appendChild(stufenLabel(1));
   const strukturWrap = mk('div', ''); strukturWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:10px;';
-  div.appendChild(strukturWrap);
+  panel1.appendChild(strukturWrap);
 
   const gesamtEl = mk('div', ''); // laufende Summe Zeit + Punkte
   gesamtEl.style.cssText = 'font-size:12px;font-weight:600;padding:6px 0;min-height:18px;';
@@ -1014,7 +1047,7 @@ function buildAufgabenGenTab(pr) {
     updateGesamt();
   }
   renderStruktur();
-  div.appendChild(gesamtEl);
+  panel1.appendChild(gesamtEl);
 
   const btnRow1 = mk('div', ''); btnRow1.style.cssText = 'display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;margin-top:8px;';
   const strukturBtn = btn('✨ Grobstruktur vorschlagen', 'btn btn-pri btn-sm');
@@ -1022,16 +1055,20 @@ function buildAufgabenGenTab(pr) {
   const zuFeinBtn = btn('→ Feinstruktur vorschlagen', 'btn btn-sm');
   zuFeinBtn.style.display = pr.strukturVorschlag.length ? '' : 'none';
   btnRow1.appendChild(zuFeinBtn);
-  div.appendChild(btnRow1);
+  panel1.appendChild(btnRow1);
+
+  // ── Panels in div einsetzen ───────────────────────────────────
   div.appendChild(statusEl);
+  div.appendChild(subTabBar);
+  div.appendChild(panel1);
+  div.appendChild(panel2);
+  div.appendChild(panel3);
+  switchSubTab(aktiverSubTab);
 
   // ════════════════════════════════════════════════════════════════
   // STUFE 2: Feinstruktur (pädagogische Spezifikation, editierbar)
   // ════════════════════════════════════════════════════════════════
-  const stufe2Sec = mk('div', '');
-  stufe2Sec.style.display = pr.feinstruktur.length ? '' : 'none';
-  div.appendChild(stufe2Sec);
-  stufe2Sec.appendChild(stufenLabel(2));
+  const stufe2Sec = panel2;
   const feinHint = tx('div', '', 'Die KI hat für jede Aufgabe beschrieben was sie vorhat. Korrigiere den Text wenn nötig.');
   feinHint.style.cssText = 'font-size:12px;color:var(--tx3);margin-bottom:8px;';
   stufe2Sec.appendChild(feinHint);
@@ -1066,10 +1103,7 @@ function buildAufgabenGenTab(pr) {
   // ════════════════════════════════════════════════════════════════
   // STUFE 3: Konkrete Aufgaben
   // ════════════════════════════════════════════════════════════════
-  const stufe3Sec = mk('div', '');
-  stufe3Sec.style.display = pr.genAufgaben.length ? '' : 'none';
-  div.appendChild(stufe3Sec);
-  stufe3Sec.appendChild(stufenLabel(3));
+  const stufe3Sec = panel3;
   const aufgabenWrap = mk('div', '');
   aufgabenWrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
   stufe3Sec.appendChild(aufgabenWrap);
@@ -1141,7 +1175,7 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
       const parsed = parseKI(raw);
       pr.strukturVorschlag = (parsed.hauptaufgaben || []).map(a => ({ ...a, _removed: false }));
       pr.feinstruktur = []; pr.genAufgaben = [];
-      stufe2Sec.style.display = 'none'; stufe3Sec.style.display = 'none';
+      switchSubTab(1);
       savePruefungsDB();
       renderStruktur();
       zuFeinBtn.style.display = '';
@@ -1157,7 +1191,7 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
     const zuBearbeiten = pr.strukturVorschlag.filter(a => !a._removed);
     if (!zuBearbeiten.length) { statusEl.textContent = '⚠ Keine Aufgaben ausgewählt.'; return; }
     zuFeinBtn.disabled = true; strukturBtn.disabled = true;
-    pr.feinstruktur = []; stufe2Sec.style.display = ''; stufe3Sec.style.display = 'none';
+    pr.feinstruktur = []; switchSubTab(2);
     const { lernziele, ideenPool } = buildKontext();
     try {
       for (let i = 0; i < zuBearbeiten.length; i++) {
@@ -1200,7 +1234,7 @@ Antworte NUR mit reinem JSON:
   zuAufgBtn.onclick = async () => {
     if (!pr.feinstruktur.length) { statusEl.textContent = '⚠ Erst Feinstruktur vorschlagen.'; return; }
     zuAufgBtn.disabled = true;
-    pr.genAufgaben = []; stufe3Sec.style.display = '';
+    pr.genAufgaben = []; switchSubTab(3);
     try {
       for (let i = 0; i < pr.feinstruktur.length; i++) {
         const fs = pr.feinstruktur[i];

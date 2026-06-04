@@ -1285,6 +1285,31 @@ Antworte NUR mit reinem JSON:
         renderStruktur(); renderAFBBanner();
       };
       hrow.appendChild(toggleBtn);
+      // ↺ Neu vorschlagen — direkt neben ✕
+      const grobRegenBtn = mk('button', '');
+      grobRegenBtn.textContent = '↺';
+      grobRegenBtn.title = 'Alternative Aufgabe vorschlagen';
+      grobRegenBtn.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;';
+      grobRegenBtn.onclick = async () => {
+        grobRegenBtn.textContent = '⏳'; grobRegenBtn.disabled = true;
+        const anf = aufg.anforderung || {};
+        const erlaubt = Object.keys(AB_KEY_MAP).filter(k => (anf[k] || 0) > 0);
+        const verboten = Object.keys(AB_KEY_MAP).filter(k => (anf[k] || 0) === 0);
+        let p = `Du planst eine Klassenarbeit über "${pr.thema || pr.titel || '?'}".\n`;
+        p += `Schlage eine EINZELNE Aufgabe vor als Alternative zu: "${aufg.titel}: ${aufg.beschreibung}"\n`;
+        p += `Zeit: ${aufg.zeitMinuten ?? '?'} Min, ${aufg.gesamtpunkte ?? '?'} Punkte\n`;
+        if (erlaubt.length) p += `Anforderungsbereiche – Erlaubt: ${erlaubt.join(', ')} | VERBOTEN: ${verboten.join(', ')}\n`;
+        p += `\nAntworte NUR mit reinem JSON:\n{"titel":"Kurzer Titel","beschreibung":"Was Schüler hier tun (1 Satz)"}`;
+        try {
+          const raw = await callKI([{ type: 'text', text: p }], 600);
+          const parsed = parseKI(raw);
+          if (parsed.titel) aufg.titel = parsed.titel;
+          if (parsed.beschreibung) aufg.beschreibung = parsed.beschreibung;
+          savePruefungsDB(); renderStruktur(); renderAFBBanner();
+        } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
+        grobRegenBtn.textContent = '↺'; grobRegenBtn.disabled = false;
+      };
+      hrow.appendChild(grobRegenBtn);
       rightCol.appendChild(hrow);
 
       // Beschreibung editierbar
@@ -1301,30 +1326,6 @@ Antworte NUR mit reinem JSON:
       };
       rightCol.appendChild(beschrEl);
 
-      // ↺ Diese Aufgabe einzeln neu vorschlagen
-      const grobRegenBtn = mk('button', '');
-      grobRegenBtn.textContent = '↺ Neu vorschlagen';
-      grobRegenBtn.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:0 0 8px;text-align:left;display:block;';
-      grobRegenBtn.onclick = async () => {
-        grobRegenBtn.textContent = '⏳'; grobRegenBtn.disabled = true;
-        const anf = aufg.anforderung || {};
-        const erlaubt = Object.keys(AB_KEY_MAP).filter(k => (anf[k] || 0) > 0);
-        const verboten = Object.keys(AB_KEY_MAP).filter(k => (anf[k] || 0) === 0);
-        let p = `Du planst eine Klassenarbeit über "${pr.thema || pr.titel || '?'}".\n`;
-        p += `Schlage eine EINZELNE Aufgabe vor als Alternative zu: "${aufg.titel}: ${aufg.beschreibung}"\n`;
-        p += `Zeit: ${aufg.zeitMinuten ?? '?'} Min, ${aufg.gesamtpunkte ?? '?'} Punkte\n`;
-        if (erlaubt.length) p += `Anforderungsbereiche – Erlaubt: ${erlaubt.join(', ')} | VERBOTEN: ${verboten.join(', ')}\n`;
-        p += `\nAntworte NUR mit reinem JSON (eine Aufgabe):\n{"titel":"Kurzer Titel","beschreibung":"Was Schüler hier tun (1 Satz)"}`;
-        try {
-          const raw = await callKI([{ type: 'text', text: p }], 600);
-          const parsed = parseKI(raw);
-          if (parsed.titel) aufg.titel = parsed.titel;
-          if (parsed.beschreibung) aufg.beschreibung = parsed.beschreibung;
-          savePruefungsDB(); renderStruktur(); renderAFBBanner();
-        } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
-        grobRegenBtn.textContent = '↺ Neu vorschlagen'; grobRegenBtn.disabled = false;
-      };
-      rightCol.appendChild(grobRegenBtn);
       if (pr.grobstrukturLocked && !taskUnlocked) {
         const lockHint = tx('div', '', feinLocked ? 'Feinstruktur gesperrt' : 'Grobstruktur gesperrt');
         lockHint.style.cssText = 'font-size:11px;color:var(--tx3);margin-bottom:8px;';

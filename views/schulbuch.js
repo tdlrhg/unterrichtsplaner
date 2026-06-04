@@ -206,6 +206,14 @@ function viewSchulbuecher() {
   }
 
   // ── KI-Extraktion ─────────────────────────────────────────────
+
+  // Extraktions-Modi (unabhängig vom Buchtyp, für Unterkapitel-Override)
+  const EXTRAKTIONS_MODI = [
+    { val: 'wortwörtlich',    label: '📝 Wortwörtlich',     hint: 'Vollständiger Originaltext — für Schülermaterialien' },
+    { val: 'zusammenfassend', label: '📋 Zusammenfassend',  hint: 'Kurze Inhaltsbeschreibung — für Lehrerhinweise, Erläuterungen' },
+    { val: 'aufgaben',        label: '🔢 Aufgaben erkennen', hint: 'Einzelne Aufgaben mit Nummer und Schwierigkeit' },
+  ];
+
   const KI_PROMPT_VERBATIM = `Du liest Seiten aus einem Unterrichtsmaterial (Arbeitsblätter, Schülerversuche, Lehrerhandreichungen).
 
 Übertrage den VOLLSTÄNDIGEN Text jeder Seite wortwörtlich. Fasse nichts zusammen, lasse nichts weg.
@@ -223,6 +231,19 @@ Regeln:
 - Nach === kommt zuerst die Seitenzahl, dann | dann der Titel/die Überschrift der Seite
 - Text vollständig und wörtlich übernehmen
 - Ignoriere Kopf- und Fußzeilen: Website-URLs, Seitennummern im Stil "7 von 22", Verlagsangaben, Druckdaten, Hash-Codes — diese nicht ins inhalt-Feld aufnehmen
+- Keine JSON, kein Markdown, nur dieses Format`;
+
+  const KI_PROMPT_ZUSAMMENFASSEND = `Du liest Seiten aus einem Unterrichtsmaterial und fasst den Inhalt didaktisch kompakt zusammen.
+
+Antworte in diesem Format — eine Seite oder ein Abschnitt = ein Block:
+=== Seite 8 | Einführung: Korrosion ===
+[Kurze Zusammenfassung: Was wird erklärt? Welche Methode/Schritte? Welche Beispiele? 2–5 Sätze. Kein wörtlicher Text, keine Aufgaben.]
+GRAFIK: [kurze Beschreibung von Fotos/Abbildungen, oder "keine"]
+
+Regeln:
+- Nach === kommt Seitenzahl | Titel/Thema des Abschnitts
+- Nur zusammenfassende Beschreibung, kein wörtlicher Originaltext
+- Ignoriere Kopf- und Fußzeilen, Seitenzahlen, URLs, Verlagsangaben
 - Keine JSON, kein Markdown, nur dieses Format`;
 
   const KI_PROMPT_AUFGABEN = `Du analysierst Seiten aus einem Schulbuch oder Unterrichtsmaterial (Gymnasium, Mathematik oder Naturwissenschaften).
@@ -275,8 +296,13 @@ Antworte NUR mit validem JSON:
     const antKey = localStorage.getItem('ant_key');
     if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
 
-    const verbatim = buchTyp === 'sammlung';
-    const prompt = verbatim ? KI_PROMPT_VERBATIM : KI_PROMPT_AUFGABEN;
+    // Modi: 'wortwörtlich' / 'sammlung' / 'aufgabenpool' → verbatim
+    //       'zusammenfassend' → zusammenfassend
+    //       alles andere ('schulbuch', 'aufgaben') → JSON-Aufgaben
+    const isVerbatim = buchTyp === 'wortwörtlich' || buchTyp === 'sammlung' || buchTyp === 'aufgabenpool';
+    const isZusammen = buchTyp === 'zusammenfassend';
+    const verbatim   = isVerbatim || isZusammen; // beide nutzen Delimiter-Format, aber verschiedene Prompts
+    const prompt = isZusammen ? KI_PROMPT_ZUSAMMENFASSEND : isVerbatim ? KI_PROMPT_VERBATIM : KI_PROMPT_AUFGABEN;
     const BATCH = 4;
     const allAufgaben = [];
 
@@ -792,16 +818,26 @@ Regeln:
       const sFg = mk('div', 'fg'); sFg.appendChild(tx('label', 'fl', 'Seitenbereich')); sFg.appendChild(sRow);
       body.appendChild(sFg);
 
-      // Optionaler Typ-Override für Unterkapitel
+      // Extraktions-Modus Override für Unterkapitel
       const typSel = document.createElement('select'); typSel.className = 'finp';
       const noTyp = document.createElement('option'); noTyp.value = ''; noTyp.textContent = '— wie Buch —'; typSel.appendChild(noTyp);
-      BUCH_TYPEN.forEach(t => {
-        const o = document.createElement('option'); o.value = t.val;
-        o.textContent = t.icon + ' ' + t.label + ' (Extraktion)';
-        if (entry.typ === t.val) o.selected = true;
+      EXTRAKTIONS_MODI.forEach(m => {
+        const o = document.createElement('option'); o.value = m.val;
+        o.textContent = m.label;
+        if (entry.typ === m.val) o.selected = true;
         typSel.appendChild(o);
       });
-      body.appendChild(field('Extraktions-Modus', typSel));
+      const typHint = tx('div', '', '');
+      typHint.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:2px;';
+      const updateHint = () => {
+        const m = EXTRAKTIONS_MODI.find(m => m.val === typSel.value);
+        typHint.textContent = m ? m.hint : '';
+      };
+      typSel.onchange = updateHint; updateHint();
+      const typFg = mk('div', 'fg');
+      typFg.appendChild(tx('label', 'fl', 'Extraktions-Modus'));
+      typFg.appendChild(typSel); typFg.appendChild(typHint);
+      body.appendChild(typFg);
 
       // ── Seiten-Checkliste ──────────────────────────────────────
       const seitenSec = mk('div', '');

@@ -1340,6 +1340,37 @@ function buildAufgabenGenTab(pr) {
         cardRegenBtn.textContent = '↺'; cardRegenBtn.disabled = false;
       };
       head.appendChild(cardRegenBtn);
+
+      // → Konkrete Aufgabe für Stufe 3 generieren
+      const cardGenBtn = btn('→', 'btn btn-pri btn-xs');
+      cardGenBtn.title = 'Konkrete Aufgabe für Panel 3 generieren';
+      cardGenBtn.style.flexShrink = '0';
+      cardGenBtn.onclick = async () => {
+        cardGenBtn.disabled = true; cardGenBtn.textContent = '⏳';
+        const anf3 = fs.anforderung || {};
+        const erlaubt3 = Object.keys(AB_KEY_MAP).filter(k => (anf3[k] || 0) > 0);
+        const verboten3 = Object.keys(AB_KEY_MAP).filter(k => (anf3[k] || 0) === 0);
+        let p = `Erstelle konkrete Aufgabe ${fs.nr} "${fs.titel}" für eine Klassenarbeit.\n\n`;
+        p += `## PÄDAGOGISCHE SPEZIFIKATION\n${fs.spezifikation}\n\n`;
+        p += `Zeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte gesamt\n`;
+        p += `Aufgabentypen: ${(fs.typen||[]).join(', ')}\n`;
+        if (erlaubt3.length) { p += `\n## ANFORDERUNGSBEREICHE — VERBINDLICH\nErlaubt: ${erlaubt3.join(', ')}\nVERBOTEN: ${verboten3.join(', ')}\n`; }
+        p += `\n## WICHTIG\n- Unteraufgaben rechnerisch unabhängig\n- Progression leicht→schwer\n- Konkrete Zahlen, kein Platzhalter\n\n`;
+        p += `Antworte NUR mit reinem JSON:\n{"aufgabenstellung":null,"unteraufgaben":[\n  {"nr":"${fs.nr}a","titel":null,"text":"...","punkte":3,"anforderungsbereich":"reproduktion","typ":"Rechnung"}\n]}\nanforderungsbereich: ${erlaubt3.length ? erlaubt3.join(' | ') : 'reproduktion | leichteAnwendung | mittlereAnwendung | transfer'}`;
+        try {
+          const raw = await callKI([{ type: 'text', text: p }], 3000);
+          const parsed = parseKI(raw);
+          // Vorhandenen Eintrag für diese Aufgabe ersetzen oder neu anlegen
+          const existingIdx = pr.genAufgaben.findIndex(a => a.nr === fs.nr);
+          const entry = { nr: fs.nr, titel: fs.titel, zeitMinuten: fs.zeitMinuten, gesamtpunkte: fs.gesamtpunkte, aufgabenstellung: parsed.aufgabenstellung || null, unteraufgaben: parsed.unteraufgaben || [] };
+          if (existingIdx > -1) pr.genAufgaben[existingIdx] = entry;
+          else pr.genAufgaben.push(entry);
+          savePruefungsDB(); renderGenAufgaben(); renderAFBBanner();
+          switchSubTab(3);
+        } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
+        cardGenBtn.disabled = false; cardGenBtn.textContent = '→';
+      };
+      head.appendChild(cardGenBtn);
       card.appendChild(head);
 
       // Spezifikation als editierbare Stichpunktliste

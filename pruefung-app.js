@@ -1246,7 +1246,20 @@ Antworte NUR mit reinem JSON:
 
       // Titelzeile + Streichen-Button
       const hrow = mk('div', ''); hrow.style.cssText = 'display:flex;align-items:baseline;gap:8px;margin-bottom:4px;';
-      hrow.appendChild(tx('strong', '', 'Aufgabe ' + (aufg._removed ? '–' : posNr) + ': ' + (aufg.titel || '–')));
+      const nrSpan = tx('strong', '', 'Aufgabe ' + (aufg._removed ? '–' : posNr) + ': ');
+      // Titel editierbar per Klick
+      const titelSpan = tx('strong', '', aufg.titel || '–');
+      titelSpan.style.cssText = 'cursor:text;border-bottom:1px dashed transparent;';
+      titelSpan.onmouseenter = () => titelSpan.style.borderBottomColor = 'var(--tx3)';
+      titelSpan.onmouseleave = () => titelSpan.style.borderBottomColor = 'transparent';
+      titelSpan.onclick = () => {
+        const inp = document.createElement('input'); inp.type = 'text'; inp.value = aufg.titel || '';
+        inp.style.cssText = 'font-size:inherit;font-weight:700;font-family:inherit;border:none;border-bottom:1px solid var(--pri);outline:none;background:transparent;color:var(--tx1);width:200px;';
+        titelSpan.replaceWith(inp); inp.focus(); inp.select();
+        const done = () => { aufg.titel = inp.value || aufg.titel; savePruefungsDB(); renderStruktur(); };
+        inp.onblur = done; inp.onkeydown = e => { if (e.key === 'Enter' || e.key === 'Escape') inp.blur(); };
+      };
+      hrow.appendChild(nrSpan); hrow.appendChild(titelSpan);
       const spacer = mk('span', ''); spacer.style.flex = '1'; hrow.appendChild(spacer);
       if (pr.grobstrukturLocked) {
         const lockBtn = btn(feinLocked ? '🔐' : (taskUnlocked ? '🔓' : '🔒'), '');
@@ -1274,7 +1287,44 @@ Antworte NUR mit reinem JSON:
       hrow.appendChild(toggleBtn);
       rightCol.appendChild(hrow);
 
-      if (aufg.beschreibung) { const b = tx('div', '', aufg.beschreibung); b.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;margin-bottom:8px;'; rightCol.appendChild(b); }
+      // Beschreibung editierbar
+      const beschrEl = tx('div', '', aufg.beschreibung || '');
+      beschrEl.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;margin-bottom:8px;cursor:text;min-height:16px;';
+      beschrEl.title = 'Klicken zum Bearbeiten';
+      beschrEl.onclick = () => {
+        const area = document.createElement('textarea'); area.value = aufg.beschreibung || '';
+        area.style.cssText = 'width:100%;font-size:12px;font-family:inherit;line-height:1.5;border:1px solid var(--pri);border-radius:4px;padding:4px;background:var(--surf2);color:var(--tx1);resize:none;box-sizing:border-box;';
+        area.rows = 2;
+        beschrEl.replaceWith(area); area.focus();
+        const done = () => { aufg.beschreibung = area.value; savePruefungsDB(); renderStruktur(); };
+        area.onblur = done; area.onkeydown = e => { if (e.key === 'Escape') area.blur(); };
+      };
+      rightCol.appendChild(beschrEl);
+
+      // ↺ Diese Aufgabe einzeln neu vorschlagen
+      const grobRegenBtn = mk('button', '');
+      grobRegenBtn.textContent = '↺ Neu vorschlagen';
+      grobRegenBtn.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:0 0 8px;text-align:left;display:block;';
+      grobRegenBtn.onclick = async () => {
+        grobRegenBtn.textContent = '⏳'; grobRegenBtn.disabled = true;
+        const anf = aufg.anforderung || {};
+        const erlaubt = Object.keys(AB_KEY_MAP).filter(k => (anf[k] || 0) > 0);
+        const verboten = Object.keys(AB_KEY_MAP).filter(k => (anf[k] || 0) === 0);
+        let p = `Du planst eine Klassenarbeit über "${pr.thema || pr.titel || '?'}".\n`;
+        p += `Schlage eine EINZELNE Aufgabe vor als Alternative zu: "${aufg.titel}: ${aufg.beschreibung}"\n`;
+        p += `Zeit: ${aufg.zeitMinuten ?? '?'} Min, ${aufg.gesamtpunkte ?? '?'} Punkte\n`;
+        if (erlaubt.length) p += `Anforderungsbereiche – Erlaubt: ${erlaubt.join(', ')} | VERBOTEN: ${verboten.join(', ')}\n`;
+        p += `\nAntworte NUR mit reinem JSON (eine Aufgabe):\n{"titel":"Kurzer Titel","beschreibung":"Was Schüler hier tun (1 Satz)"}`;
+        try {
+          const raw = await callKI([{ type: 'text', text: p }], 600);
+          const parsed = parseKI(raw);
+          if (parsed.titel) aufg.titel = parsed.titel;
+          if (parsed.beschreibung) aufg.beschreibung = parsed.beschreibung;
+          savePruefungsDB(); renderStruktur(); renderAFBBanner();
+        } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
+        grobRegenBtn.textContent = '↺ Neu vorschlagen'; grobRegenBtn.disabled = false;
+      };
+      rightCol.appendChild(grobRegenBtn);
       if (pr.grobstrukturLocked && !taskUnlocked) {
         const lockHint = tx('div', '', feinLocked ? 'Feinstruktur gesperrt' : 'Grobstruktur gesperrt');
         lockHint.style.cssText = 'font-size:11px;color:var(--tx3);margin-bottom:8px;';

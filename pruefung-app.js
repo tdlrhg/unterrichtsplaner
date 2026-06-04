@@ -920,18 +920,18 @@ function buildAufgabenGenTab(pr) {
     { key: 'mittlereAnwendung',letter: 'A', color: '#ea580c', title: 'Mittlere Anwendung' },
     { key: 'transfer',         letter: 'T', color: '#dc2626', title: 'Transfer' },
   ];
-  function makeStempel(anforderung) {
+  function makeStempel(anforderung, onToggle) {
+    if (!anforderung) anforderung = {};
     const wrap = mk('div', ''); wrap.style.cssText = 'display:flex;flex-direction:column;gap:3px;align-items:center;flex-shrink:0;margin-right:4px;padding-top:2px;';
-    let any = false;
     AB_CFG.forEach(cfg => {
-      if (!anforderung?.[cfg.key]) return;
-      any = true;
+      const active = !!(anforderung[cfg.key]);
       const s = tx('div', '', cfg.letter);
-      s.title = cfg.title;
-      s.style.cssText = `width:22px;height:22px;border-radius:50%;background:${cfg.color};color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;`;
+      s.title = (active ? 'Aktiv – klicken zum Deaktivieren: ' : 'Inaktiv – klicken zum Aktivieren: ') + cfg.title;
+      s.style.cssText = `width:22px;height:22px;border-radius:50%;background:${active ? cfg.color : 'var(--bord)'};color:${active ? '#fff' : 'var(--tx3)'};font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;transition:background .15s,color .15s;`;
+      if (onToggle) s.onclick = e => { e.stopPropagation(); onToggle(cfg.key); };
       wrap.appendChild(s);
     });
-    return any ? wrap : null;
+    return wrap;
   }
 
   // Drag-to-Reorder
@@ -965,8 +965,12 @@ function buildAufgabenGenTab(pr) {
       dragHandle.title = 'Reihenfolge ändern';
       dragHandle.style.cssText = 'font-size:16px;color:var(--tx3);cursor:grab;user-select:none;line-height:1;';
       leftCol.appendChild(dragHandle);
-      const stempel = makeStempel(aufg.anforderung);
-      if (stempel) leftCol.appendChild(stempel);
+      const stempel = makeStempel(aufg.anforderung, key => {
+        if (!aufg.anforderung) aufg.anforderung = {};
+        aufg.anforderung[key] = aufg.anforderung[key] ? 0 : 1;
+        savePruefungsDB(); renderStruktur();
+      });
+      leftCol.appendChild(stempel);
       card.appendChild(leftCol);
 
       // Rechte Spalte: Inhalt

@@ -790,10 +790,11 @@ function buildQuellenTab(pr) {
 function buildAufgabenGenTab(pr) {
   const div = mk('div', '');
   if (!pr.genAufgaben) pr.genAufgaben = [];
+  if (!pr.strukturVorschlag) pr.strukturVorschlag = [];
 
   // ── Referenzzeitraum ──────────────────────────────────────────
   const zeitRow = mk('div', '');
-  zeitRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:20px;font-size:13px;color:var(--tx2);flex-wrap:wrap;';
+  zeitRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:13px;color:var(--tx2);flex-wrap:wrap;';
   zeitRow.appendChild(tx('span', '', 'Die KI nutzt die Arbeiten der letzten'));
   const jahrInp = document.createElement('input');
   jahrInp.type = 'number'; jahrInp.step = '0.5'; jahrInp.min = '0.5'; jahrInp.max = '10';
@@ -829,61 +830,114 @@ function buildAufgabenGenTab(pr) {
   div.appendChild(stilSec);
 
   const statusEl = mk('div', '');
-  statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;margin:8px 0 16px;';
+  statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;margin:8px 0 12px;';
 
-  const genBtn = btn('✨ Aufgaben generieren', 'btn btn-pri btn-sm');
-  div.appendChild(genBtn);
+  // ── Quellen-Kontext aufbauen (shared) ─────────────────────────
+  function buildKontext() {
+    const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
+    const cutoff = new Date(Date.now() - (pr.referenzJahre ?? 2) * msPerYear);
+    const refArbeiten = ALTE_ARBEITEN_DB.filter(aa => aa.datum && new Date(aa.datum) >= cutoff);
+    const quellenAA = (pr.quellen?.alteArbeiten || []).map(id => ALTE_ARBEITEN_DB.find(aa => aa.id === id)).filter(Boolean);
+    const quellenKap = [];
+    (pr.quellen?.kapitel || []).forEach(kapId => {
+      SCHULBUCHDB.forEach(buch => {
+        (buch.kapitel || []).forEach(kap => {
+          if (kap.id === kapId) quellenKap.push({ buch: buch.titel, kap });
+          (kap.unterkapitel || []).forEach(u => { if (u.id === kapId) quellenKap.push({ buch: buch.titel, kap: u }); });
+        });
+      });
+    });
+    const lernziele = [];
+    (pr.ausgewaehlteLernziele || []).forEach(lzId => {
+      CHECKLISTDB.forEach(cl => { (cl.lernziele || []).forEach(lz => { if (lz.id === lzId) lernziele.push(lz.text); }); });
+    });
+    const ideenPool = [];
+    quellenAA.forEach(aa => (aa.aufgaben || []).forEach(a => {
+      if (a.text || a.aufgabenstellung) ideenPool.push(`[${aa.titel}] ${(a.aufgabenstellung || '') + ' ' + (a.text || '')}`.trim().slice(0, 120));
+    }));
+    quellenKap.forEach(({ buch, kap }) => (kap.aufgaben || []).forEach(a => {
+      if (a.text || a.aufgabenstellung) ideenPool.push(`[${buch}/${kap.titel}] ${(a.aufgabenstellung || '') + ' ' + (a.text || '')}`.trim().slice(0, 120));
+    }));
+    return { refArbeiten, lernziele, ideenPool };
+  }
+
+  function parseKI(raw) {
+    const cleaned = raw.replace(/^```[a-z]*\n?/m, '').replace(/```\s*$/m, '').trim();
+    try { return robustJsonParsePr(cleaned); }
+    catch (e) {
+      const preview = cleaned.slice(0, 200).replace(/\n/g, ' ');
+      throw new Error('JSON-Fehler: ' + preview);
+    }
+  }
+
+  // ── SCHRITT 1: Struktur vorschlagen ───────────────────────────
+  const strukturWrap = mk('div', ''); strukturWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:16px;';
+  div.appendChild(strukturWrap);
+
+  function renderStruktur() {
+    strukturWrap.innerHTML = '';
+    if (!pr.strukturVorschlag.length) return;
+    const hdr2 = tx('div', '', 'Vorgeschlagene Struktur — streiche durch was du nicht willst:');
+    hdr2.style.cssText = 'font-size:12px;color:var(--tx3);margin-bottom:4px;';
+    strukturWrap.appendChild(hdr2);
+    pr.strukturVorschlag.forEach((aufg, i) => {
+      const row = mk('div', '');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--bord);background:var(--surf2);' + (aufg._removed ? 'opacity:.4;' : '');
+      const left2 = mk('div', ''); left2.style.flex = '1';
+      left2.appendChild(tx('div', '', 'Aufgabe ' + aufg.nr + ': ' + (aufg.titel || '–'))).style || (left2.lastChild.style.cssText = 'font-weight:600;font-size:13px;');
+      const meta2 = [aufg.zeitMinuten ? '⏱ ' + aufg.zeitMinuten + ' Min' : null, aufg.gesamtpunkte ? aufg.gesamtpunkte + ' P' : null, (aufg.typen||[]).join(', ')].filter(Boolean).join(' · ');
+      if (meta2) left2.appendChild(tx('div', '', meta2)).style || (left2.lastChild.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:2px;');
+      if (aufg.beschreibung) left2.appendChild(tx('div', '', aufg.beschreibung)).style || (left2.lastChild.style.cssText = 'font-size:12px;color:var(--tx2);margin-top:3px;font-style:italic;');
+      const toggleBtn = btn(aufg._removed ? '+ Wieder aufnehmen' : '✕ Streichen', 'btn btn-ghost btn-xs');
+      toggleBtn.style.flexShrink = '0';
+      toggleBtn.onclick = () => { aufg._removed = !aufg._removed; savePruefungsDB(); renderStruktur(); };
+      row.appendChild(left2); row.appendChild(toggleBtn);
+      strukturWrap.appendChild(row);
+    });
+  }
+  renderStruktur();
+
+  const btnRow1 = mk('div', ''); btnRow1.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;';
+  const strukturBtn = btn('✨ Struktur vorschlagen', 'btn btn-pri btn-sm');
+  btnRow1.appendChild(strukturBtn);
+
+  // Schritt-2-Button (nur wenn Struktur vorhanden)
+  const ausarbeitenBtn = btn('→ Aufgaben ausarbeiten', 'btn btn-sm');
+  ausarbeitenBtn.style.display = pr.strukturVorschlag.length ? '' : 'none';
+  btnRow1.appendChild(ausarbeitenBtn);
+
+  div.appendChild(btnRow1);
   div.appendChild(statusEl);
 
+  // ── SCHRITT 2: Fertige Aufgaben ────────────────────────────────
   const aufgabenWrap = mk('div', '');
   aufgabenWrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
   div.appendChild(aufgabenWrap);
 
+  const SC = { '○': '#16a34a', '◒': '#2563eb', '●': '#9d174d' };
   function renderGenAufgaben() {
     aufgabenWrap.innerHTML = '';
     if (!pr.genAufgaben.length) return;
     pr.genAufgaben.forEach(aufg => {
       const card = mk('div', 'card');
       const body = mk('div', 'card-body');
-      // Header
       const hrow = mk('div', '');
-      hrow.style.cssText = 'display:flex;align-items:baseline;gap:10px;margin-bottom:6px;';
-      const titSpan = tx('strong', '', 'Aufgabe ' + aufg.nr + (aufg.titel ? ': ' + aufg.titel : aufg.thema ? ': ' + aufg.thema : ''));
-      hrow.appendChild(titSpan);
-      if (aufg.zeitMinuten) {
-        const zt = tx('span', '', '⏱ ' + aufg.zeitMinuten + ' Min');
-        zt.style.cssText = 'font-size:11px;color:var(--tx3);';
-        hrow.appendChild(zt);
-      }
-      if (aufg.gesamtpunkte) {
-        const pt = tx('span', '', aufg.gesamtpunkte + ' P');
-        pt.style.cssText = 'font-size:11px;color:var(--tx3);';
-        hrow.appendChild(pt);
-      }
+      hrow.style.cssText = 'display:flex;align-items:baseline;gap:10px;margin-bottom:6px;flex-wrap:wrap;';
+      hrow.appendChild(tx('strong', '', 'Aufgabe ' + aufg.nr + (aufg.titel ? ': ' + aufg.titel : '')));
+      if (aufg.zeitMinuten) { const zt = tx('span', '', '⏱ ' + aufg.zeitMinuten + ' Min'); zt.style.cssText = 'font-size:11px;color:var(--tx3);'; hrow.appendChild(zt); }
+      if (aufg.gesamtpunkte) { const pt = tx('span', '', aufg.gesamtpunkte + ' P'); pt.style.cssText = 'font-size:11px;color:var(--tx3);'; hrow.appendChild(pt); }
       body.appendChild(hrow);
-      if (aufg.aufgabenstellung) {
-        const as = tx('div', '', aufg.aufgabenstellung);
-        as.style.cssText = 'font-size:13px;color:var(--tx2);font-style:italic;margin-bottom:8px;';
-        body.appendChild(as);
-      }
-      // Unteraufgaben
-      const SC = { '○': '#16a34a', '◒': '#2563eb', '●': '#9d174d' };
+      if (aufg.aufgabenstellung) { const as = tx('div', '', aufg.aufgabenstellung); as.style.cssText = 'font-size:13px;color:var(--tx2);font-style:italic;margin-bottom:8px;'; body.appendChild(as); }
       (aufg.unteraufgaben || []).forEach(ua => {
         const urow = mk('div', '');
         urow.style.cssText = 'display:flex;gap:10px;align-items:baseline;padding:5px 0;border-top:1px solid var(--bord);font-size:13px;';
-        const nrS = tx('strong', '', ua.nr || ''); nrS.style.cssText = 'flex-shrink:0;min-width:28px;';
-        urow.appendChild(nrS);
-        if (ua.schwierigkeit) {
-          const sw = tx('span', '', ua.schwierigkeit);
-          sw.style.cssText = 'flex-shrink:0;color:' + (SC[ua.schwierigkeit] || 'var(--tx3)') + ';';
-          urow.appendChild(sw);
-        }
+        const nrS = tx('strong', '', ua.nr || ''); nrS.style.cssText = 'flex-shrink:0;min-width:28px;'; urow.appendChild(nrS);
+        if (ua.schwierigkeit) { const sw = tx('span', '', ua.schwierigkeit); sw.style.cssText = 'flex-shrink:0;color:' + (SC[ua.schwierigkeit] || 'var(--tx3)') + ';'; urow.appendChild(sw); }
         const col = mk('div', ''); col.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:1px;';
         if (ua.titel) { const tit = tx('span', '', ua.titel); tit.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx2);'; col.appendChild(tit); }
-        const utxt = tx('span', '', ua.text || ''); utxt.style.cssText = 'color:var(--tx2);';
-        col.appendChild(utxt);
+        col.appendChild(tx('span', '', ua.text || '')).style || (col.lastChild.style.color = 'var(--tx2)');
         urow.appendChild(col);
-        if (ua.typ) { const ty = tx('span', 'matc-jg', ua.typ); urow.appendChild(ty); }
+        if (ua.typ) urow.appendChild(tx('span', 'matc-jg', ua.typ));
         if (ua.punkte) { const pu = tx('span', '', ua.punkte + ' P'); pu.style.cssText = 'flex-shrink:0;font-size:11px;color:var(--tx3);'; urow.appendChild(pu); }
         body.appendChild(urow);
       });
@@ -892,114 +946,83 @@ function buildAufgabenGenTab(pr) {
   }
   renderGenAufgaben();
 
-  genBtn.onclick = async () => {
-    genBtn.disabled = true;
-    statusEl.textContent = '⏳ Sammle Quellen…';
+  // ── Struktur-Button Handler ────────────────────────────────────
+  strukturBtn.onclick = async () => {
+    strukturBtn.disabled = true;
+    statusEl.textContent = '⏳ KI schlägt Struktur vor…';
     try {
-      const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
-      const cutoff = new Date(Date.now() - (pr.referenzJahre ?? 2) * msPerYear);
-
-      // Referenz-Arbeiten (Kompositionsstil)
-      const refArbeiten = ALTE_ARBEITEN_DB.filter(aa => aa.datum && new Date(aa.datum) >= cutoff);
-
-      // Quellen-Arbeiten (Ideenpool)
-      const quellenAA = (pr.quellen?.alteArbeiten || [])
-        .map(id => ALTE_ARBEITEN_DB.find(aa => aa.id === id)).filter(Boolean);
-
-      // Schulbuch-Kapitel (Ideenpool)
-      const quellenKap = [];
-      (pr.quellen?.kapitel || []).forEach(kapId => {
-        SCHULBUCHDB.forEach(buch => {
-          (buch.kapitel || []).forEach(kap => {
-            if (kap.id === kapId) quellenKap.push({ buch: buch.titel, kap });
-            (kap.unterkapitel || []).forEach(u => { if (u.id === kapId) quellenKap.push({ buch: buch.titel, kap: u }); });
-          });
-        });
-      });
-
-      // Lernziele
-      const lernziele = [];
-      (pr.ausgewaehlteLernziele || []).forEach(lzId => {
-        CHECKLISTDB.forEach(cl => {
-          (cl.lernziele || []).forEach(lz => { if (lz.id === lzId) lernziele.push(lz.text); });
-        });
-      });
-
-      // Prompt
-      let prompt = 'Du bist ein erfahrener Gymnasiallehrer und entwirfst eine Klassenarbeit.\n\n';
-
-      // Kompositionsstil immer einbauen
-      prompt += `## MEIN KOMPOSITIONSSTIL (verbindliche Vorgaben)\n${KOMPOSITIONSSTIL}\n\n`;
-
+      const { refArbeiten, lernziele, ideenPool } = buildKontext();
+      let p = 'Du entwirfst eine Klassenarbeit. Schlage NUR die Hauptaufgaben vor — keine Unteraufgaben.\n\n';
+      p += `## KOMPOSITIONSSTIL\n${KOMPOSITIONSSTIL}\n\n`;
       if (refArbeiten.length) {
-        prompt += `## REFERENZARBEITEN (analysiere Aufbau und Stil dieser ${refArbeiten.length} aktuellen Arbeit${refArbeiten.length > 1 ? 'en' : ''})\n`;
+        p += `## REFERENZARBEITEN (Stilanalyse)\n`;
         refArbeiten.forEach(aa => {
-          prompt += `\n### ${aa.titel}${aa.datum ? ' (' + new Date(aa.datum).getFullYear() + ')' : ''}\n`;
-          (aa.aufgaben || []).slice(0, 30).forEach(a => {
-            prompt += `- Aufg. ${a.nr ?? '?'}: ${a.aufgabenstellung || a.text || ''} [${a.punkte ?? '?'} P, ${a.schwierigkeit || '?'}]\n`;
-          });
+          p += `${aa.titel}${aa.datum ? ' (' + new Date(aa.datum).getFullYear() + ')' : ''}: `;
+          const aufgNr = [...new Set((aa.aufgaben||[]).map(a => (String(a.nr||'')).match(/^\d+/)?.[0]).filter(Boolean))];
+          p += aufgNr.length + ' Hauptaufgaben\n';
         });
-        prompt += '\n';
+        p += '\n';
       }
-
-      if (lernziele.length) {
-        prompt += '## LERNZIELE (alle abdecken)\n';
-        lernziele.forEach((lz, i) => { prompt += `${i + 1}. ${lz}\n`; });
-        prompt += '\n';
-      }
-
-      if (pr.thema) prompt += `## THEMA\n${pr.thema}\n\n`;
-
-      const ideenPool = [];
-      quellenAA.forEach(aa => (aa.aufgaben || []).forEach(a => {
-        if (a.text || a.aufgabenstellung) ideenPool.push(`[${aa.titel}] ${a.aufgabenstellung || ''} ${a.text || ''}`.trim());
-      }));
-      quellenKap.forEach(({ buch, kap }) => (kap.aufgaben || []).forEach(a => {
-        if (a.text || a.aufgabenstellung) ideenPool.push(`[${buch} / ${kap.titel}] ${a.aufgabenstellung || ''} ${a.text || ''}`.trim());
-      }));
-
-      if (ideenPool.length) {
-        prompt += `## AUFGABEN-IDEENPOOL (adaptiere passende Ideen — nicht 1:1 kopieren, neue Zahlen verwenden)\n`;
-        // Ideen auf 120 Zeichen kürzen um Prompt-Länge zu begrenzen
-        ideenPool.slice(0, 40).forEach(idea => { prompt += `- ${idea.slice(0, 120)}\n`; });
-        prompt += '\n';
-      }
-
-      prompt += `## FORMAT
-Antworte NUR mit reinem JSON — kein Markdown, keine Erklärungen, kein \`\`\`json:
-{"aufgaben":[
-  {"nr":1,"titel":"Titel der Aufgabe","zeitMinuten":10,"aufgabenstellung":"Gemeinsame Einleitung oder null","gesamtpunkte":8,"unteraufgaben":[
-    {"nr":"1a","titel":null,"text":"Aufgabentext","punkte":2,"schwierigkeit":"○","typ":"Rechnung"},
-    {"nr":"1b","titel":"Titel der Unteraufgabe","text":"Aufgabentext","punkte":3,"schwierigkeit":"◒","typ":"Sachaufgabe"},
-    {"nr":"1c","titel":"Titel der Unteraufgabe","text":"Aufgabentext","punkte":3,"schwierigkeit":"●","typ":"Begründung"}
-  ]}
-]}
-Schwierigkeit: "○" Reproduktion/einfach · "◒" Anwendung/mittel · "●" Transfer/schwer
-Typen: "Rechnung" · "Sachaufgabe" · "Begründung" · "Multiple Choice" · "Diagramm" · "Lückentext"
-Unteraufgaben sind thematisch verbunden, aber RECHNERISCH UNABHÄNGIG (eigene neue Zahlen).
-titel bei Unteraufgaben: null wenn Typ "Rechnung", sonst kurzer beschreibender Titel.`;
-
-      statusEl.textContent = '⏳ KI generiert Aufgaben…';
-      const raw = await callKI([{ type: 'text', text: prompt }], 10000);
-
-      // Markdown-Codeblöcke entfernen (```json ... ```)
-      const cleaned = raw.replace(/^```[a-z]*\n?/m, '').replace(/```\s*$/m, '').trim();
-
-      let parsed;
-      try { parsed = robustJsonParsePr(cleaned); }
-      catch (e) {
-        const preview = cleaned ? cleaned.slice(0, 300).replace(/\n/g, ' ') : '(leer)';
-        throw new Error('JSON-Fehler. Antwort-Anfang: ' + preview);
-      }
-
-      pr.genAufgaben = parsed.aufgaben || [];
+      if (lernziele.length) { p += '## LERNZIELE\n'; lernziele.forEach((lz,i) => { p += `${i+1}. ${lz}\n`; }); p += '\n'; }
+      if (pr.thema) p += `## THEMA\n${pr.thema}\n\n`;
+      if (ideenPool.length) { p += '## THEMEN IM IDEENPOOL\n'; ideenPool.slice(0,20).forEach(idea => { p += `- ${idea}\n`; }); p += '\n'; }
+      p += `Antworte NUR mit reinem JSON:
+{"hauptaufgaben":[
+  {"nr":1,"titel":"Kurzer Aufgabentitel","beschreibung":"Was Schüler hier tun (1 Satz)","zeitMinuten":10,"gesamtpunkte":12,"typen":["Rechnung","Multiple Choice"]}
+]}`;
+      const raw = await callKI([{ type: 'text', text: p }], 2000);
+      const parsed = parseKI(raw);
+      pr.strukturVorschlag = (parsed.hauptaufgaben || []).map(a => ({ ...a, _removed: false }));
       savePruefungsDB();
-      renderGenAufgaben();
-      statusEl.textContent = '✓ ' + pr.genAufgaben.length + ' Aufgaben generiert';
-    } catch (e) {
-      statusEl.textContent = '⚠ ' + e.message;
-    }
-    genBtn.disabled = false;
+      renderStruktur();
+      ausarbeitenBtn.style.display = '';
+      statusEl.textContent = '✓ ' + pr.strukturVorschlag.length + ' Aufgaben vorgeschlagen — streiche unerwünschte und klicke „Ausarbeiten"';
+    } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
+    strukturBtn.disabled = false;
+  };
+
+  // ── Ausarbeiten-Button Handler ─────────────────────────────────
+  ausarbeitenBtn.onclick = async () => {
+    const zuAusarbeiten = pr.strukturVorschlag.filter(a => !a._removed);
+    if (!zuAusarbeiten.length) { statusEl.textContent = '⚠ Keine Aufgaben ausgewählt.'; return; }
+    ausarbeitenBtn.disabled = true; strukturBtn.disabled = true;
+    pr.genAufgaben = [];
+    const { ideenPool } = buildKontext();
+    try {
+      for (let i = 0; i < zuAusarbeiten.length; i++) {
+        const aufg = zuAusarbeiten[i];
+        statusEl.textContent = `⏳ Arbeite Aufgabe ${aufg.nr} aus… (${i+1}/${zuAusarbeiten.length})`;
+        let p = `Arbeite Aufgabe ${aufg.nr} "${aufg.titel}" vollständig aus.\n`;
+        p += `Beschreibung: ${aufg.beschreibung}\n`;
+        p += `Zeit: ${aufg.zeitMinuten} Min, ${aufg.gesamtpunkte} Punkte gesamt\n`;
+        p += `Aufgabentypen: ${(aufg.typen||[]).join(', ')}\n\n`;
+        p += `## KOMPOSITIONSSTIL (Vorgaben für Unteraufgaben)\n${KOMPOSITIONSSTIL}\n\n`;
+        if (ideenPool.length) {
+          p += '## PASSENDE IDEEN AUS DEM IDEENPOOL\n';
+          ideenPool.slice(0, 15).forEach(idea => { p += `- ${idea}\n`; });
+          p += '\n';
+        }
+        p += `Antworte NUR mit reinem JSON:
+{"aufgabenstellung":null,"unteraufgaben":[
+  {"nr":"${aufg.nr}a","titel":null,"text":"Aufgabentext","punkte":3,"schwierigkeit":"○","typ":"Rechnung"},
+  {"nr":"${aufg.nr}b","titel":"Titel","text":"Aufgabentext","punkte":4,"schwierigkeit":"◒","typ":"Sachaufgabe"}
+]}
+Schwierigkeit: "○" einfach · "◒" mittel · "●" schwer
+titel: null wenn Typ "Rechnung", sonst kurzer Titel
+Unteraufgaben rechnerisch unabhängig (neue Zahlen).`;
+        const raw = await callKI([{ type: 'text', text: p }], 3000);
+        const parsed = parseKI(raw);
+        pr.genAufgaben.push({
+          nr: aufg.nr, titel: aufg.titel, zeitMinuten: aufg.zeitMinuten, gesamtpunkte: aufg.gesamtpunkte,
+          aufgabenstellung: parsed.aufgabenstellung || null,
+          unteraufgaben: parsed.unteraufgaben || [],
+        });
+        savePruefungsDB();
+        renderGenAufgaben();
+      }
+      statusEl.textContent = '✓ ' + pr.genAufgaben.length + ' Aufgaben ausgearbeitet';
+    } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
+    ausarbeitenBtn.disabled = false; strukturBtn.disabled = false;
   };
 
   return div;

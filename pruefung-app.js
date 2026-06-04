@@ -1377,11 +1377,19 @@ function buildAufgabenGenTab(pr) {
               row.nextSibling?.classList?.contains('regen-prev') && row.nextSibling.remove();
               regenBtn.textContent = '⏳'; regenBtn.disabled = true;
               try {
-                const p = `Du planst Aufgabe "${fs.titel}" einer Klassenarbeit (${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} P).
-Anforderungsbereich: "${AB_KEY_MAP[afbKey]?.title || afbKey}"
-Aktuelle Version dieser Teilaufgabe: "${lineRest}"
-Generiere eine ALTERNATIVE Version. Gleiches Lernziel, aber besser passend zum Anforderungsbereich.
-Antworte NUR mit einer Zeile:
+                const p = `Du planst Aufgabe "${fs.titel}" für eine Klassenarbeit.
+Anforderungsbereich dieser Teilaufgabe: "${AB_KEY_MAP[afbKey]?.title || afbKey}"
+
+Die Lehrerin hat folgende Anforderung notiert:
+"${lineRest}"
+
+Generiere eine konkrete Teilaufgabe, die GENAU dieser Anforderung entspricht.
+Wichtig:
+- Enthält die Anforderung Schwierigkeitshinweise (z.B. "schwieriger als X", "weniger geläufig als Y"), halte dich STRIKT daran.
+- Orientiere dich am Anforderungsbereich "${AB_KEY_MAP[afbKey]?.title || afbKey}" — nicht einfacher, nicht schwieriger.
+- Keine Erklärungen, nur die eine Zeile.
+
+Antworte NUR mit:
 ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
                 const raw = await callKI([{ type: 'text', text: p }], 500);
                 const suggestion = raw.replace(/^```.*\n?/m, '').replace(/```\s*$/m, '').trim().split('\n')[0];

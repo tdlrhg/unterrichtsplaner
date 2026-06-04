@@ -1342,6 +1342,56 @@ function buildAufgabenGenTab(pr) {
             preview.onclick = () => { preview.style.display = 'none'; inp.style.display = ''; inp.focus(); inp.select(); };
             row.appendChild(preview);
             row.appendChild(inp);
+
+            // ↺ Alternativvorschlag generieren
+            const regenBtn = mk('button', '');
+            regenBtn.textContent = '↺';
+            regenBtn.title = 'Alternative auf gleichem Niveau vorschlagen';
+            regenBtn.style.cssText = 'border:none;background:none;color:var(--pri);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;opacity:0;transition:opacity .1s;';
+            regenBtn.onclick = async () => {
+              // Vorhandene Vorschau entfernen
+              row.nextSibling?.classList?.contains('regen-prev') && row.nextSibling.remove();
+              regenBtn.textContent = '⏳'; regenBtn.disabled = true;
+              try {
+                const p = `Du planst Aufgabe "${fs.titel}" einer Klassenarbeit (${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} P).
+Anforderungsbereich: "${AB_KEY_MAP[afbKey]?.title || afbKey}"
+Aktuelle Version dieser Teilaufgabe: "${lineRest}"
+Generiere eine ALTERNATIVE Version. Gleiches Lernziel, aber besser passend zum Anforderungsbereich.
+Antworte NUR mit einer Zeile:
+${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
+                const raw = await callKI([{ type: 'text', text: p }], 500);
+                const suggestion = raw.replace(/^```.*\n?/m, '').replace(/```\s*$/m, '').trim().split('\n')[0];
+
+                // Vorschau-Zeile
+                const prevRow = mk('div', 'regen-prev');
+                prevRow.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 6px 4px 28px;background:rgba(124,58,237,.06);border-radius:6px;margin:2px 0;';
+                const prevCfg = AB_KEY_MAP[suggestion.split('|')[0]?.trim()] || AB_KEY_MAP[afbKey];
+                const pb = tx('div', '', prevCfg.letter);
+                pb.style.cssText = `width:16px;height:16px;border-radius:50%;background:${prevCfg.color};color:#fff;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;`;
+                prevRow.appendChild(pb);
+                const pipeI = suggestion.indexOf('|');
+                const suggRest = pipeI > -1 ? suggestion.slice(pipeI + 1) : suggestion;
+                const pt = tx('span', '', suggRest); pt.style.cssText = 'flex:1;font-size:12px;color:var(--tx2);font-style:italic;';
+                prevRow.appendChild(pt);
+                const acceptBtn = mk('button', ''); acceptBtn.textContent = '✓ Übernehmen';
+                acceptBtn.style.cssText = 'border:none;background:#16a34a;color:#fff;cursor:pointer;font-size:11px;padding:2px 8px;border-radius:4px;flex-shrink:0;';
+                acceptBtn.onclick = () => { const ls = getLines(); ls[li] = suggestion; saveLines(ls); prevRow.remove(); buildList(); };
+                prevRow.appendChild(acceptBtn);
+                const rejectBtn = mk('button', ''); rejectBtn.textContent = '✗';
+                rejectBtn.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:13px;padding:2px 6px;';
+                rejectBtn.onclick = () => { prevRow.remove(); regenBtn.textContent = '↺'; regenBtn.disabled = false; };
+                prevRow.appendChild(rejectBtn);
+                row.after(prevRow);
+              } catch(e) {
+                const errDiv = mk('div', 'regen-prev');
+                errDiv.style.cssText = 'font-size:11px;color:#ef4444;padding:2px 28px;';
+                errDiv.textContent = '⚠ ' + e.message.slice(0, 80);
+                row.after(errDiv);
+                setTimeout(() => errDiv.remove(), 3000);
+              }
+              regenBtn.textContent = '↺'; regenBtn.disabled = false;
+            };
+            row._regenBtn = regenBtn; // für hover-handler unten
           } else {
             // Einfache Textzeile (Hinweis, Gesamtanzahl etc.)
             const bullet = tx('span', '', '–');
@@ -1364,9 +1414,10 @@ function buildAufgabenGenTab(pr) {
           const del = mk('button', '');
           del.textContent = '✕';
           del.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:2px 4px;flex-shrink:0;opacity:0;transition:opacity .1s;';
-          row.onmouseenter = () => del.style.opacity = '1';
-          row.onmouseleave = () => del.style.opacity = '0';
+          row.onmouseenter = () => { del.style.opacity = '1'; if (row._regenBtn) row._regenBtn.style.opacity = '1'; };
+          row.onmouseleave = () => { del.style.opacity = '0'; if (row._regenBtn) row._regenBtn.style.opacity = '0'; };
           del.onclick = () => { const ls = getLines(); ls.splice(li, 1); saveLines(ls); buildList(); };
+          if (row._regenBtn) row.appendChild(row._regenBtn);
           row.appendChild(del);
           listWrap.appendChild(row);
         });

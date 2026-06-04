@@ -958,11 +958,14 @@ Typen: "Rechnung" · "Sachaufgabe" · "Begründung" · "Multiple Choice" · "Dia
 Unteraufgaben sind thematisch verbunden, aber RECHNERISCH UNABHÄNGIG (eigene neue Zahlen).`;
 
       statusEl.textContent = '⏳ KI generiert Aufgaben…';
-      const raw = await callKI([{ type: 'text', text: prompt }], 6000);
+      const raw = await callKI([{ type: 'text', text: prompt }], 10000);
 
       let parsed;
       try { parsed = robustJsonParsePr(raw); }
-      catch (e) { throw new Error('KI-Antwort konnte nicht gelesen werden'); }
+      catch (e) {
+        const preview = raw ? raw.slice(0, 300).replace(/\n/g, ' ') : '(leer)';
+        throw new Error('JSON-Fehler. Antwort-Anfang: ' + preview);
+      }
 
       pr.genAufgaben = parsed.aufgaben || [];
       savePruefungsDB();

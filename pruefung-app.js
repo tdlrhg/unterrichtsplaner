@@ -879,6 +879,47 @@ function buildAufgabenGenTab(pr) {
   stilSec.appendChild(stilHint);
   panel4.appendChild(stilSec);
 
+  // ── AFB-Zielkorridore in Einstellungen ────────────────────────
+  const afbZielSec = mk('div', '');
+  afbZielSec.style.cssText = 'margin-top:24px;';
+  const afbZielHdr = tx('div', '', 'Zielkorridore Anforderungsbereiche');
+  afbZielHdr.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);margin-bottom:10px;';
+  afbZielSec.appendChild(afbZielHdr);
+
+  if (!pr.afbZiele) pr.afbZiele = { afb1: { min: 30, max: 50 }, afb2: { min: 35, max: 50 }, afb3: { min: 15, max: 25 } };
+
+  [
+    { key: 'afb1', label: 'AFB I', sub: 'Reproduktion + Leichte Anwendung', color: '#ca8a04' },
+    { key: 'afb2', label: 'AFB II', sub: 'Mittlere Anwendung', color: '#ea580c' },
+    { key: 'afb3', label: 'AFB III', sub: 'Transfer', color: '#dc2626' },
+  ].forEach(({ key, label, sub, color }) => {
+    const row = mk('div', '');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;';
+    const lbl = mk('div', '');
+    lbl.style.cssText = 'min-width:80px;';
+    lbl.appendChild(tx('span', '', label)).style || (lbl.lastChild.style.cssText = `font-size:13px;font-weight:700;color:${color};`);
+    lbl.appendChild(tx('div', '', sub)).style || (lbl.lastChild.style.cssText = 'font-size:11px;color:var(--tx3);');
+    row.appendChild(lbl);
+    const makeZielInp = (field) => {
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.min = 0; inp.max = 100; inp.step = 5;
+      inp.value = pr.afbZiele[key][field];
+      inp.style.cssText = 'width:54px;padding:4px 8px;border:1px solid var(--bord);border-radius:5px;background:var(--surf2);color:var(--tx1);font-size:13px;text-align:center;';
+      inp.onchange = () => { pr.afbZiele[key][field] = parseInt(inp.value) || 0; savePruefungsDB(); renderAFBBanner(); };
+      return inp;
+    };
+    row.appendChild(tx('span', '', 'Min'));
+    row.lastChild.style.cssText = 'font-size:12px;color:var(--tx3);';
+    row.appendChild(makeZielInp('min'));
+    row.appendChild(tx('span', '', '%  —  Max'));
+    row.lastChild.style.cssText = 'font-size:12px;color:var(--tx3);';
+    row.appendChild(makeZielInp('max'));
+    row.appendChild(tx('span', '', '%'));
+    row.lastChild.style.cssText = 'font-size:12px;color:var(--tx3);';
+    afbZielSec.appendChild(row);
+  });
+  panel4.appendChild(afbZielSec);
+
   const statusEl = mk('div', '');
   statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;margin:8px 0 12px;';
 
@@ -981,7 +1022,7 @@ function buildAufgabenGenTab(pr) {
       const arr = pr.strukturVorschlag;
       const [moved] = arr.splice(dragSrc, 1);
       arr.splice(index, 0, moved);
-      savePruefungsDB(); renderStruktur();
+      savePruefungsDB(); renderStruktur(); renderAFBBanner();
     };
   }
 
@@ -1003,7 +1044,7 @@ function buildAufgabenGenTab(pr) {
       const stempel = makeStempel(aufg.anforderung, key => {
         if (!aufg.anforderung) aufg.anforderung = {};
         aufg.anforderung[key] = aufg.anforderung[key] ? 0 : 1;
-        savePruefungsDB(); renderStruktur();
+        savePruefungsDB(); renderStruktur(); renderAFBBanner();
       });
       leftCol.appendChild(stempel);
       card.appendChild(leftCol);
@@ -1017,7 +1058,7 @@ function buildAufgabenGenTab(pr) {
       const spacer = mk('span', ''); spacer.style.flex = '1'; hrow.appendChild(spacer);
       const toggleBtn = btn(aufg._removed ? '+ Aufnehmen' : '✕', 'btn btn-ghost btn-xs');
       toggleBtn.title = aufg._removed ? 'Wieder aufnehmen' : 'Aufgabe streichen';
-      toggleBtn.onclick = () => { aufg._removed = !aufg._removed; savePruefungsDB(); renderStruktur(); };
+      toggleBtn.onclick = () => { aufg._removed = !aufg._removed; savePruefungsDB(); renderStruktur(); renderAFBBanner(); };
       hrow.appendChild(toggleBtn);
       rightCol.appendChild(hrow);
 
@@ -1046,7 +1087,7 @@ function buildAufgabenGenTab(pr) {
     });
     updateGesamt();
   }
-  renderStruktur();
+  renderStruktur(); renderAFBBanner();
   panel1.appendChild(gesamtEl);
 
   const btnRow1 = mk('div', ''); btnRow1.style.cssText = 'display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;margin-top:8px;';
@@ -1058,7 +1099,75 @@ function buildAufgabenGenTab(pr) {
   panel1.appendChild(btnRow1);
 
   // ── Panels in div einsetzen ───────────────────────────────────
+  // ── AFB-Auswertungsbalken (dauerhaft sichtbar) ────────────────
+  const afbBanner = mk('div', '');
+  afbBanner.style.cssText = 'margin-bottom:12px;';
+
+  function calcAFB() {
+    const t = { afb1: 0, afb2: 0, afb3: 0, total: 0 };
+    if (pr.genAufgaben.length) {
+      pr.genAufgaben.forEach(a => (a.unteraufgaben || []).forEach(ua => {
+        const p = ua.punkte || 0;
+        if (ua.anforderungsbereich === 'reproduktion' || ua.anforderungsbereich === 'leichteAnwendung') t.afb1 += p;
+        else if (ua.anforderungsbereich === 'mittlereAnwendung') t.afb2 += p;
+        else if (ua.anforderungsbereich === 'transfer') t.afb3 += p;
+        t.total += p;
+      }));
+    } else {
+      pr.strukturVorschlag.filter(a => !a._removed).forEach(a => {
+        const anf = a.anforderung || {};
+        t.afb1 += (anf.reproduktion || 0) + (anf.leichteAnwendung || 0);
+        t.afb2 += anf.mittlereAnwendung || 0;
+        t.afb3 += anf.transfer || 0;
+        t.total += a.gesamtpunkte || 0;
+      });
+    }
+    return t;
+  }
+
+  function renderAFBBanner() {
+    afbBanner.innerHTML = '';
+    const t = calcAFB();
+    if (!t.total) return;
+    const z = pr.afbZiele || { afb1: { min: 30, max: 50 }, afb2: { min: 35, max: 50 }, afb3: { min: 15, max: 25 } };
+    const rows = [
+      { key: 'afb1', label: 'AFB I',   color: '#ca8a04', punkte: t.afb1 },
+      { key: 'afb2', label: 'AFB II',  color: '#ea580c', punkte: t.afb2 },
+      { key: 'afb3', label: 'AFB III', color: '#dc2626', punkte: t.afb3 },
+    ];
+    const grid = mk('div', '');
+    grid.style.cssText = 'display:grid;grid-template-columns:52px 1fr 44px 80px;gap:4px 8px;align-items:center;padding:10px 14px;background:var(--surf2);border-radius:8px;border:1px solid var(--bord);';
+    rows.forEach(({ key, label, color, punkte }) => {
+      const pct = t.total ? Math.round(punkte / t.total * 100) : 0;
+      const ziel = z[key] || { min: 0, max: 100 };
+      const ok = pct >= ziel.min && pct <= ziel.max;
+      const lbl = tx('span', '', label);
+      lbl.style.cssText = `font-size:12px;font-weight:700;color:${color};`;
+      grid.appendChild(lbl);
+      const barWrap = mk('div', '');
+      barWrap.style.cssText = 'position:relative;height:10px;background:var(--bord);border-radius:5px;overflow:visible;';
+      // Zielkorridor als heller Hintergrundbereich
+      const zielBar = mk('div', '');
+      zielBar.style.cssText = `position:absolute;left:${ziel.min}%;width:${ziel.max - ziel.min}%;height:100%;background:${color}22;border-radius:5px;`;
+      barWrap.appendChild(zielBar);
+      const fillBar = mk('div', '');
+      fillBar.style.cssText = `position:absolute;left:0;width:${Math.min(pct, 100)}%;height:100%;background:${ok ? color : '#ef4444'};border-radius:5px;transition:width .3s;`;
+      barWrap.appendChild(fillBar);
+      grid.appendChild(barWrap);
+      const pctEl = tx('span', '', pct + ' %');
+      pctEl.style.cssText = `font-size:12px;font-weight:700;color:${ok ? color : '#ef4444'};text-align:right;`;
+      grid.appendChild(pctEl);
+      const hint = tx('span', '', ok ? '✓' : (pct < ziel.min ? '↑ ' + ziel.min + '%' : '↓ ' + ziel.max + '%'));
+      hint.style.cssText = `font-size:11px;color:${ok ? '#16a34a' : '#ef4444'};`;
+      grid.appendChild(hint);
+    });
+    afbBanner.appendChild(grid);
+  }
+
+  renderAFBBanner();
+
   div.appendChild(statusEl);
+  div.appendChild(afbBanner);
   div.appendChild(subTabBar);
   div.appendChild(panel1);
   div.appendChild(panel2);
@@ -1107,17 +1216,23 @@ function buildAufgabenGenTab(pr) {
       titel.style.cssText = 'font-size:14px;font-weight:700;color:var(--tx1);flex:1;';
       head.appendChild(titel);
 
-      // Zeit- und Punkte-Chips
-      if (fs.zeitMinuten) {
-        const zt = tx('span', '', '⏱ ' + fs.zeitMinuten + ' Min');
-        zt.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(37,99,235,.1);color:#2563eb;flex-shrink:0;';
-        head.appendChild(zt);
-      }
-      if (fs.gesamtpunkte) {
-        const pt = tx('span', '', fs.gesamtpunkte + ' P');
-        pt.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(124,58,237,.12);color:var(--pri);flex-shrink:0;';
-        head.appendChild(pt);
-      }
+      // Zeit + Punkte editierbar
+      const makeFeinSlider = (icon, unit, val, min, max, color, onChange) => {
+        const wrap = mk('div', '');
+        wrap.style.cssText = 'display:flex;align-items:center;gap:4px;flex-shrink:0;';
+        const valEl = tx('span', '', icon + ' ' + val + ' ' + unit);
+        valEl.style.cssText = `font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${color}1a;color:${color};cursor:pointer;`;
+        const slider = document.createElement('input'); slider.type = 'range';
+        slider.min = min; slider.max = max; slider.step = 1; slider.value = val;
+        slider.style.cssText = `width:70px;accent-color:${color};height:3px;display:none;`;
+        valEl.onclick = () => { slider.style.display = slider.style.display ? '' : 'none'; };
+        slider.oninput = () => { valEl.textContent = icon + ' ' + slider.value + ' ' + unit; onChange(parseInt(slider.value)); renderAFBBanner(); };
+        slider.onblur = () => { slider.style.display = 'none'; };
+        wrap.appendChild(valEl); wrap.appendChild(slider);
+        return wrap;
+      };
+      head.appendChild(makeFeinSlider('⏱', 'Min', fs.zeitMinuten || 5, 1, 45, '#2563eb', v => { fs.zeitMinuten = v; if (sv) sv.zeitMinuten = v; savePruefungsDB(); }));
+      head.appendChild(makeFeinSlider('', 'P', fs.gesamtpunkte || 8, 2, 30, '#7c3aed', v => { fs.gesamtpunkte = v; if (sv) sv.gesamtpunkte = v; savePruefungsDB(); }));
       card.appendChild(head);
 
       // Spezifikation als editierbare Stichpunktliste
@@ -1218,7 +1333,7 @@ function buildAufgabenGenTab(pr) {
       feinWrap.appendChild(card);
     });
   }
-  renderFeinstruktur();
+  renderFeinstruktur(); renderAFBBanner();
 
   const btnRow2 = mk('div', ''); btnRow2.style.cssText = 'display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;';
   const zuAufgBtn = btn('→ Aufgaben generieren', 'btn btn-sm');
@@ -1332,7 +1447,7 @@ function buildAufgabenGenTab(pr) {
       aufgabenWrap.appendChild(card);
     });
   }
-  renderGenAufgaben();
+  renderGenAufgaben(); renderAFBBanner();
 
   // ── Handler: Stufe 1 — Grobstruktur ──────────────────────────
   strukturBtn.onclick = async () => {
@@ -1372,7 +1487,7 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
       pr.feinstruktur = []; pr.genAufgaben = [];
       switchSubTab(1);
       savePruefungsDB();
-      renderStruktur();
+      renderStruktur(); renderAFBBanner();
       zuFeinBtn.style.display = '';
       const gesamtzeit = pr.strukturVorschlag.reduce((s, a) => s + (a.zeitMinuten || 0), 0);
       const zeitHinweis = gesamtzeit ? ` (${gesamtzeit} Min. gesamt)` : '';
@@ -1419,7 +1534,7 @@ Antworte NUR mit reinem JSON:
           spezifikation: parsed.spezifikation || '',
         });
         savePruefungsDB();
-        renderFeinstruktur();
+        renderFeinstruktur(); renderAFBBanner();
       }
       statusEl.textContent = '✓ Feinstruktur fertig. Korrigiere wenn nötig, dann → Aufgaben generieren.';
     } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
@@ -1456,7 +1571,7 @@ Unteraufgaben rechnerisch unabhängig (neue Zahlen).`;
           unteraufgaben: parsed.unteraufgaben || [],
         });
         savePruefungsDB();
-        renderGenAufgaben();
+        renderGenAufgaben(); renderAFBBanner();
       }
       statusEl.textContent = '✓ ' + pr.genAufgaben.length + ' Aufgaben generiert';
     } catch(e) { statusEl.textContent = '⚠ ' + e.message; }

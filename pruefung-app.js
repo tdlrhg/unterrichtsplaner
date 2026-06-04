@@ -945,7 +945,7 @@ function buildAufgabenGenTab(pr) {
       }
 
       prompt += `## FORMAT
-Antworte NUR mit validem JSON:
+Antworte NUR mit reinem JSON — kein Markdown, keine Erklärungen, kein \`\`\`json:
 {"aufgaben":[
   {"nr":1,"thema":"Thema","aufgabenstellung":"Gemeinsame Einleitung oder null","gesamtpunkte":8,"unteraufgaben":[
     {"nr":"1a","text":"Aufgabentext","punkte":2,"schwierigkeit":"○","typ":"Rechnung"},
@@ -960,10 +960,13 @@ Unteraufgaben sind thematisch verbunden, aber RECHNERISCH UNABHÄNGIG (eigene ne
       statusEl.textContent = '⏳ KI generiert Aufgaben…';
       const raw = await callKI([{ type: 'text', text: prompt }], 10000);
 
+      // Markdown-Codeblöcke entfernen (```json ... ```)
+      const cleaned = raw.replace(/^```[a-z]*\n?/m, '').replace(/```\s*$/m, '').trim();
+
       let parsed;
-      try { parsed = robustJsonParsePr(raw); }
+      try { parsed = robustJsonParsePr(cleaned); }
       catch (e) {
-        const preview = raw ? raw.slice(0, 300).replace(/\n/g, ' ') : '(leer)';
+        const preview = cleaned ? cleaned.slice(0, 300).replace(/\n/g, ' ') : '(leer)';
         throw new Error('JSON-Fehler. Antwort-Anfang: ' + preview);
       }
 

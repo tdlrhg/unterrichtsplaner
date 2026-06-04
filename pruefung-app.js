@@ -1078,13 +1078,24 @@ function buildAufgabenGenTab(pr) {
 
   function renderFeinstruktur() {
     feinWrap.innerHTML = '';
+    const zuBearbeiten = pr.strukturVorschlag.filter(a => !a._removed);
     pr.feinstruktur.forEach((fs, idx) => {
+      const sv = zuBearbeiten[idx];
       const card = mk('div', '');
       card.style.cssText = 'border-radius:10px;background:var(--surf2);overflow:hidden;';
 
       // Kopfzeile
       const head = mk('div', '');
       head.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(124,58,237,.06);border-bottom:1px solid var(--bord);';
+
+      // Anforderungsbereich-Stempel (read-only, aus Stufe 1)
+      if (sv?.anforderung) {
+        const stempelWrap = makeStempel(sv.anforderung);
+        stempelWrap.style.flexDirection = 'row';
+        stempelWrap.style.gap = '3px';
+        stempelWrap.style.marginRight = '2px';
+        head.appendChild(stempelWrap);
+      }
 
       // Nummer-Badge
       const nrBadge = tx('div', '', String(fs.nr));

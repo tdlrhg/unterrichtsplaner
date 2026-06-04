@@ -1233,10 +1233,11 @@ function buildAufgabenGenTab(pr) {
   aufgabenWrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
   stufe3Sec.appendChild(aufgabenWrap);
 
-  const SC = {
-    '○': { color: '#16a34a', label: 'Reproduktion' },
-    '◒': { color: '#2563eb', label: 'Anwendung' },
-    '●': { color: '#9d174d', label: 'Transfer' },
+  const AB_KEY_MAP = {
+    reproduktion:      { letter: 'R', color: '#16a34a', title: 'Reproduktion' },
+    leichteAnwendung:  { letter: 'A', color: '#ca8a04', title: 'Leichte Anwendung' },
+    mittlereAnwendung: { letter: 'A', color: '#ea580c', title: 'Mittlere Anwendung' },
+    transfer:          { letter: 'T', color: '#dc2626', title: 'Transfer' },
   };
   function renderGenAufgaben() {
     aufgabenWrap.innerHTML = '';
@@ -1278,11 +1279,11 @@ function buildAufgabenGenTab(pr) {
         const urow = mk('div', '');
         urow.style.cssText = 'display:flex;gap:8px;align-items:flex-start;padding:7px 14px;border-top:1px solid var(--bord);font-size:13px;';
 
-        // Schwierigkeits-Badge
-        const sc = SC[ua.schwierigkeit];
-        const badge = tx('div', '', ua.schwierigkeit || '·');
-        badge.title = sc?.label || '';
-        badge.style.cssText = `width:20px;height:20px;border-radius:50%;background:${sc ? sc.color + '22' : 'var(--bord)'};color:${sc?.color || 'var(--tx3)'};font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;`;
+        // Anforderungsbereich-Badge (R/A/A/T)
+        const abCfg = AB_KEY_MAP[ua.anforderungsbereich];
+        const badge = tx('div', '', abCfg ? abCfg.letter : '·');
+        badge.title = abCfg?.title || '';
+        badge.style.cssText = `width:20px;height:20px;border-radius:50%;background:${abCfg ? abCfg.color + '33' : 'var(--bord)'};color:${abCfg?.color || 'var(--tx3)'};font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;`;
         urow.appendChild(badge);
 
         // Nr + Text
@@ -1298,7 +1299,7 @@ function buildAufgabenGenTab(pr) {
         // Punkte
         if (ua.punkte) {
           const pu = tx('span', '', ua.punkte + ' P');
-          pu.style.cssText = `flex-shrink:0;font-size:12px;font-weight:700;color:${sc?.color || 'var(--tx3)'};padding-top:1px;`;
+          pu.style.cssText = `flex-shrink:0;font-size:12px;font-weight:700;color:${abCfg?.color || 'var(--tx3)'};padding-top:1px;`;
           urow.appendChild(pu);
         }
         card.appendChild(urow);
@@ -1307,21 +1308,22 @@ function buildAufgabenGenTab(pr) {
       // Auswertungszeile Punkte nach Schwierigkeit
       const summary = {};
       uas.forEach(ua => {
-        if (ua.schwierigkeit && ua.punkte) {
-          summary[ua.schwierigkeit] = (summary[ua.schwierigkeit] || 0) + ua.punkte;
+        if (ua.anforderungsbereich && ua.punkte) {
+          summary[ua.anforderungsbereich] = (summary[ua.anforderungsbereich] || 0) + ua.punkte;
         }
       });
       if (Object.keys(summary).length) {
         const foot = mk('div', '');
-        foot.style.cssText = 'display:flex;gap:10px;align-items:center;padding:6px 14px;border-top:1px solid var(--bord);background:rgba(0,0,0,.02);flex-wrap:wrap;';
+        foot.style.cssText = 'display:flex;gap:8px;align-items:center;padding:6px 14px;border-top:1px solid var(--bord);background:rgba(0,0,0,.02);flex-wrap:wrap;';
         const lbl = tx('span', '', 'Verteilung:');
         lbl.style.cssText = 'font-size:11px;color:var(--tx3);';
         foot.appendChild(lbl);
-        ['○','◒','●'].forEach(sym => {
-          if (!summary[sym]) return;
-          const chip = tx('span', '', sym + ' ' + summary[sym] + ' P');
-          chip.title = SC[sym]?.label || '';
-          chip.style.cssText = `font-size:12px;font-weight:700;padding:1px 8px;border-radius:20px;background:${SC[sym].color}22;color:${SC[sym].color};`;
+        ['reproduktion','leichteAnwendung','mittlereAnwendung','transfer'].forEach(key => {
+          if (!summary[key]) return;
+          const cfg = AB_KEY_MAP[key];
+          const chip = tx('span', '', cfg.letter + ' ' + summary[key] + ' P');
+          chip.title = cfg.title;
+          chip.style.cssText = `font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px;background:${cfg.color}22;color:${cfg.color};`;
           foot.appendChild(chip);
         });
         card.appendChild(foot);
@@ -1440,10 +1442,10 @@ Antworte NUR mit reinem JSON:
         p += `## WICHTIG\n- Unteraufgaben rechnerisch unabhängig (neue Zahlen pro Unteraufgabe)\n- Progression leicht→schwer innerhalb der Aufgabe\n- Konkrete Zahlen und Texte — kein Platzhalter\n\n`;
         p += `Antworte NUR mit reinem JSON:
 {"aufgabenstellung":null,"unteraufgaben":[
-  {"nr":"${fs.nr}a","titel":null,"text":"konkreter Aufgabentext mit Zahlen","punkte":3,"schwierigkeit":"○","typ":"Rechnung"},
-  {"nr":"${fs.nr}b","titel":"Kurzer Titel","text":"konkreter Aufgabentext","punkte":4,"schwierigkeit":"◒","typ":"Sachaufgabe"}
+  {"nr":"${fs.nr}a","titel":null,"text":"konkreter Aufgabentext mit Zahlen","punkte":3,"anforderungsbereich":"reproduktion","typ":"Rechnung"},
+  {"nr":"${fs.nr}b","titel":"Kurzer Titel","text":"konkreter Aufgabentext","punkte":4,"anforderungsbereich":"leichteAnwendung","typ":"Sachaufgabe"}
 ]}
-Schwierigkeit: "○" einfach/Reproduktion · "◒" mittel/Anwendung · "●" schwer/Transfer
+anforderungsbereich: "reproduktion" | "leichteAnwendung" | "mittlereAnwendung" | "transfer"
 titel: null wenn Typ "Rechnung", sonst kurzer beschreibender Titel
 Unteraufgaben rechnerisch unabhängig (neue Zahlen).`;
         const raw = await callKI([{ type: 'text', text: p }], 3000);

@@ -36,19 +36,21 @@ function robustJsonParsePr(raw) {
   const extracted = extractTop(raw);
   if (!extracted) throw new Error('Kein JSON in der Antwort');
   let jsonStr = extracted;
-  // Offenen String schließen (falls Antwort mitten in einem String abgeschnitten wurde)
-  let inStr2 = false, esc2 = false;
-  for (let i = 0; i < jsonStr.length; i++) {
-    const c = jsonStr[i];
-    if (esc2) { esc2 = false; continue; }
-    if (c === '\\' && inStr2) { esc2 = true; continue; }
-    if (c === '"') inStr2 = !inStr2;
+  // Stack-basierte Reparatur: offene Strings und Klammern in korrekter Reihenfolge schließen
+  { let inS = false, esc = false, stack = [];
+    for (let i = 0; i < jsonStr.length; i++) {
+      const c = jsonStr[i];
+      if (esc) { esc = false; continue; }
+      if (c === '\\' && inS) { esc = true; continue; }
+      if (c === '"') { inS = !inS; continue; }
+      if (inS) continue;
+      if (c === '{') stack.push('}');
+      else if (c === '[') stack.push(']');
+      else if ((c === '}' || c === ']') && stack.length && stack[stack.length-1] === c) stack.pop();
+    }
+    if (inS) jsonStr += '"'; // offenen String schließen
+    jsonStr += stack.reverse().join(''); // Klammern in korrekter Reihenfolge schließen
   }
-  if (inStr2) jsonStr += '"'; // offenen String schließen
-  // Offene Klammern schließen
-  const opens = (jsonStr.match(/\[/g)||[]).length - (jsonStr.match(/\]/g)||[]).length;
-  const opensCurl = (jsonStr.match(/\{/g)||[]).length - (jsonStr.match(/\}/g)||[]).length;
-  jsonStr += ']'.repeat(Math.max(0,opens)) + '}'.repeat(Math.max(0,opensCurl));
   jsonStr = repairJsonStringsPr(jsonStr);
   try { return JSON.parse(jsonStr); } catch(e) {
     const items = [];

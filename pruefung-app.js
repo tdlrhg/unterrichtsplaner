@@ -1402,7 +1402,7 @@ Antworte NUR mit reinem JSON:
     updateGesamt();
   }
   renderStruktur();
-  panel1.appendChild(gesamtEl);
+  // gesamtEl jetzt in renderAFBBanner oben
 
   const btnRow1 = mk('div', ''); btnRow1.style.cssText = 'display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;margin-top:8px;';
   const strukturBtn = btn('✨ Grobstruktur vorschlagen', 'btn btn-pri btn-sm');
@@ -1532,6 +1532,23 @@ Antworte NUR mit reinem JSON:
       grid.appendChild(hint);
     });
     afbBanner.appendChild(grid);
+
+    // Zeit/Punkte-Zeile
+    const aktiv = pr.strukturVorschlag.filter(a => !a._removed);
+    const zeitGes = aktiv.reduce((s, a) => s + (a.zeitMinuten || 0), 0);
+    const pktGes  = aktiv.reduce((s, a) => s + (a.gesamtpunkte || 0), 0);
+    if (zeitGes || pktGes) {
+      const zMin = pr.dauerVon || 0, zMax = pr.dauerBis || pr.dauerVon || 999;
+      const zeitOk = !zMin || (zeitGes >= zMin && zeitGes <= zMax);
+      const row2 = mk('div', '');
+      row2.style.cssText = 'display:flex;gap:12px;align-items:center;padding:6px 14px 2px;flex-wrap:wrap;';
+      const zeitChip = tx('span', '', `⏱ ${zeitGes} Min${zMin ? ` · Ziel ${zMin}${zMax !== zMin ? '–'+zMax : ''} Min` : ''}`);
+      zeitChip.style.cssText = `font-size:12px;font-weight:600;color:${zeitOk ? '#2563eb' : '#ef4444'};`;
+      const pktChip = tx('span', '', `${pktGes} P gesamt`);
+      pktChip.style.cssText = 'font-size:12px;font-weight:600;color:var(--pri);';
+      row2.appendChild(zeitChip); row2.appendChild(pktChip);
+      afbBanner.appendChild(row2);
+    }
   }
 
   renderAFBBanner();

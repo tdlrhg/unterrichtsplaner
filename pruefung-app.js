@@ -1118,7 +1118,7 @@ function buildAufgabenGenTab(pr) {
         if (!line.includes('→')) return;
         const pipeIdx = line.indexOf('|');
         if (pipeIdx < 0) return;
-        const afbKey = line.slice(0, pipeIdx).trim();
+        const afbKey = line.slice(0, pipeIdx).trim().replace(/^[-–•]\s*/, '');
         if (!AB_KEY_MAP[afbKey]) return;
         const rest = line.slice(pipeIdx + 1);
         const lastPipe = rest.lastIndexOf('|');
@@ -1310,7 +1310,8 @@ function buildAufgabenGenTab(pr) {
       const updatePunkteSum = (listWrap) => {
         const sum = Array.from(listWrap.querySelectorAll('input[type=number]'))
           .reduce((s, inp) => s + (parseInt(inp.value) || 0), 0);
-        if (sum > 0) { pktValEl.textContent = sum + ' P'; pktSlider.value = sum; fs.gesamtpunkte = sum; if (sv) sv.gesamtpunkte = sum; savePruefungsDB(); renderAFBBanner(); }
+        if (sum > 0) { pktValEl.textContent = sum + ' P'; pktSlider.value = Math.min(sum, 30); fs.gesamtpunkte = sum; if (sv) sv.gesamtpunkte = sum; savePruefungsDB(); }
+        renderAFBBanner();
       };
 
       // ↺ Diese Aufgabe einzeln neu generieren

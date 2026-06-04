@@ -884,29 +884,85 @@ function buildAufgabenGenTab(pr) {
   const strukturWrap = mk('div', ''); strukturWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:10px;';
   div.appendChild(strukturWrap);
 
+  const gesamtEl = mk('div', ''); // laufende Summe Zeit + Punkte
+  gesamtEl.style.cssText = 'font-size:12px;font-weight:600;padding:6px 0;min-height:18px;';
+
+  function updateGesamt() {
+    const aktiv = pr.strukturVorschlag.filter(a => !a._removed);
+    const zeit = aktiv.reduce((s, a) => s + (a.zeitMinuten || 0), 0);
+    const punkte = aktiv.reduce((s, a) => s + (a.gesamtpunkte || 0), 0);
+    const zMin = pr.dauerVon || 0, zMax = pr.dauerBis || pr.dauerVon || 999;
+    const zeitOk = zeit >= zMin && zeit <= zMax;
+    gesamtEl.textContent = `Gesamt: ${zeit} Min. · ${punkte} P`;
+    gesamtEl.style.color = zMin && !zeitOk ? '#dc2626' : '#16a34a';
+    if (zMin) gesamtEl.textContent += ` (Ziel: ${zMin}${zMax !== zMin ? '–'+zMax : ''} Min.)`;
+  }
+
+  // Anforderungsbereich-Farben
+  const AB_FARBEN = { reproduktion:'#16a34a', leichteAnwendung:'#2563eb', mittlereAnwendung:'#d97706', transfer:'#9d174d' };
+  const AB_LABEL  = { reproduktion:'Reproduktion', leichteAnwendung:'Leichte Anw.', mittlereAnwendung:'Mittlere Anw.', transfer:'Transfer' };
+
   function renderStruktur() {
     strukturWrap.innerHTML = '';
-    if (!pr.strukturVorschlag.length) return;
+    if (!pr.strukturVorschlag.length) { updateGesamt(); return; }
     pr.strukturVorschlag.forEach(aufg => {
-      const row = mk('div', '');
-      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;border:1px solid var(--bord);background:var(--surf2);' + (aufg._removed ? 'opacity:.35;' : '');
-      const left2 = mk('div', ''); left2.style.flex = '1';
-      const titEl = tx('div', '', 'Aufgabe ' + aufg.nr + ': ' + (aufg.titel || '–'));
-      titEl.style.cssText = 'font-weight:600;font-size:13px;';
-      left2.appendChild(titEl);
-      const meta2 = [aufg.zeitMinuten ? '⏱ ' + aufg.zeitMinuten + ' Min' : null, aufg.gesamtpunkte ? aufg.gesamtpunkte + ' P' : null, (aufg.typen||[]).join(', ')].filter(Boolean).join(' · ');
-      if (meta2) { const m = tx('div', '', meta2); m.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:2px;'; left2.appendChild(m); }
-      if (aufg.beschreibung) { const b = tx('div', '', aufg.beschreibung); b.style.cssText = 'font-size:12px;color:var(--tx2);margin-top:3px;font-style:italic;'; left2.appendChild(b); }
-      const toggleBtn = btn(aufg._removed ? '+ Aufnehmen' : '✕ Streichen', 'btn btn-ghost btn-xs');
-      toggleBtn.style.flexShrink = '0';
+      const card = mk('div', '');
+      card.style.cssText = 'border:1px solid var(--bord);border-radius:8px;background:var(--surf2);padding:10px 12px;' + (aufg._removed ? 'opacity:.35;' : '');
+
+      // Titelzeile + Streichen-Button
+      const hrow = mk('div', ''); hrow.style.cssText = 'display:flex;align-items:baseline;gap:8px;margin-bottom:4px;';
+      const titEl = tx('strong', '', 'Aufgabe ' + aufg.nr + ': ' + (aufg.titel || '–'));
+      hrow.appendChild(titEl);
+      const spacer = mk('span', ''); spacer.style.flex = '1'; hrow.appendChild(spacer);
+      const toggleBtn = btn(aufg._removed ? '+ Aufnehmen' : '✕', 'btn btn-ghost btn-xs');
+      toggleBtn.title = aufg._removed ? 'Wieder aufnehmen' : 'Aufgabe streichen';
       toggleBtn.onclick = () => { aufg._removed = !aufg._removed; savePruefungsDB(); renderStruktur(); };
-      row.appendChild(left2); row.appendChild(toggleBtn);
-      strukturWrap.appendChild(row);
+      hrow.appendChild(toggleBtn);
+      card.appendChild(hrow);
+
+      // Beschreibung
+      if (aufg.beschreibung) { const b = tx('div', '', aufg.beschreibung); b.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;margin-bottom:8px;'; card.appendChild(b); }
+
+      // Anforderungsbereiche (Balken)
+      const anf = aufg.anforderung;
+      if (anf) {
+        const total = Object.values(anf).reduce((s, v) => s + (v || 0), 0);
+        if (total > 0) {
+          const bar = mk('div', ''); bar.style.cssText = 'display:flex;height:6px;border-radius:3px;overflow:hidden;margin-bottom:4px;gap:1px;';
+          const legend = mk('div', ''); legend.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;';
+          Object.entries(anf).forEach(([k, v]) => {
+            if (!v) return;
+            const seg = mk('div', ''); seg.style.cssText = `flex:${v};background:${AB_FARBEN[k]||'#999'};`; bar.appendChild(seg);
+            const leg = tx('span', '', AB_LABEL[k] + ' ' + v + 'P'); leg.style.cssText = `font-size:10px;color:${AB_FARBEN[k]||'#999'};`; legend.appendChild(leg);
+          });
+          card.appendChild(bar); card.appendChild(legend);
+        }
+      }
+
+      // Regler Zeit + Punkte
+      function makeSlider(label, val, min, max, step, onChange) {
+        const wrap = mk('div', ''); wrap.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:4px;';
+        wrap.appendChild(tx('span', '', label)).style || (wrap.lastChild.style.cssText = 'font-size:11px;color:var(--tx3);width:38px;flex-shrink:0;');
+        const slider = document.createElement('input'); slider.type = 'range';
+        slider.min = min; slider.max = max; slider.step = step; slider.value = val;
+        slider.style.cssText = 'flex:1;accent-color:var(--pri);height:4px;cursor:pointer;';
+        const valEl = tx('span', '', val + (label.includes('Min') ? ' Min' : ' P'));
+        valEl.style.cssText = 'font-size:12px;font-weight:600;width:42px;text-align:right;flex-shrink:0;';
+        slider.oninput = () => { const n = parseInt(slider.value); valEl.textContent = n + (label.includes('Min') ? ' Min' : ' P'); onChange(n); updateGesamt(); };
+        wrap.appendChild(slider); wrap.appendChild(valEl);
+        return wrap;
+      }
+      card.appendChild(makeSlider('⏱ Zeit', aufg.zeitMinuten || 5, 1, 30, 1, v => { aufg.zeitMinuten = v; savePruefungsDB(); }));
+      card.appendChild(makeSlider('Punkte', aufg.gesamtpunkte || 8, 2, 25, 1, v => { aufg.gesamtpunkte = v; savePruefungsDB(); }));
+
+      strukturWrap.appendChild(card);
     });
+    updateGesamt();
   }
   renderStruktur();
+  div.appendChild(gesamtEl);
 
-  const btnRow1 = mk('div', ''); btnRow1.style.cssText = 'display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;';
+  const btnRow1 = mk('div', ''); btnRow1.style.cssText = 'display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;margin-top:8px;';
   const strukturBtn = btn('✨ Grobstruktur vorschlagen', 'btn btn-pri btn-sm');
   btnRow1.appendChild(strukturBtn);
   const zuFeinBtn = btn('→ Feinstruktur vorschlagen', 'btn btn-sm');
@@ -1022,8 +1078,11 @@ function buildAufgabenGenTab(pr) {
       if (ideenPool.length) { p += '## IDEENPOOL (Themen)\n'; ideenPool.slice(0,20).forEach(idea => { p += `- ${idea}\n`; }); p += '\n'; }
       p += `Antworte NUR mit reinem JSON:
 {"hauptaufgaben":[
-  {"nr":1,"titel":"Kurzer Titel","beschreibung":"Was Schüler hier tun (1 Satz)","zeitMinuten":10,"gesamtpunkte":12,"typen":["Rechnung"]}
-]}`;
+  {"nr":1,"titel":"Kurzer Titel","beschreibung":"Was Schüler hier tun (1 Satz)","zeitMinuten":8,"gesamtpunkte":10,"typen":["Rechnung","Multiple Choice"],
+   "anforderung":{"reproduktion":4,"leichteAnwendung":4,"mittlereAnwendung":2,"transfer":0}}
+]}
+anforderung: Punktverteilung auf vier Bereiche (Summe = gesamtpunkte, 0 wenn nicht vorhanden):
+reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
       const raw = await callKI([{ type: 'text', text: p }], 2000);
       const parsed = parseKI(raw);
       pr.strukturVorschlag = (parsed.hauptaufgaben || []).map(a => ({ ...a, _removed: false }));

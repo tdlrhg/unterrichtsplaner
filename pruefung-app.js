@@ -1612,10 +1612,9 @@ Antworte NUR mit reinem JSON:
         return wrap;
       };
       head.appendChild(makeFeinSlider('⏱', 'Min', fs.zeitMinuten || 5, 1, 45, '#2563eb', feinLocked, v => {
-        syncTaskAcrossViews(fs.taskId, { zeitMinuten: v });
+        fs.zeitMinuten = v; // nur Feinstruktur, kein Rückschreiben in Grobstruktur
         savePruefungsDB();
-        renderStruktur();
-        renderGenAufgaben();
+        renderAFBBanner();
       }));
 
       // Punkte-Chip mit Update-Funktion
@@ -1629,11 +1628,9 @@ Antworte NUR mit reinem JSON:
       pktValEl.onclick = () => { if (!feinLocked) pktSlider.style.display = pktSlider.style.display ? '' : 'none'; };
       pktSlider.oninput = () => {
         const n = parseInt(pktSlider.value);
-        syncTaskAcrossViews(fs.taskId, { gesamtpunkte: n });
+        fs.gesamtpunkte = n; // nur Feinstruktur, kein Rückschreiben in Grobstruktur
         pktValEl.textContent = n + ' P';
         savePruefungsDB();
-        renderStruktur();
-        renderGenAufgaben();
         renderAFBBanner();
       };
       pktSlider.onblur = () => { pktSlider.style.display = 'none'; };
@@ -1647,10 +1644,8 @@ Antworte NUR mit reinem JSON:
         if (sum > 0) {
           pktValEl.textContent = sum + ' P';
           pktSlider.value = Math.min(sum, 30);
-          syncTaskAcrossViews(fs.taskId, { gesamtpunkte: sum });
+          fs.gesamtpunkte = sum; // nur Feinstruktur
           savePruefungsDB();
-          renderStruktur();
-          renderGenAufgaben();
         }
         renderAFBBanner();
       };

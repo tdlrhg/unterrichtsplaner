@@ -828,6 +828,12 @@ function buildAufgabenGenTab(pr) {
         ga.taskId = fsMatch?.taskId || aktive[idx]?.taskId || uid();
       }
     });
+    pr.feinstruktur.forEach(fs => {
+      if (typeof fs._feinLocked !== 'boolean') fs._feinLocked = false;
+    });
+  }
+  function isTaskFeinLocked(taskId) {
+    return !!pr.feinstruktur.find(fs => fs.taskId === taskId)?._feinLocked;
   }
   function syncDerivedOrder() {
     const order = getActiveTasks().map(a => a.taskId);
@@ -1187,7 +1193,8 @@ Antworte NUR mit reinem JSON:
     if (!pr.strukturVorschlag.length) { updateGesamt(); return; }
     let posNr = 0;
     pr.strukturVorschlag.forEach((aufg, idx) => {
-      const taskUnlocked = !pr.grobstrukturLocked || !!aufg._grobUnlocked;
+      const feinLocked = isTaskFeinLocked(aufg.taskId);
+      const taskUnlocked = !feinLocked && (!pr.grobstrukturLocked || !!aufg._grobUnlocked);
       if (!aufg._removed) posNr++;
       const card = mk('div', '');
       card.style.cssText = 'border:1px solid var(--bord);border-radius:8px;background:var(--surf2);padding:10px 12px;display:flex;gap:0;' + (aufg._removed ? 'opacity:.35;' : '');
@@ -1215,9 +1222,10 @@ Antworte NUR mit reinem JSON:
       hrow.appendChild(tx('strong', '', 'Aufgabe ' + (aufg._removed ? '–' : posNr) + ': ' + (aufg.titel || '–')));
       const spacer = mk('span', ''); spacer.style.flex = '1'; hrow.appendChild(spacer);
       if (pr.grobstrukturLocked) {
-        const lockBtn = btn(taskUnlocked ? '🔓' : '🔒', 'btn btn-ghost btn-xs');
-        lockBtn.title = taskUnlocked ? 'Aufgabe wieder sperren' : 'Diese Aufgabe zum Überarbeiten entsperren';
+        const lockBtn = btn(feinLocked ? '🔐' : (taskUnlocked ? '🔓' : '🔒'), 'btn btn-ghost btn-xs');
+        lockBtn.title = feinLocked ? 'Feinstruktur dieser Aufgabe ist gesperrt' : (taskUnlocked ? 'Aufgabe wieder sperren' : 'Diese Aufgabe zum Überarbeiten entsperren');
         lockBtn.onclick = () => {
+          if (feinLocked) return;
           aufg._grobUnlocked = !aufg._grobUnlocked;
           if (!aufg._grobUnlocked) aufg._needsFeinUpdate = false;
           savePruefungsDB();
@@ -1240,7 +1248,7 @@ Antworte NUR mit reinem JSON:
 
       if (aufg.beschreibung) { const b = tx('div', '', aufg.beschreibung); b.style.cssText = 'font-size:12px;color:var(--tx2);font-style:italic;margin-bottom:8px;'; rightCol.appendChild(b); }
       if (pr.grobstrukturLocked && !taskUnlocked) {
-        const lockHint = tx('div', '', 'Grobstruktur gesperrt');
+        const lockHint = tx('div', '', feinLocked ? 'Feinstruktur gesperrt' : 'Grobstruktur gesperrt');
         lockHint.style.cssText = 'font-size:11px;color:var(--tx3);margin-bottom:8px;';
         rightCol.appendChild(lockHint);
       }
@@ -1471,6 +1479,7 @@ Antworte NUR mit reinem JSON:
     const zuBearbeiten = getActiveTasks();
     pr.feinstruktur.forEach((fs, idx) => {
       const sv = zuBearbeiten.find(a => a.taskId === fs.taskId) || zuBearbeiten[idx];
+      const feinLocked = !!fs._feinLocked;
       const card = mk('div', '');
       card.style.cssText = 'border-radius:10px;background:var(--surf2);overflow:hidden;';
 
@@ -1497,31 +1506,43 @@ Antworte NUR mit reinem JSON:
       titel.style.cssText = 'font-size:14px;font-weight:700;color:var(--tx1);flex:1;';
       head.appendChild(titel);
 
+      const feinLockBtn = btn(feinLocked ? '🔐' : '🔓', 'btn btn-ghost btn-xs');
+      feinLockBtn.title = feinLocked ? 'Diese Feinstruktur ist gesperrt' : 'Diese Feinstruktur sperren';
+      feinLockBtn.onclick = () => {
+        fs._feinLocked = !fs._feinLocked;
+        if (fs._feinLocked && sv) sv._grobUnlocked = false;
+        savePruefungsDB();
+        renderStruktur(); renderFeinstruktur();
+      };
+      head.appendChild(feinLockBtn);
+
       // Zeit + Punkte editierbar
-      const makeFeinSlider = (icon, unit, val, min, max, color, onChange) => {
+      const makeFeinSlider = (icon, unit, val, min, max, color, disabled, onChange) => {
         const wrap = mk('div', '');
         wrap.style.cssText = 'display:flex;align-items:center;gap:4px;flex-shrink:0;';
         const valEl = tx('span', '', icon + ' ' + val + ' ' + unit);
-        valEl.style.cssText = `font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${color}1a;color:${color};cursor:pointer;`;
+        valEl.style.cssText = `font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${color}1a;color:${color};cursor:${disabled ? 'default' : 'pointer'};${disabled ? 'opacity:.5;' : ''}`;
         const slider = document.createElement('input'); slider.type = 'range';
         slider.min = min; slider.max = max; slider.step = 1; slider.value = val;
+        slider.disabled = disabled;
         slider.style.cssText = `width:70px;accent-color:${color};height:3px;display:none;`;
-        valEl.onclick = () => { slider.style.display = slider.style.display ? '' : 'none'; };
+        valEl.onclick = () => { if (!disabled) slider.style.display = slider.style.display ? '' : 'none'; };
         slider.oninput = () => { valEl.textContent = icon + ' ' + slider.value + ' ' + unit; onChange(parseInt(slider.value)); renderAFBBanner(); };
         slider.onblur = () => { slider.style.display = 'none'; };
         wrap.appendChild(valEl); wrap.appendChild(slider);
         return wrap;
       };
-      head.appendChild(makeFeinSlider('⏱', 'Min', fs.zeitMinuten || 5, 1, 45, '#2563eb', v => { fs.zeitMinuten = v; if (sv) sv.zeitMinuten = v; savePruefungsDB(); }));
+      head.appendChild(makeFeinSlider('⏱', 'Min', fs.zeitMinuten || 5, 1, 45, '#2563eb', feinLocked, v => { fs.zeitMinuten = v; if (sv) sv.zeitMinuten = v; savePruefungsDB(); }));
 
       // Punkte-Chip mit Update-Funktion
       const pktWrap = mk('div', ''); pktWrap.style.cssText = 'display:flex;align-items:center;gap:4px;flex-shrink:0;';
       const pktValEl = tx('span', '', (fs.gesamtpunkte || 8) + ' P');
-      pktValEl.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#7c3aed1a;color:#7c3aed;cursor:pointer;';
+      pktValEl.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#7c3aed1a;color:#7c3aed;cursor:' + (feinLocked ? 'default' : 'pointer') + ';' + (feinLocked ? 'opacity:.5;' : '');
       const pktSlider = document.createElement('input'); pktSlider.type = 'range';
       pktSlider.min = 2; pktSlider.max = 30; pktSlider.step = 1; pktSlider.value = fs.gesamtpunkte || 8;
+      pktSlider.disabled = feinLocked;
       pktSlider.style.cssText = 'width:70px;accent-color:#7c3aed;height:3px;display:none;';
-      pktValEl.onclick = () => { pktSlider.style.display = pktSlider.style.display ? '' : 'none'; };
+      pktValEl.onclick = () => { if (!feinLocked) pktSlider.style.display = pktSlider.style.display ? '' : 'none'; };
       pktSlider.oninput = () => { fs.gesamtpunkte = parseInt(pktSlider.value); if (sv) sv.gesamtpunkte = fs.gesamtpunkte; pktValEl.textContent = fs.gesamtpunkte + ' P'; savePruefungsDB(); renderAFBBanner(); };
       pktSlider.onblur = () => { pktSlider.style.display = 'none'; };
       pktWrap.appendChild(pktValEl); pktWrap.appendChild(pktSlider);
@@ -1540,7 +1561,10 @@ Antworte NUR mit reinem JSON:
       cardRegenBtn.textContent = '↺';
       cardRegenBtn.title = 'Diese Aufgabe neu generieren';
       cardRegenBtn.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:2px 6px;flex-shrink:0;';
+      cardRegenBtn.disabled = feinLocked;
+      if (feinLocked) cardRegenBtn.style.opacity = '.45';
       cardRegenBtn.onclick = async () => {
+        if (feinLocked) return;
         cardRegenBtn.textContent = '⏳'; cardRegenBtn.disabled = true;
         const aufg = sv || {};
         const { lernziele, ideenPool } = buildKontext();
@@ -1596,6 +1620,12 @@ Antworte NUR mit reinem JSON:
       head.appendChild(cardGenBtn);
       card.appendChild(head);
 
+      if (feinLocked) {
+        const lockNote = tx('div', '', 'Diese Aufgabe ist in der Feinstruktur gesperrt. Ihre Vorgaben werden nicht mehr verändert.');
+        lockNote.style.cssText = 'font-size:11px;color:var(--tx3);padding:8px 14px 0;';
+        card.appendChild(lockNote);
+      }
+
       // Spezifikation als editierbare Stichpunktliste
       const listWrap = mk('div', '');
       listWrap.style.cssText = 'padding:8px 14px 4px;display:flex;flex-direction:column;gap:2px;';
@@ -1642,6 +1672,7 @@ Antworte NUR mit reinem JSON:
             badge2.style.cssText = `width:20px;height:20px;border-radius:50%;background:${abCfg2 ? abCfg2.color + '33' : 'var(--bord)'};color:${abCfg2?.color || 'var(--tx3)'};font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;`;
             // Klick auf Badge wechselt AFB
             badge2.onclick = () => {
+              if (feinLocked) return;
               const keys = Object.keys(AB_KEY_MAP);
               const next = keys[(keys.indexOf(afbKey) + 1) % keys.length];
               const ls = getLines(); ls[li] = next + '|' + lineRest; saveLines(ls); buildList();
@@ -1676,6 +1707,7 @@ Antworte NUR mit reinem JSON:
             pInp.type = 'number'; pInp.min = 1; pInp.max = 20; pInp.step = 1;
             pInp.value = zeilenPunkte ?? '';
             pInp.placeholder = 'P';
+            pInp.disabled = feinLocked;
             pInp.style.cssText = 'width:38px;font-size:11px;font-family:inherit;border:1px solid var(--bord);border-radius:4px;background:var(--surf2);color:var(--tx1);padding:1px 4px;text-align:center;flex-shrink:0;';
             pInp.title = 'Punkte für diese Teilaufgabe';
             pInp.oninput = () => {
@@ -1695,7 +1727,10 @@ Antworte NUR mit reinem JSON:
               if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
               if (e.key === 'Escape') { inp.blur(); }
             };
-            preview.onclick = () => { preview.style.display = 'none'; inp.style.display = 'block'; pInp.style.display = 'none'; inp.focus(); inp.select(); };
+            preview.onclick = () => {
+              if (feinLocked) return;
+              preview.style.display = 'none'; inp.style.display = 'block'; pInp.style.display = 'none'; inp.focus(); inp.select();
+            };
             inp.onblur = () => { pInp.style.display = ''; buildList(); };
             row.appendChild(preview);
             row.appendChild(inp);
@@ -1705,7 +1740,9 @@ Antworte NUR mit reinem JSON:
             regenBtn.textContent = '↺';
             regenBtn.title = 'Alternative auf gleichem Niveau vorschlagen';
             regenBtn.style.cssText = 'border:none;background:none;color:var(--pri);cursor:pointer;font-size:13px;padding:2px 4px;flex-shrink:0;opacity:0;transition:opacity .1s;';
+            regenBtn.disabled = feinLocked;
             regenBtn.onclick = async () => {
+              if (feinLocked) return;
               // Vorhandene Vorschau entfernen
               row.nextSibling?.classList?.contains('regen-prev') && row.nextSibling.remove();
               regenBtn.textContent = '⏳'; regenBtn.disabled = true;
@@ -1765,6 +1802,7 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
             const inp = document.createElement('textarea');
             inp.value = line;
             inp.rows = 1;
+            inp.disabled = feinLocked;
             inp.style.cssText = 'flex:1;font-size:13px;font-family:inherit;line-height:1.5;border:none;outline:none;background:transparent;color:var(--tx2);resize:none;overflow:hidden;padding:0;font-style:italic;';
             const grow = () => { inp.style.height = 'auto'; inp.style.height = inp.scrollHeight + 'px'; };
             inp.oninput = () => { const ls = getLines(); ls[li] = inp.value; saveLines(ls); grow(); };
@@ -1781,6 +1819,7 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
           del.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:2px 4px;flex-shrink:0;opacity:0;transition:opacity .1s;';
           row.onmouseenter = () => { del.style.opacity = '1'; if (row._regenBtn) row._regenBtn.style.opacity = '1'; };
           row.onmouseleave = () => { del.style.opacity = '0'; if (row._regenBtn) row._regenBtn.style.opacity = '0'; };
+          del.disabled = feinLocked;
           del.onclick = () => { const ls = getLines(); ls.splice(li, 1); saveLines(ls); buildList(); };
           if (row._regenBtn) row.appendChild(row._regenBtn);
           row.appendChild(del);
@@ -1790,6 +1829,7 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
         const addRow = mk('button', '');
         addRow.textContent = '+ Zeile';
         addRow.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:4px 0 8px;text-align:left;';
+        addRow.disabled = feinLocked;
         addRow.onclick = () => { const ls = getLines(); ls.push('reproduktion| → '); saveLines(ls); buildList(); const inps = listWrap.querySelectorAll('input[type=text]'); const last = inps[inps.length-1]; if (last) { last.style.display='block'; last.focus(); last.select(); } };
         listWrap.appendChild(addRow);
 
@@ -1802,6 +1842,7 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
         infoRow.appendChild(statsChip);
         if (!statsOk) {
           const distBtn = btn('Punkte verteilen', 'btn btn-ghost btn-xs');
+          distBtn.disabled = feinLocked;
           distBtn.onclick = () => {
             if (distributePointsAcrossSpec(fs)) {
               savePruefungsDB();
@@ -1822,7 +1863,9 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
           { label: 'Kompakter', instruction: 'Vereinfache die innere Struktur leicht und fasse sie kompakter. Weniger Redundanz, klarer Aufbau, gleiche Grundidee.' },
         ].forEach(({ label, instruction }) => {
           const b = btn(label, 'btn btn-ghost btn-xs');
+          b.disabled = feinLocked;
           b.onclick = async () => {
+            if (feinLocked) return;
             b.disabled = true;
             try {
               await reviseFeinstrukturTask(fs, instruction, label);

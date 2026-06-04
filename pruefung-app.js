@@ -808,6 +808,13 @@ function buildAufgabenGenTab(pr) {
   if (!pr.strukturVorschlag) pr.strukturVorschlag = [];
   if (!pr.feinstruktur) pr.feinstruktur = [];
 
+  const AB_KEY_MAP = {
+    reproduktion:      { letter: 'R', color: '#16a34a', title: 'Reproduktion' },
+    leichteAnwendung:  { letter: 'A', color: '#ca8a04', title: 'Leichte Anwendung' },
+    mittlereAnwendung: { letter: 'A', color: '#ea580c', title: 'Mittlere Anwendung' },
+    transfer:          { letter: 'T', color: '#dc2626', title: 'Transfer' },
+  };
+
   // ── Sub-Tab-Gerüst ────────────────────────────────────────────
   const panel1 = mk('div', '');
   const panel2 = mk('div', '');
@@ -1369,12 +1376,6 @@ function buildAufgabenGenTab(pr) {
   aufgabenWrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
   stufe3Sec.appendChild(aufgabenWrap);
 
-  const AB_KEY_MAP = {
-    reproduktion:      { letter: 'R', color: '#16a34a', title: 'Reproduktion' },
-    leichteAnwendung:  { letter: 'A', color: '#ca8a04', title: 'Leichte Anwendung' },
-    mittlereAnwendung: { letter: 'A', color: '#ea580c', title: 'Mittlere Anwendung' },
-    transfer:          { letter: 'T', color: '#dc2626', title: 'Transfer' },
-  };
   function renderGenAufgaben() {
     aufgabenWrap.innerHTML = '';
     pr.genAufgaben.forEach(aufg => {

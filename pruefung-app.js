@@ -955,7 +955,9 @@ function buildAufgabenGenTab(pr) {
   function renderStruktur() {
     strukturWrap.innerHTML = '';
     if (!pr.strukturVorschlag.length) { updateGesamt(); return; }
+    let posNr = 0;
     pr.strukturVorschlag.forEach((aufg, idx) => {
+      if (!aufg._removed) posNr++;
       const card = mk('div', '');
       card.style.cssText = 'border:1px solid var(--bord);border-radius:8px;background:var(--surf2);padding:10px 12px;display:flex;gap:0;' + (aufg._removed ? 'opacity:.35;' : '');
 
@@ -978,7 +980,7 @@ function buildAufgabenGenTab(pr) {
 
       // Titelzeile + Streichen-Button
       const hrow = mk('div', ''); hrow.style.cssText = 'display:flex;align-items:baseline;gap:8px;margin-bottom:4px;';
-      hrow.appendChild(tx('strong', '', 'Aufgabe ' + aufg.nr + ': ' + (aufg.titel || '–')));
+      hrow.appendChild(tx('strong', '', 'Aufgabe ' + (aufg._removed ? '–' : posNr) + ': ' + (aufg.titel || '–')));
       const spacer = mk('span', ''); spacer.style.flex = '1'; hrow.appendChild(spacer);
       const toggleBtn = btn(aufg._removed ? '+ Aufnehmen' : '✕', 'btn btn-ghost btn-xs');
       toggleBtn.title = aufg._removed ? 'Wieder aufnehmen' : 'Aufgabe streichen';
@@ -1160,8 +1162,9 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
     try {
       for (let i = 0; i < zuBearbeiten.length; i++) {
         const aufg = zuBearbeiten[i];
-        statusEl.textContent = `⏳ Feinstruktur für Aufgabe ${aufg.nr}… (${i+1}/${zuBearbeiten.length})`;
-        let p = `Du planst Aufgabe ${aufg.nr} einer Klassenarbeit.\n`;
+        const aufgNr = i + 1;
+        statusEl.textContent = `⏳ Feinstruktur für Aufgabe ${aufgNr}… (${aufgNr}/${zuBearbeiten.length})`;
+        let p = `Du planst Aufgabe ${aufgNr} einer Klassenarbeit.\n`;
         p += `Thema/Titel: ${aufg.titel}\n`;
         p += `Beschreibung: ${aufg.beschreibung}\n`;
         p += `Zeit: ${aufg.zeitMinuten ?? '?'} Min, ${aufg.gesamtpunkte ?? '?'} Punkte\n`;
@@ -1180,7 +1183,7 @@ Antworte NUR mit reinem JSON:
         const raw = await callKI([{ type: 'text', text: p }], 1500);
         const parsed = parseKI(raw);
         pr.feinstruktur.push({
-          nr: aufg.nr, titel: aufg.titel,
+          nr: aufgNr, titel: aufg.titel,
           zeitMinuten: aufg.zeitMinuten, gesamtpunkte: aufg.gesamtpunkte,
           typen: aufg.typen,
           spezifikation: parsed.spezifikation || '',

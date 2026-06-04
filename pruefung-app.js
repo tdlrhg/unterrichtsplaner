@@ -1233,33 +1233,101 @@ function buildAufgabenGenTab(pr) {
   aufgabenWrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
   stufe3Sec.appendChild(aufgabenWrap);
 
-  const SC = { '○': '#16a34a', '◒': '#2563eb', '●': '#9d174d' };
+  const SC = {
+    '○': { color: '#16a34a', label: 'Reproduktion' },
+    '◒': { color: '#2563eb', label: 'Anwendung' },
+    '●': { color: '#9d174d', label: 'Transfer' },
+  };
   function renderGenAufgaben() {
     aufgabenWrap.innerHTML = '';
     pr.genAufgaben.forEach(aufg => {
-      const card = mk('div', 'card');
-      const body = mk('div', 'card-body');
-      const hrow = mk('div', '');
-      hrow.style.cssText = 'display:flex;align-items:baseline;gap:10px;margin-bottom:6px;flex-wrap:wrap;';
-      hrow.appendChild(tx('strong', '', 'Aufgabe ' + aufg.nr + (aufg.titel ? ': ' + aufg.titel : '')));
-      if (aufg.zeitMinuten) { const zt = tx('span', '', '⏱ ' + aufg.zeitMinuten + ' Min'); zt.style.cssText = 'font-size:11px;color:var(--tx3);'; hrow.appendChild(zt); }
-      if (aufg.gesamtpunkte) { const pt = tx('span', '', aufg.gesamtpunkte + ' P'); pt.style.cssText = 'font-size:11px;color:var(--tx3);'; hrow.appendChild(pt); }
-      body.appendChild(hrow);
-      if (aufg.aufgabenstellung) { const as = tx('div', '', aufg.aufgabenstellung); as.style.cssText = 'font-size:13px;color:var(--tx2);font-style:italic;margin-bottom:8px;'; body.appendChild(as); }
-      (aufg.unteraufgaben || []).forEach(ua => {
+      const card = mk('div', '');
+      card.style.cssText = 'border-radius:10px;background:var(--surf2);overflow:hidden;';
+
+      // Kopfzeile
+      const head = mk('div', '');
+      head.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(124,58,237,.06);border-bottom:1px solid var(--bord);';
+      const nrBadge = tx('div', '', String(aufg.nr));
+      nrBadge.style.cssText = 'width:24px;height:24px;border-radius:50%;background:var(--pri);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      head.appendChild(nrBadge);
+      const titel = tx('span', '', aufg.titel || '–');
+      titel.style.cssText = 'font-size:14px;font-weight:700;color:var(--tx1);flex:1;';
+      head.appendChild(titel);
+      if (aufg.zeitMinuten) {
+        const zt = tx('span', '', '⏱ ' + aufg.zeitMinuten + ' Min');
+        zt.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(37,99,235,.1);color:#2563eb;flex-shrink:0;';
+        head.appendChild(zt);
+      }
+      if (aufg.gesamtpunkte) {
+        const pt = tx('span', '', aufg.gesamtpunkte + ' P');
+        pt.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(124,58,237,.12);color:var(--pri);flex-shrink:0;';
+        head.appendChild(pt);
+      }
+      card.appendChild(head);
+
+      // Aufgabenstellung
+      if (aufg.aufgabenstellung) {
+        const as = tx('div', '', aufg.aufgabenstellung);
+        as.style.cssText = 'font-size:13px;color:var(--tx2);font-style:italic;padding:8px 14px 4px;';
+        card.appendChild(as);
+      }
+
+      // Teilaufgaben
+      const uas = aufg.unteraufgaben || [];
+      uas.forEach(ua => {
         const urow = mk('div', '');
-        urow.style.cssText = 'display:flex;gap:10px;align-items:baseline;padding:5px 0;border-top:1px solid var(--bord);font-size:13px;';
-        const nrS = tx('strong', '', ua.nr || ''); nrS.style.cssText = 'flex-shrink:0;min-width:28px;'; urow.appendChild(nrS);
-        if (ua.schwierigkeit) { const sw = tx('span', '', ua.schwierigkeit); sw.style.cssText = 'flex-shrink:0;color:' + (SC[ua.schwierigkeit] || 'var(--tx3)') + ';'; urow.appendChild(sw); }
-        const col = mk('div', ''); col.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:1px;';
-        if (ua.titel) { const tit = tx('span', '', ua.titel); tit.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx2);'; col.appendChild(tit); }
-        const utxt = tx('span', '', ua.text || ''); utxt.style.color = 'var(--tx2)'; col.appendChild(utxt);
+        urow.style.cssText = 'display:flex;gap:8px;align-items:flex-start;padding:7px 14px;border-top:1px solid var(--bord);font-size:13px;';
+
+        // Schwierigkeits-Badge
+        const sc = SC[ua.schwierigkeit];
+        const badge = tx('div', '', ua.schwierigkeit || '·');
+        badge.title = sc?.label || '';
+        badge.style.cssText = `width:20px;height:20px;border-radius:50%;background:${sc ? sc.color + '22' : 'var(--bord)'};color:${sc?.color || 'var(--tx3)'};font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;`;
+        urow.appendChild(badge);
+
+        // Nr + Text
+        const col = mk('div', ''); col.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:2px;';
+        const nrLine = mk('div', ''); nrLine.style.cssText = 'display:flex;align-items:baseline;gap:6px;';
+        nrLine.appendChild(tx('strong', '', ua.nr || ''));
+        if (ua.titel) { const tit = tx('span', '', ua.titel); tit.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx2);'; nrLine.appendChild(tit); }
+        if (ua.typ) nrLine.appendChild(tx('span', 'matc-jg', ua.typ));
+        col.appendChild(nrLine);
+        const utxt = tx('div', '', ua.text || ''); utxt.style.cssText = 'color:var(--tx2);line-height:1.5;'; col.appendChild(utxt);
         urow.appendChild(col);
-        if (ua.typ) urow.appendChild(tx('span', 'matc-jg', ua.typ));
-        if (ua.punkte) { const pu = tx('span', '', ua.punkte + ' P'); pu.style.cssText = 'flex-shrink:0;font-size:11px;color:var(--tx3);'; urow.appendChild(pu); }
-        body.appendChild(urow);
+
+        // Punkte
+        if (ua.punkte) {
+          const pu = tx('span', '', ua.punkte + ' P');
+          pu.style.cssText = `flex-shrink:0;font-size:12px;font-weight:700;color:${sc?.color || 'var(--tx3)'};padding-top:1px;`;
+          urow.appendChild(pu);
+        }
+        card.appendChild(urow);
       });
-      card.appendChild(body); aufgabenWrap.appendChild(card);
+
+      // Auswertungszeile Punkte nach Schwierigkeit
+      const summary = {};
+      uas.forEach(ua => {
+        if (ua.schwierigkeit && ua.punkte) {
+          summary[ua.schwierigkeit] = (summary[ua.schwierigkeit] || 0) + ua.punkte;
+        }
+      });
+      if (Object.keys(summary).length) {
+        const foot = mk('div', '');
+        foot.style.cssText = 'display:flex;gap:10px;align-items:center;padding:6px 14px;border-top:1px solid var(--bord);background:rgba(0,0,0,.02);flex-wrap:wrap;';
+        const lbl = tx('span', '', 'Verteilung:');
+        lbl.style.cssText = 'font-size:11px;color:var(--tx3);';
+        foot.appendChild(lbl);
+        ['○','◒','●'].forEach(sym => {
+          if (!summary[sym]) return;
+          const chip = tx('span', '', sym + ' ' + summary[sym] + ' P');
+          chip.title = SC[sym]?.label || '';
+          chip.style.cssText = `font-size:12px;font-weight:700;padding:1px 8px;border-radius:20px;background:${SC[sym].color}22;color:${SC[sym].color};`;
+          foot.appendChild(chip);
+        });
+        card.appendChild(foot);
+      }
+
+      aufgabenWrap.appendChild(card);
     });
   }
   renderGenAufgaben();

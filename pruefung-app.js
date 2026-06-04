@@ -1630,7 +1630,8 @@ Antworte NUR mit reinem JSON:
         p += `Aufgabentypen: ${(fs.typen||[]).join(', ')}\n`;
         if (erlaubt3.length) { p += `\n## ANFORDERUNGSBEREICHE — VERBINDLICH\nErlaubt: ${erlaubt3.join(', ')}\nVERBOTEN: ${verboten3.join(', ')}\n`; }
         p += `\n## WICHTIG\n- Unteraufgaben rechnerisch unabhängig\n- Progression leicht→schwer\n- Konkrete Zahlen, kein Platzhalter\n\n`;
-        p += `Antworte NUR mit reinem JSON:\n{"aufgabenstellung":null,"unteraufgaben":[\n  {"nr":"${fs.nr}a","titel":null,"text":"...","punkte":3,"anforderungsbereich":"reproduktion","typ":"Rechnung"}\n]}\nanforderungsbereich: ${erlaubt3.length ? erlaubt3.join(' | ') : 'reproduktion | leichteAnwendung | mittlereAnwendung | transfer'}`;
+        p += `Antworte NUR mit reinem JSON:\n{"aufgabenstellung":null,"unteraufgaben":[\n  {"nr":"${fs.nr}a","titel":null,"text":"...","loesung":"kurze Loesung oder Ergebnis","punkte":3,"anforderungsbereich":"reproduktion","typ":"Rechnung"}\n]}\nanforderungsbereich: ${erlaubt3.length ? erlaubt3.join(' | ') : 'reproduktion | leichteAnwendung | mittlereAnwendung | transfer'}
+loesung: kurze Musterloesung oder Ergebnis in 1 Zeile`;
         try {
           const raw = await callKI([{ type: 'text', text: p }], 3000);
           const parsed = parseKI(raw);
@@ -1984,6 +1985,11 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
         if (ua.typ) nrLine.appendChild(tx('span', 'matc-jg', ua.typ));
         col.appendChild(nrLine);
         const utxt = tx('div', '', ua.text || ''); utxt.style.cssText = 'color:var(--tx2);line-height:1.5;'; col.appendChild(utxt);
+        if (ua.loesung) {
+          const uloes = tx('div', '', ua.loesung);
+          uloes.style.cssText = 'color:#dc2626;line-height:1.5;font-weight:600;';
+          col.appendChild(uloes);
+        }
         urow.appendChild(col);
 
         // Punkte
@@ -2137,12 +2143,13 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
         p += `\n## WICHTIG\n- Unteraufgaben rechnerisch unabhängig (neue Zahlen pro Unteraufgabe)\n- Progression leicht→schwer innerhalb der Aufgabe\n- Konkrete Zahlen und Texte — kein Platzhalter\n\n`;
         p += `Antworte NUR mit reinem JSON:
 {"aufgabenstellung":null,"unteraufgaben":[
-  {"nr":"${fs.nr}a","titel":null,"text":"konkreter Aufgabentext mit Zahlen","punkte":3,"anforderungsbereich":"reproduktion","typ":"Rechnung"},
-  {"nr":"${fs.nr}b","titel":"Kurzer Titel","text":"konkreter Aufgabentext","punkte":4,"anforderungsbereich":"leichteAnwendung","typ":"Sachaufgabe"}
+  {"nr":"${fs.nr}a","titel":null,"text":"konkreter Aufgabentext mit Zahlen","loesung":"kurze Loesung oder Ergebnis","punkte":3,"anforderungsbereich":"reproduktion","typ":"Rechnung"},
+  {"nr":"${fs.nr}b","titel":"Kurzer Titel","text":"konkreter Aufgabentext","loesung":"kurze Loesung oder Ergebnis","punkte":4,"anforderungsbereich":"leichteAnwendung","typ":"Sachaufgabe"}
 ]}
 anforderungsbereich: "reproduktion" | "leichteAnwendung" | "mittlereAnwendung" | "transfer"
 titel: null wenn Typ "Rechnung", sonst kurzer beschreibender Titel
-Unteraufgaben rechnerisch unabhängig (neue Zahlen).`;
+Unteraufgaben rechnerisch unabhängig (neue Zahlen).
+loesung: kurze Musterloesung oder Ergebnis in 1 Zeile.`;
         const raw = await callKI([{ type: 'text', text: p }], 3000);
         const parsed = parseKI(raw);
         pr.genAufgaben.push({

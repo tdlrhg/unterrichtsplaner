@@ -936,14 +936,14 @@ function buildAufgabenGenTab(pr) {
 
   // Drag-to-Reorder
   let dragSrc = null;
-  function addDragHandlers(el, index) {
-    el.draggable = true;
-    el.ondragstart = e => { dragSrc = index; el.style.opacity = '.5'; e.dataTransfer.effectAllowed = 'move'; };
-    el.ondragend = () => { el.style.opacity = ''; };
-    el.ondragover = e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; el.style.background = 'var(--surf)'; };
-    el.ondragleave = () => { el.style.background = ''; };
-    el.ondrop = e => {
-      e.preventDefault(); el.style.background = '';
+  function addDragHandlers(card, handle, index) {
+    handle.draggable = true;
+    handle.ondragstart = e => { dragSrc = index; card.style.opacity = '.5'; e.dataTransfer.effectAllowed = 'move'; };
+    handle.ondragend = () => { card.style.opacity = ''; };
+    card.ondragover = e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; card.style.background = 'var(--surf)'; };
+    card.ondragleave = () => { card.style.background = ''; };
+    card.ondrop = e => {
+      e.preventDefault(); card.style.background = '';
       if (dragSrc === null || dragSrc === index) return;
       const arr = pr.strukturVorschlag;
       const [moved] = arr.splice(dragSrc, 1);
@@ -1006,7 +1006,7 @@ function buildAufgabenGenTab(pr) {
       rightCol.appendChild(makeSlider('Punkte', 'P', aufg.gesamtpunkte || 8, 2, 25, v => { aufg.gesamtpunkte = v; savePruefungsDB(); }));
 
       card.appendChild(rightCol);
-      addDragHandlers(card, idx);
+      addDragHandlers(card, dragHandle, idx);
       strukturWrap.appendChild(card);
     });
     updateGesamt();

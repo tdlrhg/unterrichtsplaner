@@ -1256,10 +1256,31 @@ function buildAufgabenGenTab(pr) {
           row.style.cssText = 'display:flex;align-items:flex-start;gap:6px;padding:3px 0;';
 
           if (hasPfeil) {
-            // Strukturierte Anzeige: Kennung · Vorgabe → Ergänzung
-            const colonIdx = line.indexOf(':');
-            const kennung = colonIdx > -1 ? line.slice(0, colonIdx).trim() : '';
-            const rest = colonIdx > -1 ? line.slice(colonIdx + 1).trim() : line;
+            // AFB-Präfix parsen: "reproduktion|1a: Vorgabe → Ergänzung"
+            let afbKey = null, lineRest = line;
+            const pipeIdx = line.indexOf('|');
+            if (pipeIdx > -1) {
+              const candidate = line.slice(0, pipeIdx).trim();
+              if (AB_KEY_MAP[candidate]) { afbKey = candidate; lineRest = line.slice(pipeIdx + 1).trim(); }
+            }
+            const abCfg2 = afbKey ? AB_KEY_MAP[afbKey] : null;
+
+            // Badge
+            const badge2 = tx('div', '', abCfg2 ? abCfg2.letter : '·');
+            badge2.title = abCfg2?.title || 'Anforderungsbereich';
+            badge2.style.cssText = `width:20px;height:20px;border-radius:50%;background:${abCfg2 ? abCfg2.color + '33' : 'var(--bord)'};color:${abCfg2?.color || 'var(--tx3)'};font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;cursor:pointer;`;
+            // Klick auf Badge wechselt AFB
+            badge2.onclick = () => {
+              const keys = Object.keys(AB_KEY_MAP);
+              const next = keys[(keys.indexOf(afbKey) + 1) % keys.length];
+              const ls = getLines(); ls[li] = next + '|' + lineRest; saveLines(ls); buildList();
+            };
+            row.appendChild(badge2);
+
+            // Kennung · Vorgabe → Ergänzung
+            const colonIdx = lineRest.indexOf(':');
+            const kennung = colonIdx > -1 ? lineRest.slice(0, colonIdx).trim() : '';
+            const rest = colonIdx > -1 ? lineRest.slice(colonIdx + 1).trim() : lineRest;
             const [vorgabe, ergaenzung] = rest.split('→').map(s => s.trim());
 
             const preview = mk('div', '');
@@ -1279,11 +1300,11 @@ function buildAufgabenGenTab(pr) {
             eEl.style.cssText = 'color:var(--tx3);';
             preview.appendChild(eEl);
 
-            // Klick öffnet Inline-Editor
+            // Klick öffnet Inline-Editor (zeigt nur Teil nach |)
             const inp = document.createElement('input');
-            inp.type = 'text'; inp.value = line;
+            inp.type = 'text'; inp.value = lineRest;
             inp.style.cssText = 'flex:1;font-size:13px;font-family:inherit;border:none;outline:none;background:var(--surf);color:var(--tx1);padding:2px 4px;border-radius:4px;display:none;';
-            inp.oninput = () => { const ls = getLines(); ls[li] = inp.value; saveLines(ls); };
+            inp.oninput = () => { const ls = getLines(); ls[li] = (afbKey ? afbKey + '|' : '') + inp.value; saveLines(ls); };
             inp.onblur = () => { buildList(); };
             inp.onkeydown = e => {
               if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
@@ -1517,14 +1538,14 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
         const relevanteIdeen = ideenPool.filter(idea => idea.toLowerCase().includes((aufg.titel||'').toLowerCase().split(' ')[0])).slice(0,8);
         if (relevanteIdeen.length) { p += 'Ähnliche Aufgaben aus Quellen (zur Inspiration):\n'; relevanteIdeen.forEach(idea => { p += `- ${idea}\n`; }); p += '\n'; }
         p += `Beschreibe die Unteraufgaben in kompakter Kurzform.
-Für jede Unteraufgabe: Kennung, dann was VORGEGEBEN ist, Pfeil →, dann was Schüler ERGÄNZEN/TUN sollen.
-Allgemeine Hinweise (Anzahl, Schwierigkeit) als eigene Zeile ohne Pfeil.
+Für jede Unteraufgabe mit Pfeil: zuerst Anforderungsbereich (einer von: reproduktion, leichteAnwendung, mittlereAnwendung, transfer), dann | dann Kennung: Vorgabe → Schülertätigkeit.
+Allgemeine Hinweise (Gesamtzahl, Reihenfolge) als eigene Zeile ohne Pfeil und ohne |.
 
 FORMAT (genau so, kein Fließtext):
-Kennung: Vorgabe → Schülertätigkeit · ggf. weiteres
+anforderungsbereich|Kennung: Vorgabe → Schülertätigkeit · ggf. weiteres
 
 Antworte NUR mit reinem JSON:
-{"spezifikation":"5 Unteraufgaben, steigend schwerer\\n1a–1c: Bruch → Dezimalzahl · Prozent\\n1d–1e: Dezimalzahl → Bruch · Prozent\\n1f: Sachtext (Prozentwert gegeben) → Grundwert berechnen"}`;
+{"spezifikation":"5 Unteraufgaben, steigend schwerer\\nreproduktion|1a–1c: Bruch → Dezimalzahl · Prozent\\nleichteAnwendung|1d–1e: Dezimalzahl → Bruch · Prozent\\nmittlereAnwendung|1f: Sachtext (Prozentwert gegeben) → Grundwert berechnen"}`;
         const raw = await callKI([{ type: 'text', text: p }], 1500);
         const parsed = parseKI(raw);
         pr.feinstruktur.push({

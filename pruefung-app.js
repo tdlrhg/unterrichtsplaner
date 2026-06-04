@@ -1262,6 +1262,34 @@ function buildAufgabenGenTab(pr) {
       };
       head.appendChild(makeFeinSlider('⏱', 'Min', fs.zeitMinuten || 5, 1, 45, '#2563eb', v => { fs.zeitMinuten = v; if (sv) sv.zeitMinuten = v; savePruefungsDB(); }));
       head.appendChild(makeFeinSlider('', 'P', fs.gesamtpunkte || 8, 2, 30, '#7c3aed', v => { fs.gesamtpunkte = v; if (sv) sv.gesamtpunkte = v; savePruefungsDB(); }));
+
+      // ↺ Diese Aufgabe einzeln neu generieren
+      const cardRegenBtn = mk('button', '');
+      cardRegenBtn.textContent = '↺';
+      cardRegenBtn.title = 'Diese Aufgabe neu generieren';
+      cardRegenBtn.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:2px 6px;flex-shrink:0;';
+      cardRegenBtn.onclick = async () => {
+        cardRegenBtn.textContent = '⏳'; cardRegenBtn.disabled = true;
+        const aufg = sv || {};
+        const { lernziele, ideenPool } = buildKontext();
+        const anf2 = aufg.anforderung || {};
+        const erlaubt2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) > 0);
+        const verboten2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) === 0);
+        let p = `Du planst Aufgabe ${fs.nr} einer Klassenarbeit.\n`;
+        p += `Thema/Titel: ${fs.titel}\nZeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
+        if (erlaubt2.length) { p += `\n## ANFORDERUNGSBEREICHE — VERBINDLICH\nErlaubt: ${erlaubt2.join(', ')}\nVERBOTEN: ${verboten2.join(', ')}\n`; }
+        if (lernziele.length) { p += '\nLernziele:\n'; lernziele.slice(0,6).forEach(lz => { p += `- ${lz}\n`; }); }
+        p += `\nBeschreibe die Unteraufgaben in kompakter Kurzform.\nFür jede Unteraufgabe: NUR erlaubte Anforderungsbereiche (${erlaubt2.join(', ')}), dann | dann Kennung: Vorgabe → Schülertätigkeit.\n`;
+        p += `\nAntworte NUR mit reinem JSON:\n{"spezifikation":"reproduktion|1a: ... → ...\\nleichteAnwendung|1b: ... → ..."}`;
+        try {
+          const raw = await callKI([{ type: 'text', text: p }], 1500);
+          const parsed = parseKI(raw);
+          fs.spezifikation = parsed.spezifikation || fs.spezifikation;
+          savePruefungsDB(); renderFeinstruktur(); renderAFBBanner();
+        } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
+        cardRegenBtn.textContent = '↺'; cardRegenBtn.disabled = false;
+      };
+      head.appendChild(cardRegenBtn);
       card.appendChild(head);
 
       // Spezifikation als editierbare Stichpunktliste

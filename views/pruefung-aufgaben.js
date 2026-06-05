@@ -646,7 +646,10 @@ Antworte NUR mit reinem JSON:
       const n = 10;
       const sample = alleAufgaben.length <= n
         ? alleAufgaben
-        : Array.from({ length: n }, (_, i) => alleAufgaben[Math.floor(i * alleAufgaben.length / n)]);
+        : (() => {
+            const offset = Math.floor(Math.random() * Math.floor(alleAufgaben.length / n));
+            return Array.from({ length: n }, (_, i) => alleAufgaben[(offset + Math.floor(i * alleAufgaben.length / n)) % alleAufgaben.length]);
+          })();
       sample.forEach(({ ukTitel, a }) => {
         const nr = a.nr ? `${a.nr}` : (a.seite ? `S.${a.seite}` : '–');
         const p = a.punkte ? ` · ${a.punkte}P` : '';

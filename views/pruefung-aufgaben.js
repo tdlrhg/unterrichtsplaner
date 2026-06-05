@@ -1103,10 +1103,17 @@ Antworte NUR mit reinem JSON:
       pktSlider.onblur = () => { pktSlider.style.display = 'none'; };
       head.appendChild(pktValEl); head.appendChild(pktSlider);
 
-      // Schloss-Icon (kein langer Text-Button)
-      const lockIcon = btn(feinLocked ? '🔐' : '🔓', '');
-      lockIcon.title = feinLocked ? 'Entsperren' : 'Sperren';
-      lockIcon.style.cssText = 'border:none;background:none;cursor:pointer;font-size:15px;padding:2px 4px;flex-shrink:0;line-height:1;';
+      // Schloss-Badge (farbig hinterlegt je nach Zustand)
+      const lockIcon = btn(feinLocked ? '🔐 Gesperrt' : '🔓 Offen', '');
+      lockIcon.title = feinLocked ? 'Klicken zum Entsperren' : 'Klicken zum Sperren';
+      lockIcon.style.cssText = [
+        'border:none;cursor:pointer;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;flex-shrink:0;line-height:1.4;transition:opacity .15s;',
+        feinLocked
+          ? 'background:rgba(239,68,68,.15);color:#dc2626;'
+          : 'background:rgba(22,163,74,.12);color:#15803d;',
+      ].join('');
+      lockIcon.onmouseenter = () => { lockIcon.style.opacity = '.7'; };
+      lockIcon.onmouseleave = () => { lockIcon.style.opacity = '1'; };
       lockIcon.onclick = () => {
         fs._feinLocked = !fs._feinLocked;
         if (fs._feinLocked && sv) sv._grobUnlocked = false;
@@ -1332,19 +1339,9 @@ Antworte NUR mit reinem JSON:
       buildList();
       card.appendChild(listWrap);
 
-      // ── Kartenfu­ß: + Zeile | Stats | Aktionen ▾ ────────────────
+      // ── Kartenfu­ß: Stats | Aktionen ▾ ─────────────────────────
       const foot = mk('div', '');
       foot.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 14px 8px;border-top:1px solid var(--bord);flex-wrap:wrap;';
-
-      // + Zeile
-      const addLineBtn = btn('+ Zeile', 'btn btn-ghost btn-xs');
-      addLineBtn.disabled = feinLocked;
-      addLineBtn.onclick = () => {
-        const ls = getLines(); ls.push('reproduktion| → '); saveLines(ls); buildList();
-        const inps = listWrap.querySelectorAll('input[type=text]');
-        const last = inps[inps.length-1]; if (last) { last.style.display='block'; last.focus(); last.select(); }
-      };
-      foot.appendChild(addLineBtn);
 
       // Stats-Chip
       const stats = countSpecStats(fs.spezifikation);
@@ -1381,6 +1378,13 @@ Antworte NUR mit reinem JSON:
         aktBtn.textContent = 'Aktionen ▾'; aktBtn.disabled = false;
       };
 
+      aktMenu.appendChild(menuItem('+ Zeile hinzufügen', () => {
+        const ls = getLines(); ls.push('reproduktion| → '); saveLines(ls); buildList();
+        aktMenu.style.display = 'none';
+        const inps = listWrap.querySelectorAll('input[type=text]');
+        const last = inps[inps.length-1]; if (last) { last.style.display='block'; last.focus(); last.select(); }
+      }, feinLocked));
+      aktMenu.appendChild(menuSep());
       aktMenu.appendChild(menuItem('↺ Feinstruktur neu generieren', () => runKI('Regeneriere', doCardRegen), feinLocked));
       aktMenu.appendChild(menuItem('→ Konkrete Aufgabe generieren', () => runKI('Generiere', doCardGen), false));
       aktMenu.appendChild(menuSep());

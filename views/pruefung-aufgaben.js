@@ -1134,14 +1134,29 @@ Antworte NUR mit reinem JSON:
 
     const pktVal = tx('span', '', (fs.gesamtpunkte || 8) + ' P');
     pktVal.style.cssText = 'font-size:13px;font-weight:700;color:var(--tx1);min-width:40px;';
+    const pktMismatch = tx('span', '', '');
+    pktMismatch.style.cssText = 'font-size:12px;font-weight:600;color:#dc2626;display:none;';
     const pktSlider = document.createElement('input'); pktSlider.type = 'range';
     pktSlider.min = 2; pktSlider.max = 30; pktSlider.step = 1; pktSlider.value = fs.gesamtpunkte || 8;
     pktSlider.disabled = feinLocked;
     pktSlider.style.cssText = 'width:80px;accent-color:#7c3aed;';
-    pktSlider.oninput = () => { fs.gesamtpunkte = parseInt(pktSlider.value); pktVal.textContent = pktSlider.value + ' P'; renderAFBBanner(); };
-    const pktWrap = mk('div', ''); pktWrap.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    const getSubtaskSum = () => getLines().reduce((s, l) => {
+      const parts = l.split('|'); const last = parts[parts.length - 1].trim();
+      return s + (parts.length > 1 && /^\d+$/.test(last) ? parseInt(last) : 0);
+    }, 0);
+    const updatePktMismatch = () => {
+      const sum = getSubtaskSum();
+      if (sum > 0 && sum !== fs.gesamtpunkte) {
+        pktMismatch.textContent = `≠ Summe TA: ${sum} P`;
+        pktMismatch.style.display = '';
+      } else {
+        pktMismatch.style.display = 'none';
+      }
+    };
+    pktSlider.oninput = () => { fs.gesamtpunkte = parseInt(pktSlider.value); pktVal.textContent = pktSlider.value + ' P'; renderAFBBanner(); updatePktMismatch(); };
+    const pktWrap = mk('div', ''); pktWrap.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
     pktWrap.appendChild(tx('span', '', 'Punkte')).style || (pktWrap.lastChild.style.cssText = 'font-size:13px;color:var(--tx2);flex-shrink:0;');
-    pktWrap.appendChild(pktSlider); pktWrap.appendChild(pktVal);
+    pktWrap.appendChild(pktSlider); pktWrap.appendChild(pktVal); pktWrap.appendChild(pktMismatch);
     metaRow.appendChild(pktWrap);
     body.appendChild(metaRow);
 
@@ -1176,11 +1191,9 @@ Antworte NUR mit reinem JSON:
       savePruefungsDB();
     }
     function recalcPunkte() {
-      const sum = getLines().reduce((s, l) => {
-        const parts = l.split('|'); const last = parts[parts.length - 1].trim();
-        return s + (parts.length > 1 && /^\d+$/.test(last) ? parseInt(last) : 0);
-      }, 0);
+      const sum = getSubtaskSum();
       if (sum > 0) { fs.gesamtpunkte = sum; pktVal.textContent = sum + ' P'; pktSlider.value = Math.min(sum, 30); renderAFBBanner(); }
+      updatePktMismatch();
     }
 
     // Buchstaben automatisch neu vergeben (a, b, c …) nach Position
@@ -1339,6 +1352,7 @@ Antworte NUR mit reinem JSON:
     }
     body.appendChild(taWrap);
     buildTaList();
+    updatePktMismatch(); // beim Öffnen sofort prüfen
 
     // ── ✨ KI-Überarbeitung ─────────────────────────────────────────
     const kiSec = mk('div', '');
@@ -1435,8 +1449,10 @@ Antworte NUR mit reinem JSON:
 
     // ── Footer: Sperren | Schließen ────────────────────────────────
     const foot = mk('div', '');
-    foot.style.cssText = 'display:flex;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--bord);';
-    const lockToggle = btn(feinLocked ? '🔓 Entsperren' : '🔐 Sperren', 'btn btn-ghost btn-sm');
+    foot.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--bord);';
+    const lockToggle = btn(feinLocked ? '🔓 Entsperren' : '🔐 Sperren', '');
+    lockToggle.style.cssText = 'cursor:pointer;font-size:13px;font-weight:700;padding:5px 14px;border-radius:999px;border:none;line-height:1.4;' + (feinLocked ? 'background:rgba(239,68,68,.15);color:#dc2626;' : 'background:rgba(22,163,74,.12);color:#15803d;');
+    lockToggle.title = feinLocked ? 'Aufgabe entsperren – Bearbeitung wieder erlauben' : 'Aufgabe sperren – vor weiteren Änderungen schützen';
     lockToggle.onclick = () => {
       fs._feinLocked = !fs._feinLocked;
       if (fs._feinLocked && sv) sv._grobUnlocked = false;

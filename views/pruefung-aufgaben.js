@@ -1067,114 +1067,78 @@ Antworte NUR mit reinem JSON:
       const card = mk('div', '');
       card.style.cssText = 'border-radius:10px;background:var(--surf2);overflow:hidden;';
 
-      // Kopfzeile
+      // ── Schlanker Kopf: Nr | Titel | Zeit | Punkte | Schloss ────
       const head = mk('div', '');
-      head.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(124,58,237,.06);border-bottom:1px solid var(--bord);';
+      head.style.cssText = 'display:flex;align-items:center;gap:8px;padding:9px 14px;background:rgba(124,58,237,.06);border-bottom:1px solid var(--bord);';
 
-      // Anforderungsbereich-Stempel (read-only, aus Stufe 1)
-      if (sv?.anforderung) {
-        const stempelWrap = makeStempel(sv.anforderung);
-        stempelWrap.style.flexDirection = 'row';
-        stempelWrap.style.gap = '3px';
-        stempelWrap.style.marginRight = '2px';
-        head.appendChild(stempelWrap);
-      }
-
-      // Nummer-Badge
       const nrBadge = tx('div', '', String(fs.nr));
-      nrBadge.style.cssText = 'width:24px;height:24px;border-radius:50%;background:var(--pri);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      nrBadge.style.cssText = 'width:22px;height:22px;border-radius:50%;background:var(--pri);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
       head.appendChild(nrBadge);
 
-      // Titel
       const titel = tx('span', '', fs.titel || '–');
-      titel.style.cssText = 'font-size:14px;font-weight:700;color:var(--tx1);flex:1;';
+      titel.style.cssText = 'font-size:13px;font-weight:700;color:var(--tx1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
       head.appendChild(titel);
 
-      const feinLockBtn = btn(feinLocked ? '🔐 Gesperrt' : '🔓 Offen', '');
-      styleLockButton(feinLockBtn, feinLocked, false);
-      feinLockBtn.title = feinLocked ? 'Diese Feinstruktur ist gesperrt' : 'Diese Feinstruktur sperren';
-      feinLockBtn.onclick = () => {
+      // Zeit-Chip (klick → Slider)
+      const zeitValEl = tx('span', '', `⏱ ${fs.zeitMinuten || 5} Min`);
+      zeitValEl.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#2563eb1a;color:#2563eb;cursor:' + (feinLocked ? 'default' : 'pointer') + ';flex-shrink:0;' + (feinLocked ? 'opacity:.5;' : '');
+      const zeitSlider = document.createElement('input'); zeitSlider.type = 'range';
+      zeitSlider.min = 1; zeitSlider.max = 45; zeitSlider.step = 1; zeitSlider.value = fs.zeitMinuten || 5;
+      zeitSlider.disabled = feinLocked;
+      zeitSlider.style.cssText = 'width:60px;accent-color:#2563eb;height:3px;display:none;flex-shrink:0;';
+      zeitValEl.onclick = () => { if (!feinLocked) zeitSlider.style.display = zeitSlider.style.display ? '' : 'none'; };
+      zeitSlider.oninput = () => { fs.zeitMinuten = parseInt(zeitSlider.value); zeitValEl.textContent = `⏱ ${zeitSlider.value} Min`; savePruefungsDB(); renderAFBBanner(); };
+      zeitSlider.onblur = () => { zeitSlider.style.display = 'none'; };
+      head.appendChild(zeitValEl); head.appendChild(zeitSlider);
+
+      // Punkte-Chip (klick → Slider)
+      const pktValEl = tx('span', '', `${fs.gesamtpunkte || 8} P`);
+      pktValEl.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#7c3aed1a;color:#7c3aed;cursor:' + (feinLocked ? 'default' : 'pointer') + ';flex-shrink:0;' + (feinLocked ? 'opacity:.5;' : '');
+      const pktSlider = document.createElement('input'); pktSlider.type = 'range';
+      pktSlider.min = 2; pktSlider.max = 30; pktSlider.step = 1; pktSlider.value = fs.gesamtpunkte || 8;
+      pktSlider.disabled = feinLocked;
+      pktSlider.style.cssText = 'width:60px;accent-color:#7c3aed;height:3px;display:none;flex-shrink:0;';
+      pktValEl.onclick = () => { if (!feinLocked) pktSlider.style.display = pktSlider.style.display ? '' : 'none'; };
+      pktSlider.oninput = () => { fs.gesamtpunkte = parseInt(pktSlider.value); pktValEl.textContent = pktSlider.value + ' P'; savePruefungsDB(); renderAFBBanner(); };
+      pktSlider.onblur = () => { pktSlider.style.display = 'none'; };
+      head.appendChild(pktValEl); head.appendChild(pktSlider);
+
+      // Schloss-Icon (kein langer Text-Button)
+      const lockIcon = btn(feinLocked ? '🔐' : '🔓', '');
+      lockIcon.title = feinLocked ? 'Entsperren' : 'Sperren';
+      lockIcon.style.cssText = 'border:none;background:none;cursor:pointer;font-size:15px;padding:2px 4px;flex-shrink:0;line-height:1;';
+      lockIcon.onclick = () => {
         fs._feinLocked = !fs._feinLocked;
         if (fs._feinLocked && sv) sv._grobUnlocked = false;
         savePruefungsDB();
         renderStruktur(); renderFeinstruktur();
       };
-      head.appendChild(feinLockBtn);
+      head.appendChild(lockIcon);
+      card.appendChild(head);
 
-      // Zeit + Punkte editierbar
-      const makeFeinSlider = (icon, unit, val, min, max, color, disabled, onChange) => {
-        const wrap = mk('div', '');
-        wrap.style.cssText = 'display:flex;align-items:center;gap:4px;flex-shrink:0;';
-        const valEl = tx('span', '', icon + ' ' + val + ' ' + unit);
-        valEl.style.cssText = `font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:${color}1a;color:${color};cursor:${disabled ? 'default' : 'pointer'};${disabled ? 'opacity:.5;' : ''}`;
-        const slider = document.createElement('input'); slider.type = 'range';
-        slider.min = min; slider.max = max; slider.step = 1; slider.value = val;
-        slider.disabled = disabled;
-        slider.style.cssText = `width:70px;accent-color:${color};height:3px;display:none;`;
-        valEl.onclick = () => { if (!disabled) slider.style.display = slider.style.display ? '' : 'none'; };
-        slider.oninput = () => { valEl.textContent = icon + ' ' + slider.value + ' ' + unit; onChange(parseInt(slider.value)); renderAFBBanner(); };
-        slider.onblur = () => { slider.style.display = 'none'; };
-        wrap.appendChild(valEl); wrap.appendChild(slider);
-        return wrap;
-      };
-      head.appendChild(makeFeinSlider('⏱', 'Min', fs.zeitMinuten || 5, 1, 45, '#2563eb', feinLocked, v => {
-        fs.zeitMinuten = v; // nur Feinstruktur, kein Rückschreiben in Grobstruktur
-        savePruefungsDB();
-        renderAFBBanner();
-      }));
-
-      // Punkte-Chip mit Update-Funktion
-      const pktWrap = mk('div', ''); pktWrap.style.cssText = 'display:flex;align-items:center;gap:4px;flex-shrink:0;';
-      const pktValEl = tx('span', '', (fs.gesamtpunkte || 8) + ' P');
-      pktValEl.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:#7c3aed1a;color:#7c3aed;cursor:' + (feinLocked ? 'default' : 'pointer') + ';' + (feinLocked ? 'opacity:.5;' : '');
-      const pktSlider = document.createElement('input'); pktSlider.type = 'range';
-      pktSlider.min = 2; pktSlider.max = 30; pktSlider.step = 1; pktSlider.value = fs.gesamtpunkte || 8;
-      pktSlider.disabled = feinLocked;
-      pktSlider.style.cssText = 'width:70px;accent-color:#7c3aed;height:3px;display:none;';
-      pktValEl.onclick = () => { if (!feinLocked) pktSlider.style.display = pktSlider.style.display ? '' : 'none'; };
-      pktSlider.oninput = () => {
-        const n = parseInt(pktSlider.value);
-        fs.gesamtpunkte = n; // nur Feinstruktur, kein Rückschreiben in Grobstruktur
-        pktValEl.textContent = n + ' P';
-        savePruefungsDB();
-        renderAFBBanner();
-      };
-      pktSlider.onblur = () => { pktSlider.style.display = 'none'; };
-      pktWrap.appendChild(pktValEl); pktWrap.appendChild(pktSlider);
-      head.appendChild(pktWrap);
-
-      // Funktion zum Aktualisieren des Punkte-Chips aus Zeilenpunkten
+      // updatePunkteSum: aktualisiert Punkte-Chip und Stats-Chip aus Zeilenpunkten
       const updatePunkteSum = (listWrap) => {
         const sum = Array.from(listWrap.querySelectorAll('input[type=number]'))
           .reduce((s, inp) => s + (parseInt(inp.value) || 0), 0);
         if (sum > 0) {
           pktValEl.textContent = sum + ' P';
           pktSlider.value = Math.min(sum, 30);
-          fs.gesamtpunkte = sum; // nur Feinstruktur
+          fs.gesamtpunkte = sum;
           savePruefungsDB();
         }
-        // Stats-Chip am Kartenende mitaktualisieren
-        const chip = listWrap.querySelector('.fs-stats-chip');
+        const chip = card.querySelector('.fs-stats-chip');
         if (chip) {
           const stats = countSpecStats(fs.spezifikation);
           const ok = !fs.gesamtpunkte || stats.punkte === fs.gesamtpunkte;
-          chip.textContent = `${stats.teilaufgaben} Teilaufgaben · ${stats.punkte || 0} / ${fs.gesamtpunkte || 0} P`;
+          chip.textContent = `${stats.teilaufgaben} TA · ${stats.punkte || 0}/${fs.gesamtpunkte || 0} P`;
           chip.style.background = ok ? 'rgba(22,163,74,.1)' : 'rgba(239,68,68,.08)';
           chip.style.color = ok ? '#15803d' : '#dc2626';
         }
         renderAFBBanner();
       };
 
-      // ↺ Diese Aufgabe einzeln neu generieren
-      const cardRegenBtn = mk('button', '');
-      cardRegenBtn.textContent = '↺';
-      cardRegenBtn.title = 'Diese Aufgabe neu generieren';
-      cardRegenBtn.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:2px 6px;flex-shrink:0;';
-      cardRegenBtn.disabled = feinLocked;
-      if (feinLocked) cardRegenBtn.style.opacity = '.45';
-      cardRegenBtn.onclick = async () => {
-        if (feinLocked) return;
-        cardRegenBtn.textContent = '⏳'; cardRegenBtn.disabled = true;
+      // KI-Aktionen als Funktionen (werden im Aktionen-Menü aufgerufen)
+      const doCardRegen = async (labelEl) => {
         const aufg = sv || {};
         const { lernziele, quellenTexte } = buildKontext();
         const anf2 = aufg.anforderung || {};
@@ -1187,22 +1151,12 @@ Antworte NUR mit reinem JSON:
         if (quellenTexte.trim()) { p += `\n## AUFGABEN AUS DEINEN QUELLEN\n${quellenTexte}\n`; }
         p += `\nBeschreibe die Unteraufgaben in kompakter Kurzform.\nFür jede Unteraufgabe: NUR erlaubte Anforderungsbereiche (${erlaubt2.join(', ')}), dann | dann Kennung: Vorgabe → Schülertätigkeit.\n`;
         p += `\nAntworte NUR mit reinem JSON:\n{"spezifikation":"reproduktion|1a: ... → ...\\nleichteAnwendung|1b: ... → ..."}`;
-        try {
-          const raw = await callKI([{ type: 'text', text: p }], 1500);
-          const parsed = parseKI(raw);
-          fs.spezifikation = parsed.spezifikation || fs.spezifikation;
-          savePruefungsDB(); renderFeinstruktur(); renderAFBBanner();
-        } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
-        cardRegenBtn.textContent = '↺'; cardRegenBtn.disabled = false;
+        const raw = await callKI([{ type: 'text', text: p }], 1500);
+        const parsed = parseKI(raw);
+        fs.spezifikation = parsed.spezifikation || fs.spezifikation;
+        savePruefungsDB(); renderFeinstruktur(); renderAFBBanner();
       };
-      head.appendChild(cardRegenBtn);
-
-      // → Konkrete Aufgabe für Stufe 3 generieren
-      const cardGenBtn = btn('→', 'btn btn-pri btn-xs');
-      cardGenBtn.title = 'Konkrete Aufgabe für Panel 3 generieren';
-      cardGenBtn.style.flexShrink = '0';
-      cardGenBtn.onclick = async () => {
-        cardGenBtn.disabled = true; cardGenBtn.textContent = '⏳';
+      const doCardGen = async () => {
         const anf3 = fs.anforderung || {};
         const erlaubt3 = Object.keys(AB_KEY_MAP).filter(k => (anf3[k] || 0) > 0);
         const verboten3 = Object.keys(AB_KEY_MAP).filter(k => (anf3[k] || 0) === 0);
@@ -1212,24 +1166,17 @@ Antworte NUR mit reinem JSON:
         p += `Aufgabentypen: ${(fs.typen||[]).join(', ')}\n`;
         if (erlaubt3.length) { p += `\n## ANFORDERUNGSBEREICHE — VERBINDLICH\nErlaubt: ${erlaubt3.join(', ')}\nVERBOTEN: ${verboten3.join(', ')}\n`; }
         p += `\n## WICHTIG\n- Unteraufgaben rechnerisch unabhängig\n- Progression leicht→schwer\n- Konkrete Zahlen, kein Platzhalter\n\n`;
-        p += `Antworte NUR mit reinem JSON:\n{"aufgabenstellung":null,"unteraufgaben":[\n  {"nr":"${fs.nr}a","titel":null,"text":"...","loesung":"kurze Loesung oder Ergebnis","punkte":3,"anforderungsbereich":"reproduktion","typ":"Rechnung"}\n]}\nanforderungsbereich: ${erlaubt3.length ? erlaubt3.join(' | ') : 'reproduktion | leichteAnwendung | mittlereAnwendung | transfer'}
-loesung: kurze Musterloesung oder Ergebnis in 1 Zeile`;
-        try {
-          const raw = await callKI([{ type: 'text', text: p }], 3000);
-          const parsed = parseKI(raw);
-          // Vorhandenen Eintrag für diese Aufgabe ersetzen oder neu anlegen
-          const existingIdx = pr.genAufgaben.findIndex(a => a.taskId === fs.taskId);
-          const entry = { taskId: fs.taskId, nr: fs.nr, titel: fs.titel, zeitMinuten: fs.zeitMinuten, gesamtpunkte: fs.gesamtpunkte, aufgabenstellung: parsed.aufgabenstellung || null, unteraufgaben: parsed.unteraufgaben || [] };
-          if (existingIdx > -1) pr.genAufgaben[existingIdx] = entry;
-          else pr.genAufgaben.push(entry);
-          syncDerivedOrder();
-          savePruefungsDB(); renderGenAufgaben(); renderAFBBanner();
-          switchSubTab(3);
-        } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
-        cardGenBtn.disabled = false; cardGenBtn.textContent = '→';
+        p += `Antworte NUR mit reinem JSON:\n{"aufgabenstellung":null,"unteraufgaben":[\n  {"nr":"${fs.nr}a","titel":null,"text":"...","loesung":"kurze Loesung oder Ergebnis","punkte":3,"anforderungsbereich":"reproduktion","typ":"Rechnung"}\n]}\nanforderungsbereich: ${erlaubt3.length ? erlaubt3.join(' | ') : 'reproduktion | leichteAnwendung | mittlereAnwendung | transfer'}\nloesung: kurze Musterloesung oder Ergebnis in 1 Zeile`;
+        const raw = await callKI([{ type: 'text', text: p }], 3000);
+        const parsed = parseKI(raw);
+        const existingIdx = pr.genAufgaben.findIndex(a => a.taskId === fs.taskId);
+        const entry = { taskId: fs.taskId, nr: fs.nr, titel: fs.titel, zeitMinuten: fs.zeitMinuten, gesamtpunkte: fs.gesamtpunkte, aufgabenstellung: parsed.aufgabenstellung || null, unteraufgaben: parsed.unteraufgaben || [] };
+        if (existingIdx > -1) pr.genAufgaben[existingIdx] = entry;
+        else pr.genAufgaben.push(entry);
+        syncDerivedOrder();
+        savePruefungsDB(); renderGenAufgaben(); renderAFBBanner();
+        switchSubTab(3);
       };
-      head.appendChild(cardGenBtn);
-      card.appendChild(head);
 
       if (feinLocked) {
         const lockNote = tx('div', '', 'Diese Aufgabe ist in der Feinstruktur gesperrt. Ihre Vorgaben werden nicht mehr verändert.');
@@ -1441,64 +1388,94 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
           row.appendChild(del);
           listWrap.appendChild(row);
         });
-        // + neue Zeile
-        const addRow = mk('button', '');
-        addRow.textContent = '+ Zeile';
-        addRow.style.cssText = 'border:none;background:none;color:var(--tx3);cursor:pointer;font-size:11px;padding:4px 0 8px;text-align:left;';
-        addRow.disabled = feinLocked;
-        addRow.onclick = () => { const ls = getLines(); ls.push('reproduktion| → '); saveLines(ls); buildList(); const inps = listWrap.querySelectorAll('input[type=text]'); const last = inps[inps.length-1]; if (last) { last.style.display='block'; last.focus(); last.select(); } };
-        listWrap.appendChild(addRow);
-
-        const stats = countSpecStats(fs.spezifikation);
-        const infoRow = mk('div', '');
-        infoRow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:2px 0 10px;';
-        const statsChip = tx('span', 'fs-stats-chip', `${stats.teilaufgaben} Teilaufgaben · ${stats.punkte || 0} / ${fs.gesamtpunkte || 0} P`);
-        const statsOk = !fs.gesamtpunkte || stats.punkte === fs.gesamtpunkte;
-        statsChip.style.cssText = `font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:${statsOk ? 'rgba(22,163,74,.1)' : 'rgba(239,68,68,.08)'};color:${statsOk ? '#15803d' : '#dc2626'};`;
-        infoRow.appendChild(statsChip);
-        if (!statsOk) {
-          const distBtn = btn('Punkte verteilen', 'btn btn-ghost btn-xs');
-          distBtn.disabled = feinLocked;
-          distBtn.onclick = () => {
-            if (distributePointsAcrossSpec(fs)) {
-              savePruefungsDB();
-              buildList();
-              updatePunkteSum(listWrap);
-            }
-          };
-          infoRow.appendChild(distBtn);
-        }
-        listWrap.appendChild(infoRow);
-
-        const actionRow = mk('div', '');
-        actionRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;padding:0 0 10px;';
-        [
-          { label: 'Klarer', instruction: 'Formuliere die Teilaufgaben klarer und operatorenklarer. Behalte Niveau und Punkteverteilung moeglichst bei.' },
-          { label: '+ Transfer', instruction: 'Erhoehe den Transferanteil leicht. Mindestens eine spaetere Teilaufgabe soll anspruchsvoller werden. Behalte Gesamtidee und Gesamtpunkte bei.' },
-          { label: '+ Teilaufgaben', instruction: 'Teile die Aufgabe feiner auf und erhoehe die Zahl der Teilaufgaben leicht. Behalte Gesamtpunkte und Progression bei.' },
-          { label: 'Kompakter', instruction: 'Vereinfache die innere Struktur leicht und fasse sie kompakter. Weniger Redundanz, klarer Aufbau, gleiche Grundidee.' },
-        ].forEach(({ label, instruction }) => {
-          const b = btn(label, 'btn btn-ghost btn-xs');
-          b.disabled = feinLocked;
-          b.onclick = async () => {
-            if (feinLocked) return;
-            b.disabled = true;
-            try {
-              await reviseFeinstrukturTask(fs, instruction, label);
-              renderFeinstruktur();
-              renderAFBBanner();
-            } catch (e) {
-              statusEl.textContent = '⚠ ' + e.message;
-            }
-            b.disabled = false;
-          };
-          actionRow.appendChild(b);
-        });
-        listWrap.appendChild(actionRow);
       }
 
       buildList();
       card.appendChild(listWrap);
+
+      // ── Kartenfu­ß: + Zeile | Stats | Aktionen ▾ ────────────────
+      const foot = mk('div', '');
+      foot.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 14px 8px;border-top:1px solid var(--bord);flex-wrap:wrap;';
+
+      // + Zeile
+      const addLineBtn = btn('+ Zeile', 'btn btn-ghost btn-xs');
+      addLineBtn.disabled = feinLocked;
+      addLineBtn.onclick = () => {
+        const ls = getLines(); ls.push('reproduktion| → '); saveLines(ls); buildList();
+        const inps = listWrap.querySelectorAll('input[type=text]');
+        const last = inps[inps.length-1]; if (last) { last.style.display='block'; last.focus(); last.select(); }
+      };
+      foot.appendChild(addLineBtn);
+
+      // Stats-Chip
+      const stats = countSpecStats(fs.spezifikation);
+      const statsOk = !fs.gesamtpunkte || stats.punkte === fs.gesamtpunkte;
+      const statsChip = tx('span', 'fs-stats-chip', `${stats.teilaufgaben} TA · ${stats.punkte || 0}/${fs.gesamtpunkte || 0} P`);
+      statsChip.style.cssText = `font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:${statsOk ? 'rgba(22,163,74,.1)' : 'rgba(239,68,68,.08)'};color:${statsOk ? '#15803d' : '#dc2626'};`;
+      foot.appendChild(statsChip);
+
+      const footSpacer = mk('span', ''); footSpacer.style.flex = '1'; foot.appendChild(footSpacer);
+
+      // Aktionen ▾ Dropdown
+      const aktMenuWrap = mk('div', ''); aktMenuWrap.style.cssText = 'position:relative;';
+      const aktBtn = btn('Aktionen ▾', 'btn btn-ghost btn-xs');
+      const aktMenu = mk('div', '');
+      aktMenu.style.cssText = 'position:absolute;bottom:calc(100% + 4px);right:0;background:var(--surf);border:1px solid var(--bord);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:200;min-width:210px;padding:4px 0;display:none;';
+
+      function menuItem(label, onclick, disabled) {
+        const mi = mk('button', '');
+        mi.textContent = label;
+        mi.style.cssText = 'display:block;width:100%;text-align:left;padding:7px 14px;font-size:13px;border:none;background:none;cursor:pointer;color:var(--tx1);white-space:nowrap;';
+        if (disabled) { mi.disabled = true; mi.style.opacity = '.4'; mi.style.cursor = 'default'; }
+        mi.onmouseenter = () => { if (!disabled) mi.style.background = 'var(--surf2)'; };
+        mi.onmouseleave = () => { mi.style.background = ''; };
+        mi.onclick = (e) => { e.stopPropagation(); aktMenu.style.display = 'none'; if (!disabled) onclick(); };
+        return mi;
+      }
+      function menuSep() {
+        const s = mk('div', ''); s.style.cssText = 'height:1px;background:var(--bord);margin:3px 0;'; return s;
+      }
+
+      const runKI = async (label, fn) => {
+        aktBtn.textContent = `⏳ ${label}…`; aktBtn.disabled = true;
+        try { await fn(); } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
+        aktBtn.textContent = 'Aktionen ▾'; aktBtn.disabled = false;
+      };
+
+      aktMenu.appendChild(menuItem('↺ Feinstruktur neu generieren', () => runKI('Regeneriere', doCardRegen), feinLocked));
+      aktMenu.appendChild(menuItem('→ Konkrete Aufgabe generieren', () => runKI('Generiere', doCardGen), false));
+      aktMenu.appendChild(menuSep());
+      [
+        { label: 'Klarer formulieren',    instruction: 'Formuliere die Teilaufgaben klarer und operatorenklarer. Behalte Niveau und Punkteverteilung moeglichst bei.' },
+        { label: 'Mehr Teilaufgaben',     instruction: 'Teile die Aufgabe feiner auf und erhoehe die Zahl der Teilaufgaben leicht. Behalte Gesamtpunkte und Progression bei.' },
+        { label: 'Weniger Teilaufgaben',  instruction: 'Fasse Teilaufgaben zusammen und reduziere ihre Zahl. Behalte Gesamtpunkte und die wesentliche Struktur bei.' },
+        { label: 'Mehr Transfer',         instruction: 'Erhoehe den Transferanteil leicht. Mindestens eine spaetere Teilaufgabe soll anspruchsvoller werden. Behalte Gesamtidee und Gesamtpunkte bei.' },
+        { label: 'Kompakter',             instruction: 'Vereinfache die innere Struktur leicht und fasse sie kompakter. Weniger Redundanz, klarer Aufbau, gleiche Grundidee.' },
+      ].forEach(({ label, instruction }) => {
+        aktMenu.appendChild(menuItem(label, () => runKI(label, () => reviseFeinstrukturTask(fs, instruction, label).then(() => { renderFeinstruktur(); renderAFBBanner(); })), feinLocked));
+      });
+      aktMenu.appendChild(menuSep());
+      aktMenu.appendChild(menuItem('⟳ Punkte gleichmäßig verteilen', () => {
+        if (distributePointsAcrossSpec(fs)) { savePruefungsDB(); buildList(); updatePunkteSum(listWrap); }
+      }, feinLocked));
+      aktMenu.appendChild(menuSep());
+      aktMenu.appendChild(menuItem(feinLocked ? '🔓 Entsperren' : '🔐 Sperren', () => {
+        fs._feinLocked = !fs._feinLocked;
+        if (fs._feinLocked && sv) sv._grobUnlocked = false;
+        savePruefungsDB(); renderStruktur(); renderFeinstruktur();
+      }, false));
+
+      aktBtn.onclick = (e) => {
+        e.stopPropagation();
+        const open = aktMenu.style.display !== 'none';
+        document.querySelectorAll('.fs-aktionen-menu').forEach(m => { m.style.display = 'none'; });
+        aktMenu.style.display = open ? 'none' : '';
+        if (!open) { setTimeout(() => { document.addEventListener('click', () => { aktMenu.style.display = 'none'; }, { once: true }); }, 0); }
+      };
+      aktMenu.classList.add('fs-aktionen-menu');
+      aktMenuWrap.appendChild(aktBtn); aktMenuWrap.appendChild(aktMenu);
+      foot.appendChild(aktMenuWrap);
+      card.appendChild(foot);
       feinWrap.appendChild(card);
     });
   }

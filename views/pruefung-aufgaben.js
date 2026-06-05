@@ -1582,15 +1582,35 @@ Antworte NUR mit reinem JSON:
           p += `\nFuer jede Teilaufgabe: "aufgabe" = vollstaendiger Aufgabentext mit Zahlen, "loesung" = vollstaendiger Loesungsweg mit Ergebnis.`;
           p += `\nAntworte NUR mit reinem JSON ohne Kommentar:\n{"konkret":[{"aufgabe":"...","loesung":"..."}]}`;
           const raw = await callKI([{ type: 'text', text: p }], 1800);
-          // robust parsen: direkt als Array oder als Objekt mit .konkret
+          // Eigener Parser für {aufgabe, loesung}-Arrays — unabhängig von robustJsonParsePr
           let items = null;
+          const cleaned = raw.replace(/^```[a-zA-Z]*\n?/m, '').replace(/```\s*$/m, '').trim();
+          // Versuch 1: standard JSON.parse nach Repair
           try {
-            const parsed = parseKI(raw);
-            if (Array.isArray(parsed)) items = parsed;
-            else if (Array.isArray(parsed.konkret)) items = parsed.konkret;
-            else if (parsed.aufgabe) items = [parsed]; // KI hat nur ein Objekt geliefert
-          } catch(pe) {
-            konkretBtn.textContent = '⚠ KI-Antwort fehlerhaft';
+            const repaired = repairJsonStringsPr(cleaned);
+            const obj = JSON.parse(repaired);
+            if (Array.isArray(obj)) items = obj;
+            else if (Array.isArray(obj.konkret)) items = obj.konkret;
+            else if (obj.aufgabe) items = [obj];
+          } catch(_) {}
+          // Versuch 2: alle {aufgabe:…, loesung:…}-Objekte per Regex extrahieren
+          if (!items || !items.length) {
+            items = [];
+            const re = /\{\s*"aufgabe"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"loesung"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
+            let m;
+            while ((m = re.exec(cleaned)) !== null) {
+              items.push({ aufgabe: m[1].replace(/\\n/g, '\n'), loesung: m[2].replace(/\\n/g, '\n') });
+            }
+            // auch umgekehrte Reihenfolge der Keys
+            if (!items.length) {
+              const re2 = /\{\s*"loesung"\s*:\s*"((?:[^"\\]|\\.)*)"\s*,\s*"aufgabe"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
+              while ((m = re2.exec(cleaned)) !== null) {
+                items.push({ aufgabe: m[2].replace(/\\n/g, '\n'), loesung: m[1].replace(/\\n/g, '\n') });
+              }
+            }
+          }
+          if (!items || !items.length) {
+            konkretBtn.textContent = '⚠ Kein verwertbares Ergebnis';
             setTimeout(() => { konkretBtn.textContent = '✨ Konkrete Aufgabe erstellen'; konkretBtn.disabled = false; }, 3000);
             return;
           }

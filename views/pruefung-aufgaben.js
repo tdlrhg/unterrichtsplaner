@@ -175,7 +175,7 @@ function showRestrukturierungOverlay(pr, afterSave) {
 
         const lineRow = mk('div', '');
         lineRow.draggable = true;
-        lineRow.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;cursor:grab;';
+        lineRow.style.cssText = 'display:flex;align-items:flex-start;gap:6px;padding:4px 6px;border-radius:6px;cursor:grab;';
         lineRow.ondragstart = () => {
           dragSrcTaskIdx = taskIdx; dragSrcLineIdx = lineIdx;
           lineRow.style.opacity = '.4';
@@ -194,7 +194,7 @@ function showRestrukturierungOverlay(pr, afterSave) {
         lineRow.appendChild(badge);
 
         const text = tx('span', '', displayText);
-        text.style.cssText = 'flex:1;font-size:12px;color:var(--tx2);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
+        text.style.cssText = 'flex:1;font-size:12px;color:var(--tx2);word-break:break-word;';
         lineRow.appendChild(text);
 
         if (punkte !== null) {

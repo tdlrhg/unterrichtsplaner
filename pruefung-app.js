@@ -80,8 +80,6 @@ function showNewPruefungModal() {
       datum: datumInp.value || null,
       dauerVon,
       dauerBis: dauerBis && dauerBis >= dauerVon ? dauerBis : dauerVon,
-      lernziele: [],
-      aufgaben: [],
       erstellt: new Date().toISOString(),
     };
     PRUEFUNGSDB.push(pr);
@@ -113,14 +111,12 @@ async function prCheckVersion(ghDate) {
 (async () => {
   renderPr(); // Lade-State zeigen
 
-  const [data, pruefungen, checklisten, alteArbeiten, matdb, schulbuecher, klpdb, stilJson] = await Promise.all([
+  const [data, pruefungen, checklisten, alteArbeiten, schulbuecher, stilJson] = await Promise.all([
     sbDownload('data.json').catch(() => ({ fachplanungen: [], kurse: [] })),
     sbDownload('pruefungen.json').catch(() => []),
     sbDownload('checklisten.json').catch(() => []),
     sbDownload('alte_arbeiten.json').catch(() => []),
-    sbDownload('materialien.json').catch(() => []),
     sbDownload('schulbuecher.json').catch(() => []),
-    fetch('klp.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
     sbDownload('kompositionsstil.json').catch(() => null),
   ]);
 
@@ -131,9 +127,7 @@ async function prCheckVersion(ghDate) {
   PRUEFUNGSDB = Array.isArray(pruefungen) ? pruefungen : [];
   CHECKLISTDB = Array.isArray(checklisten) ? checklisten : [];
   ALTE_ARBEITEN_DB = Array.isArray(alteArbeiten) ? alteArbeiten : [];
-  MATDB = Array.isArray(matdb) ? matdb : [];
   SCHULBUCHDB = Array.isArray(schulbuecher) ? schulbuecher : [];
-  KLPDB = Array.isArray(klpdb) ? klpdb : [];
   if (stilJson?.text) KOMPOSITIONSSTIL = stilJson.text;
 
   renderPr();

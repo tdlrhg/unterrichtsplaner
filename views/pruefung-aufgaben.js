@@ -385,12 +385,6 @@ Antworte NUR mit reinem JSON:
     }
   }
 
-  function stufenLabel(n) {
-    const el = tx('div', '', 'Stufe ' + n);
-    el.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);padding:16px 0 6px;border-top:2px solid var(--bord);margin-top:8px;';
-    return el;
-  }
-
   // ════════════════════════════════════════════════════════════════
   // STUFE 1: Grobstruktur
   // ════════════════════════════════════════════════════════════════

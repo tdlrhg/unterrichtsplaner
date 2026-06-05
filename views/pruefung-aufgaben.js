@@ -1549,6 +1549,55 @@ Antworte NUR mit reinem JSON:
         listWrap.appendChild(row);
       });
       card.appendChild(listWrap);
+
+      // ── Footer: Konkrete Aufgabe erstellen ────────────────────────
+      const cardFoot = mk('div', '');
+      cardFoot.style.cssText = 'display:flex;align-items:center;justify-content:flex-end;padding:6px 10px;border-top:1px solid var(--bord);background:rgba(0,0,0,.02);';
+      const konkretBtn = btn('✨ Konkrete Aufgabe erstellen', 'btn btn-ghost btn-xs');
+      konkretBtn.style.cssText += ';font-size:12px;color:var(--pri);font-weight:600;';
+      konkretBtn.title = 'KI erstellt konkreten Aufgabentext mit Zahlenwerten → Panel ③';
+      konkretBtn.onclick = async (e) => {
+        e.stopPropagation();
+        konkretBtn.disabled = true;
+        konkretBtn.textContent = '⏳ KI arbeitet…';
+        try {
+          const specLines = parseSpecLines(fs);
+          if (!specLines.length) { konkretBtn.textContent = '✨ Konkrete Aufgabe erstellen'; konkretBtn.disabled = false; return; }
+          const { lernziele, quellenTexte } = buildKontext();
+          const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+          let p = `Du bist Mathematiklehrerin und erstellst eine konkrete Aufgabe für eine Klassenarbeit.\n`;
+          p += `Aufgabe ${fs.nr}: ${fs.titel || ''}\nZeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
+          if (fs.beschreibung?.trim()) p += `\n## AUFGABENBESCHREIBUNG\n${fs.beschreibung}\n`;
+          p += `\n## STRUKTUR DER TEILAUFGABEN (abstrakt, aus der Planung)\n`;
+          specLines.forEach((sl, i) => {
+            const afbDef = sl.afbKey ? ` [${AB_KEY_MAP[sl.afbKey].title}]` : '';
+            p += `- ${fs.nr}${LETTERS[i]}: ${sl.metaVorgabe}${sl.metaOutput ? ' → ' + sl.metaOutput : ''}${afbDef}${sl.punkte ? ' · ' + sl.punkte + ' P' : ''}\n`;
+          });
+          if (lernziele.length) { p += `\n## LERNZIELE\n`; lernziele.slice(0, 4).forEach(lz => { p += `- ${lz}\n`; }); }
+          if (quellenTexte.trim()) p += `\n## REFERENZAUFGABEN\n${quellenTexte.slice(0, 800)}\n`;
+          p += `\nERSTELLE GENAU ${specLines.length} Teilaufgabe(n) mit konkreten Zahlenwerten. Verwende passende, realistische Zahlen.`;
+          p += `\nFür jede Teilaufgabe: "aufgabe" = vollständiger Aufgabentext mit Zahlen, "loesung" = vollständiger Lösungsweg mit Ergebnis.`;
+          p += `\nAntworte NUR mit reinem JSON:\n{"konkret":[${specLines.map((_,i) => `{"aufgabe":"Aufgabe ${fs.nr}${LETTERS[i]}…","loesung":"Lösungsweg…"}`).join(',')}]}`;
+          const raw = await callKI([{ type: 'text', text: p }], 1800);
+          const parsed = parseKI(raw);
+          if (Array.isArray(parsed.konkret)) {
+            ensureKonkret(fs);
+            parsed.konkret.forEach((k, i) => {
+              if (fs.konkret[i]) {
+                if (k.aufgabe) fs.konkret[i].aufgabe = k.aufgabe;
+                if (k.loesung) fs.konkret[i].loesung = k.loesung;
+              }
+            });
+            savePruefungsDB();
+            renderKonkret();
+            switchSubTab(3);
+          }
+        } catch(err) { console.error(err); }
+        konkretBtn.textContent = '✨ Konkrete Aufgabe erstellen';
+        konkretBtn.disabled = false;
+      };
+      cardFoot.appendChild(konkretBtn);
+      card.appendChild(cardFoot);
       feinWrap.appendChild(card);
     });
   }

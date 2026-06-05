@@ -1169,7 +1169,31 @@ Antworte NUR mit reinem JSON:
       if (sum > 0) { fs.gesamtpunkte = sum; pktVal.textContent = sum + ' P'; pktSlider.value = Math.min(sum, 30); renderAFBBanner(); }
     }
 
+    // Buchstaben automatisch neu vergeben (a, b, c …) nach Position
+    function reletter() {
+      const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+      let afbIdx = 0;
+      const updated = getLines().map(line => {
+        const pipeIdx = line.indexOf('|');
+        const cand = pipeIdx > -1 ? line.slice(0, pipeIdx).trim() : null;
+        const afbKey = cand && AB_KEY_MAP[cand] ? cand : null;
+        if (!afbKey) return line;
+        let rest = line.slice(pipeIdx + 1).trim();
+        let pts = null;
+        const lp = rest.lastIndexOf('|');
+        if (lp > -1 && /^\d+$/.test(rest.slice(lp + 1).trim())) { pts = rest.slice(lp + 1).trim(); rest = rest.slice(0, lp).trim(); }
+        // Vorhandene Kennung abstreifen (alles vor erstem ':' das kurz ist)
+        const ci = rest.indexOf(':');
+        if (ci > -1 && ci <= 5) rest = rest.slice(ci + 1).trim();
+        const letter = LETTERS[afbIdx] ?? String(afbIdx + 1);
+        afbIdx++;
+        return afbKey + '|' + fs.nr + letter + ': ' + rest + (pts != null ? '|' + pts : '');
+      });
+      saveLines(updated);
+    }
+
     function buildTaList() {
+      reletter(); // Buchstaben vor dem Rendern synchronisieren
       taWrap.innerHTML = '';
       const lines = getLines();
       lines.forEach((line, li) => {
@@ -1185,7 +1209,12 @@ Antworte NUR mit reinem JSON:
             if (/^\d+$/.test(maybeP)) { zeilenPunkte = parseInt(maybeP); lineRest = lineRest.slice(0, lastPipe).trim(); }
           }
         }
-        const buildStr = () => (afbKey ? afbKey + '|' : '') + lineRest + (zeilenPunkte != null ? '|' + zeilenPunkte : '');
+        // Kennung (z.B. "2a") und Inhalt trennen
+        const colonIdx = lineRest.indexOf(':');
+        const kennung = (colonIdx > -1 && colonIdx <= 5) ? lineRest.slice(0, colonIdx).trim() : '';
+        let content = kennung ? lineRest.slice(colonIdx + 1).trim() : lineRest;
+
+        const buildStr = () => (afbKey ? afbKey + '|' : '') + (kennung ? kennung + ': ' : '') + content + (zeilenPunkte != null ? '|' + zeilenPunkte : '');
 
         const row = mk('div', '');
         row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surf);border-radius:6px;border:1px solid var(--bord);';
@@ -1204,11 +1233,18 @@ Antworte NUR mit reinem JSON:
         }
         row.appendChild(badge);
 
-        // Text
+        // Kennung-Label (read-only, grau)
+        if (kennung) {
+          const kennEl = tx('span', '', kennung + ':');
+          kennEl.style.cssText = 'font-size:12px;font-weight:700;color:var(--tx3);flex-shrink:0;';
+          row.appendChild(kennEl);
+        }
+
+        // Text (nur Inhalt nach der Kennung)
         const textInp = document.createElement('input');
-        textInp.type = 'text'; textInp.value = lineRest; textInp.disabled = feinLocked;
+        textInp.type = 'text'; textInp.value = content; textInp.disabled = feinLocked;
         textInp.style.cssText = 'flex:1;font-size:13px;font-family:inherit;border:none;outline:none;background:transparent;color:var(--tx1);';
-        textInp.oninput = () => { lineRest = textInp.value; const ls = getLines(); ls[li] = buildStr(); saveLines(ls); };
+        textInp.oninput = () => { content = textInp.value; const ls = getLines(); ls[li] = buildStr(); saveLines(ls); };
         textInp.onkeydown = e => {
           if (e.key === 'Enter') { e.preventDefault(); const ls = getLines(); ls.splice(li + 1, 0, afbKey ? afbKey + '| → ' : ''); saveLines(ls); buildTaList(); taWrap.querySelectorAll('input[type=text]')[li + 1]?.focus(); }
         };

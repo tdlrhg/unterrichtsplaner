@@ -643,7 +643,11 @@ Antworte NUR mit reinem JSON:
       });
       if (!alleAufgaben.length) return;
       quellenTexte += `\n### ${buch} / ${kap.titel}\n`;
-      alleAufgaben.slice(0, 10).forEach(({ ukTitel, a }) => {
+      const n = 10;
+      const sample = alleAufgaben.length <= n
+        ? alleAufgaben
+        : Array.from({ length: n }, (_, i) => alleAufgaben[Math.floor(i * alleAufgaben.length / n)]);
+      sample.forEach(({ ukTitel, a }) => {
         const nr = a.nr ? `${a.nr}` : (a.seite ? `S.${a.seite}` : '–');
         const p = a.punkte ? ` · ${a.punkte}P` : '';
         const thema = a.thema ? ` [${a.thema}]` : '';

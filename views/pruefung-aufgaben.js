@@ -534,6 +534,39 @@ Antworte NUR mit reinem JSON:
   stilSec.appendChild(stilHint);
   panel4.appendChild(stilSec);
 
+  // ── AFB-Erklärung ─────────────────────────────────────────────
+  const afbInfoSec = mk('div', '');
+  afbInfoSec.style.cssText = 'margin-top:24px;';
+  const afbInfoHdr = tx('div', '', 'Anforderungsbereiche – was steckt dahinter?');
+  afbInfoHdr.style.cssText = 'font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);margin-bottom:10px;';
+  afbInfoSec.appendChild(afbInfoHdr);
+
+  [
+    { key: 'reproduktion',      letter: 'R', color: '#16a34a', label: 'Reproduktion',
+      text: 'Gelerntes direkt wiedergeben: Definitionen nennen, Verfahren nach Vorlage ausführen, Fakten abrufen. Der Lösungsweg wurde so oder sehr ähnlich eingeübt.' },
+    { key: 'leichteAnwendung',  letter: 'A', color: '#ca8a04', label: 'Leichte Anwendung',
+      text: 'Bekannte Verfahren auf eine neue, aber ähnliche Situation übertragen. Kleinere Denkschritte nötig, der Kontext ist aber noch vertraut.' },
+    { key: 'mittlereAnwendung', letter: 'A', color: '#ea580c', label: 'Mittlere Anwendung',
+      text: 'Mehrere Konzepte verknüpfen, strukturiertere Probleme eigenständig lösen. Die Aufgabe ist neu, aber lösbar mit dem gelernten Repertoire.' },
+    { key: 'transfer',          letter: 'T', color: '#dc2626', label: 'Transfer',
+      text: 'Wissen auf unbekannte Situationen übertragen, Zusammenhänge beurteilen, begründen oder gestalten. Hohes Maß an Eigenständigkeit.' },
+  ].forEach(({ letter, color, label, text }) => {
+    const row = mk('div', '');
+    row.style.cssText = 'display:grid;grid-template-columns:28px 1fr;gap:8px;align-items:start;padding:8px 10px;border-radius:7px;margin-bottom:6px;background:var(--surf2);border:1px solid var(--bord);';
+    const badge = tx('div', '', letter);
+    badge.style.cssText = `width:22px;height:22px;border-radius:50%;background:${color}22;color:${color};font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;`;
+    row.appendChild(badge);
+    const col = mk('div', '');
+    const lbl = tx('div', '', label);
+    lbl.style.cssText = `font-size:13px;font-weight:700;color:${color};margin-bottom:2px;`;
+    const desc = tx('div', '', text);
+    desc.style.cssText = 'font-size:12px;color:var(--tx2);line-height:1.5;';
+    col.appendChild(lbl); col.appendChild(desc);
+    row.appendChild(col);
+    afbInfoSec.appendChild(row);
+  });
+  panel4.appendChild(afbInfoSec);
+
   // ── AFB-Zielkorridore in Einstellungen ────────────────────────
   const afbZielSec = mk('div', '');
   afbZielSec.style.cssText = 'margin-top:24px;';

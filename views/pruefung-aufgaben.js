@@ -657,13 +657,21 @@ Antworte NUR mit reinem JSON:
       });
     });
     quellenKap.forEach(({ buch, kap }) => {
-      const aufgaben = (kap.aufgaben || []).filter(a => a.text || a.aufgabenstellung);
-      if (!aufgaben.length) return;
+      // Aufgaben aus Kapitel direkt UND aus allen Unterkapiteln sammeln
+      const alleAufgaben = [];
+      const filterFn = a => a.inhalt || a.text || a.aufgabenstellung;
+      (kap.aufgaben || []).filter(filterFn).forEach(a => alleAufgaben.push({ ukTitel: null, a }));
+      (kap.unterkapitel || []).forEach(u => {
+        (u.aufgaben || []).filter(filterFn).forEach(a => alleAufgaben.push({ ukTitel: u.titel, a }));
+      });
+      if (!alleAufgaben.length) return;
       quellenTexte += `\n### ${buch} / ${kap.titel}\n`;
-      aufgaben.slice(0, 40).forEach(a => {
-        const nr = a.nr ? `${a.nr}` : '–';
+      alleAufgaben.slice(0, 40).forEach(({ ukTitel, a }) => {
+        const nr = a.nr ? `${a.nr}` : (a.seite ? `S.${a.seite}` : '–');
         const p = a.punkte ? ` · ${a.punkte}P` : '';
-        quellenTexte += `  ${nr}${p}: ${a.aufgabenstellung || ''}${a.text ? ' ' + a.text : ''}\n`;
+        const thema = a.thema ? ` [${a.thema}]` : '';
+        const text = a.inhalt || a.aufgabenstellung || a.text || '';
+        quellenTexte += `  ${nr}${p}${thema}: ${text}\n`;
       });
     });
     return { refArbeiten, lernziele, quellenTexte };

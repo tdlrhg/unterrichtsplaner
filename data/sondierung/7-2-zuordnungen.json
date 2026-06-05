@@ -1,0 +1,182 @@
+[
+  {
+    "dateiname": "1. Zuordnungen.pptx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/1. Zuordnungen.pptx",
+    "dokumenttyp": "Unterrichtsfolie",
+    "themen": ["Zuordnungen", "funktionaler Zusammenhang", "Wertetabelle", "Preis-Menge"],
+    "kurzinhalt": "Einstieg in Zuordnungen ueber Preis-Menge-Situationen. Thematisiert Abhaengigkeiten, Wertetabellen und erste Formeln fuer funktionale Zusammenhaenge.",
+    "rolle": "schuelermaterial",
+    "jahrgang": ["7"],
+    "hatLoesung": false
+  },
+  {
+    "dateiname": "1a. Sinnlose Zwischenwerte.pptx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/1a. Sinnlose Zwischenwerte.pptx",
+    "dokumenttyp": "Unterrichtsfolie",
+    "themen": ["Zuordnungen", "Graphen", "diskrete Daten", "sinnlose Zwischenwerte"],
+    "kurzinhalt": "Folie zur Frage, wann Verbindungslinien in Graphen sinnvoll sind. Nutzt Temperaturdaten und thematisiert diskrete versus kontinuierliche Deutung von Zuordnungen.",
+    "rolle": "schuelermaterial",
+    "jahrgang": ["7"],
+    "hatLoesung": false
+  },
+  {
+    "dateiname": "2. Proportionalität.pptx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/2. Proportionalität.pptx",
+    "dokumenttyp": "Unterrichtsfolie",
+    "themen": ["Proportionalitaet", "Vielfachenregel", "Wertetabellen"],
+    "kurzinhalt": "Unterrichtsfolie zur Proportionalitaet mit Preis-Gewicht-Beispielen. Fuehrt die Vielfachenregel ein und arbeitet an typischen Veraenderungen in Wertetabellen.",
+    "rolle": "schuelermaterial",
+    "jahrgang": ["7"],
+    "hatLoesung": false
+  },
+  {
+    "dateiname": "3. Dreisatz.pptx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/3. Dreisatz.pptx",
+    "dokumenttyp": "Unterrichtsfolie",
+    "themen": ["Dreisatz", "proportionale Zuordnungen", "Hilfswert 1"],
+    "kurzinhalt": "Folie zum Dreisatz mit Bonbon-Beispiel. Zeigt klassische Dreisatztabellen, den Weg ueber den Hilfswert 1 und alternative Hilfswerte.",
+    "rolle": "schuelermaterial",
+    "jahrgang": ["7"],
+    "hatLoesung": true
+  },
+  {
+    "dateiname": "4. Antiproportionalität und Dreisatz.pptx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/4. Antiproportionalität und Dreisatz.pptx",
+    "dokumenttyp": "Unterrichtsfolie",
+    "themen": ["Antiproportionalitaet", "Dreisatz", "Wasserverbrauch", "Personen-Zeit"],
+    "kurzinhalt": "Unterrichtsfolie zur antiproportionalen Zuordnung anhand eines Schiffsvorrats. Verknuepft Personenanzahl und Reichweite und leitet antiproportionale Denkweisen her.",
+    "rolle": "schuelermaterial",
+    "jahrgang": ["7"],
+    "hatLoesung": true
+  },
+  {
+    "dateiname": "5. Produktgleichheit.pptx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/5. Produktgleichheit.pptx",
+    "dokumenttyp": "Unterrichtsfolie",
+    "themen": ["Antiproportionalitaet", "Produktgleichheit", "Textbreite", "Zeilenanzahl"],
+    "kurzinhalt": "Folie zur Produktgleichheit bei antiproportionalen Zuordnungen. Nutzt eine Word-Layout-Situation mit Textbreite und Zeilenanzahl.",
+    "rolle": "schuelermaterial",
+    "jahrgang": ["7"],
+    "hatLoesung": true
+  },
+  {
+    "dateiname": "6. Quotientengleichheit.pptx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/6. Quotientengleichheit.pptx",
+    "dokumenttyp": "Unterrichtsfolie",
+    "themen": ["Proportionalitaet", "Quotientengleichheit", "Preis pro Liter"],
+    "kurzinhalt": "Folie zur Quotientengleichheit bei proportionalen Zuordnungen. Untersucht Benzinpreise ueber den konstanten Preis pro Liter.",
+    "rolle": "schuelermaterial",
+    "jahrgang": ["7"],
+    "hatLoesung": true
+  },
+  {
+    "dateiname": "7 ebook Körner - Grundwissen Zuordnungen.pdf",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/7 ebook Körner - Grundwissen Zuordnungen.pdf",
+    "dokumenttyp": "Lehrtext/Grundwissen",
+    "themen": ["Zuordnungen", "Grundwissen"],
+    "kurzinhalt": "Grundwissen-Material zu Zuordnungen aus einem E-Book. Der direkt extrahierbare PDF-Text ist stark verrauscht, die Datei wirkt aber klar als Hintergrund- oder Uebungsmaterial zum Themenblock.",
+    "rolle": "lehrkraftkontext",
+    "jahrgang": ["7"],
+    "hatLoesung": false
+  },
+  {
+    "dateiname": "Check-in Zuordnungen.pdf",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/Check-in Zuordnungen.pdf",
+    "dokumenttyp": "Check-in/Check-out/Test",
+    "themen": ["Zuordnungen", "Diagnose", "Checkliste", "Grundwissen"],
+    "kurzinhalt": "Diagnosematerial aus dem Lambacher Schweizer mit Checkliste und Lerntipps. Dient der Eingangserhebung bzw. Standortbestimmung zu Zuordnungen.",
+    "rolle": "diagnose",
+    "jahrgang": ["7"],
+    "hatLoesung": true
+  },
+  {
+    "dateiname": "Check-out Zuordnungen.docx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/Check-out Zuordnungen.docx",
+    "dokumenttyp": "Check-in/Check-out/Test",
+    "themen": ["Zuordnungen", "Diagnose", "Graphen", "Wasserverbrauch"],
+    "kurzinhalt": "Abschlussdiagnose zum Kapitel Zuordnungen. Enthaelt Aufgaben zum Zeichnen und Deuten von Graphen und zur Selbsteinschaetzung.",
+    "rolle": "diagnose",
+    "jahrgang": ["7"],
+    "hatLoesung": false
+  },
+  {
+    "dateiname": "KV Dreisatz Übung - Weihnachten Plätzchen backen.pdf",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/KV Dreisatz Übung - Weihnachten Plätzchen backen.pdf",
+    "dokumenttyp": "Spiel/Übung",
+    "themen": ["Dreisatz", "proportionale Zuordnungen", "antiproportionale Zuordnungen", "Weihnachten"],
+    "kurzinhalt": "Kopiervorlage zur Uebung von proportionalen und antiproportionalen Zuordnungen im Kontext Plaetzchen backen. Wirkt wie differenzierte Uebung mit starkem Sachkontext.",
+    "rolle": "schuelermaterial",
+    "jahrgang": ["7"],
+    "hatLoesung": false
+  },
+  {
+    "dateiname": "Selbsttest Zuordnungen Darstellung.docx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/Selbsttest Zuordnungen Darstellung.docx",
+    "dokumenttyp": "Check-in/Check-out/Test",
+    "themen": ["Zuordnungen", "Selbsttest", "Darstellungen", "Wertetabellen"],
+    "kurzinhalt": "Selbsttest zur Einschraetzung eigener Kompetenzen bei Zuordnungen mit Fokus auf passende Darstellungen und Aufgabenbearbeitung nach Ampellogik.",
+    "rolle": "diagnose",
+    "jahrgang": ["7"],
+    "hatLoesung": false
+  },
+  {
+    "dateiname": "Selbsttest Zuordnungen.docx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/Selbsttest Zuordnungen.docx",
+    "dokumenttyp": "Check-in/Check-out/Test",
+    "themen": ["Zuordnungen", "Selbsttest", "Kompetenzeinschaetzung"],
+    "kurzinhalt": "Selbsttest mit Ampellogik zur Diagnose des Lernstands im Themenfeld Zuordnungen. Sammelt gruene, gelbe und rote Aufgaben zur weiteren Arbeit.",
+    "rolle": "diagnose",
+    "jahrgang": ["7"],
+    "hatLoesung": false
+  },
+  {
+    "dateiname": "Übersicht Zuordnungen.pptx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/Übersicht Zuordnungen.pptx",
+    "dokumenttyp": "Unterrichtsfolie",
+    "themen": ["Zuordnungen", "Uebersicht", "proportional", "antiproportional", "Regeln"],
+    "kurzinhalt": "Uebersichtsfolie zu Typen von Zuordnungen. Stellt proportional, antiproportional und nicht proportionale Faelle mit zugehoerigen Regeln gegenueber.",
+    "rolle": "schuelermaterial",
+    "jahrgang": ["7"],
+    "hatLoesung": false
+  },
+  {
+    "dateiname": "Zuordnungen Checklist.pdf",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/Zuordnungen Checklist.pdf",
+    "dokumenttyp": "Loesung/Checkliste",
+    "themen": ["Zuordnungen", "Checkliste", "Kompetenzen", "Selbsteinschaetzung"],
+    "kurzinhalt": "Ausformulierte Kompetenzcheckliste zu Zuordnungen mit Ich-kann-Aussagen. Geeignet als Lernziel- oder Diagnosegrundlage.",
+    "rolle": "loesung",
+    "jahrgang": ["7"],
+    "hatLoesung": true
+  },
+  {
+    "dateiname": "Zuordnungen in der Natur - Einstieg und erste Darstellungsformen.pptx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/Zuordnungen in der Natur - Einstieg und erste Darstellungsformen.pptx",
+    "dokumenttyp": "Unterrichtsfolie",
+    "themen": ["Zuordnungen", "Einstieg", "Darstellungsformen", "Naturbezug"],
+    "kurzinhalt": "Einstiegsfolie zu Zuordnungen mit Naturkontext und ersten Darstellungsformen. Thematisiert insbesondere Zuordnungstabellen und Ausgangs- bzw. zugeordnete Groesse.",
+    "rolle": "schuelermaterial",
+    "jahrgang": ["7"],
+    "hatLoesung": false
+  },
+  {
+    "dateiname": "checkliste_zuordnungen.docx",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/checkliste_zuordnungen.docx",
+    "dokumenttyp": "Loesung/Checkliste",
+    "themen": ["Zuordnungen", "Checkliste", "Kompetenzen"],
+    "kurzinhalt": "Kurze Checkliste zur Einschaetzung von Kompetenzen im Themenfeld Zuordnungen mit Symbolen fuer sicher, unsicher und noch nicht.",
+    "rolle": "loesung",
+    "jahrgang": ["7"],
+    "hatLoesung": true
+  },
+  {
+    "dateiname": "ebook Schmidt - Spielend fit in Mathe-Spiele zu proportionalen und antiproportionalen Zuordnungen.pdf",
+    "pfad": "/Volumes/Dateien/Mathe/7-8/7.2 Zuordnungen/ebook Schmidt - Spielend fit in Mathe-Spiele zu proportionalen und antiproportionalen Zuordnungen.pdf",
+    "dokumenttyp": "Spiel/Übung",
+    "themen": ["proportionale Zuordnungen", "antiproportionale Zuordnungen", "Spiele", "Uebung"],
+    "kurzinhalt": "E-Book mit spielerischen Uebungsformaten zu proportionalen und antiproportionalen Zuordnungen. Der PDF-Text ist verrauscht, die Datei ist aber klar als Uebungs- bzw. Spielsammlung erkennbar.",
+    "rolle": "schuelermaterial",
+    "jahrgang": ["7"],
+    "hatLoesung": false
+  }
+]

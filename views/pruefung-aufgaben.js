@@ -1381,17 +1381,21 @@ Antworte NUR mit reinem JSON:
     regenBtn2.title = 'Teilaufgaben von KI neu vorschlagen lassen – Anzahl bleibt gleich';
     regenBtn2.onclick = () => runKIOverlay('Neu generieren', async () => {
       const { lernziele, quellenTexte } = buildKontext();
-      const anf2 = sv?.anforderung || {};
-      const erlaubt2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) > 0);
-      const verboten2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) === 0);
-      const anzahl = getLines().filter(l => { const p = l.indexOf('|'); return p > -1 && AB_KEY_MAP[l.slice(0,p).trim()]; }).length || getLines().length;
+      // AFB-Sequenz aus aktuellen Zeilen lesen
+      const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+      const afbLines = getLines().map(l => { const p = l.indexOf('|'); return p > -1 ? l.slice(0, p).trim() : null; }).filter(k => k && AB_KEY_MAP[k]);
+      const anzahl = afbLines.length || getLines().length;
       let p = `Du planst Aufgabe ${fs.nr} einer Klassenarbeit.\nTitel: ${fs.titel}\nZeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
       if (fs.beschreibung?.trim()) p += `\n## AUFGABENBESCHREIBUNG (Hauptgrundlage)\n${fs.beschreibung}\n`;
-      if (erlaubt2.length) p += `\n## ANFORDERUNGSBEREICHE\nErlaubt: ${erlaubt2.join(', ')}\nVERBOTEN: ${verboten2.join(', ')}\n`;
+      if (afbLines.length) {
+        p += `\n## ANFORDERUNGSBEREICHE PRO TEILAUFGABE (VERBINDLICH – exakt so übernehmen)\n`;
+        afbLines.forEach((k, i) => { p += `- Teilaufgabe ${fs.nr}${LETTERS[i]}: ${AB_KEY_MAP[k].title} (${k})\n`; });
+      }
       if (lernziele.length) { p += '\n## LERNZIELE\n'; lernziele.slice(0, 4).forEach(lz => { p += `- ${lz}\n`; }); }
       if (quellenTexte.trim()) p += `\n## QUELLEN\n${quellenTexte.slice(0, 1200)}\n`;
       p += `\nERZEUGE GENAU ${anzahl} Teilaufgabe(n). Nicht mehr, nicht weniger.\n`;
-      p += `Antworte NUR mit reinem JSON:\n{"spezifikation":"reproduktion|${fs.nr}a: Vorgabe → Schülertätigkeit\\nleichteAnwendung|${fs.nr}b: Vorgabe → Schülertätigkeit"}`;
+      const example = afbLines.map((k, i) => `${k}|${fs.nr}${LETTERS[i]}: Vorgabe → Schülertätigkeit`).join('\\n') || `leichteAnwendung|${fs.nr}a: Vorgabe → Schülertätigkeit`;
+      p += `Antworte NUR mit reinem JSON:\n{"spezifikation":"${example}"}`;
       const raw = await callKI([{ type: 'text', text: p }], 1500);
       fs.spezifikation = (parseKI(raw).spezifikation) || fs.spezifikation;
       savePruefungsDB();

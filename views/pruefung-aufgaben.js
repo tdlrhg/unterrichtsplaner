@@ -631,8 +631,27 @@ Antworte NUR mit reinem JSON:
     (pr.ausgewaehlteLernziele || []).forEach(lzId => {
       CHECKLISTDB.forEach(cl => { (cl.lernziele || []).forEach(lz => { if (lz.id === lzId) lernziele.push(lz.text); }); });
     });
-    // Quellen als strukturierten Text aufbereiten — vollständige Aufgaben, nach Quelle geordnet
+    // Quellen als strukturierten Text aufbereiten — Schulbuch zuerst, dann alte Arbeiten
     let quellenTexte = '';
+    // 1. Schulbuch-Kapitel (zuerst, damit sie nicht vom Zeichenlimit abgeschnitten werden)
+    quellenKap.forEach(({ buch, kap }) => {
+      const alleAufgaben = [];
+      const filterFn = a => a.inhalt || a.text || a.aufgabenstellung;
+      (kap.aufgaben || []).filter(filterFn).forEach(a => alleAufgaben.push({ ukTitel: null, a }));
+      (kap.unterkapitel || []).forEach(u => {
+        (u.aufgaben || []).filter(filterFn).forEach(a => alleAufgaben.push({ ukTitel: u.titel, a }));
+      });
+      if (!alleAufgaben.length) return;
+      quellenTexte += `\n### ${buch} / ${kap.titel}\n`;
+      alleAufgaben.slice(0, 30).forEach(({ ukTitel, a }) => {
+        const nr = a.nr ? `${a.nr}` : (a.seite ? `S.${a.seite}` : '–');
+        const p = a.punkte ? ` · ${a.punkte}P` : '';
+        const thema = a.thema ? ` [${a.thema}]` : '';
+        const text = a.inhalt || a.aufgabenstellung || a.text || '';
+        quellenTexte += `  ${nr}${p}${thema}: ${text}\n`;
+      });
+    });
+    // 2. Alte Arbeiten
     quellenAA.forEach(aa => {
       const aufgaben = (aa.aufgaben || []).filter(a => a.text || a.aufgabenstellung);
       if (!aufgaben.length) return;
@@ -654,24 +673,6 @@ Antworte NUR mit reinem JSON:
       // Aufgaben ohne erkennbare Nummer
       aufgaben.filter(a => !String(a.nr || '').match(/^\d+/)).forEach(a => {
         quellenTexte += `  – ${a.aufgabenstellung || ''}${a.text ? ' ' + a.text : ''}\n`;
-      });
-    });
-    quellenKap.forEach(({ buch, kap }) => {
-      // Aufgaben aus Kapitel direkt UND aus allen Unterkapiteln sammeln
-      const alleAufgaben = [];
-      const filterFn = a => a.inhalt || a.text || a.aufgabenstellung;
-      (kap.aufgaben || []).filter(filterFn).forEach(a => alleAufgaben.push({ ukTitel: null, a }));
-      (kap.unterkapitel || []).forEach(u => {
-        (u.aufgaben || []).filter(filterFn).forEach(a => alleAufgaben.push({ ukTitel: u.titel, a }));
-      });
-      if (!alleAufgaben.length) return;
-      quellenTexte += `\n### ${buch} / ${kap.titel}\n`;
-      alleAufgaben.slice(0, 40).forEach(({ ukTitel, a }) => {
-        const nr = a.nr ? `${a.nr}` : (a.seite ? `S.${a.seite}` : '–');
-        const p = a.punkte ? ` · ${a.punkte}P` : '';
-        const thema = a.thema ? ` [${a.thema}]` : '';
-        const text = a.inhalt || a.aufgabenstellung || a.text || '';
-        quellenTexte += `  ${nr}${p}${thema}: ${text}\n`;
       });
     });
     return { refArbeiten, lernziele, quellenTexte };
@@ -1446,7 +1447,7 @@ Antworte NUR mit reinem JSON:
         afbLines.forEach((k, i) => { p += `- Teilaufgabe ${fs.nr}${LETTERS[i]}: ${AB_KEY_MAP[k].title} (${k}) – ${AFB_DEFS[k]}\n`; });
       }
       if (lernziele.length) { p += '\n## LERNZIELE\n'; lernziele.slice(0, 4).forEach(lz => { p += `- ${lz}\n`; }); }
-      if (quellenTexte.trim()) p += `\n## QUELLEN\n${quellenTexte.slice(0, 1200)}\n`;
+      if (quellenTexte.trim()) p += `\n## QUELLEN\n${quellenTexte.slice(0, 2500)}\n`;
       p += `\nERZEUGE GENAU ${anzahl} Teilaufgabe(n). Nicht mehr, nicht weniger.\n`;
       const example = afbLines.map((k, i) => `${k}|${fs.nr}${LETTERS[i]}: Vorgabe → Schülertätigkeit`).join('\\n') || `leichteAnwendung|${fs.nr}a: Vorgabe → Schülertätigkeit`;
       p += `Antworte NUR mit reinem JSON:\n{"spezifikation":"${example}"}`;
@@ -1587,7 +1588,7 @@ Antworte NUR mit reinem JSON:
             p += `- Teilaufgabe ${fs.nr}${LETTERS[i]}: ${sl.metaVorgabe}${sl.metaOutput ? ' -> ' + sl.metaOutput : ''}${afbDef}${sl.punkte ? ' (' + sl.punkte + ' P)' : ''}\n`;
           });
           if (lernziele.length) { p += `\n## LERNZIELE\n`; lernziele.slice(0, 4).forEach(lz => { p += `- ${lz}\n`; }); }
-          if (quellenTexte && quellenTexte.trim()) p += `\n## REFERENZAUFGABEN\n${quellenTexte.slice(0, 800)}\n`;
+          if (quellenTexte && quellenTexte.trim()) p += `\n## REFERENZAUFGABEN\n${quellenTexte.slice(0, 2500)}\n`;
           p += `\nErstelle fuer jede der ${specLines.length} Teilaufgabe(n) einen vollstaendigen, schuelergerechten Aufgabentext mit allen konkreten Zahlenwerten.`;
           p += `\nDer Umfang richtet sich nach der Beschreibung (z.B. Tabelle mit 9 Zeilen = 9 Zeilen im Aufgabentext).`;
           p += `\nFuer "loesung": vollstaendiger Loesungsweg mit allen Zwischenschritten und Ergebnissen.`;

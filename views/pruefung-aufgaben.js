@@ -1398,51 +1398,6 @@ Antworte NUR mit reinem JSON:
     });
     kiBtns.appendChild(regenBtn2);
 
-    // → Konkreten Aufgabentext generieren
-    const genBtn2 = btn('→ Konkreten Text', 'btn btn-ghost btn-xs');
-    genBtn2.title = 'Konkreten Aufgabentext generieren und in Tab 3 anzeigen';
-    genBtn2.onclick = async () => {
-      kiStatus.textContent = '⏳ Generiere…';
-      kiBtns.querySelectorAll('button').forEach(b => { b.disabled = true; });
-      try {
-        const anf3 = sv?.anforderung || {};
-        const erlaubt3 = Object.keys(AB_KEY_MAP).filter(k => (anf3[k] || 0) > 0);
-        const verboten3 = Object.keys(AB_KEY_MAP).filter(k => (anf3[k] || 0) === 0);
-        let p = `Erstelle konkrete Aufgabe ${fs.nr} "${fs.titel}" für eine Klassenarbeit.\n\n## SPEZIFIKATION\n${fs.spezifikation}\n\nZeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
-        if (erlaubt3.length) p += `\n## ANFORDERUNGSBEREICHE\nErlaubt: ${erlaubt3.join(', ')}\nVERBOTEN: ${verboten3.join(', ')}\n`;
-        p += `\nAntworte NUR mit reinem JSON:\n{"aufgabenstellung":null,"unteraufgaben":[{"nr":"${fs.nr}a","titel":null,"text":"...","loesung":"...","punkte":3,"anforderungsbereich":"reproduktion","typ":"Rechnung"}]}`;
-        const raw = await callKI([{ type: 'text', text: p }], 3000);
-        const parsed = parseKI(raw);
-        const existingIdx = pr.genAufgaben.findIndex(a => a.taskId === fs.taskId);
-        const entry = { taskId: fs.taskId, nr: fs.nr, titel: fs.titel, zeitMinuten: fs.zeitMinuten, gesamtpunkte: fs.gesamtpunkte, aufgabenstellung: parsed.aufgabenstellung || null, unteraufgaben: parsed.unteraufgaben || [] };
-        if (existingIdx > -1) pr.genAufgaben[existingIdx] = entry; else pr.genAufgaben.push(entry);
-        syncDerivedOrder(); savePruefungsDB(); renderGenAufgaben(); renderAFBBanner();
-        closeOv(); switchSubTab(3);
-      } catch(e) { kiStatus.textContent = '⚠ ' + e.message.slice(0, 80); kiBtns.querySelectorAll('button').forEach(b => { b.disabled = false; }); }
-    };
-    kiBtns.appendChild(genBtn2);
-
-    kiBtns.appendChild(tx('span', '', ''));  // kleine Lücke
-
-    // Überarbeitungs-Aktionen
-    [
-      { label: 'Klarer formulieren',   instruction: 'Formuliere die Teilaufgaben klarer und operatorenklarer. Behalte Niveau und Punkteverteilung bei.' },
-      { label: 'Mehr Teilaufgaben',    instruction: 'Teile die Aufgabe feiner auf, erhoehe die Zahl der Teilaufgaben leicht. Behalte Gesamtpunkte und Progression bei.' },
-      { label: 'Weniger Teilaufgaben', instruction: 'Fasse Teilaufgaben zusammen, reduziere ihre Zahl. Behalte Gesamtpunkte und wesentliche Struktur bei.' },
-      { label: 'Mehr Transfer',        instruction: 'Erhoehe den Transferanteil, mindestens eine Teilaufgabe soll anspruchsvoller werden. Behalte Gesamtidee und Gesamtpunkte bei.' },
-      { label: 'Kompakter',            instruction: 'Vereinfache die Struktur, weniger Redundanz, klarer Aufbau, gleiche Grundidee.' },
-    ].forEach(({ label, instruction }) => {
-      const b = btn(label, 'btn btn-ghost btn-xs');
-      b.onclick = () => runKIOverlay(label, () => reviseFeinstrukturTask(fs, instruction, label));
-      kiBtns.appendChild(b);
-    });
-
-    // ⟳ Punkte verteilen
-    const verteilBtn = btn('⟳ Punkte verteilen', 'btn btn-ghost btn-xs');
-    verteilBtn.title = 'Gesamtpunkte gleichmäßig auf Teilaufgaben verteilen';
-    verteilBtn.onclick = () => { if (distributePointsAcrossSpec(fs)) { savePruefungsDB(); buildTaList(); recalcPunkte(); } };
-    kiBtns.appendChild(verteilBtn);
-
     kiSec.appendChild(kiBtns);
     body.appendChild(kiSec);
     pan.appendChild(body);

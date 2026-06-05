@@ -1208,10 +1208,16 @@ Antworte NUR mit reinem JSON:
     body.appendChild(beschFg);
 
     // ── Teilaufgaben ────────────────────────────────────────────────
+    const taHdrRow = mk('div', '');
+    taHdrRow.style.cssText = 'display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;';
     const taHdr = mk('div', '');
     taHdr.style.cssText = 'font-size:13px;font-weight:700;color:var(--tx1);';
     taHdr.textContent = 'Teilaufgaben';
-    body.appendChild(taHdr);
+    taHdrRow.appendChild(taHdr);
+    const taHint = tx('span', '', '⚠ Metaebene: konkrete Zahlenwerte gehören in Panel ③');
+    taHint.style.cssText = 'font-size:11px;color:#ca8a04;font-weight:600;';
+    taHdrRow.appendChild(taHint);
+    body.appendChild(taHdrRow);
 
     const taWrap = mk('div', '');
     taWrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
@@ -1261,11 +1267,11 @@ Antworte NUR mit reinem JSON:
       colHdr.style.cssText = 'display:grid;grid-template-columns:22px 36px 1fr 16px 1fr 42px 24px;gap:0 6px;padding:0 8px 2px;';
       colHdr.appendChild(mk('div', ''));
       colHdr.appendChild(mk('div', ''));
-      const vHdr = tx('div', '', 'Aufgabeninput / Vorgabe');
+      const vHdr = tx('div', '', 'Vorgabe / Kontext (abstrakt – keine Zahlenwerte)');
       vHdr.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx3);';
       colHdr.appendChild(vHdr);
       colHdr.appendChild(mk('div', ''));
-      const oHdr = tx('div', '', 'Geplanter Schüleroutput');
+      const oHdr = tx('div', '', 'Geplante Schülertätigkeit (abstrakt)');
       oHdr.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx3);';
       colHdr.appendChild(oHdr);
       taWrap.appendChild(colHdr);
@@ -1324,7 +1330,7 @@ Antworte NUR mit reinem JSON:
         // Vorgabe-Input
         const vInp = document.createElement('input');
         vInp.type = 'text'; vInp.value = vorgabe; vInp.disabled = feinLocked;
-        vInp.placeholder = 'Vorgabe / Material';
+        vInp.placeholder = 'z.B. „p und w gegeben" – abstrakt, keine Zahlenwerte';
         vInp.style.cssText = 'width:100%;font-size:13px;font-family:inherit;border:none;border-bottom:1px solid transparent;outline:none;background:transparent;color:var(--tx1);padding:1px 0;';
         vInp.onfocus = () => { vInp.style.borderBottomColor = 'var(--pri)'; };
         vInp.onblur  = () => { vInp.style.borderBottomColor = 'transparent'; };
@@ -1343,7 +1349,7 @@ Antworte NUR mit reinem JSON:
         // Output-Input
         const oInp = document.createElement('input');
         oInp.type = 'text'; oInp.value = output; oInp.disabled = feinLocked;
-        oInp.placeholder = 'Schüleroutput / Tätigkeit';
+        oInp.placeholder = 'z.B. „Berechnung g" – Tätigkeit, kein Ergebnis';
         oInp.style.cssText = 'width:100%;font-size:13px;font-family:inherit;border:none;border-bottom:1px solid transparent;outline:none;background:transparent;color:var(--tx1);padding:1px 0;';
         oInp.onfocus = () => { oInp.style.borderBottomColor = 'var(--pri)'; };
         oInp.onblur  = () => { oInp.style.borderBottomColor = 'transparent'; };
@@ -1418,11 +1424,19 @@ Antworte NUR mit reinem JSON:
       const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
       const afbLines = getLines().map(l => { const p = l.indexOf('|'); return p > -1 ? l.slice(0, p).trim() : null; }).filter(k => k && AB_KEY_MAP[k]);
       const anzahl = afbLines.length || getLines().length;
+      const AFB_DEFS = {
+        reproduktion:      'Gelerntes direkt wiedergeben: Definitionen, Verfahren, Fakten so wie eingeübt abrufen.',
+        leichteAnwendung:  'Bekannte Verfahren auf eine neue, aber ähnliche Situation übertragen.',
+        mittlereAnwendung: 'Mehrere Konzepte verknüpfen, strukturierte Probleme eigenständig lösen.',
+        transfer:          'Wissen auf unbekannte Situationen übertragen, beurteilen, begründen, gestalten.',
+      };
       let p = `Du planst Aufgabe ${fs.nr} einer Klassenarbeit.\nTitel: ${fs.titel}\nZeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
+      p += `\n## ANFORDERUNGSBEREICHE – DEFINITIONEN\n`;
+      Object.entries(AFB_DEFS).forEach(([k, def]) => { p += `- ${k}: ${def}\n`; });
       if (fs.beschreibung?.trim()) p += `\n## AUFGABENBESCHREIBUNG (Hauptgrundlage)\n${fs.beschreibung}\n`;
       if (afbLines.length) {
         p += `\n## ANFORDERUNGSBEREICHE PRO TEILAUFGABE (VERBINDLICH – exakt so übernehmen)\n`;
-        afbLines.forEach((k, i) => { p += `- Teilaufgabe ${fs.nr}${LETTERS[i]}: ${AB_KEY_MAP[k].title} (${k})\n`; });
+        afbLines.forEach((k, i) => { p += `- Teilaufgabe ${fs.nr}${LETTERS[i]}: ${AB_KEY_MAP[k].title} (${k}) – ${AFB_DEFS[k]}\n`; });
       }
       if (lernziele.length) { p += '\n## LERNZIELE\n'; lernziele.slice(0, 4).forEach(lz => { p += `- ${lz}\n`; }); }
       if (quellenTexte.trim()) p += `\n## QUELLEN\n${quellenTexte.slice(0, 1200)}\n`;

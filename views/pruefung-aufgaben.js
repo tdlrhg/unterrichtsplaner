@@ -1086,7 +1086,7 @@ Antworte NUR mit reinem JSON:
     const feinLocked = !!fs._feinLocked;
     const ov = mk('div', 'matd-overlay');
     const pan = mk('div', 'matd-panel');
-    pan.style.cssText = 'max-width:640px;width:95vw;max-height:92vh;display:flex;flex-direction:column;';
+    pan.style.cssText = 'max-width:860px;width:95vw;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;';
 
     // Header
     const phdr = mk('div', 'matd-panel-hdr');
@@ -1145,6 +1145,20 @@ Antworte NUR mit reinem JSON:
     metaRow.appendChild(pktWrap);
     body.appendChild(metaRow);
 
+    // ── Beschreibung ────────────────────────────────────────────────
+    const beschFg = mk('div', 'fg');
+    beschFg.appendChild(tx('label', 'fl', 'Beschreibung (Briefing für dich und die KI)'));
+    const beschArea = document.createElement('textarea');
+    beschArea.value = fs.beschreibung || '';
+    beschArea.rows = 3;
+    beschArea.disabled = feinLocked;
+    beschArea.placeholder = 'Was soll diese Aufgabe leisten? Welche Inhalte, welcher Schwerpunkt, besondere Anforderungen…';
+    beschArea.className = 'finp';
+    beschArea.style.cssText = 'resize:vertical;font-family:inherit;font-size:13px;line-height:1.5;';
+    beschArea.oninput = () => { fs.beschreibung = beschArea.value; savePruefungsDB(); };
+    beschFg.appendChild(beschArea);
+    body.appendChild(beschFg);
+
     // ── Teilaufgaben ────────────────────────────────────────────────
     const taHdr = mk('div', '');
     taHdr.style.cssText = 'font-size:13px;font-weight:700;color:var(--tx1);';
@@ -1195,6 +1209,21 @@ Antworte NUR mit reinem JSON:
     function buildTaList() {
       reletter(); // Buchstaben vor dem Rendern synchronisieren
       taWrap.innerHTML = '';
+
+      // Spaltenheader
+      const colHdr = mk('div', '');
+      colHdr.style.cssText = 'display:grid;grid-template-columns:22px 36px 1fr 16px 1fr 42px 24px;gap:0 6px;padding:0 8px 2px;';
+      colHdr.appendChild(mk('div', ''));
+      colHdr.appendChild(mk('div', ''));
+      const vHdr = tx('div', '', 'Aufgabeninput / Vorgabe');
+      vHdr.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx3);';
+      colHdr.appendChild(vHdr);
+      colHdr.appendChild(mk('div', ''));
+      const oHdr = tx('div', '', 'Geplanter Schüleroutput');
+      oHdr.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx3);';
+      colHdr.appendChild(oHdr);
+      taWrap.appendChild(colHdr);
+
       const lines = getLines();
       lines.forEach((line, li) => {
         const pipeIdx = line.indexOf('|');
@@ -1209,20 +1238,28 @@ Antworte NUR mit reinem JSON:
             if (/^\d+$/.test(maybeP)) { zeilenPunkte = parseInt(maybeP); lineRest = lineRest.slice(0, lastPipe).trim(); }
           }
         }
-        // Kennung (z.B. "2a") und Inhalt trennen
+        // Kennung + Inhalt trennen
         const colonIdx = lineRest.indexOf(':');
         const kennung = (colonIdx > -1 && colonIdx <= 5) ? lineRest.slice(0, colonIdx).trim() : '';
         let content = kennung ? lineRest.slice(colonIdx + 1).trim() : lineRest;
+        // Vorgabe → Output trennen
+        const arrowIdx = content.indexOf('→');
+        let vorgabe = arrowIdx > -1 ? content.slice(0, arrowIdx).trim() : content;
+        let output  = arrowIdx > -1 ? content.slice(arrowIdx + 1).trim() : '';
 
-        const buildStr = () => (afbKey ? afbKey + '|' : '') + (kennung ? kennung + ': ' : '') + content + (zeilenPunkte != null ? '|' + zeilenPunkte : '');
+        const buildStr = () => {
+          const mid = vorgabe + (output ? ' → ' + output : '');
+          return (afbKey ? afbKey + '|' : '') + (kennung ? kennung + ': ' : '') + mid + (zeilenPunkte != null ? '|' + zeilenPunkte : '');
+        };
 
         const row = mk('div', '');
-        row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surf);border-radius:6px;border:1px solid var(--bord);';
+        // Grid: badge | kennung | vorgabe | → | output | P | del
+        row.style.cssText = 'display:grid;grid-template-columns:22px 36px 1fr 16px 1fr 42px 24px;gap:0 6px;align-items:center;padding:4px 8px;background:var(--surf);border-radius:6px;border:1px solid var(--bord);';
 
         // AFB-Badge
         const abCfg = afbKey ? AB_KEY_MAP[afbKey] : null;
         const badge = tx('div', '', abCfg ? abCfg.letter : '–');
-        badge.style.cssText = `width:22px;height:22px;border-radius:50%;background:${abCfg ? abCfg.color + '33' : 'var(--bord)'};color:${abCfg?.color || 'var(--tx3)'};font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;${feinLocked ? '' : 'cursor:pointer;'}`;
+        badge.style.cssText = `width:22px;height:22px;border-radius:50%;background:${abCfg ? abCfg.color + '33' : 'var(--bord)'};color:${abCfg?.color || 'var(--tx3)'};font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;${feinLocked ? '' : 'cursor:pointer;'}`;
         badge.title = feinLocked ? (abCfg?.title || '') : 'Klicken zum Wechseln';
         if (!feinLocked) {
           badge.onclick = () => {
@@ -1233,22 +1270,42 @@ Antworte NUR mit reinem JSON:
         }
         row.appendChild(badge);
 
-        // Kennung-Label (read-only, grau)
-        if (kennung) {
-          const kennEl = tx('span', '', kennung + ':');
-          kennEl.style.cssText = 'font-size:12px;font-weight:700;color:var(--tx3);flex-shrink:0;';
-          row.appendChild(kennEl);
-        }
+        // Kennung-Label
+        const kennEl = tx('span', '', kennung ? kennung + ':' : '');
+        kennEl.style.cssText = 'font-size:12px;font-weight:700;color:var(--tx3);';
+        row.appendChild(kennEl);
 
-        // Text (nur Inhalt nach der Kennung)
-        const textInp = document.createElement('input');
-        textInp.type = 'text'; textInp.value = content; textInp.disabled = feinLocked;
-        textInp.style.cssText = 'flex:1;font-size:13px;font-family:inherit;border:none;outline:none;background:transparent;color:var(--tx1);';
-        textInp.oninput = () => { content = textInp.value; const ls = getLines(); ls[li] = buildStr(); saveLines(ls); };
-        textInp.onkeydown = e => {
-          if (e.key === 'Enter') { e.preventDefault(); const ls = getLines(); ls.splice(li + 1, 0, afbKey ? afbKey + '| → ' : ''); saveLines(ls); buildTaList(); taWrap.querySelectorAll('input[type=text]')[li + 1]?.focus(); }
+        // Vorgabe-Input
+        const vInp = document.createElement('input');
+        vInp.type = 'text'; vInp.value = vorgabe; vInp.disabled = feinLocked;
+        vInp.placeholder = 'Vorgabe / Material';
+        vInp.style.cssText = 'width:100%;font-size:13px;font-family:inherit;border:none;border-bottom:1px solid transparent;outline:none;background:transparent;color:var(--tx1);padding:1px 0;';
+        vInp.onfocus = () => { vInp.style.borderBottomColor = 'var(--pri)'; };
+        vInp.onblur  = () => { vInp.style.borderBottomColor = 'transparent'; };
+        vInp.oninput = () => { vorgabe = vInp.value; const ls = getLines(); ls[li] = buildStr(); saveLines(ls); };
+        vInp.onkeydown = e => {
+          if (e.key === 'Enter') { e.preventDefault(); const ls = getLines(); ls.splice(li + 1, 0, afbKey ? afbKey + '| → ' : ''); saveLines(ls); buildTaList(); }
+          if (e.key === 'Tab' && !e.shiftKey) { e.preventDefault(); row.querySelectorAll('input[type=text]')[1]?.focus(); }
         };
-        row.appendChild(textInp);
+        row.appendChild(vInp);
+
+        // Pfeil
+        const arrEl = tx('span', '', '→');
+        arrEl.style.cssText = 'color:var(--pri);font-weight:700;font-size:13px;text-align:center;';
+        row.appendChild(arrEl);
+
+        // Output-Input
+        const oInp = document.createElement('input');
+        oInp.type = 'text'; oInp.value = output; oInp.disabled = feinLocked;
+        oInp.placeholder = 'Schüleroutput / Tätigkeit';
+        oInp.style.cssText = 'width:100%;font-size:13px;font-family:inherit;border:none;border-bottom:1px solid transparent;outline:none;background:transparent;color:var(--tx1);padding:1px 0;';
+        oInp.onfocus = () => { oInp.style.borderBottomColor = 'var(--pri)'; };
+        oInp.onblur  = () => { oInp.style.borderBottomColor = 'transparent'; };
+        oInp.oninput = () => { output = oInp.value; const ls = getLines(); ls[li] = buildStr(); saveLines(ls); };
+        oInp.onkeydown = e => {
+          if (e.key === 'Tab' && e.shiftKey) { e.preventDefault(); row.querySelectorAll('input[type=text]')[0]?.focus(); }
+        };
+        row.appendChild(oInp);
 
         // Punkte
         const pInp = document.createElement('input');
@@ -1305,19 +1362,22 @@ Antworte NUR mit reinem JSON:
       kiBtns.querySelectorAll('button').forEach(b => { b.disabled = false; });
     };
 
-    // ↺ Neu generieren
+    // ↺ Neu generieren (nutzt Beschreibung + hält Teilaufgaben-Anzahl ein)
     const regenBtn2 = btn('↺ Neu generieren', 'btn btn-ghost btn-xs');
-    regenBtn2.title = 'Gesamte Feinstruktur von KI neu vorschlagen lassen';
+    regenBtn2.title = 'Teilaufgaben von KI neu vorschlagen lassen – Anzahl bleibt gleich';
     regenBtn2.onclick = () => runKIOverlay('Neu generieren', async () => {
       const { lernziele, quellenTexte } = buildKontext();
       const anf2 = sv?.anforderung || {};
       const erlaubt2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) > 0);
       const verboten2 = Object.keys(AB_KEY_MAP).filter(k => (anf2[k] || 0) === 0);
-      let p = `Du planst Aufgabe ${fs.nr} einer Klassenarbeit.\nThema/Titel: ${fs.titel}\nZeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
+      const anzahl = getLines().filter(l => { const p = l.indexOf('|'); return p > -1 && AB_KEY_MAP[l.slice(0,p).trim()]; }).length || getLines().length;
+      let p = `Du planst Aufgabe ${fs.nr} einer Klassenarbeit.\nTitel: ${fs.titel}\nZeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
+      if (fs.beschreibung?.trim()) p += `\n## AUFGABENBESCHREIBUNG (Hauptgrundlage)\n${fs.beschreibung}\n`;
       if (erlaubt2.length) p += `\n## ANFORDERUNGSBEREICHE\nErlaubt: ${erlaubt2.join(', ')}\nVERBOTEN: ${verboten2.join(', ')}\n`;
-      if (lernziele.length) { p += '\n## LERNZIELE\n'; lernziele.slice(0, 6).forEach(lz => { p += `- ${lz}\n`; }); }
-      if (quellenTexte.trim()) p += `\n## QUELLEN\n${quellenTexte}\n`;
-      p += `\nAntworte NUR mit reinem JSON:\n{"spezifikation":"reproduktion|1a: ... → ...\\nleichteAnwendung|1b: ... → ..."}`;
+      if (lernziele.length) { p += '\n## LERNZIELE\n'; lernziele.slice(0, 4).forEach(lz => { p += `- ${lz}\n`; }); }
+      if (quellenTexte.trim()) p += `\n## QUELLEN\n${quellenTexte.slice(0, 1200)}\n`;
+      p += `\nERZEUGE GENAU ${anzahl} Teilaufgabe(n). Nicht mehr, nicht weniger.\n`;
+      p += `Antworte NUR mit reinem JSON:\n{"spezifikation":"reproduktion|${fs.nr}a: Vorgabe → Schülertätigkeit\\nleichteAnwendung|${fs.nr}b: Vorgabe → Schülertätigkeit"}`;
       const raw = await callKI([{ type: 'text', text: p }], 1500);
       fs.spezifikation = (parseKI(raw).spezifikation) || fs.spezifikation;
       savePruefungsDB();

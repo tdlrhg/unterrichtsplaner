@@ -1080,7 +1080,25 @@ Antworte NUR mit reinem JSON:
       head.appendChild(nrBadge);
 
       const titel = tx('span', '', fs.titel || '–');
-      titel.style.cssText = 'font-size:13px;font-weight:700;color:var(--tx1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      titel.style.cssText = 'font-size:13px;font-weight:700;color:var(--tx1);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + (feinLocked ? '' : 'cursor:text;');
+      titel.title = feinLocked ? '' : 'Klicken zum Bearbeiten';
+      if (!feinLocked) {
+        titel.onclick = () => {
+          const inp = document.createElement('input');
+          inp.type = 'text';
+          inp.value = fs.titel || '';
+          inp.style.cssText = 'flex:1;min-width:0;font-size:13px;font-weight:700;font-family:inherit;color:var(--tx1);background:transparent;border:none;border-bottom:2px solid var(--pri);outline:none;padding:0;';
+          titel.replaceWith(inp);
+          inp.focus(); inp.select();
+          const commit = () => {
+            const val = inp.value.trim();
+            if (val) { fs.titel = val; savePruefungsDB(); }
+            renderFeinstruktur();
+          };
+          inp.onblur = commit;
+          inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } if (e.key === 'Escape') { inp.blur(); } };
+        };
+      }
       head.appendChild(titel);
 
       // Zeit-Chip (klick → Slider)

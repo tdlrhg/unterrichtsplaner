@@ -26,3 +26,54 @@ async function sbDownload(path) {
   if (!res.ok) return null;
   return await res.json();
 }
+
+// ── Supabase Tabellen (REST/PostgREST) ───────────────────────────
+
+const _H = () => ({
+  'apikey': _KEY,
+  'Authorization': 'Bearer ' + _KEY,
+  'Content-Type': 'application/json',
+});
+
+// Batch-Insert / Upsert (löst Konflikte per id auf)
+async function sbInsert(table, rows) {
+  if (!rows.length) return { ok: true, count: 0 };
+  const url = _URL + '/rest/v1/' + table;
+  const headers = { ..._H(), 'Prefer': 'resolution=merge-duplicates' };
+  let total = 0;
+  for (let i = 0; i < rows.length; i += 500) {
+    const chunk = rows.slice(i, i + 500);
+    const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(chunk) });
+    if (!res.ok) { const err = await res.text(); throw new Error(err); }
+    total += chunk.length;
+  }
+  return { ok: true, count: total };
+}
+
+// Volltext-Suche (plfts = plainto_tsquery: Leerzeichen → AND)
+// filters: { fach: 'Mathematik', jahrgang: 7 } → eq-Filter
+async function sbQueryFTS(table, ftsQuery, filters = {}, limit = 10) {
+  const params = [];
+  if (ftsQuery && ftsQuery.trim()) {
+    params.push('search_vector=plfts(german).' + encodeURIComponent(ftsQuery.trim()));
+  }
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== null && v !== undefined && v !== '') {
+      params.push(k + '=eq.' + encodeURIComponent(v));
+    }
+  });
+  params.push('limit=' + limit);
+  const url = _URL + '/rest/v1/' + table + '?' + params.join('&');
+  const res = await fetch(url, { headers: _H() });
+  if (!res.ok) return [];
+  return await res.json();
+}
+
+// Anzahl Zeilen in einer Tabelle
+async function sbCount(table) {
+  const url = _URL + '/rest/v1/' + table + '?select=id';
+  const res = await fetch(url, { headers: { ..._H(), 'Prefer': 'count=exact' } });
+  if (!res.ok) return null;
+  const range = res.headers.get('content-range'); // z.B. "0-9/212"
+  return range ? parseInt(range.split('/')[1]) : null;
+}

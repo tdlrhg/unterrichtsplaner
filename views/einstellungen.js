@@ -655,5 +655,110 @@ function viewKlp() {
   searchInp.oninput = () => renderList();
   renderJgRow();
   renderList();
+
+  // ── Datenbank-Migration ──────────────────────────────────────
+  const migCard = mk('div', 'card');
+  migCard.style.marginTop = '24px';
+  migCard.appendChild(cardHdr('Supabase-Tabellen: Migration'));
+  const migBody = mk('div', 'card-body');
+
+  const migHint = tx('div', '', 'Überträgt SCHULBUCHDB und MATDB einmalig in echte Supabase-Tabellen für Volltextsuche. Bestehende Zeilen werden aktualisiert (upsert).');
+  migHint.style.cssText = 'font-size:12px;color:var(--tx3);margin-bottom:12px;';
+  migBody.appendChild(migHint);
+
+  const migRow = mk('div', ''); migRow.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;';
+  const migStatus = tx('span', '', ''); migStatus.style.cssText = 'font-size:12px;color:var(--tx2);';
+
+  async function runMigration(what) {
+    migStatus.style.color = 'var(--tx2)';
+    try {
+      if (what === 'schulbuch' || what === 'all') {
+        migStatus.textContent = '⏳ Schulbücher werden übertragen…';
+        const rows = [];
+        (SCHULBUCHDB || []).forEach(buch => {
+          const jahrgang = Array.isArray(buch.jahrgang) ? buch.jahrgang[0] : (buch.jahrgang || null);
+          const addAufgaben = (kap, ukId, ukTitel) => {
+            (kap.aufgaben || []).forEach(a => {
+              if (!a.id && !a.inhalt && !a.thema) return;
+              rows.push({
+                id: a.id || (buch.id + '_' + (kap.id||'') + '_' + (a.seite||'') + '_' + (a.nr||Math.random())),
+                fach: buch.fach || null,
+                buch: buch.titel,
+                kapitel_id: kap.id || null,
+                kapitel_titel: kap.titel || null,
+                uk_id: ukId || null,
+                uk_titel: ukTitel || null,
+                seite: a.seite || null,
+                nr: a.nr ? String(a.nr) : null,
+                typ: a.typ || null,
+                thema: a.thema || null,
+                inhalt: a.inhalt || a.aufgabenstellung || a.text || null,
+                jahrgang: typeof jahrgang === 'number' ? jahrgang : (parseInt(jahrgang) || null),
+              });
+            });
+          };
+          (buch.kapitel || []).forEach(kap => {
+            addAufgaben(kap, null, null);
+            (kap.unterkapitel || []).forEach(u => addAufgaben(u, u.id, u.titel));
+          });
+        });
+        if (rows.length) {
+          await sbInsert('schulbuch_aufgaben', rows);
+          migStatus.textContent = `✓ ${rows.length} Schulbuch-Aufgaben übertragen.`;
+        } else {
+          migStatus.textContent = '⚠ Keine Schulbuch-Aufgaben gefunden.';
+        }
+      }
+
+      if (what === 'mat' || what === 'all') {
+        migStatus.textContent = '⏳ Materialien werden übertragen…';
+        const rows = (MATDB || []).map(m => ({
+          id: m.id,
+          dateiname: m.dateiname || m.titel || null,
+          r2_pfad: m.r2Key || m.pfad || null,
+          fach: m.fach || null,
+          titel: m.titel || null,
+          themen: Array.isArray(m.themen) ? m.themen : [],
+          jahrgang: Array.isArray(m.jahrgang) ? m.jahrgang : (m.jahrgang ? [String(m.jahrgang)] : []),
+          beschreibung: m.beschreibung || m.kurzinhalt || null,
+          rolle: m.rolleImKontext || m.rolle || null,
+          unterrichtsphase: m.unterrichtsphase || null,
+          kognitive_beanspruchung: m.kognitiveBeanspruchung || null,
+          hat_loesung: m.hatLoesung ?? null,
+        })).filter(m => m.id);
+        if (rows.length) {
+          await sbInsert('materialien', rows);
+          migStatus.textContent = `✓ ${rows.length} Materialien übertragen.`;
+        } else {
+          migStatus.textContent = '⚠ Keine Materialien gefunden.';
+        }
+      }
+
+      if (what === 'all') {
+        const [cntSA, cntMat] = await Promise.all([sbCount('schulbuch_aufgaben'), sbCount('materialien')]);
+        migStatus.textContent = `✓ Fertig — ${cntSA ?? '?'} Schulbuch-Aufgaben, ${cntMat ?? '?'} Materialien in Supabase.`;
+        migStatus.style.color = '#16a34a';
+      }
+    } catch(e) {
+      migStatus.textContent = '✗ Fehler: ' + e.message;
+      migStatus.style.color = '#dc2626';
+    }
+  }
+
+  const btnSB = btn('Schulbücher migrieren', 'btn btn-ghost btn-sm');
+  btnSB.onclick = () => runMigration('schulbuch');
+  const btnMat = btn('Materialien migrieren', 'btn btn-ghost btn-sm');
+  btnMat.onclick = () => runMigration('mat');
+  const btnAll = btn('Alles migrieren', 'btn btn-pri btn-sm');
+  btnAll.onclick = () => runMigration('all');
+
+  migRow.appendChild(btnSB);
+  migRow.appendChild(btnMat);
+  migRow.appendChild(btnAll);
+  migRow.appendChild(migStatus);
+  migBody.appendChild(migRow);
+  migCard.appendChild(migBody);
+  div.appendChild(migCard);
+
   return div;
 }

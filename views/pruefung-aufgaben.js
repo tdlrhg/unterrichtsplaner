@@ -613,57 +613,86 @@ Antworte NUR mit reinem JSON:
   statusEl.style.cssText = 'font-size:13px;color:var(--tx2);min-height:18px;margin:8px 0 12px;';
 
   // ── Quellen-Kontext aufbauen (shared) ─────────────────────────
-  function buildKontext() {
+  async function buildKontext() {
     const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
     const cutoff = new Date(Date.now() - (pr.referenzJahre ?? 2) * msPerYear);
     const refArbeiten = ALTE_ARBEITEN_DB.filter(aa => aa.datum && new Date(aa.datum) >= cutoff);
     const quellenAA = (pr.quellen?.alteArbeiten || []).map(id => ALTE_ARBEITEN_DB.find(aa => aa.id === id)).filter(Boolean);
-    const quellenKap = [];
-    (pr.quellen?.kapitel || []).forEach(kapId => {
-      SCHULBUCHDB.forEach(buch => {
-        (buch.kapitel || []).forEach(kap => {
-          if (kap.id === kapId) quellenKap.push({ buch: buch.titel, kap });
-          (kap.unterkapitel || []).forEach(u => { if (u.id === kapId) quellenKap.push({ buch: buch.titel, kap: u }); });
-        });
-      });
-    });
     const lernziele = [];
     (pr.ausgewaehlteLernziele || []).forEach(lzId => {
       CHECKLISTDB.forEach(cl => { (cl.lernziele || []).forEach(lz => { if (lz.id === lzId) lernziele.push(lz.text); }); });
     });
-    // Quellen als strukturierten Text aufbereiten — Schulbuch zuerst, dann alte Arbeiten
+
+    // Fach aus Kurs → Fachplanung ableiten
+    const prKurs = pr.kursId ? (S.data?.kurse || []).find(k => k.id === pr.kursId) : null;
+    const prFp   = prKurs ? (S.data?.fachplanungen || []).find(f => f.id === prKurs.fachplanungId) : null;
+    const prFach = prFp?.fach || null;
+
+    // Suchanfrage aus Lernzielen + Thema bauen
+    const suchBegriffe = [pr.thema, pr.titel, ...lernziele.slice(0, 3)]
+      .filter(Boolean).join(' ')
+      .replace(/[^\wäöüÄÖÜß\s]/g, ' ').replace(/\s+/g, ' ').trim()
+      .split(' ').filter(w => w.length > 3).slice(0, 8).join(' ');
+
     let quellenTexte = '';
-    // 1. Schulbuch-Kapitel (zuerst, damit sie nicht vom Zeichenlimit abgeschnitten werden)
-    quellenKap.forEach(({ buch, kap }) => {
-      const alleAufgaben = [];
-      const filterFn = a => a.inhalt || a.text || a.aufgabenstellung;
-      (kap.aufgaben || []).filter(filterFn).forEach(a => alleAufgaben.push({ ukTitel: null, a }));
-      (kap.unterkapitel || []).forEach(u => {
-        (u.aufgaben || []).filter(filterFn).forEach(a => alleAufgaben.push({ ukTitel: u.titel, a }));
-      });
-      if (!alleAufgaben.length) return;
-      quellenTexte += `\n### ${buch} / ${kap.titel}\n`;
-      const n = 10;
-      const sample = alleAufgaben.length <= n
-        ? alleAufgaben
-        : (() => {
+
+    // 1. Schulbuch-Aufgaben — Supabase FTS (thematisch relevant) oder in-memory Fallback
+    const hatKapitelAusgewaehlt = (pr.quellen?.kapitel || []).length > 0;
+    if (hatKapitelAusgewaehlt) {
+      let ftsErgebnis = [];
+      try {
+        if (suchBegriffe) {
+          ftsErgebnis = await sbQueryFTS('schulbuch_aufgaben', suchBegriffe,
+            prFach ? { fach: prFach } : {}, 15);
+        }
+      } catch(_) { /* Fallback auf in-memory */ }
+
+      if (ftsErgebnis.length) {
+        // FTS-Ergebnis: nach Buch/Kapitel gruppiert ausgeben
+        quellenTexte += '\n### Schulbuch-Aufgaben (thematisch passend)\n';
+        ftsErgebnis.forEach(a => {
+          const nr = a.nr ? a.nr : (a.seite ? `S.${a.seite}` : '–');
+          const thema = a.thema ? ` [${a.thema}]` : '';
+          const text = a.inhalt || '';
+          quellenTexte += `  ${nr}${thema}: ${text}\n`;
+        });
+      } else {
+        // Fallback: in-memory Zufalls-Sample aus ausgewählten Kapiteln
+        const quellenKap = [];
+        (pr.quellen?.kapitel || []).forEach(kapId => {
+          SCHULBUCHDB.forEach(buch => {
+            (buch.kapitel || []).forEach(kap => {
+              if (kap.id === kapId) quellenKap.push({ buch: buch.titel, kap });
+              (kap.unterkapitel || []).forEach(u => { if (u.id === kapId) quellenKap.push({ buch: buch.titel, kap: u }); });
+            });
+          });
+        });
+        quellenKap.forEach(({ buch, kap }) => {
+          const alleAufgaben = [];
+          const filterFn = a => a.inhalt || a.text || a.aufgabenstellung;
+          (kap.aufgaben || []).filter(filterFn).forEach(a => alleAufgaben.push({ ukTitel: null, a }));
+          (kap.unterkapitel || []).forEach(u => {
+            (u.aufgaben || []).filter(filterFn).forEach(a => alleAufgaben.push({ ukTitel: u.titel, a }));
+          });
+          if (!alleAufgaben.length) return;
+          quellenTexte += `\n### ${buch} / ${kap.titel}\n`;
+          const n = 10;
+          const sample = alleAufgaben.length <= n ? alleAufgaben : (() => {
             const stride = alleAufgaben.length / n;
             const offset = Math.floor(Math.random() * stride);
             return Array.from({ length: n }, (_, i) => alleAufgaben[Math.floor(offset + i * stride) % alleAufgaben.length]);
           })();
-      let lastUkTitel = null;
-      sample.forEach(({ ukTitel, a }) => {
-        if (ukTitel && ukTitel !== lastUkTitel) {
-          quellenTexte += `#### ${ukTitel}\n`;
-          lastUkTitel = ukTitel;
-        }
-        const nr = a.nr ? `${a.nr}` : (a.seite ? `S.${a.seite}` : '–');
-        const p = a.punkte ? ` · ${a.punkte}P` : '';
-        const thema = a.thema ? ` [${a.thema}]` : '';
-        const text = a.inhalt || a.aufgabenstellung || a.text || '';
-        quellenTexte += `  ${nr}${p}${thema}: ${text}\n`;
-      });
-    });
+          let lastUkTitel = null;
+          sample.forEach(({ ukTitel, a }) => {
+            if (ukTitel && ukTitel !== lastUkTitel) { quellenTexte += `#### ${ukTitel}\n`; lastUkTitel = ukTitel; }
+            const nr = a.nr ? `${a.nr}` : (a.seite ? `S.${a.seite}` : '–');
+            const thema = a.thema ? ` [${a.thema}]` : '';
+            const text = a.inhalt || a.aufgabenstellung || a.text || '';
+            quellenTexte += `  ${nr}${thema}: ${text}\n`;
+          });
+        });
+      }
+    }
     // 2. Alte Arbeiten
     quellenAA.forEach(aa => {
       const aufgaben = (aa.aufgaben || []).filter(a => a.text || a.aufgabenstellung);
@@ -914,7 +943,7 @@ Antworte NUR mit reinem JSON:
           refreshBtn.disabled = true;
           refreshBtn.textContent = '⏳';
           try {
-            const { lernziele, quellenTexte } = buildKontext();
+            const { lernziele, quellenTexte } = await buildKontext();
             const aktive = getActiveTasks();
             const aufgNr = aktive.findIndex(a => a.taskId === aufg.taskId) + 1;
             statusEl.textContent = `⏳ Feinstruktur fuer Aufgabe ${aufgNr} wird aktualisiert...`;
@@ -1440,7 +1469,7 @@ Antworte NUR mit reinem JSON:
     const regenBtn2 = btn('↺ Neu generieren', 'btn btn-ghost btn-xs');
     regenBtn2.title = 'Teilaufgaben von KI neu vorschlagen lassen – Anzahl bleibt gleich';
     regenBtn2.onclick = () => runKIOverlay('Neu generieren', async () => {
-      const { lernziele, quellenTexte } = buildKontext();
+      const { lernziele, quellenTexte } = await buildKontext();
       // AFB-Sequenz aus aktuellen Zeilen lesen
       const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
       const afbLines = getLines().map(l => { const p = l.indexOf('|'); return p > -1 ? l.slice(0, p).trim() : null; }).filter(k => k && AB_KEY_MAP[k]);
@@ -1589,7 +1618,7 @@ Antworte NUR mit reinem JSON:
           }
           const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
           let lernziele = [], quellenTexte = '';
-          try { ({ lernziele, quellenTexte } = buildKontext()); } catch(_) {}
+          try { ({ lernziele, quellenTexte } = await buildKontext()); } catch(_) {}
           let p = `Du bist Mathematiklehrerin und erstellst konkrete Aufgabentexte fuer eine Klassenarbeit.\n`;
           p += `Aufgabe ${fs.nr}: ${fs.titel || ''}\nZeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
           p += `\nWICHTIG: Eine Teilaufgabe kann mehrere Rechenaufgaben, Tabellenzeilen oder Beispiele enthalten.\n`;
@@ -1845,7 +1874,7 @@ Antworte NUR mit reinem JSON:
     strukturBtn.disabled = true;
     statusEl.textContent = '⏳ KI schlägt Grobstruktur vor…';
     try {
-      const { refArbeiten, lernziele, quellenTexte } = buildKontext();
+      const { refArbeiten, lernziele, quellenTexte } = await buildKontext();
       const dauerMin = pr.dauerVon || null;
       const dauerMax = pr.dauerBis || pr.dauerVon || null;
       let p = 'Du entwirfst eine Klassenarbeit. Schlage NUR die Hauptaufgaben vor — keine Unteraufgaben, keine Details.\n\n';
@@ -1904,7 +1933,7 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
     if (!zuBearbeiten.length) { statusEl.textContent = '⚠ Keine Aufgaben ausgewählt.'; return; }
     zuFeinBtn.disabled = true; strukturBtn.disabled = true;
     pr.feinstruktur = []; switchSubTab(2);
-    const { lernziele, quellenTexte } = buildKontext();
+    const { lernziele, quellenTexte } = await buildKontext();
     try {
       for (let i = 0; i < zuBearbeiten.length; i++) {
         const aufg = zuBearbeiten[i];

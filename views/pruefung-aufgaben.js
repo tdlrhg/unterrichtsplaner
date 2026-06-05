@@ -468,7 +468,7 @@ Antworte NUR mit reinem JSON:
   const panel2 = mk('div', '');
   const panel3 = mk('div', '');
   const panel4 = mk('div', '');
-  const hatKonkret = pr.feinstruktur.some(fs => fs.konkret?.some(k => k.aufgabe || k.loesung));
+  const hatKonkret = pr.feinstruktur.some(fs => fs.konkret?.some(k => k.aufgabe?.trim() || k.loesung?.trim()));
   let aktiverSubTab = hatKonkret ? 3 : pr.feinstruktur.length ? 2 : 1;
 
   const subTabBar = mk('div', '');
@@ -1645,20 +1645,26 @@ Antworte NUR mit reinem JSON:
   aufgabenWrap.style.cssText = 'display:flex;flex-direction:column;gap:14px;';
   stufe3Sec.appendChild(aufgabenWrap);
 
+  function hatKonkretInhalt(fs) {
+    return Array.isArray(fs.konkret) && fs.konkret.some(k => k.aufgabe?.trim() || k.loesung?.trim());
+  }
+
   function renderKonkret() {
     aufgabenWrap.innerHTML = '';
 
-    const aktiv = pr.feinstruktur.filter(fs => !fs._removed);
-    if (!aktiv.length) {
-      const leer = tx('div', '', 'Noch keine Aufgaben in der Feinstruktur (② Feinstruktur zuerst ausfüllen).');
-      leer.style.cssText = 'font-size:13px;color:var(--tx3);padding:20px 0;';
+    const mitInhalt = pr.feinstruktur.filter(fs => !fs._removed && hatKonkretInhalt(fs));
+    if (!mitInhalt.length) {
+      const leer = tx('div', '', 'Noch keine konkreten Aufgaben erstellt. In ② Feinstruktur bei einer Aufgabe auf „✨ Konkrete Aufgabe erstellen" klicken.');
+      leer.style.cssText = 'font-size:13px;color:var(--tx3);padding:20px 0;line-height:1.6;';
       aufgabenWrap.appendChild(leer);
       return;
     }
 
-    aktiv.forEach(fs => {
-      ensureKonkret(fs);
+    mitInhalt.forEach(fs => {
+      // Länge angleichen ohne leere Einträge zu erzeugen
       const lines = parseSpecLines(fs);
+      while (fs.konkret.length < lines.length) fs.konkret.push({ aufgabe: '', loesung: '' });
+      if (fs.konkret.length > lines.length) fs.konkret.length = lines.length;
 
       const card = mk('div', '');
       card.style.cssText = 'border-radius:10px;background:var(--surf2);overflow:hidden;border:1px solid var(--bord);';

@@ -1568,19 +1568,22 @@ Antworte NUR mit reinem JSON:
           const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
           let lernziele = [], quellenTexte = '';
           try { ({ lernziele, quellenTexte } = buildKontext()); } catch(_) {}
-          let p = `Du bist Mathematiklehrerin und erstellst eine konkrete Aufgabe für eine Klassenarbeit.\n`;
+          let p = `Du bist Mathematiklehrerin und erstellst konkrete Aufgabentexte fuer eine Klassenarbeit.\n`;
           p += `Aufgabe ${fs.nr}: ${fs.titel || ''}\nZeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
-          if (fs.beschreibung?.trim()) p += `\n## AUFGABENBESCHREIBUNG\n${fs.beschreibung}\n`;
-          p += `\n## STRUKTUR DER TEILAUFGABEN (abstrakt, aus der Planung)\n`;
+          p += `\nWICHTIG: Eine Teilaufgabe kann mehrere Rechenaufgaben, Tabellenzeilen oder Beispiele enthalten.\n`;
+          p += `Die BESCHREIBUNG unten gibt vor, wie umfangreich und detailliert die Aufgabe sein soll — halte dich genau daran.\n`;
+          if (fs.beschreibung?.trim()) p += `\n## AUFGABENBESCHREIBUNG (verbindlich fuer Umfang und Inhalt)\n${fs.beschreibung}\n`;
+          p += `\n## TEILAUFGABEN-STRUKTUR (${specLines.length} Teilaufgabe(n))\n`;
           specLines.forEach((sl, i) => {
-            const afbDef = sl.afbKey ? ` [${AB_KEY_MAP[sl.afbKey].title}]` : '';
-            p += `- ${fs.nr}${LETTERS[i]}: ${sl.metaVorgabe}${sl.metaOutput ? ' -> ' + sl.metaOutput : ''}${afbDef}${sl.punkte ? ' - ' + sl.punkte + ' P' : ''}\n`;
+            const afbDef = sl.afbKey ? ` [${AB_KEY_MAP[sl.afbKey].title}: ${({reproduktion:'Gelerntes direkt anwenden',leichteAnwendung:'Bekanntes in aehnlicher Situation',mittlereAnwendung:'Konzepte verknuepfen',transfer:'Auf Unbekanntes uebertragen'})[sl.afbKey]||''}]` : '';
+            p += `- Teilaufgabe ${fs.nr}${LETTERS[i]}: ${sl.metaVorgabe}${sl.metaOutput ? ' -> ' + sl.metaOutput : ''}${afbDef}${sl.punkte ? ' (' + sl.punkte + ' P)' : ''}\n`;
           });
           if (lernziele.length) { p += `\n## LERNZIELE\n`; lernziele.slice(0, 4).forEach(lz => { p += `- ${lz}\n`; }); }
           if (quellenTexte && quellenTexte.trim()) p += `\n## REFERENZAUFGABEN\n${quellenTexte.slice(0, 800)}\n`;
-          p += `\nERSTELLE GENAU ${specLines.length} Teilaufgabe(n) mit konkreten Zahlenwerten. Verwende passende, realistische Zahlen.`;
-          p += `\nFuer jede Teilaufgabe: "aufgabe" = vollstaendiger Aufgabentext mit Zahlen, "loesung" = vollstaendiger Loesungsweg mit Ergebnis.`;
-          p += `\nAntworte NUR mit reinem JSON ohne Kommentar:\n{"konkret":[{"aufgabe":"...","loesung":"..."}]}`;
+          p += `\nErstelle fuer jede der ${specLines.length} Teilaufgabe(n) einen vollstaendigen, schuelergerechten Aufgabentext mit allen konkreten Zahlenwerten.`;
+          p += `\nDer Umfang richtet sich nach der Beschreibung (z.B. Tabelle mit 9 Zeilen = 9 Zeilen im Aufgabentext).`;
+          p += `\nFuer "loesung": vollstaendiger Loesungsweg mit allen Zwischenschritten und Ergebnissen.`;
+          p += `\nAntworte NUR mit reinem JSON:\n{"konkret":[{"aufgabe":"vollstaendiger Aufgabentext","loesung":"vollstaendiger Loesungsweg"}]}`;
           const raw = await callKI([{ type: 'text', text: p }], 1800);
           // Eigener Parser für {aufgabe, loesung}-Arrays — unabhängig von robustJsonParsePr
           let items = null;

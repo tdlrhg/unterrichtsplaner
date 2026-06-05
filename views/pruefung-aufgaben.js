@@ -1614,11 +1614,6 @@ Antworte NUR mit reinem JSON:
             setTimeout(() => { konkretBtn.textContent = '✨ Konkrete Aufgabe erstellen'; konkretBtn.disabled = false; }, 3000);
             return;
           }
-          if (!items || !items.length) {
-            konkretBtn.textContent = '⚠ Kein verwertbares Ergebnis';
-            setTimeout(() => { konkretBtn.textContent = '✨ Konkrete Aufgabe erstellen'; konkretBtn.disabled = false; }, 3000);
-            return;
-          }
           ensureKonkret(fs);
           items.forEach((k, i) => {
             if (i < fs.konkret.length) {
@@ -1650,6 +1645,7 @@ Antworte NUR mit reinem JSON:
   const stufe3Sec = panel3;
 
   // Hilfsfunktion: Spezifikationszeilen einer Aufgabe parsen
+  // Nur AFB-Zeilen (mit gültigem afbKey) werden zurückgegeben — Artefakte wie "4 Unteraufgaben" werden übersprungen
   function parseSpecLines(fs) {
     return (fs.spezifikation || '').split('\n')
       .map(l => l.replace(/^[-–•]\s*/, '').trim()).filter(l => l)
@@ -1657,6 +1653,7 @@ Antworte NUR mit reinem JSON:
         const pipeIdx = line.indexOf('|');
         const candidate = pipeIdx > -1 ? line.slice(0, pipeIdx).trim() : null;
         const afbKey = candidate && AB_KEY_MAP[candidate] ? candidate : null;
+        if (!afbKey) return null; // Nicht-AFB-Zeilen ignorieren
         let rest = afbKey ? line.slice(pipeIdx + 1).trim() : line;
         let punkte = null;
         if (afbKey) {
@@ -1672,7 +1669,7 @@ Antworte NUR mit reinem JSON:
         const metaVorgabe = arrowIdx > -1 ? content.slice(0, arrowIdx).trim() : content;
         const metaOutput  = arrowIdx > -1 ? content.slice(arrowIdx + 1).trim() : '';
         return { afbKey, kennung, metaVorgabe, metaOutput, punkte };
-      });
+      }).filter(Boolean);
   }
 
   // Konkrete Daten pro Aufgabe + Zeile initialisieren/synchronisieren

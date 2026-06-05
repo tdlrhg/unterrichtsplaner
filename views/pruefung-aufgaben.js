@@ -12,7 +12,7 @@ const AB_KEY_MAP = {
 function showRestrukturierungOverlay(pr, afterSave) {
   const ov = mk('div', 'matd-overlay');
   const pan = mk('div', 'matd-panel');
-  pan.style.cssText = 'max-width:820px;width:95vw;max-height:90vh;display:flex;flex-direction:column;';
+  pan.style.cssText = 'max-width:820px;width:95vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;';
 
   const phdr = mk('div', 'matd-panel-hdr');
   phdr.appendChild(tx('span', 'matd-panel-title', 'Aufgaben umstrukturieren'));

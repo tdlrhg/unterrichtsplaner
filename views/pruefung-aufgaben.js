@@ -1560,37 +1560,60 @@ Antworte NUR mit reinem JSON:
         konkretBtn.textContent = '⏳ KI arbeitet…';
         try {
           const specLines = parseSpecLines(fs);
-          if (!specLines.length) { konkretBtn.textContent = '✨ Konkrete Aufgabe erstellen'; konkretBtn.disabled = false; return; }
-          const { lernziele, quellenTexte } = buildKontext();
+          if (!specLines.length) {
+            konkretBtn.textContent = '⚠ Keine Teilaufgaben in Feinstruktur';
+            setTimeout(() => { konkretBtn.textContent = '✨ Konkrete Aufgabe erstellen'; konkretBtn.disabled = false; }, 2500);
+            return;
+          }
           const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+          let lernziele = [], quellenTexte = '';
+          try { ({ lernziele, quellenTexte } = buildKontext()); } catch(_) {}
           let p = `Du bist Mathematiklehrerin und erstellst eine konkrete Aufgabe für eine Klassenarbeit.\n`;
           p += `Aufgabe ${fs.nr}: ${fs.titel || ''}\nZeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
           if (fs.beschreibung?.trim()) p += `\n## AUFGABENBESCHREIBUNG\n${fs.beschreibung}\n`;
           p += `\n## STRUKTUR DER TEILAUFGABEN (abstrakt, aus der Planung)\n`;
           specLines.forEach((sl, i) => {
             const afbDef = sl.afbKey ? ` [${AB_KEY_MAP[sl.afbKey].title}]` : '';
-            p += `- ${fs.nr}${LETTERS[i]}: ${sl.metaVorgabe}${sl.metaOutput ? ' → ' + sl.metaOutput : ''}${afbDef}${sl.punkte ? ' · ' + sl.punkte + ' P' : ''}\n`;
+            p += `- ${fs.nr}${LETTERS[i]}: ${sl.metaVorgabe}${sl.metaOutput ? ' -> ' + sl.metaOutput : ''}${afbDef}${sl.punkte ? ' - ' + sl.punkte + ' P' : ''}\n`;
           });
           if (lernziele.length) { p += `\n## LERNZIELE\n`; lernziele.slice(0, 4).forEach(lz => { p += `- ${lz}\n`; }); }
-          if (quellenTexte.trim()) p += `\n## REFERENZAUFGABEN\n${quellenTexte.slice(0, 800)}\n`;
+          if (quellenTexte && quellenTexte.trim()) p += `\n## REFERENZAUFGABEN\n${quellenTexte.slice(0, 800)}\n`;
           p += `\nERSTELLE GENAU ${specLines.length} Teilaufgabe(n) mit konkreten Zahlenwerten. Verwende passende, realistische Zahlen.`;
-          p += `\nFür jede Teilaufgabe: "aufgabe" = vollständiger Aufgabentext mit Zahlen, "loesung" = vollständiger Lösungsweg mit Ergebnis.`;
-          p += `\nAntworte NUR mit reinem JSON:\n{"konkret":[${specLines.map((_,i) => `{"aufgabe":"Aufgabe ${fs.nr}${LETTERS[i]}…","loesung":"Lösungsweg…"}`).join(',')}]}`;
+          p += `\nFuer jede Teilaufgabe: "aufgabe" = vollstaendiger Aufgabentext mit Zahlen, "loesung" = vollstaendiger Loesungsweg mit Ergebnis.`;
+          p += `\nAntworte NUR mit reinem JSON ohne Kommentar:\n{"konkret":[{"aufgabe":"...","loesung":"..."}]}`;
           const raw = await callKI([{ type: 'text', text: p }], 1800);
-          const parsed = parseKI(raw);
-          if (Array.isArray(parsed.konkret)) {
-            ensureKonkret(fs);
-            parsed.konkret.forEach((k, i) => {
-              if (fs.konkret[i]) {
-                if (k.aufgabe) fs.konkret[i].aufgabe = k.aufgabe;
-                if (k.loesung) fs.konkret[i].loesung = k.loesung;
-              }
-            });
-            savePruefungsDB();
-            renderKonkret();
-            switchSubTab(3);
+          // robust parsen: direkt als Array oder als Objekt mit .konkret
+          let items = null;
+          try {
+            const parsed = parseKI(raw);
+            if (Array.isArray(parsed)) items = parsed;
+            else if (Array.isArray(parsed.konkret)) items = parsed.konkret;
+            else if (parsed.aufgabe) items = [parsed]; // KI hat nur ein Objekt geliefert
+          } catch(pe) {
+            konkretBtn.textContent = '⚠ KI-Antwort fehlerhaft';
+            setTimeout(() => { konkretBtn.textContent = '✨ Konkrete Aufgabe erstellen'; konkretBtn.disabled = false; }, 3000);
+            return;
           }
-        } catch(err) { console.error(err); }
+          if (!items || !items.length) {
+            konkretBtn.textContent = '⚠ Kein verwertbares Ergebnis';
+            setTimeout(() => { konkretBtn.textContent = '✨ Konkrete Aufgabe erstellen'; konkretBtn.disabled = false; }, 3000);
+            return;
+          }
+          ensureKonkret(fs);
+          items.forEach((k, i) => {
+            if (i < fs.konkret.length) {
+              if (k.aufgabe) fs.konkret[i].aufgabe = k.aufgabe;
+              if (k.loesung) fs.konkret[i].loesung = k.loesung;
+            }
+          });
+          savePruefungsDB();
+          renderKonkret();
+          switchSubTab(3);
+        } catch(err) {
+          konkretBtn.textContent = '⚠ Fehler: ' + String(err).slice(0, 40);
+          setTimeout(() => { konkretBtn.textContent = '✨ Konkrete Aufgabe erstellen'; konkretBtn.disabled = false; }, 4000);
+          return;
+        }
         konkretBtn.textContent = '✨ Konkrete Aufgabe erstellen';
         konkretBtn.disabled = false;
       };

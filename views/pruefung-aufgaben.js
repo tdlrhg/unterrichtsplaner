@@ -968,6 +968,10 @@ Antworte NUR mit reinem JSON:
       const pct = t.total ? Math.round(punkte / t.total * 100) : 0;
       const ziel = z[key] || { min: 0, max: 100 };
       const ok = pct >= ziel.min && pct <= ziel.max;
+      const signalColor = '#ef4444';
+      const neutralTx = 'var(--tx2)';
+      const neutralTx3 = 'var(--tx3)';
+
       const lbl = mk('div', ''); lbl.style.cssText = 'display:flex;gap:3px;align-items:center;';
       badges.forEach(bkey => {
         const cfg = AB_KEY_MAP[bkey];
@@ -977,26 +981,29 @@ Antworte NUR mit reinem JSON:
         lbl.appendChild(b);
       });
       grid.appendChild(lbl);
+
       const barWrap = mk('div', '');
-      barWrap.style.cssText = 'position:relative;height:10px;background:var(--bord);border-radius:5px;overflow:visible;';
-      // Zielkorridor als heller Hintergrundbereich
+      barWrap.style.cssText = 'position:relative;height:8px;background:var(--bord);border-radius:4px;overflow:visible;';
       const zielBar = mk('div', '');
-      zielBar.style.cssText = `position:absolute;left:${ziel.min}%;width:${ziel.max - ziel.min}%;height:100%;background:${color}22;border-radius:5px;`;
+      zielBar.style.cssText = `position:absolute;left:${ziel.min}%;width:${ziel.max - ziel.min}%;height:100%;background:rgba(0,0,0,.07);border-radius:4px;`;
       barWrap.appendChild(zielBar);
       const fillBar = mk('div', '');
-      fillBar.style.cssText = `position:absolute;left:0;width:${Math.min(pct, 100)}%;height:100%;background:${ok ? color : '#ef4444'};border-radius:5px;transition:width .3s;`;
+      fillBar.style.cssText = `position:absolute;left:0;width:${Math.min(pct, 100)}%;height:100%;background:${ok ? 'var(--tx3)' : signalColor};border-radius:4px;transition:width .3s;`;
       barWrap.appendChild(fillBar);
       grid.appendChild(barWrap);
+
       const pmEl = mk('div', ''); pmEl.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:1px;';
-      const pEl = tx('span', '', punkte + ' P'); pEl.style.cssText = `font-size:11px;font-weight:700;color:${color};`;
-      const mEl = tx('span', '', Math.round(min) + ' Min'); mEl.style.cssText = 'font-size:10px;color:var(--tx3);';
+      const pEl = tx('span', '', punkte + ' P'); pEl.style.cssText = `font-size:11px;font-weight:600;color:${ok ? neutralTx : signalColor};`;
+      const mEl = tx('span', '', Math.round(min) + ' Min'); mEl.style.cssText = `font-size:10px;color:${neutralTx3};`;
       pmEl.appendChild(pEl); pmEl.appendChild(mEl);
       grid.appendChild(pmEl);
+
       const pctEl = tx('span', '', pct + ' %');
-      pctEl.style.cssText = `font-size:12px;font-weight:700;color:${ok ? color : '#ef4444'};text-align:right;`;
+      pctEl.style.cssText = `font-size:12px;font-weight:600;color:${ok ? neutralTx : signalColor};text-align:right;`;
       grid.appendChild(pctEl);
-      const hint = tx('span', '', ok ? '✓' : (pct < ziel.min ? '↑ ' + ziel.min + '%' : '↓ ' + ziel.max + '%'));
-      hint.style.cssText = `font-size:11px;color:${ok ? '#16a34a' : '#ef4444'};`;
+
+      const hint = tx('span', '', ok ? '' : (pct < ziel.min ? '↑ ' + ziel.min + '%' : '↓ ' + ziel.max + '%'));
+      hint.style.cssText = `font-size:11px;color:${signalColor};`;
       grid.appendChild(hint);
     });
     afbBanner.appendChild(grid);

@@ -963,7 +963,7 @@ Antworte NUR mit reinem JSON:
       { key: 'afb3', badges: ['transfer'],                         color: '#dc2626', punkte: t.afb3, min: t.min3 },
     ];
     const grid = mk('div', '');
-    grid.style.cssText = 'display:grid;grid-template-columns:52px 1fr 70px 44px 70px;gap:4px 8px;align-items:center;padding:10px 14px;background:var(--surf2);border-radius:8px;border:1px solid var(--bord);';
+    grid.style.cssText = 'display:grid;grid-template-columns:52px 1fr 44px 44px 70px;gap:4px 8px;align-items:center;padding:10px 14px;background:var(--surf2);border-radius:8px;border:1px solid var(--bord);';
     rows.forEach(({ key, badges, color, punkte, min }) => {
       const pct = t.total ? Math.round(punkte / t.total * 100) : 0;
       const ziel = z[key] || { min: 0, max: 100 };
@@ -992,11 +992,8 @@ Antworte NUR mit reinem JSON:
       barWrap.appendChild(fillBar);
       grid.appendChild(barWrap);
 
-      const pmEl = mk('div', ''); pmEl.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:1px;';
       const pEl = tx('span', '', punkte + ' P'); pEl.style.cssText = `font-size:11px;font-weight:600;color:${ok ? neutralTx : signalColor};`;
-      const mEl = tx('span', '', Math.round(min) + ' Min'); mEl.style.cssText = `font-size:10px;color:${neutralTx3};`;
-      pmEl.appendChild(pEl); pmEl.appendChild(mEl);
-      grid.appendChild(pmEl);
+      grid.appendChild(pEl);
 
       const pctEl = tx('span', '', pct + ' %');
       pctEl.style.cssText = `font-size:12px;font-weight:600;color:${ok ? neutralTx : signalColor};text-align:right;`;

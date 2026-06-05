@@ -1123,7 +1123,7 @@ Antworte NUR mit reinem JSON:
       head.appendChild(lockIcon);
       card.appendChild(head);
 
-      // updatePunkteSum: aktualisiert Punkte-Chip und Stats-Chip aus Zeilenpunkten
+      // updatePunkteSum: aktualisiert Punkte-Chip aus Zeilenpunkten
       const updatePunkteSum = (listWrap) => {
         const sum = Array.from(listWrap.querySelectorAll('input[type=number]'))
           .reduce((s, inp) => s + (parseInt(inp.value) || 0), 0);
@@ -1132,14 +1132,6 @@ Antworte NUR mit reinem JSON:
           pktSlider.value = Math.min(sum, 30);
           fs.gesamtpunkte = sum;
           savePruefungsDB();
-        }
-        const chip = card.querySelector('.fs-stats-chip');
-        if (chip) {
-          const stats = countSpecStats(fs.spezifikation);
-          const ok = !fs.gesamtpunkte || stats.punkte === fs.gesamtpunkte;
-          chip.textContent = `${stats.teilaufgaben} TA · ${stats.punkte || 0}/${fs.gesamtpunkte || 0} P`;
-          chip.style.background = ok ? 'rgba(22,163,74,.1)' : 'rgba(239,68,68,.08)';
-          chip.style.color = ok ? '#15803d' : '#dc2626';
         }
         renderAFBBanner();
       };
@@ -1342,13 +1334,6 @@ Antworte NUR mit reinem JSON:
       // ── Kartenfu­ß: Stats | Aktionen ▾ ─────────────────────────
       const foot = mk('div', '');
       foot.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 14px 8px;border-top:1px solid var(--bord);flex-wrap:wrap;';
-
-      // Stats-Chip
-      const stats = countSpecStats(fs.spezifikation);
-      const statsOk = !fs.gesamtpunkte || stats.punkte === fs.gesamtpunkte;
-      const statsChip = tx('span', 'fs-stats-chip', `${stats.teilaufgaben} TA · ${stats.punkte || 0}/${fs.gesamtpunkte || 0} P`);
-      statsChip.style.cssText = `font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:${statsOk ? 'rgba(22,163,74,.1)' : 'rgba(239,68,68,.08)'};color:${statsOk ? '#15803d' : '#dc2626'};`;
-      foot.appendChild(statsChip);
 
       const footSpacer = mk('span', ''); footSpacer.style.flex = '1'; foot.appendChild(footSpacer);
 
@@ -1621,54 +1606,9 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
       renderGenAufgaben();
       renderAFBBanner();
       lockInfo.textContent = 'Grobstruktur ist nach der ersten Feinplanung gesperrt. Zum Aendern einzelne Aufgaben entsperren.';
-      statusEl.textContent = '✓ Feinstruktur fertig. Korrigiere wenn nötig, dann → Aufgaben generieren.';
+      statusEl.textContent = '✓ Feinstruktur fertig. Korrigiere wenn nötig, dann über Aktionen ▾ konkrete Aufgaben generieren.';
     } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
     zuFeinBtn.disabled = false; strukturBtn.disabled = false;
-  };
-
-  // ── Handler: Stufe 3 — Konkrete Aufgaben ─────────────────────
-  zuAufgBtn.onclick = async () => {
-    if (!pr.feinstruktur.length) { statusEl.textContent = '⚠ Erst Feinstruktur vorschlagen.'; return; }
-    zuAufgBtn.disabled = true;
-    pr.genAufgaben = []; switchSubTab(3);
-    try {
-      for (let i = 0; i < pr.feinstruktur.length; i++) {
-        const fs = pr.feinstruktur[i];
-        statusEl.textContent = `⏳ Generiere Aufgabe ${fs.nr}… (${i+1}/${pr.feinstruktur.length})`;
-        let p = `Erstelle konkrete Aufgabe ${fs.nr} "${fs.titel}" für eine Klassenarbeit.\n\n`;
-        p += `## PÄDAGOGISCHE SPEZIFIKATION\n${fs.spezifikation}\n\n`;
-        p += `Zeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte gesamt\n`;
-        p += `Aufgabentypen: ${(fs.typen||[]).join(', ')}\n`;
-        const anf3 = fs.anforderung || {};
-        const erlaubt3 = Object.keys(AB_KEY_MAP).filter(k => (anf3[k] || 0) > 0);
-        const verboten3 = Object.keys(AB_KEY_MAP).filter(k => (anf3[k] || 0) === 0);
-        if (erlaubt3.length) {
-          p += `\n## ANFORDERUNGSBEREICHE — VERBINDLICH\nErlaubt: ${erlaubt3.join(', ')}\nVERBOTEN (niemals verwenden): ${verboten3.join(', ')}\n`;
-        }
-        p += `\n## WICHTIG\n- Unteraufgaben rechnerisch unabhängig (neue Zahlen pro Unteraufgabe)\n- Progression leicht→schwer innerhalb der Aufgabe\n- Konkrete Zahlen und Texte — kein Platzhalter\n\n`;
-        p += `Antworte NUR mit reinem JSON:
-{"aufgabenstellung":null,"unteraufgaben":[
-  {"nr":"${fs.nr}a","titel":null,"text":"konkreter Aufgabentext mit Zahlen","loesung":"kurze Loesung oder Ergebnis","punkte":3,"anforderungsbereich":"reproduktion","typ":"Rechnung"},
-  {"nr":"${fs.nr}b","titel":"Kurzer Titel","text":"konkreter Aufgabentext","loesung":"kurze Loesung oder Ergebnis","punkte":4,"anforderungsbereich":"leichteAnwendung","typ":"Sachaufgabe"}
-]}
-anforderungsbereich: "reproduktion" | "leichteAnwendung" | "mittlereAnwendung" | "transfer"
-titel: null wenn Typ "Rechnung", sonst kurzer beschreibender Titel
-Unteraufgaben rechnerisch unabhängig (neue Zahlen).
-loesung: kurze Musterloesung oder Ergebnis in 1 Zeile.`;
-        const raw = await callKI([{ type: 'text', text: p }], 3000);
-        const parsed = parseKI(raw);
-        pr.genAufgaben.push({
-          taskId: fs.taskId, nr: fs.nr, titel: fs.titel, zeitMinuten: fs.zeitMinuten, gesamtpunkte: fs.gesamtpunkte,
-          aufgabenstellung: parsed.aufgabenstellung || null,
-          unteraufgaben: parsed.unteraufgaben || [],
-        });
-        syncDerivedOrder();
-        savePruefungsDB();
-        renderGenAufgaben(); renderAFBBanner();
-      }
-      statusEl.textContent = '✓ ' + pr.genAufgaben.length + ' Aufgaben generiert';
-    } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
-    zuAufgBtn.disabled = false; strukturBtn.disabled = false;
   };
 
   return div;

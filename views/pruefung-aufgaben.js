@@ -963,45 +963,41 @@ Antworte NUR mit reinem JSON:
   }
 
   function calcAFB() {
-    const t = { afb1: 0, afb2: 0, afb3: 0, total: 0, min1: 0, min2: 0, min3: 0 };
-    if (pr.genAufgaben.length) {
-      pr.genAufgaben.forEach(a => {
-        const uas = a.unteraufgaben || [];
-        const taskP = uas.reduce((s, ua) => s + (ua.punkte || 0), 0);
-        const taskMin = a.zeitMinuten || 0;
-        uas.forEach(ua => {
-          const p = ua.punkte || 0;
-          const minAnteil = taskP ? taskMin * p / taskP : 0;
-          if (ua.anforderungsbereich === 'reproduktion' || ua.anforderungsbereich === 'leichteAnwendung') { t.afb1 += p; t.min1 += minAnteil; }
-          else if (ua.anforderungsbereich === 'mittlereAnwendung') { t.afb2 += p; t.min2 += minAnteil; }
-          else if (ua.anforderungsbereich === 'transfer') { t.afb3 += p; t.min3 += minAnteil; }
-          t.total += p;
-        });
+    // Einzige Quelle: pr.feinstruktur
+    // Priorität: Zeilenpunkte aus spezifikation (wenn vorhanden) → fs.gesamtpunkte als Fallback
+    const t = { afb1: 0, afb2: 0, afb3: 0, total: 0 };
+    const aktiv = pr.feinstruktur.filter(fs => !fs._removed);
+
+    const feinPunkte = parseFeinPunkte();
+    if (feinPunkte.length) {
+      // Zeilenpunkte vorhanden → AFB-genaue Verteilung
+      feinPunkte.forEach(({ afbKey, punkte }) => {
+        if (afbKey === 'reproduktion' || afbKey === 'leichteAnwendung') t.afb1 += punkte;
+        else if (afbKey === 'mittlereAnwendung') t.afb2 += punkte;
+        else if (afbKey === 'transfer') t.afb3 += punkte;
+        t.total += punkte;
       });
     } else {
-      const feinPunkte = parseFeinPunkte();
-      if (feinPunkte.length) {
-        // Feinstruktur-Zeilenpunkte vorhanden → diese verwenden
-        feinPunkte.forEach(({ afbKey, punkte }) => {
-          if (afbKey === 'reproduktion' || afbKey === 'leichteAnwendung') t.afb1 += punkte;
-          else if (afbKey === 'mittlereAnwendung') t.afb2 += punkte;
-          else if (afbKey === 'transfer') t.afb3 += punkte;
-          t.total += punkte;
-        });
-      } else {
-        pr.strukturVorschlag.filter(a => !a._removed).forEach(a => {
-          const anf = a.anforderung || {};
-          const p1 = (anf.reproduktion || 0) + (anf.leichteAnwendung || 0);
-          const p2 = anf.mittlereAnwendung || 0;
-          const p3 = anf.transfer || 0;
-          const taskP = (a.gesamtpunkte || 0);
-          const taskMin = a.zeitMinuten || 0;
-          t.afb1 += p1; t.min1 += taskP ? taskMin * p1 / taskP : 0;
-          t.afb2 += p2; t.min2 += taskP ? taskMin * p2 / taskP : 0;
-          t.afb3 += p3; t.min3 += taskP ? taskMin * p3 / taskP : 0;
-          t.total += taskP;
-        });
-      }
+      // Fallback: gesamtpunkte aus Feinstruktur + AFB-Anteile aus anforderung
+      aktiv.forEach(fs => {
+        const anf = fs.anforderung || {};
+        const taskP = fs.gesamtpunkte || 0;
+        const anf1 = (anf.reproduktion || 0) + (anf.leichteAnwendung || 0);
+        const anf2 = anf.mittlereAnwendung || 0;
+        const anf3 = anf.transfer || 0;
+        const anf_sum = anf1 + anf2 + anf3;
+        if (anf_sum > 0) {
+          t.afb1 += taskP * anf1 / anf_sum;
+          t.afb2 += taskP * anf2 / anf_sum;
+          t.afb3 += taskP * anf3 / anf_sum;
+        } else {
+          // keine AFB-Infos → Punkte nur zu total zählen
+        }
+        t.total += taskP;
+      });
+      t.afb1 = Math.round(t.afb1);
+      t.afb2 = Math.round(t.afb2);
+      t.afb3 = Math.round(t.afb3);
     }
     return t;
   }
@@ -1059,10 +1055,12 @@ Antworte NUR mit reinem JSON:
     });
     afbBanner.appendChild(grid);
 
-    // Zeit/Punkte-Zeile
-    const aktiv = pr.strukturVorschlag.filter(a => !a._removed);
-    const zeitGes = aktiv.reduce((s, a) => s + (a.zeitMinuten || 0), 0);
-    const pktGes  = aktiv.reduce((s, a) => s + (a.gesamtpunkte || 0), 0);
+    // Zeit/Punkte-Zeile — immer aus pr.feinstruktur
+    const aktivFein = pr.feinstruktur.filter(a => !a._removed);
+    const zeitGes = aktivFein.reduce((s, a) => s + (a.zeitMinuten || 0), 0);
+    // Punkte: Zeilensumme wenn vorhanden, sonst gesamtpunkte-Slider
+    const zeilenSumme = parseFeinPunkte().reduce((s, fp) => s + fp.punkte, 0);
+    const pktGes = zeilenSumme || aktivFein.reduce((s, a) => s + (a.gesamtpunkte || 0), 0);
     if (zeitGes || pktGes) {
       const zMin = pr.dauerVon || 0, zMax = pr.dauerBis || pr.dauerVon || 999;
       const zeitOk = !zMin || (zeitGes >= zMin && zeitGes <= zMax);

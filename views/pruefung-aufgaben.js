@@ -1036,6 +1036,23 @@ Antworte NUR mit reinem JSON:
   const stufe2Sec = panel2;
   const feinHint = tx('div', '', 'Die KI hat für jede Aufgabe beschrieben was sie vorhat. Korrigiere den Text wenn nötig.');
   feinHint.style.cssText = 'font-size:12px;color:var(--tx3);margin-bottom:8px;';
+  // ── Toolbar oben in Panel 2 (immer sichtbar) ─────────────────
+  const fein2Toolbar = mk('div', '');
+  fein2Toolbar.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;';
+  const restrBtnTop = btn('⇄ Umstrukturieren', 'btn btn-ghost btn-sm');
+  restrBtnTop.title = 'Aufgaben zusammenführen, trennen, Teilaufgaben verschieben';
+  restrBtnTop.onclick = () => {
+    showRestrukturierungOverlay(pr, () => {
+      syncDerivedOrder();
+      renderStruktur();
+      renderFeinstruktur();
+      renderGenAufgaben();
+      renderAFBBanner();
+    });
+  };
+  fein2Toolbar.appendChild(restrBtnTop);
+  stufe2Sec.appendChild(fein2Toolbar);
+
   stufe2Sec.appendChild(feinHint);
   const feinWrap = mk('div', ''); feinWrap.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:10px;';
   stufe2Sec.appendChild(feinWrap);
@@ -1490,18 +1507,6 @@ ${afbKey}|Kennung: Vorgabe → Schülertätigkeit`;
   const btnRow2 = mk('div', ''); btnRow2.style.cssText = 'display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap;';
   const zuAufgBtn = btn('→ Aufgaben generieren', 'btn btn-sm');
   btnRow2.appendChild(zuAufgBtn);
-  const restrBtn = btn('⇄ Umstrukturieren', 'btn btn-ghost btn-sm');
-  restrBtn.title = 'Aufgaben zusammenführen, trennen, Teilaufgaben verschieben';
-  restrBtn.onclick = () => {
-    showRestrukturierungOverlay(pr, () => {
-      syncDerivedOrder();
-      renderStruktur();
-      renderFeinstruktur();
-      renderGenAufgaben();
-      renderAFBBanner();
-    });
-  };
-  btnRow2.appendChild(restrBtn);
   stufe2Sec.appendChild(btnRow2);
 
   // ════════════════════════════════════════════════════════════════

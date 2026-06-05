@@ -362,7 +362,7 @@ function buildAufgabenGenTab(pr) {
     p += '\n';
     if (lernziele.length) { p += '## LERNZIELE\n'; lernziele.slice(0,8).forEach(lz => { p += `- ${lz}\n`; }); p += '\n'; }
     if (quellenTexte.trim()) {
-      p += `## AUFGABEN AUS DEINEN QUELLEN\nOrientiere dich an Schwierigkeitsgrad, Aufgabentypen und Formulierungen dieser Vorlagen:\n${quellenTexte}\n`;
+      p += `## AUFGABEN AUS DEINEN QUELLEN\nOrientiere dich an Schwierigkeitsgrad, Aufgabentypen und Formulierungen dieser Vorlagen:\n${quellenTexte.slice(0, 2500)}\n`;
     }
     p += `Beschreibe die Unteraufgaben in kompakter Kurzform.
 Für jede Unteraufgabe mit Pfeil: zuerst Anforderungsbereich (NUR erlaubte: ${erlaubt2.length ? erlaubt2.join(', ') : 'alle'}), dann | dann Kennung: Vorgabe → Schülertätigkeit.
@@ -647,10 +647,16 @@ Antworte NUR mit reinem JSON:
       const sample = alleAufgaben.length <= n
         ? alleAufgaben
         : (() => {
-            const offset = Math.floor(Math.random() * Math.floor(alleAufgaben.length / n));
-            return Array.from({ length: n }, (_, i) => alleAufgaben[(offset + Math.floor(i * alleAufgaben.length / n)) % alleAufgaben.length]);
+            const stride = alleAufgaben.length / n;
+            const offset = Math.floor(Math.random() * stride);
+            return Array.from({ length: n }, (_, i) => alleAufgaben[Math.floor(offset + i * stride) % alleAufgaben.length]);
           })();
+      let lastUkTitel = null;
       sample.forEach(({ ukTitel, a }) => {
+        if (ukTitel && ukTitel !== lastUkTitel) {
+          quellenTexte += `#### ${ukTitel}\n`;
+          lastUkTitel = ukTitel;
+        }
         const nr = a.nr ? `${a.nr}` : (a.seite ? `S.${a.seite}` : '–');
         const p = a.punkte ? ` · ${a.punkte}P` : '';
         const thema = a.thema ? ` [${a.thema}]` : '';
@@ -1860,7 +1866,7 @@ Antworte NUR mit reinem JSON:
       if (lernziele.length) { p += '## LERNZIELE\n'; lernziele.forEach((lz,i) => { p += `${i+1}. ${lz}\n`; }); p += '\n'; }
       if (pr.thema) p += `## THEMA\n${pr.thema}\n\n`;
       if (quellenTexte.trim()) {
-        p += `## AUFGABEN AUS DEINEN QUELLEN\nNutze diese Vorlagen als Ausgangspunkt für Themen, Typen und Schwierigkeitsgrad:\n${quellenTexte}\n`;
+        p += `## AUFGABEN AUS DEINEN QUELLEN\nNutze diese Vorlagen als Ausgangspunkt für Themen, Typen und Schwierigkeitsgrad:\n${quellenTexte.slice(0, 2500)}\n`;
       }
       p += `Antworte NUR mit reinem JSON:
 {"hauptaufgaben":[

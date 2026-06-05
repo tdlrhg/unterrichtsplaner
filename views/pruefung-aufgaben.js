@@ -88,6 +88,26 @@ function showRestrukturierungOverlay(pr, afterSave) {
 
       const spacer = mk('span', ''); spacer.style.flex = '1'; taskHead.appendChild(spacer);
 
+      // Aufgabe nach oben / unten verschieben
+      if (taskIdx > 0) {
+        const upBtn = btn('↑', 'btn btn-ghost btn-xs');
+        upBtn.title = 'Aufgabe nach oben';
+        upBtn.onclick = () => {
+          pr.feinstruktur.splice(taskIdx - 1, 0, pr.feinstruktur.splice(taskIdx, 1)[0]);
+          syncNrs(); rebuildBody();
+        };
+        taskHead.appendChild(upBtn);
+      }
+      if (taskIdx < pr.feinstruktur.length - 1) {
+        const downBtn = btn('↓', 'btn btn-ghost btn-xs');
+        downBtn.title = 'Aufgabe nach unten';
+        downBtn.onclick = () => {
+          pr.feinstruktur.splice(taskIdx + 1, 0, pr.feinstruktur.splice(taskIdx, 1)[0]);
+          syncNrs(); rebuildBody();
+        };
+        taskHead.appendChild(downBtn);
+      }
+
       // Zusammenführen mit nächster Aufgabe
       if (taskIdx < pr.feinstruktur.length - 1) {
         const mergeBtn = btn('⇣ Zusammenführen', 'btn btn-ghost btn-xs');

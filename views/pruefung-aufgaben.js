@@ -468,7 +468,8 @@ Antworte NUR mit reinem JSON:
   const panel2 = mk('div', '');
   const panel3 = mk('div', '');
   const panel4 = mk('div', '');
-  let aktiverSubTab = pr.genAufgaben.length ? 3 : pr.feinstruktur.length ? 2 : 1;
+  const hatKonkret = pr.feinstruktur.some(fs => fs.konkret?.some(k => k.aufgabe || k.loesung));
+  let aktiverSubTab = hatKonkret ? 3 : pr.feinstruktur.length ? 2 : 1;
 
   const subTabBar = mk('div', '');
   subTabBar.style.cssText = 'display:flex;gap:0;border-bottom:2px solid var(--bord);margin-bottom:18px;';
@@ -904,7 +905,7 @@ Antworte NUR mit reinem JSON:
             aufg._needsFeinUpdate = false;
             syncDerivedOrder();
             savePruefungsDB();
-            renderStruktur(); renderFeinstruktur(); renderGenAufgaben(); renderAFBBanner();
+            renderStruktur(); renderFeinstruktur(); renderKonkret(); renderAFBBanner();
             switchSubTab(2);
             statusEl.textContent = `✓ Feinstruktur fuer Aufgabe ${aufgNr} aktualisiert.`;
           } catch (e) {
@@ -1103,7 +1104,7 @@ Antworte NUR mit reinem JSON:
       syncDerivedOrder();
       renderStruktur();
       renderFeinstruktur();
-      renderGenAufgaben();
+      renderKonkret();
       renderAFBBanner();
     });
   };
@@ -1554,112 +1555,169 @@ Antworte NUR mit reinem JSON:
   renderFeinstruktur(); renderAFBBanner();
 
   // ════════════════════════════════════════════════════════════════
-  // STUFE 3: Konkrete Aufgaben
+  // STUFE 3: Konkrete Aufgaben (Zahlenwerte + Lösungen)
   // ════════════════════════════════════════════════════════════════
   const stufe3Sec = panel3;
+
+  // Hilfsfunktion: Spezifikationszeilen einer Aufgabe parsen
+  function parseSpecLines(fs) {
+    return (fs.spezifikation || '').split('\n')
+      .map(l => l.replace(/^[-–•]\s*/, '').trim()).filter(l => l)
+      .map(line => {
+        const pipeIdx = line.indexOf('|');
+        const candidate = pipeIdx > -1 ? line.slice(0, pipeIdx).trim() : null;
+        const afbKey = candidate && AB_KEY_MAP[candidate] ? candidate : null;
+        let rest = afbKey ? line.slice(pipeIdx + 1).trim() : line;
+        let punkte = null;
+        if (afbKey) {
+          const lp = rest.lastIndexOf('|');
+          if (lp > -1 && /^\d+$/.test(rest.slice(lp + 1).trim())) {
+            punkte = parseInt(rest.slice(lp + 1).trim()); rest = rest.slice(0, lp).trim();
+          }
+        }
+        const ci = rest.indexOf(':');
+        const kennung = (ci > -1 && ci <= 5) ? rest.slice(0, ci).trim() : '';
+        const content = kennung ? rest.slice(ci + 1).trim() : rest;
+        const arrowIdx = content.indexOf('→');
+        const metaVorgabe = arrowIdx > -1 ? content.slice(0, arrowIdx).trim() : content;
+        const metaOutput  = arrowIdx > -1 ? content.slice(arrowIdx + 1).trim() : '';
+        return { afbKey, kennung, metaVorgabe, metaOutput, punkte };
+      });
+  }
+
+  // Konkrete Daten pro Aufgabe + Zeile initialisieren/synchronisieren
+  function ensureKonkret(fs) {
+    const lines = parseSpecLines(fs);
+    if (!fs.konkret) fs.konkret = [];
+    // Länge angleichen
+    while (fs.konkret.length < lines.length) fs.konkret.push({ aufgabe: '', loesung: '' });
+    if (fs.konkret.length > lines.length) fs.konkret.length = lines.length;
+  }
+
   const aufgabenWrap = mk('div', '');
-  aufgabenWrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
+  aufgabenWrap.style.cssText = 'display:flex;flex-direction:column;gap:14px;';
   stufe3Sec.appendChild(aufgabenWrap);
 
-  function renderGenAufgaben() {
+  function renderKonkret() {
     aufgabenWrap.innerHTML = '';
-    pr.genAufgaben.forEach(aufg => {
-      const card = mk('div', '');
-      card.style.cssText = 'border-radius:10px;background:var(--surf2);overflow:hidden;';
 
-      // Kopfzeile
+    const aktiv = pr.feinstruktur.filter(fs => !fs._removed);
+    if (!aktiv.length) {
+      const leer = tx('div', '', 'Noch keine Aufgaben in der Feinstruktur (② Feinstruktur zuerst ausfüllen).');
+      leer.style.cssText = 'font-size:13px;color:var(--tx3);padding:20px 0;';
+      aufgabenWrap.appendChild(leer);
+      return;
+    }
+
+    aktiv.forEach(fs => {
+      ensureKonkret(fs);
+      const lines = parseSpecLines(fs);
+
+      const card = mk('div', '');
+      card.style.cssText = 'border-radius:10px;background:var(--surf2);overflow:hidden;border:1px solid var(--bord);';
+
+      // ── Kopfzeile ──
       const head = mk('div', '');
       head.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(124,58,237,.06);border-bottom:1px solid var(--bord);';
-      const nrBadge = tx('div', '', String(aufg.nr));
+      const nrBadge = tx('div', '', String(fs.nr));
       nrBadge.style.cssText = 'width:24px;height:24px;border-radius:50%;background:var(--pri);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
       head.appendChild(nrBadge);
-      const titel = tx('span', '', aufg.titel || '–');
-      titel.style.cssText = 'font-size:14px;font-weight:700;color:var(--tx1);flex:1;';
-      head.appendChild(titel);
-      if (aufg.zeitMinuten) {
-        const zt = tx('span', '', '⏱ ' + aufg.zeitMinuten + ' Min');
+      const titelEl = tx('span', '', fs.titel || '–');
+      titelEl.style.cssText = 'font-size:14px;font-weight:700;color:var(--tx1);flex:1;';
+      head.appendChild(titelEl);
+      if (fs.zeitMinuten) {
+        const zt = tx('span', '', '⏱ ' + fs.zeitMinuten + ' Min');
         zt.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(37,99,235,.1);color:#2563eb;flex-shrink:0;';
         head.appendChild(zt);
       }
-      if (aufg.gesamtpunkte) {
-        const pt = tx('span', '', aufg.gesamtpunkte + ' P');
+      if (fs.gesamtpunkte) {
+        const pt = tx('span', '', fs.gesamtpunkte + ' P');
         pt.style.cssText = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(124,58,237,.12);color:var(--pri);flex-shrink:0;';
         head.appendChild(pt);
       }
       card.appendChild(head);
 
-      // Aufgabenstellung
-      if (aufg.aufgabenstellung) {
-        const as = tx('div', '', aufg.aufgabenstellung);
-        as.style.cssText = 'font-size:13px;color:var(--tx2);font-style:italic;padding:8px 14px 4px;';
-        card.appendChild(as);
+      // ── Spaltentitel ──
+      const colHdr = mk('div', '');
+      colHdr.style.cssText = 'display:grid;grid-template-columns:22px 36px 1fr 1fr;gap:0 10px;padding:6px 14px 2px;border-bottom:1px solid var(--bord);background:rgba(0,0,0,.02);';
+      colHdr.appendChild(mk('div', '')); colHdr.appendChild(mk('div', ''));
+      const ch1 = tx('div', '', 'Konkreter Aufgabentext (mit Zahlenwerten)');
+      ch1.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx3);';
+      const ch2 = tx('div', '', 'Lösung / Musterlösung');
+      ch2.style.cssText = 'font-size:11px;font-weight:600;color:#dc2626;opacity:.7;';
+      colHdr.appendChild(ch1); colHdr.appendChild(ch2);
+      card.appendChild(colHdr);
+
+      // ── Teilaufgaben ──
+      if (!lines.length) {
+        const leer = tx('div', '', 'Keine Teilaufgaben – in ② Feinstruktur eintragen.');
+        leer.style.cssText = 'font-size:12px;color:var(--tx3);padding:10px 14px;font-style:italic;';
+        card.appendChild(leer);
       }
 
-      // Teilaufgaben
-      const uas = aufg.unteraufgaben || [];
-      uas.forEach(ua => {
-        const urow = mk('div', '');
-        urow.style.cssText = 'display:flex;gap:8px;align-items:flex-start;padding:7px 14px;border-top:1px solid var(--bord);font-size:13px;';
+      lines.forEach((parsed, li) => {
+        const { afbKey, kennung, metaVorgabe, metaOutput, punkte } = parsed;
+        const abCfg = afbKey ? AB_KEY_MAP[afbKey] : null;
+        const ko = fs.konkret[li];
 
-        // Anforderungsbereich-Badge (R/A/A/T)
-        const abCfg = AB_KEY_MAP[ua.anforderungsbereich];
-        const badge = tx('div', '', abCfg ? abCfg.letter : '·');
+        const wrap = mk('div', '');
+        wrap.style.cssText = 'border-top:1px solid var(--bord);';
+
+        // Meta-Zeile (read-only, als Orientierung)
+        const metaRow = mk('div', '');
+        metaRow.style.cssText = 'display:grid;grid-template-columns:22px 36px 1fr 1fr;gap:0 10px;padding:5px 14px 2px;align-items:center;';
+        const badge = tx('div', '', abCfg ? abCfg.letter : '–');
+        badge.style.cssText = `width:18px;height:18px;border-radius:50%;background:${abCfg ? abCfg.color + '22' : 'var(--bord)'};color:${abCfg?.color || 'var(--tx3)'};font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;`;
         badge.title = abCfg?.title || '';
-        badge.style.cssText = `width:20px;height:20px;border-radius:50%;background:${abCfg ? abCfg.color + '33' : 'var(--bord)'};color:${abCfg?.color || 'var(--tx3)'};font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;`;
-        urow.appendChild(badge);
+        metaRow.appendChild(badge);
+        const kennEl = tx('span', '', kennung ? kennung + ':' : '');
+        kennEl.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx3);';
+        metaRow.appendChild(kennEl);
+        const metaDesc = tx('span', '', metaVorgabe + (metaOutput ? ' → ' + metaOutput : ''));
+        metaDesc.style.cssText = 'font-size:11px;color:var(--tx3);font-style:italic;grid-column:3/5;';
+        metaRow.appendChild(metaDesc);
+        wrap.appendChild(metaRow);
 
-        // Nr + Text
-        const col = mk('div', ''); col.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:2px;';
-        const nrLine = mk('div', ''); nrLine.style.cssText = 'display:flex;align-items:baseline;gap:6px;';
-        nrLine.appendChild(tx('strong', '', ua.nr || ''));
-        if (ua.titel) { const tit = tx('span', '', ua.titel); tit.style.cssText = 'font-size:11px;font-weight:600;color:var(--tx2);'; nrLine.appendChild(tit); }
-        if (ua.typ) nrLine.appendChild(tx('span', 'matc-jg', ua.typ));
-        col.appendChild(nrLine);
-        const utxt = tx('div', '', ua.text || ''); utxt.style.cssText = 'color:var(--tx2);line-height:1.5;'; col.appendChild(utxt);
-        if (ua.loesung) {
-          const uloes = tx('div', '', ua.loesung);
-          uloes.style.cssText = 'color:#dc2626;line-height:1.5;font-weight:600;';
-          col.appendChild(uloes);
-        }
-        urow.appendChild(col);
+        // Eingabe-Zeile
+        const inputRow = mk('div', '');
+        inputRow.style.cssText = 'display:grid;grid-template-columns:22px 36px 1fr 1fr;gap:0 10px;padding:3px 14px 8px;align-items:start;';
+        inputRow.appendChild(mk('div', '')); inputRow.appendChild(mk('div', ''));
 
-        // Punkte
-        if (ua.punkte) {
-          const pu = tx('span', '', ua.punkte + ' P');
-          pu.style.cssText = `flex-shrink:0;font-size:12px;font-weight:700;color:${abCfg?.color || 'var(--tx3)'};padding-top:1px;`;
-          urow.appendChild(pu);
+        const aufgInp = document.createElement('textarea');
+        aufgInp.value = ko.aufgabe || '';
+        aufgInp.placeholder = 'Aufgabentext mit konkreten Werten…';
+        aufgInp.rows = 2;
+        aufgInp.style.cssText = 'width:100%;font-size:13px;font-family:inherit;border:1px solid var(--bord);border-radius:5px;background:var(--surf);color:var(--tx1);padding:5px 7px;resize:vertical;box-sizing:border-box;line-height:1.5;';
+        aufgInp.onfocus = () => { aufgInp.style.borderColor = 'var(--pri)'; };
+        aufgInp.onblur  = () => { aufgInp.style.borderColor = 'var(--bord)'; };
+        aufgInp.oninput = () => { ko.aufgabe = aufgInp.value; savePruefungsDB(); };
+        inputRow.appendChild(aufgInp);
+
+        const loesWrap = mk('div', '');
+        loesWrap.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
+        const loesInp = document.createElement('textarea');
+        loesInp.value = ko.loesung || '';
+        loesInp.placeholder = 'Lösung / Musterlösung…';
+        loesInp.rows = 2;
+        loesInp.style.cssText = 'width:100%;font-size:13px;font-family:inherit;border:1px solid var(--bord);border-radius:5px;background:var(--surf);color:#dc2626;padding:5px 7px;resize:vertical;box-sizing:border-box;line-height:1.5;';
+        loesInp.onfocus = () => { loesInp.style.borderColor = '#dc2626'; };
+        loesInp.onblur  = () => { loesInp.style.borderColor = 'var(--bord)'; };
+        loesInp.oninput = () => { ko.loesung = loesInp.value; savePruefungsDB(); };
+        loesWrap.appendChild(loesInp);
+        if (punkte != null) {
+          const pEl = tx('span', '', punkte + ' P');
+          pEl.style.cssText = `font-size:11px;font-weight:700;color:${abCfg?.color || 'var(--tx3)'};text-align:right;`;
+          loesWrap.appendChild(pEl);
         }
-        card.appendChild(urow);
+        inputRow.appendChild(loesWrap);
+        wrap.appendChild(inputRow);
+        card.appendChild(wrap);
       });
-
-      // Auswertungszeile Punkte nach Schwierigkeit
-      const summary = {};
-      uas.forEach(ua => {
-        if (ua.anforderungsbereich && ua.punkte) {
-          summary[ua.anforderungsbereich] = (summary[ua.anforderungsbereich] || 0) + ua.punkte;
-        }
-      });
-      if (Object.keys(summary).length) {
-        const foot = mk('div', '');
-        foot.style.cssText = 'display:flex;gap:8px;align-items:center;padding:6px 14px;border-top:1px solid var(--bord);background:rgba(0,0,0,.02);flex-wrap:wrap;';
-        const lbl = tx('span', '', 'Verteilung:');
-        lbl.style.cssText = 'font-size:11px;color:var(--tx3);';
-        foot.appendChild(lbl);
-        ['reproduktion','leichteAnwendung','mittlereAnwendung','transfer'].forEach(key => {
-          if (!summary[key]) return;
-          const cfg = AB_KEY_MAP[key];
-          const chip = tx('span', '', cfg.letter + ' ' + summary[key] + ' P');
-          chip.title = cfg.title;
-          chip.style.cssText = `font-size:12px;font-weight:700;padding:2px 8px;border-radius:20px;background:${cfg.color}22;color:${cfg.color};`;
-          foot.appendChild(chip);
-        });
-        card.appendChild(foot);
-      }
 
       aufgabenWrap.appendChild(card);
     });
   }
-  renderGenAufgaben(); renderAFBBanner();
+  renderKonkret(); renderAFBBanner();
   lockInfo.textContent = pr.grobstrukturLocked
     ? 'Grobstruktur ist nach der ersten Feinplanung gesperrt. Zum Aendern einzelne Aufgaben entsperren.'
     : 'Zeit und Punkte hier grob anpassen, dann einmal die Feinplanung fuer alle Aufgaben laufen lassen.';
@@ -1747,7 +1805,7 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
       savePruefungsDB();
       renderStruktur();
       renderFeinstruktur();
-      renderGenAufgaben();
+      renderKonkret();
       renderAFBBanner();
       lockInfo.textContent = 'Grobstruktur ist nach der ersten Feinplanung gesperrt. Zum Aendern einzelne Aufgaben entsperren.';
       statusEl.textContent = '✓ Feinstruktur fertig. Korrigiere wenn nötig, dann über Aktionen ▾ konkrete Aufgaben generieren.';

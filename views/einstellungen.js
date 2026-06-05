@@ -283,9 +283,10 @@ function viewEinstellungen() {
             (kap.unterkapitel || []).forEach(u => addAufgaben(u, u.id, u.titel));
           });
         });
-        if (rows.length) {
-          await sbInsert('schulbuch_aufgaben', rows);
-          migStatus.textContent = `✓ ${rows.length} Schulbuch-Aufgaben übertragen.`;
+        const dedupedRows = [...new Map(rows.map(r => [r.id, r])).values()];
+        if (dedupedRows.length) {
+          await sbInsert('schulbuch_aufgaben', dedupedRows);
+          migStatus.textContent = `✓ ${dedupedRows.length} Schulbuch-Aufgaben übertragen (${rows.length - dedupedRows.length} Duplikate übersprungen).`;
         } else {
           migStatus.textContent = '⚠ Keine Schulbuch-Aufgaben gefunden.';
         }

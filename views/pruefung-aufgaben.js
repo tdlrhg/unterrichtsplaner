@@ -644,8 +644,7 @@ Antworte NUR mit reinem JSON:
       let ftsErgebnis = [];
       try {
         if (suchBegriffe) {
-          ftsErgebnis = await sbQueryFTS('schulbuch_aufgaben', suchBegriffe,
-            prFach ? { fach: prFach } : {}, 15);
+          ftsErgebnis = await sbQueryFTS('schulbuch_aufgaben', suchBegriffe, {}, 15);
         }
       } catch(_) { /* Fallback auf in-memory */ }
 

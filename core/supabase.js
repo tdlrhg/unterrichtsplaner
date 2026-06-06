@@ -89,10 +89,15 @@ async function sbSelect(table, { filters = {}, fts = null, limit = 50, offset = 
   return await res.json();
 }
 
-// Anzahl Zeilen in einer Tabelle
-async function sbCount(table) {
-  const url = _URL + '/rest/v1/' + table + '?select=id';
-  const res = await fetch(url, { headers: { ..._H(), 'Prefer': 'count=exact' } });
+// Anzahl Zeilen in einer Tabelle (optional mit eq-Filtern)
+async function sbCount(table, filters = {}) {
+  let url = _URL + '/rest/v1/' + table + '?select=id';
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== null && v !== undefined && v !== '') {
+      url += '&' + k + '=eq.' + encodeURIComponent(v);
+    }
+  });
+  const res = await fetch(url, { headers: { ..._H(), 'Prefer': 'count=exact', 'Range': '0-0' } });
   if (!res.ok) return null;
   const range = res.headers.get('content-range'); // z.B. "0-9/212"
   return range ? parseInt(range.split('/')[1]) : null;

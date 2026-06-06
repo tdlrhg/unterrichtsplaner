@@ -15,6 +15,8 @@ function buildPrTopbar() {
   const titleWrap = mk('div', '');
   titleWrap.style.cssText = 'display:flex;align-items:baseline;gap:12px;';
   titleWrap.appendChild(tx('div', 'topbar-title', 'Prüfungsplaner'));
+  const dbLink2 = mk('a', 'topbar-app-link'); dbLink2.href = 'datenbank.html'; dbLink2.textContent = '📚 Datenbank';
+  titleWrap.appendChild(dbLink2);
   const upLink = mk('a', 'topbar-app-link');
   upLink.href = 'index.html';
   upLink.textContent = '📐 Unterrichtsplaner';

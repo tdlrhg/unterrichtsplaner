@@ -55,7 +55,7 @@ async function sbInsert(table, rows) {
 async function sbQueryFTS(table, ftsQuery, filters = {}, limit = 10) {
   const params = [];
   if (ftsQuery && ftsQuery.trim()) {
-    params.push('search_vector=plfts(german).' + encodeURIComponent(ftsQuery.trim()));
+    params.push('search_vector=wfts(german).' + encodeURIComponent(ftsQuery.trim()));
   }
   Object.entries(filters).forEach(([k, v]) => {
     if (v !== null && v !== undefined && v !== '') {

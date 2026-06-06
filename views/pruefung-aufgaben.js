@@ -628,11 +628,13 @@ Antworte NUR mit reinem JSON:
     const prFp   = prKurs ? (S.data?.fachplanungen || []).find(f => f.id === prKurs.fachplanungId) : null;
     const prFach = prFp?.fach || null;
 
-    // Suchanfrage aus Lernzielen + Thema bauen
-    const suchBegriffe = [pr.thema, pr.titel, ...lernziele.slice(0, 3)]
-      .filter(Boolean).join(' ')
-      .replace(/[^\wäöüÄÖÜß\s]/g, ' ').replace(/\s+/g, ' ').trim()
-      .split(' ').filter(w => w.length > 3).slice(0, 8).join(' ');
+    // Suchanfrage: Thema zuerst, dann lange Wörter aus Lernzielen (Fachbegriffe ≥ 6 Zeichen)
+    const STOPPWOERTER = new Set(['haben','werden','können','sollen','wissen','kennen','verstehen',
+      'nutzen','dabei','sowie','durch','ihrer','seine','einer','keine','diese','welche',
+      'wozu','meint','weiß','Begriff','besteht','enthält','anhand']);
+    const themaWoerter = (pr.thema || pr.titel || '').replace(/[^\wäöüÄÖÜß\s]/g, ' ').split(/\s+/).filter(w => w.length > 3 && !STOPPWOERTER.has(w));
+    const lzWoerter = lernziele.slice(0, 3).join(' ').replace(/[^\wäöüÄÖÜß\s]/g, ' ').split(/\s+/).filter(w => w.length >= 6 && !STOPPWOERTER.has(w));
+    const suchBegriffe = [...new Set([...themaWoerter, ...lzWoerter])].slice(0, 6).join(' ');
 
     let quellenTexte = '';
 

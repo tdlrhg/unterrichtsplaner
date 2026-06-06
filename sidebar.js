@@ -150,6 +150,11 @@ function buildSidebar() {
     S.view === 'schulbuecher',
     () => { S.view = 'schulbuecher'; S.sel = null; render(); }
   ));
+  sb.appendChild(sbRow(
+    '🔍 Aufgaben-DB', null,
+    S.view === 'aufgabenDB',
+    () => { S.view = 'aufgabenDB'; S.sel = null; render(); }
+  ));
 
   // ── Einstellungen ─────────────────────────────────────────────
   sb.appendChild(mk('div', 'sb-sep'));

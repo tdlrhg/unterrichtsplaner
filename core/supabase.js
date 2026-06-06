@@ -69,6 +69,26 @@ async function sbQueryFTS(table, ftsQuery, filters = {}, limit = 10) {
   return await res.json();
 }
 
+// Generische SELECT-Abfrage mit eq-Filtern, FTS, Order, Limit, Offset
+async function sbSelect(table, { filters = {}, fts = null, limit = 50, offset = 0, order = null } = {}) {
+  const params = ['select=*'];
+  if (fts && fts.trim()) {
+    params.push('search_vector=wfts(german).' + encodeURIComponent(fts.trim()));
+  }
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== null && v !== undefined && v !== '') {
+      params.push(k + '=eq.' + encodeURIComponent(v));
+    }
+  });
+  if (order) params.push('order=' + order);
+  params.push('limit=' + limit);
+  if (offset) params.push('offset=' + offset);
+  const url = _URL + '/rest/v1/' + table + '?' + params.join('&');
+  const res = await fetch(url, { headers: _H() });
+  if (!res.ok) return [];
+  return await res.json();
+}
+
 // Anzahl Zeilen in einer Tabelle
 async function sbCount(table) {
   const url = _URL + '/rest/v1/' + table + '?select=id';

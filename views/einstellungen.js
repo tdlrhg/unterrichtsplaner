@@ -275,6 +275,10 @@ function viewEinstellungen() {
                 thema: a.thema || null,
                 inhalt: a.inhalt || a.aufgabenstellung || a.text || null,
                 jahrgang: typeof jahrgang === 'number' ? jahrgang : (parseInt(jahrgang) || null),
+                anforderung: a.anforderung || null,
+                operator: a.operator || null,
+                umfang: a.umfang || null,
+                schwierigkeit: a.schwierigkeitsstufe || null,
               });
             });
           };

@@ -259,6 +259,10 @@ Für jede Aufgabe / Teilaufgabe ein Eintrag mit typ:"aufgabe":
 - schwierigkeit: Kreissymbol exakt: "○" einfach, "◒" mittel, "●" anspruchsvoll
 - grafik: Beschreibung des visuellen Elements (1 Satz), null wenn keins
 - kompetenzen: Array z.B. ["UF1","K2"], sonst []
+- anforderung: Ein Satz was Schüler konkret tun müssen (z.B. "Schüler berechnen den Flächeninhalt eines Parallelogramms aus gegebenen Maßen.")
+- operator: genau eines von: berechnen|begründen|erklären|zeichnen|messen|konstruieren|beschreiben|vergleichen|ausfüllen|MC
+- umfang: genau eines von: kurz|mittel|lang  (kurz = 1–2 min, mittel = 3–7 min, lang = 8+ min)
+- schwierigkeitsstufe: genau eines von: grundlegend|standard|anspruchsvoll
 
 ── TYP 2: LEHRTEXT ──
 Für jeden Abschnitt mit Erklärungen, Definitionen, Musterlösungen oder einführenden Texten ein Eintrag mit typ:"lehrtext":
@@ -272,7 +276,7 @@ Alle Strings JSON-valide: einzeilig, keine rohen Anführungszeichen.
 Antworte NUR mit validem JSON:
 {"aufgaben": [
   {"typ":"lehrtext","seite":145,"thema":"Gleichsetzungsverfahren","inhalt":"Einführung über Schülerdialog (Anna/Sina) mit Koordinatengraph. Erklärt den Ablauf in drei Schritten: 1) beide Gleichungen nach derselben Variable auflösen, 2) gleichsetzen, 3) nach x auflösen und y berechnen. Musterlösung: I: y-2x=-1, II: 2y+x=4, Umformen zu Ia: y=2x-1, IIa: y=-0,5x+2, Gleichsetzen ergibt x=1,2 und y=1,4.","grafik":"Koordinatensystem mit zwei sich schneidenden Geraden y=2x-1 und y=-0,5x+2"},
-  {"typ":"aufgabe","nr":"1","seite":146,"aufgabenstellung":null,"text":"Löse das Gleichungssystem grafisch und rechnerisch.","schwierigkeit":"○","grafik":null,"kompetenzen":["UF1"]}
+  {"typ":"aufgabe","nr":"1","seite":146,"aufgabenstellung":null,"text":"Löse das Gleichungssystem grafisch und rechnerisch.","schwierigkeit":"○","grafik":null,"kompetenzen":["UF1"],"anforderung":"Schüler lösen ein lineares Gleichungssystem sowohl grafisch als auch mit dem Gleichsetzungsverfahren.","operator":"berechnen","umfang":"mittel","schwierigkeitsstufe":"standard"}
 ]}`;
 
   async function callKI(blocks, maxTokens) {

@@ -117,20 +117,33 @@ async function buildLanding(container) {
     tile.appendChild(tx('div', '', f.icon)).style.fontSize = '40px';
     tile.appendChild(tx('div', 'db-tile-label', f.label));
 
+    const countWrap = mk('div', '');
+    countWrap.style.cssText = 'display:flex;align-items:baseline;gap:6px;';
     const countEl = tx('div', 'db-tile-count', '…');
     countEl.style.color = f.color;
-    tile.appendChild(countEl);
-    tile.appendChild(tx('div', 'db-tile-sub', 'Einträge'));
+    countWrap.appendChild(countEl);
+    countWrap.appendChild(tx('div', 'db-tile-sub', 'Einträge'));
+    tile.appendChild(countWrap);
 
     // Herkunft-Aufschlüsselung
     const subCounts = mk('div', '');
-    subCounts.style.cssText = 'display:flex;flex-direction:column;gap:3px;margin-top:4px;border-top:1px solid ' + f.color + '22;padding-top:10px;width:100%;';
-    const sbCount_el = tx('div', '', '📖 … Schulbuch');
-    sbCount_el.style.cssText = 'font-size:12px;color:var(--tx3);';
-    const matCount_el = tx('div', '', '📄 … Eigenmaterial');
-    matCount_el.style.cssText = 'font-size:12px;color:var(--tx3);';
-    subCounts.appendChild(sbCount_el);
-    subCounts.appendChild(matCount_el);
+    subCounts.style.cssText = 'display:flex;flex-direction:column;gap:5px;margin-top:6px;border-top:1px solid ' + f.color + '20;padding-top:12px;width:100%;';
+
+    function mkSubCount(icon, label, dotColor) {
+      const row = mk('div', '');
+      row.style.cssText = 'display:flex;align-items:center;gap:7px;';
+      const dot = tx('span', '', '●');
+      dot.style.cssText = `font-size:8px;color:${dotColor};flex-shrink:0;`;
+      const lbl = tx('span', '', icon + ' ' + label);
+      lbl.style.cssText = 'font-size:12px;color:var(--tx2);flex:1;';
+      row.appendChild(dot); row.appendChild(lbl);
+      return row;
+    }
+
+    const sbRow  = mkSubCount('📖', '… Schulbuchaufgaben', '#2563eb');
+    const matRow = mkSubCount('📄', '… Eigenmaterialien',  '#16a34a');
+    subCounts.appendChild(sbRow);
+    subCounts.appendChild(matRow);
     tile.appendChild(subCounts);
 
     grid.appendChild(tile);
@@ -142,8 +155,8 @@ async function buildLanding(container) {
       sbCount('inhalte', { fach: f.key, herkunft: 'eigenmaterial' }),
     ]).then(([total, sb, mat]) => {
       countEl.textContent = total ?? '?';
-      sbCount_el.textContent = '📖 ' + (sb ?? '?') + ' Schulbuchaufgaben';
-      matCount_el.textContent = '📄 ' + (mat ?? 0) + ' Eigenmaterialien';
+      sbRow.querySelector('span:last-child').textContent  = '📖 ' + (sb  ?? '?') + ' Schulbuchaufgaben';
+      matRow.querySelector('span:last-child').textContent = '📄 ' + (mat ?? 0)   + ' Eigenmaterialien';
     }).catch(() => { countEl.textContent = '?'; });
   }
 }
@@ -234,17 +247,23 @@ function renderRow(a) {
 
   // Quelle (links, feste Breite)
   const src = mk('div', '');
-  src.style.cssText = 'width:180px;flex-shrink:0;overflow:hidden;';
+  src.style.cssText = 'width:190px;flex-shrink:0;overflow:hidden;display:flex;flex-direction:column;gap:2px;';
+
+  // Herkunft-Badge
+  const hBadge = tx('div', '', isSchulbuch ? '📖 Schulbuch' : '📄 Eigenmaterial');
+  hBadge.style.cssText = `font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${accentColor};`;
+  src.appendChild(hBadge);
+
   if (isSchulbuch) {
     const buch = tx('div', '', a.buch || '–');
-    buch.style.cssText = 'font-size:12px;font-weight:600;color:var(--tx1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    buch.style.cssText = 'font-size:12px;font-weight:600;color:var(--tx1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3;';
     src.appendChild(buch);
     const kap = tx('div', '', a.uk_titel || a.kapitel_titel || '');
     kap.style.cssText = 'font-size:11px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
     src.appendChild(kap);
   } else {
     const titel = tx('div', '', a.titel || a.dateiname || '–');
-    titel.style.cssText = 'font-size:12px;font-weight:600;color:var(--tx1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    titel.style.cssText = 'font-size:12px;font-weight:600;color:var(--tx1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.3;';
     src.appendChild(titel);
   }
   card.appendChild(src);
@@ -252,25 +271,30 @@ function renderRow(a) {
   // Inhalt (Mitte, wächst)
   const mid = mk('div', '');
   mid.style.cssText = 'flex:1;min-width:0;';
-  const inhaltText = (a.inhalt || a.thema || a.beschreibung || '').slice(0, 130);
+  const inhaltText = (a.inhalt || a.thema || a.beschreibung || '').slice(0, 140);
   const t = tx('div', '', inhaltText || '–');
-  t.style.cssText = 'font-size:13px;color:var(--tx1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+  t.style.cssText = 'font-size:13.5px;color:var(--tx1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;font-weight:500;';
   mid.appendChild(t);
   if (a.anforderung) {
-    const anf = tx('div', '', '→ ' + a.anforderung.slice(0, 100));
-    anf.style.cssText = 'font-size:11px;color:var(--tx2);font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px;';
+    const anf = tx('div', '', a.anforderung.slice(0, 110));
+    anf.style.cssText = 'font-size:11.5px;color:var(--tx3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;';
     mid.appendChild(anf);
   }
   card.appendChild(mid);
 
   // Chips (rechts)
   const chips = mk('div', '');
-  chips.style.cssText = 'display:flex;gap:4px;align-items:center;flex-shrink:0;';
-  const OP_FARBEN = { berechnen:'#2563eb', begründen:'#7c3aed', erklären:'#0891b2', zeichnen:'#16a34a', messen:'#d97706', konstruieren:'#dc2626', beschreiben:'#4f46e5', vergleichen:'#db2777', MC:'#374151' };
-  const SCHW_FARBEN = { grundlegend:'#16a34a', standard:'#2563eb', anspruchsvoll:'#9d174d' };
-  if (a.operator) chips.appendChild(mkChip(a.operator, OP_FARBEN[a.operator] || '#64748b'));
-  if (a.schwierigkeit) chips.appendChild(mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b'));
-  if (a.seite) chips.appendChild(mkChip('S.' + a.seite, '#94a3b8'));
+  chips.style.cssText = 'display:flex;gap:5px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:200px;';
+  const OP_FARBEN = { berechnen:'#2563eb', begründen:'#7c3aed', erklären:'#0891b2', zeichnen:'#16a34a', messen:'#d97706', konstruieren:'#dc2626', beschreiben:'#4f46e5', vergleichen:'#db2777', ausfüllen:'#0d9488', MC:'#374151' };
+  const SCHW_FARBEN = { grundlegend:'#16a34a', standard:'#2563eb', anspruchsvoll:'#b45309' };
+  const SCHW_ICONS  = { grundlegend:'○', standard:'◑', anspruchsvoll:'●' };
+  if (a.operator)      chips.appendChild(mkChip(a.operator, OP_FARBEN[a.operator] || '#64748b'));
+  if (a.schwierigkeit) chips.appendChild(mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit] || ''));
+  if (a.seite) {
+    const seite = tx('span', '', 'S. ' + a.seite);
+    seite.style.cssText = 'font-size:10.5px;color:var(--tx3);font-weight:500;white-space:nowrap;';
+    chips.appendChild(seite);
+  }
   card.appendChild(chips);
 
   // Aufklapp-Detail
@@ -280,10 +304,9 @@ function renderRow(a) {
     document.querySelectorAll('.row-detail').forEach(el => el.remove());
 
     const detail = mk('div', 'row-detail');
-    detail.style.cssText = 'border:1px solid var(--bord);border-top:none;border-radius:0 0 8px 8px;padding:14px 16px;background:var(--surf);margin-top:-1px;';
+    detail.style.cssText = `border:1px solid var(--bord);border-top:none;border-left:3px solid ${accentColor};border-radius:0 0 8px 8px;padding:16px 18px 16px 16px;background:var(--surf);margin-top:-1px;`;
 
-    const grid = mk('div', '');
-    grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:12px;';
+    const grid = mk('div', 'detail-grid');
 
     const allFields = [
       ['Inhalt', a.inhalt],
@@ -310,14 +333,11 @@ function renderRow(a) {
 
     allFields.forEach(([label, val]) => {
       if (val === null || val === undefined || val === '') return;
-      const row = mk('div', '');
-      row.style.cssText = 'display:flex;flex-direction:column;gap:1px;';
-      const l = tx('div', '', label);
-      l.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;';
-      const v = tx('div', '', String(val));
-      v.style.cssText = 'color:var(--tx1);line-height:1.4;';
-      row.appendChild(l); row.appendChild(v);
-      grid.appendChild(row);
+      const field = mk('div', '');
+      field.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
+      field.appendChild(tx('div', 'detail-field-label', label));
+      field.appendChild(tx('div', 'detail-field-value', String(val)));
+      grid.appendChild(field);
     });
 
     detail.appendChild(grid);
@@ -327,9 +347,9 @@ function renderRow(a) {
   return card;
 }
 
-function mkChip(text, color) {
-  const c = tx('span', '', text);
-  c.style.cssText = `display:inline-block;padding:1px 6px;border-radius:20px;font-size:10px;font-weight:600;background:${color}22;color:${color};white-space:nowrap;`;
+function mkChip(text, color, icon = '') {
+  const c = tx('span', '', (icon ? icon + ' ' : '') + text);
+  c.style.cssText = `display:inline-flex;align-items:center;gap:2px;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600;background:${color}18;color:${color};border:1px solid ${color}38;white-space:nowrap;letter-spacing:.01em;`;
   return c;
 }
 

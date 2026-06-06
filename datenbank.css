@@ -16,22 +16,25 @@
 
 /* ── Landing-Tiles ──────────────────────────────────────────────── */
 .db-tile-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--tx2);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tx3);
   text-transform: uppercase;
-  letter-spacing: .04em;
+  letter-spacing: .07em;
 }
 
 .db-tile-count {
-  font-size: 36px;
+  font-size: 48px;
   font-weight: 800;
   line-height: 1;
+  letter-spacing: -.02em;
 }
 
 .db-tile-sub {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--tx3);
+  font-weight: 500;
+  margin-top: 2px;
 }
 
 /* ── Zeilen-Detail-Aufklapper ───────────────────────────────────── */
@@ -41,4 +44,26 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: none; }
+}
+
+/* ── Detail-Grid ────────────────────────────────────────────────── */
+.row-detail .detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 28px;
+}
+
+.row-detail .detail-field-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tx3);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 1px;
+}
+
+.row-detail .detail-field-value {
+  font-size: 13px;
+  color: var(--tx1);
+  line-height: 1.4;
 }

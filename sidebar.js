@@ -151,7 +151,7 @@ function buildSidebar() {
     () => { S.view = 'schulbuecher'; S.sel = null; render(); }
   ));
   sb.appendChild(sbRow(
-    '🔍 Aufgaben-DB', null,
+    '🔍 Material-Suche', null,
     S.view === 'aufgabenDB',
     () => { S.view = 'aufgabenDB'; S.sel = null; render(); }
   ));

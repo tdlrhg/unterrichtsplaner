@@ -37,6 +37,94 @@
   margin-top: 2px;
 }
 
+/* ── Tabellen-Layout ────────────────────────────────────────────── */
+.db-table-head,
+.db-row {
+  display: grid;
+  grid-template-columns: 210px 1fr 130px 150px;
+  gap: 0 10px;
+  align-items: center;
+}
+
+.db-table-head {
+  padding: 6px 10px 8px;
+}
+
+.db-col-hdr {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-align: center;
+}
+.db-col-hdr-src    { background: rgba(15,118,110,.12); color: #0f766e; text-align: left; }
+.db-col-hdr-inhalt { background: rgba(15,118,110,.07); color: #0f766e; text-align: left; }
+.db-col-hdr-op     { background: rgba(124,58,237,.10); color: #7c3aed; }
+.db-col-hdr-schw   { background: rgba(55,65,81,.09);   color: #374151; }
+
+.db-row {
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: filter .12s, box-shadow .12s;
+  border: 1px solid transparent;
+}
+.db-row:hover {
+  filter: brightness(.97);
+  border-color: var(--bord);
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.db-row-active {
+  border-color: var(--pri) !important;
+  box-shadow: 0 0 0 1px var(--pri) !important;
+}
+
+.db-col-src    { overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
+.db-col-inhalt { overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
+.db-col-op     { display: flex; justify-content: center; }
+.db-col-schw   { display: flex; justify-content: center; }
+
+.db-herkunft-badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.db-buch-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+.db-kap-name {
+  font-size: 11px;
+  color: var(--tx3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.db-inhalt-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tx1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.db-anf-text {
+  font-size: 11px;
+  color: var(--tx3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Zeilen-Detail-Aufklapper ───────────────────────────────────── */
 .row-detail {
   animation: fadeIn .12s ease;

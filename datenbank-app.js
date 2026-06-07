@@ -72,16 +72,6 @@ function buildDBSidebar(sb) {
     row.appendChild(inner);
     row.onclick = () => { DB.view = 'fach'; DB.fach = f.key; DB.herkunft = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
     sb.appendChild(row);
-
-    if (isActive) {
-      [[null,'Alle Einträge'],['schulbuch','📖 Schulbücher'],['eigenmaterial','📄 Eigene Materialien']].forEach(function(pair) {
-        const val = pair[0]; const lbl = pair[1];
-        const sub = mk('div', 'sb-item sb-item-indent' + (DB.herkunft === val ? ' active' : ''));
-        sub.appendChild(tx('span', 'sb-item-label', lbl));
-        sub.onclick = function(e) { e.stopPropagation(); DB.herkunft = val; DB.offset = 0; dbRender(); };
-        sb.appendChild(sub);
-      });
-    }
   });
 
   const handle = mk('div', 'sb-resize-handle');

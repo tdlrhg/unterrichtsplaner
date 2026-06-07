@@ -17,6 +17,41 @@ const FAECHER = [
   { key: 'chemie', label: 'Chemie',     icon: '🧪', color: '#d97706' },
 ];
 
+// ── Spalten-Konfiguration ──────────────────────────────────────────
+const COLS = [
+  { key: 'src',    label: 'Quelle',        hCls: 'db-col-hdr-src',    cCls: 'db-col-src'    },
+  { key: 'inhalt', label: 'Inhalt',        hCls: 'db-col-hdr-inhalt', cCls: 'db-col-inhalt' },
+  { key: 'op',     label: 'Operator',      hCls: 'db-col-hdr-op',     cCls: 'db-col-op'     },
+  { key: 'schw',   label: 'Schwierigkeit', hCls: 'db-col-hdr-schw',   cCls: 'db-col-schw'   },
+];
+
+var COL_CONFIG = (function() {
+  try {
+    var s = JSON.parse(localStorage.getItem('db_col_config') || 'null');
+    if (s && Array.isArray(s.order) && s.order.length === COLS.length &&
+        Array.isArray(s.widths) && s.widths.length === COLS.length) return s;
+  } catch(e) {}
+  return { order: [0,1,2,3], widths: [210, null, 130, 150] };
+})();
+
+function saveColConfig() {
+  try { localStorage.setItem('db_col_config', JSON.stringify(COL_CONFIG)); } catch(e) {}
+}
+
+function colTemplate() {
+  return COL_CONFIG.order.map(function(i) {
+    var w = COL_CONFIG.widths[i];
+    return w ? w + 'px' : '1fr';
+  }).join(' ');
+}
+
+function applyColTemplate() {
+  var tpl = colTemplate();
+  document.querySelectorAll('.db-table-head, .db-row').forEach(function(el) {
+    el.style.gridTemplateColumns = tpl;
+  });
+}
+
 const DB = {
   view: 'landing',    // 'landing' | 'fach'
   fach: null,
@@ -311,6 +346,125 @@ function buildLanding(container) {
 }
 
 // ── Fach-Ansicht ──────────────────────────────────────────────────
+// ── Tabellen-Header mit Resize + Drag-Reorder ─────────────────────
+var _colDragFromPos = null;
+
+function buildTableHead() {
+  const head = mk('div', 'db-table-head');
+  head.style.gridTemplateColumns = colTemplate();
+
+  COL_CONFIG.order.forEach(function(colIdx, visualPos) {
+    const col = COLS[colIdx];
+    const hCell = mk('div', 'db-col-hdr ' + col.hCls);
+    hCell.dataset.colIdx = colIdx;
+    hCell.dataset.vpos = visualPos;
+    hCell.draggable = true;
+
+    // Label (kein eigener Pointer-Event, damit Drag auf der Zelle selbst anläuft)
+    const lbl = tx('span', '', col.label);
+    lbl.style.pointerEvents = 'none';
+    hCell.appendChild(lbl);
+
+    // ── Resize-Handle (nicht nach der letzten Spalte) ──────────────
+    if (visualPos < COLS.length - 1) {
+      const rh = mk('div', 'db-col-resize-handle');
+      rh.title = 'Spaltenbreite ziehen';
+      rh.draggable = false;
+      rh.addEventListener('mousedown', function(e) {
+        e.preventDefault();   // unterbindet Browser-Drag auf dem draggable-Parent
+        e.stopPropagation();
+        var startX = e.clientX;
+        var startW = COL_CONFIG.widths[colIdx];
+        if (!startW) {
+          // 1fr → einmalig gemessene Pixel-Breite fixieren
+          startW = Math.round(hCell.getBoundingClientRect().width);
+          COL_CONFIG.widths[colIdx] = startW;
+        }
+        hCell.classList.add('db-resize-active');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        function onMove(ev) {
+          var newW = Math.max(60, Math.round(startW + ev.clientX - startX));
+          COL_CONFIG.widths[colIdx] = newW;
+          applyColTemplate();
+        }
+        function onUp() {
+          hCell.classList.remove('db-resize-active');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          saveColConfig();
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+      hCell.appendChild(rh);
+    }
+
+    // ── Drag-Events für Spalten-Reorder ───────────────────────────
+    hCell.addEventListener('dragstart', function(e) {
+      _colDragFromPos = visualPos;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(visualPos));
+      // Kurz verzögert, damit der Drag-Ghost noch normal aussieht
+      requestAnimationFrame(function() { hCell.classList.add('db-col-dragging'); });
+    });
+    hCell.addEventListener('dragend', function() {
+      _colDragFromPos = null;
+      hCell.classList.remove('db-col-dragging');
+      document.querySelectorAll('.db-col-drag-over').forEach(function(el) {
+        el.classList.remove('db-col-drag-over');
+      });
+    });
+    hCell.addEventListener('dragover', function(e) {
+      if (_colDragFromPos === null || _colDragFromPos === visualPos) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      hCell.classList.add('db-col-drag-over');
+    });
+    hCell.addEventListener('dragleave', function() {
+      hCell.classList.remove('db-col-drag-over');
+    });
+    hCell.addEventListener('drop', function(e) {
+      e.preventDefault();
+      hCell.classList.remove('db-col-drag-over');
+      var fromPos = _colDragFromPos;
+      var toPos = visualPos;
+      if (fromPos === null || fromPos === toPos) return;
+
+      var newOrder = COL_CONFIG.order.slice();
+      var moved = newOrder.splice(fromPos, 1)[0];
+      newOrder.splice(toPos, 0, moved);
+      COL_CONFIG.order = newOrder;
+      saveColConfig();
+
+      // Header neu aufbauen (selbe Position im DOM)
+      head.replaceWith(buildTableHead());
+      // Zeilen-Zellen in allen sichtbaren Rows neu ordnen
+      document.querySelectorAll('.db-row').forEach(reorderRowCells);
+    });
+
+    head.appendChild(hCell);
+  });
+
+  return head;
+}
+
+function reorderRowCells(rowEl) {
+  var cellMap = {};
+  Array.from(rowEl.children).forEach(function(cell) {
+    var idx = cell.dataset.colIdx;
+    if (idx !== undefined) cellMap[idx] = cell;
+  });
+  while (rowEl.firstChild) rowEl.removeChild(rowEl.firstChild);
+  COL_CONFIG.order.forEach(function(colIdx) {
+    if (cellMap[colIdx]) rowEl.appendChild(cellMap[colIdx]);
+  });
+  rowEl.style.gridTemplateColumns = colTemplate();
+}
+
 async function buildFachView(container) {
   const f = fachInfo(DB.fach);
 
@@ -346,11 +500,7 @@ async function buildFachView(container) {
   tableWrap.style.cssText = 'padding:8px 16px 16px;';
   container.appendChild(tableWrap);
 
-  const tableHead = mk('div', 'db-table-head');
-  [['Quelle','db-col-hdr-src'],['Inhalt','db-col-hdr-inhalt'],['Operator','db-col-hdr-op'],['Schwierigkeit','db-col-hdr-schw']].forEach(function(pair) {
-    tableHead.appendChild(tx('div', 'db-col-hdr ' + pair[1], pair[0]));
-  });
-  tableWrap.appendChild(tableHead);
+  tableWrap.appendChild(buildTableHead());
 
   const wrap = mk('div', '');
   wrap.style.cssText = 'display:flex;flex-direction:column;gap:2px;margin-top:4px;';
@@ -427,14 +577,17 @@ async function buildFachView(container) {
 function renderRow(a, onSaved) {
   const isSchulbuch = !a.herkunft || a.herkunft === 'schulbuch';
   const accentColor = isSchulbuch ? '#0f766e' : '#16a34a';
-  const rowBg       = SCHW_BG[a.schwierigkeit] || 'transparent';
 
   const row = mk('div', 'db-row');
-  row.style.background = rowBg;
+  row.style.background = SCHW_BG[a.schwierigkeit] || 'transparent';
+  row.style.gridTemplateColumns = colTemplate();
 
-  // ── Spalte 1: Quelle ──────────────────────────────────────────
-  const src = mk('div', 'db-col-src');
-  const hBadge = tx('div', 'db-herkunft-badge', isSchulbuch ? '📖 Schulbuch' : '📄 Eigenmaterial');
+  // Zellen vorab bauen, dann in COL_CONFIG.order einhängen
+  var cells = [];
+
+  // Zelle 0: Quelle
+  var src = mk('div', 'db-col-src'); src.dataset.colIdx = 0;
+  var hBadge = tx('div', 'db-herkunft-badge', isSchulbuch ? '📖 Schulbuch' : '📄 Eigenmaterial');
   hBadge.style.color = accentColor;
   src.appendChild(hBadge);
   if (isSchulbuch) {
@@ -444,27 +597,29 @@ function renderRow(a, onSaved) {
   } else {
     src.appendChild(tx('div', 'db-buch-name', a.titel || a.dateiname || '–'));
   }
-  row.appendChild(src);
+  cells[0] = src;
 
-  // ── Spalte 2: Inhalt ──────────────────────────────────────────
-  const mid = mk('div', 'db-col-inhalt');
+  // Zelle 1: Inhalt
+  var mid = mk('div', 'db-col-inhalt'); mid.dataset.colIdx = 1;
   mid.appendChild(tx('div', 'db-inhalt-text', (a.inhalt || a.thema || a.beschreibung || '–').slice(0, 150)));
   if (a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
-  row.appendChild(mid);
+  cells[1] = mid;
 
-  // ── Spalte 3: Operator ────────────────────────────────────────
-  const opCol = mk('div', 'db-col-op');
+  // Zelle 2: Operator
+  var opCol = mk('div', 'db-col-op'); opCol.dataset.colIdx = 2;
   if (a.operator) opCol.appendChild(mkChip(a.operator, opColor(a.operator)));
-  row.appendChild(opCol);
+  cells[2] = opCol;
 
-  // ── Spalte 4: Schwierigkeit ───────────────────────────────────
-  const schwCol = mk('div', 'db-col-schw');
+  // Zelle 3: Schwierigkeit
+  var schwCol = mk('div', 'db-col-schw'); schwCol.dataset.colIdx = 3;
   if (a.schwierigkeit) schwCol.appendChild(mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit] || ''));
-  row.appendChild(schwCol);
+  cells[3] = schwCol;
 
-  // ── Klick → Vollbild-Modal ────────────────────────────────────
+  // In konfigurierter Reihenfolge einhängen
+  COL_CONFIG.order.forEach(function(i) { row.appendChild(cells[i]); });
+
+  // Klick → Vollbild-Modal
   row.onclick = function() { openEntryModal(a, 'view', onSaved); };
-
   return row;
 }
 

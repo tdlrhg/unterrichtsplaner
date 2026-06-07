@@ -391,3 +391,48 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+
+/* ── Spalten-Resize + Drag-Reorder ──────────────────────────────── */
+.db-col-hdr {
+  position: relative;
+  cursor: grab;
+  user-select: none;
+}
+.db-col-hdr:active { cursor: grabbing; }
+
+.db-col-hdr.db-col-dragging {
+  opacity: .35;
+  cursor: grabbing;
+}
+.db-col-hdr.db-col-drag-over {
+  background: rgba(15,118,110,.14) !important;
+  outline: 2px dashed var(--pri);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+/* Resize-Strich zwischen Spalten */
+.db-col-resize-handle {
+  position: absolute;
+  right: -5px;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  cursor: col-resize;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.db-col-resize-handle::after {
+  content: '';
+  width: 2px;
+  height: 55%;
+  border-radius: 1px;
+  background: var(--bord);
+  transition: background .1s;
+}
+.db-col-resize-handle:hover::after,
+.db-col-hdr.db-resize-active .db-col-resize-handle::after {
+  background: var(--pri);
+}

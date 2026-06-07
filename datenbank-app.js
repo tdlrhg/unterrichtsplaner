@@ -924,12 +924,16 @@ async function buildFachView(container) {
         wrap.appendChild(renderRow(g.items[0], function() { DB.offset = 0; load(); }));
         return;
       }
-      // Gruppenheader
+      // Gruppenheader (klickbar → Gruppen-Modal)
       var ghdr = mk('div', '');
-      ghdr.style.cssText = 'padding:8px 12px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;';
+      ghdr.style.cssText = 'padding:8px 12px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;cursor:pointer;';
       var hText = 'Aufgabe ' + g.key;
       if (g.aufgabenstellung) hText += ' · ' + g.aufgabenstellung.slice(0, 90);
       ghdr.textContent = hText;
+      ghdr.title = 'Alle Teilaufgaben ansehen';
+      ;(function(grp) {
+        ghdr.onclick = function() { openGroupModal(grp, function() { DB.offset = 0; load(); }); };
+      })(g);
       wrap.appendChild(ghdr);
       g.items.forEach(function(row) {
         var rowEl = renderRow(row, function() { DB.offset = 0; load(); }, true);
@@ -1103,6 +1107,90 @@ function buildFilterBar(containerEl, loadFn) {
   }
 
   containerEl.appendChild(bar);
+}
+
+// ── Gruppen-Modal (alle Teilaufgaben einer Aufgabe) ───────────────
+function openGroupModal(group, onRefresh) {
+  closeEntryModal();
+  var ref = group.items[0] || {};
+  var overlay = mk('div', 'db-modal-overlay');
+  overlay.onclick = function(e) { if (e.target === overlay) closeEntryModal(); };
+  _modalOverlay = overlay;
+
+  var modal = mk('div', 'db-modal');
+  overlay.appendChild(modal);
+
+  // Header
+  var hdr = mk('div', 'db-modal-hdr');
+  var hdrLeft = mk('div', '');
+  hdrLeft.style.cssText = 'display:flex;align-items:center;gap:10px;flex:1;min-width:0;';
+  var fi = fachInfo(ref.fach);
+  hdrLeft.appendChild(tx('span', '', fi.icon));
+  var tp = ['Aufgabe ' + group.key];
+  if (ref.buch)  tp.push(ref.buch);
+  if (ref.seite) tp.push('S. ' + ref.seite);
+  hdrLeft.appendChild(tx('div', 'db-modal-title', tp.join(' · ')));
+  hdr.appendChild(hdrLeft);
+  var closeBtn = btn('✕', 'btn btn-ghost btn-sm');
+  closeBtn.style.cssText += 'font-size:13px;padding:3px 8px;flex-shrink:0;';
+  closeBtn.onclick = closeEntryModal;
+  hdr.appendChild(closeBtn);
+  modal.appendChild(hdr);
+
+  // Body
+  var body = mk('div', 'db-modal-body');
+  body.style.padding = '0';
+
+  // Aufgabenstellung (gemeinsamer Stamm)
+  var aufgst = group.aufgabenstellung || ref.aufgabenstellung;
+  if (aufgst) {
+    var stBlock = mk('div', '');
+    stBlock.style.cssText = 'padding:16px 20px 12px;border-bottom:1px solid var(--sep);';
+    stBlock.appendChild(tx('div', 'db-modal-section-title', 'Aufgabe'));
+    var stText = tx('div', 'db-modal-text', aufgst);
+    stBlock.appendChild(stText);
+    body.appendChild(stBlock);
+  }
+
+  // Teilaufgaben-Liste
+  var list = mk('div', '');
+  list.style.cssText = 'display:flex;flex-direction:column;gap:0;';
+  group.items.forEach(function(item, idx) {
+    var letter = String(item.nr || '').match(/[a-zA-Z]+$/) ? String(item.nr).match(/[a-zA-Z]+$/)[0] : (item.nr || '?');
+    var card = mk('div', '');
+    card.style.cssText = 'display:flex;align-items:flex-start;gap:12px;padding:12px 20px;'
+      + (idx < group.items.length - 1 ? 'border-bottom:1px solid var(--sep);' : '');
+
+    var letterEl = tx('div', '', letter);
+    letterEl.style.cssText = 'font-weight:800;font-size:15px;color:var(--acc,#2563eb);min-width:20px;padding-top:1px;flex-shrink:0;';
+    card.appendChild(letterEl);
+
+    var cardMain = mk('div', '');
+    cardMain.style.cssText = 'flex:1;min-width:0;';
+    if (item.inhalt) {
+      var inhEl = tx('div', '', item.inhalt);
+      inhEl.style.cssText = 'font-size:13px;color:var(--tx1);line-height:1.5;';
+      cardMain.appendChild(inhEl);
+    }
+    var chips = mk('div', '');
+    chips.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;';
+    if (item.operator)     chips.appendChild(tx('span', 'db-chip db-chip-op',   item.operator));
+    if (item.schwierigkeit) chips.appendChild(tx('span', 'db-chip db-chip-' + item.schwierigkeit, item.schwierigkeit));
+    if (item.umfang)        chips.appendChild(tx('span', 'db-chip',             item.umfang));
+    if (chips.children.length) cardMain.appendChild(chips);
+    card.appendChild(cardMain);
+
+    var editBtn = btn('✏️', 'btn btn-ghost btn-sm');
+    editBtn.title = 'Teilaufgabe ' + item.nr + ' bearbeiten';
+    editBtn.style.cssText += 'flex-shrink:0;font-size:12px;padding:3px 7px;';
+    editBtn.onclick = function() { openEntryModal(item, 'view', onRefresh); };
+    card.appendChild(editBtn);
+
+    list.appendChild(card);
+  });
+  body.appendChild(list);
+  modal.appendChild(body);
+  document.body.appendChild(overlay);
 }
 
 // ── Entry-Modal ───────────────────────────────────────────────────

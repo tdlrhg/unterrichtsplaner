@@ -383,8 +383,8 @@ Hat eine Aufgabe Teilaufgaben (a, b, c, d …) — egal ob als Absätze ODER als
 
 Für jeden Eintrag:
 - nr: Aufgabennummer inkl. Teilaufgabe (z.B. "8a", "10c") — nur bei echten Einzelaufgaben ohne Teilaufgaben die bloße Zahl (z.B. "9")
-- aufgabenstellung: die gemeinsame Aufgabenstellung / Arbeitsanweisung der Hauptaufgabe (gilt für alle Teilaufgaben), sonst null
-- text: der individuelle Teil der Teilaufgabe (z.B. die Werte aus der Tabellenspalte), bei Einzelaufgaben der volle Text. Einzeilig.
+- aufgabenstellung: der gemeinsame Obersatz der Hauptaufgabe, WÖRTLICH aus dem Buch — nur wenn er für alle Teilaufgaben gilt, sonst null
+- text: NUR der spezifische Text der Teilaufgabe, WÖRTLICH aus dem Buch. NIEMALS die aufgabenstellung wiederholen. NIEMALS Werte, Maße oder Beschreibungen ergänzen, die nicht im Bild stehen. Bei Einzelaufgaben ohne Teilaufgaben: voller Text der Aufgabe.
 - anforderung: Ein Satz was Schüler konkret tun müssen
 - operator: genau eines von: berechnen|begründen|erklären|zeichnen|messen|konstruieren|beschreiben|vergleichen|ausfüllen|MC
 - umfang: genau eines von: kurz|mittel|lang  (kurz = 1–2 min, mittel = 3–7 min, lang = 8+ min)
@@ -392,8 +392,8 @@ Für jeden Eintrag:
 
 Antworte NUR mit validem JSON:
 {"aufgaben": [
-  {"nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt.","text":"Fig. 1: Parallelogramm mit a = 7 cm, h = 3 cm","anforderung":"Schüler berechnen den Flächeninhalt eines Parallelogramms aus gegebenen Maßen.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"},
-  {"nr":"10a","aufgabenstellung":"Übertrage die Tabelle und bestimme die fehlenden Größen.","text":"a = 4 cm, h_a = 3,5 cm, h_b = 2 cm","anforderung":"Schüler berechnen fehlende Größen eines Parallelogramms.","operator":"berechnen","umfang":"mittel","schwierigkeit":"standard"}
+  {"nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Berechne den Flächeninhalt der Fig. 1.","anforderung":"Schüler berechnen den Flächeninhalt einer Figur.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"},
+  {"nr":"8b","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Schätze den Flächeninhalt der Fig. 2. Bestimme anschließend den Flächeninhalt in mm², indem du die benötigten Längen misst.","anforderung":"Schüler schätzen und messen den Flächeninhalt einer Figur.","operator":"messen","umfang":"mittel","schwierigkeit":"standard"}
 ]}`;
 
 function _impResizeImg(dataUrl, maxW, q) {

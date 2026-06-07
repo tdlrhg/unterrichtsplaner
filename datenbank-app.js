@@ -555,9 +555,8 @@ function buildImportView(container) {
   function buildAufgabeCard(a, indent) {
     var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';
     var row = mk('div', '');
-    row.style.cssText = 'display:flex;align-items:baseline;gap:8px;padding:3px 0 3px '
-      + (indent ? '20px' : '4px') + ';'
-      + (indent ? 'border-left:2px solid var(--acc,#2563eb);padding-left:12px;' : '');
+    row.style.cssText = 'display:flex;align-items:baseline;gap:8px;padding:1px 0 1px '
+      + (indent ? '20px' : '4px') + ';';
 
     var nrLabel = tx('span', '', 'A' + (a.nr || '?'));
     nrLabel.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);flex-shrink:0;min-width:32px;';

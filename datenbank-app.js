@@ -931,24 +931,24 @@ async function buildFachView(container) {
     var groups = dbGroupByParent(rows);
     groups.forEach(function(g) {
       var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);
-      if (!hasSubtasks) {
-        wrap.appendChild(renderRow(g.items[0], function() { DB.offset = 0; load(); }));
-        return;
-      }
       // Gruppenheader (klickbar → Gruppen-Modal)
       var ghdr = mk('div', '');
       ghdr.style.cssText = 'padding:8px 12px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;cursor:pointer;';
       var hText = 'Aufgabe ' + g.key;
       if (g.aufgabenstellung) hText += ' · ' + g.aufgabenstellung.slice(0, 90);
       ghdr.textContent = hText;
-      ghdr.title = 'Alle Teilaufgaben ansehen';
-      ;(function(grp) {
-        ghdr.onclick = function() { openGroupModal(grp, function() { DB.offset = 0; load(); }); };
-      })(g);
+      ghdr.title = hasSubtasks ? 'Alle Teilaufgaben ansehen' : 'Aufgabe ansehen';
+      ;(function(grp, sub) {
+        ghdr.onclick = function() {
+          if (sub) openGroupModal(grp, function() { DB.offset = 0; load(); });
+          else openEntryModal(grp.items[0], 'view', function() { DB.offset = 0; load(); });
+        };
+      })(g, hasSubtasks);
       wrap.appendChild(ghdr);
       g.items.forEach(function(row) {
+        var indent = hasSubtasks;
         var rowEl = renderRow(row, function() { DB.offset = 0; load(); }, true);
-        rowEl.style.marginLeft = '16px';
+        rowEl.style.marginLeft = indent ? '16px' : '0';
         wrap.appendChild(rowEl);
       });
     });

@@ -623,7 +623,8 @@ function buildImportView(container) {
         kapitel:      kap,
         seite:        seite,
         nr:           String(a.nr || (i + 1)),
-        inhalt:       [a.aufgabenstellung, a.text].filter(Boolean).join(' ') || null,
+        aufgabenstellung: a.aufgabenstellung || null,
+        inhalt:       a.text || a.aufgabenstellung || null,
         anforderung:  a.anforderung || null,
         operator:     a.operator || null,
         schwierigkeit: a.schwierigkeit || a.schwierigkeitsstufe || null,
@@ -931,9 +932,8 @@ async function buildFachView(container) {
       ghdr.textContent = hText;
       wrap.appendChild(ghdr);
       g.items.forEach(function(row) {
-        var rowEl = renderRow(row, function() { DB.offset = 0; load(); });
+        var rowEl = renderRow(row, function() { DB.offset = 0; load(); }, true);
         rowEl.style.marginLeft = '16px';
-        rowEl.style.borderLeft = '3px solid var(--acc, #2563eb)';
         wrap.appendChild(rowEl);
       });
     });
@@ -963,7 +963,7 @@ async function buildFachView(container) {
 }
 
 // ── Eintrag-Zeile (Tabellen-Grid) ────────────────────────────────
-function renderRow(a, onSaved) {
+function renderRow(a, onSaved, compact) {
   const isSchulbuch = !a.herkunft || a.herkunft === 'schulbuch';
   const accentColor = isSchulbuch ? '#0f766e' : '#16a34a';
 
@@ -971,27 +971,35 @@ function renderRow(a, onSaved) {
   row.style.background = SCHW_BG[a.schwierigkeit] || 'transparent';
   row.style.gridTemplateColumns = colTemplate();
 
-  // Zellen vorab bauen, dann in COL_CONFIG.order einhängen
   var cells = [];
 
-  // Zelle 0: Quelle
+  // Zelle 0: Quelle — im compact-Modus nur die Nr
   var src = mk('div', 'db-col-src'); src.dataset.colIdx = 0;
-  var hBadge = tx('div', 'db-herkunft-badge', isSchulbuch ? '📖 Schulbuch' : '📄 Eigenmaterial');
-  hBadge.style.color = accentColor;
-  src.appendChild(hBadge);
-  if (isSchulbuch) {
-    src.appendChild(tx('div', 'db-buch-name', a.buch || '–'));
-    var sub = (a.uk_titel || a.kapitel_titel || '') + (a.seite ? ' · S. ' + a.seite : '');
-    if (sub.trim()) src.appendChild(tx('div', 'db-kap-name', sub));
+  if (compact) {
+    var nrEl = tx('div', '', 'A' + (a.nr || '?'));
+    nrEl.style.cssText = 'font-weight:700;font-size:13px;color:var(--tx2);padding:2px 0;';
+    src.appendChild(nrEl);
   } else {
-    src.appendChild(tx('div', 'db-buch-name', a.titel || a.dateiname || '–'));
+    var hBadge = tx('div', 'db-herkunft-badge', isSchulbuch ? '📖 Schulbuch' : '📄 Eigenmaterial');
+    hBadge.style.color = accentColor;
+    src.appendChild(hBadge);
+    if (isSchulbuch) {
+      src.appendChild(tx('div', 'db-buch-name', a.buch || '–'));
+      var sub = (a.uk_titel || a.kapitel_titel || '') + (a.seite ? ' · S. ' + a.seite : '');
+      if (sub.trim()) src.appendChild(tx('div', 'db-kap-name', sub));
+    } else {
+      src.appendChild(tx('div', 'db-buch-name', a.titel || a.dateiname || '–'));
+    }
   }
   cells[0] = src;
 
-  // Zelle 1: Inhalt
+  // Zelle 1: Inhalt — im compact-Modus nur den individuellen Text
   var mid = mk('div', 'db-col-inhalt'); mid.dataset.colIdx = 1;
-  mid.appendChild(tx('div', 'db-inhalt-text', (a.inhalt || a.thema || a.beschreibung || '–').slice(0, 150)));
-  if (a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
+  var inhaltText = compact
+    ? (a.inhalt || '–')
+    : (a.inhalt || a.thema || a.beschreibung || '–');
+  mid.appendChild(tx('div', 'db-inhalt-text', inhaltText.slice(0, 150)));
+  if (!compact && a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
   cells[1] = mid;
 
   // Zelle 2: Operator

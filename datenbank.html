@@ -17,7 +17,14 @@
 <script>
 window.__SCRIPTS__ = [
   'core/supabase.js',
+  'core/r2.js',
+  'lib/pdf.min.js',
+  function() { if(typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js' + (window.__VERSION_Q__ || ''); },
+  'lib/pdf-lib.min.js',
+  'core/media.js',
+  'core/ki.js',
   'core/ui.js',
+  'lib/pruefung-utils.js',
   'datenbank-app.js',
   'views/methoden.js',
   'views/didaktik.js'

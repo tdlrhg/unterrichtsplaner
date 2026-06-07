@@ -116,6 +116,14 @@ function buildDBSidebar(sb) {
   homeRow.onclick = () => { DB.view = 'landing'; DB.fach = null; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
   sb.appendChild(homeRow);
 
+  const impRow = mk('div', 'sb-item' + (DB.view === 'import' ? ' active' : ''));
+  const impInner = mk('div', ''); impInner.style.cssText = 'display:flex;gap:8px;align-items:center;';
+  impInner.appendChild(tx('span', '', '⬆'));
+  impInner.appendChild(tx('span', 'sb-item-label', 'Importieren'));
+  impRow.appendChild(impInner);
+  impRow.onclick = function() { DB.view = 'import'; dbRender(); };
+  sb.appendChild(impRow);
+
   sb.appendChild(mk('div', 'sb-sep'));
 
   FAECHER.forEach(f => {
@@ -339,10 +347,294 @@ function buildLanding(container) {
   left.appendChild(tx('div', 'c-title', 'Material-Datenbank'));
   left.appendChild(tx('div', 'c-sub', 'Schulbücher, Arbeitsblätter und eigene Materialien'));
   hdr.appendChild(left);
+  const hRight = mk('div', '');
+  const impBtn = btn('⬆ Material importieren', 'btn btn-pri btn-sm');
+  impBtn.onclick = function() { DB.view = 'import'; dbRender(); };
+  hRight.appendChild(impBtn);
+  hdr.appendChild(hRight);
   container.appendChild(hdr);
 
   // Bücherregal — zeigt alle Quellen auf einen Blick
   buildBuecherregal(container);
+}
+
+// ── Import-View ───────────────────────────────────────────────────
+
+const IMP_KI_PROMPT = `Du analysierst eine Seite aus einem Schulbuch oder Unterrichtsmaterial (Gymnasium, Mathematik oder Naturwissenschaften).
+
+Erfasse NUR Aufgaben (kein Lehrtext, keine Erklärungen).
+
+Für jede Aufgabe / Teilaufgabe ein Eintrag:
+- nr: Aufgabennummer inkl. Teilaufgabe (z.B. "7a") — bei Hauptaufgabe ohne Buchstabe (z.B. "7")
+- aufgabenstellung: gemeinsame Aufgabenstellung bei Teilaufgaben-Gruppen, sonst null
+- text: NUR der individuelle Teil bei Teilaufgaben, bei Einzelaufgaben der volle Text. Einzeilig, Formeln als Text.
+- anforderung: Ein Satz was Schüler konkret tun müssen (z.B. "Schüler berechnen den Flächeninhalt eines Parallelogramms.")
+- operator: genau eines von: berechnen|begründen|erklären|zeichnen|messen|konstruieren|beschreiben|vergleichen|ausfüllen|MC
+- umfang: genau eines von: kurz|mittel|lang  (kurz = 1–2 min, mittel = 3–7 min, lang = 8+ min)
+- schwierigkeit: genau eines von: grundlegend|standard|anspruchsvoll
+
+Antworte NUR mit validem JSON:
+{"aufgaben": [
+  {"nr":"7a","aufgabenstellung":"Berechne den Flächeninhalt.","text":"Parallelogramm: a = 8 cm, h = 5 cm","anforderung":"Schüler berechnen den Flächeninhalt eines Parallelogramms aus gegebenen Maßen.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"}
+]}`;
+
+function _impResizeImg(dataUrl, maxW, q) {
+  return new Promise(function(res, rej) {
+    var img = new Image();
+    img.onload = function() {
+      var scale = img.width > maxW ? maxW / img.width : 1;
+      var c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      res(c.toDataURL('image/jpeg', q));
+    };
+    img.onerror = rej; img.src = dataUrl;
+  });
+}
+
+function buildImportView(container) {
+  // ── Header ────────────────────────────────────────────────────
+  var hdr = mk('div', 'c-hdr');
+  var hLeft = mk('div', '');
+  var backBtn = btn('← Übersicht', 'btn btn-ghost btn-sm');
+  backBtn.onclick = function() { DB.view = 'landing'; dbRender(); };
+  hLeft.appendChild(backBtn);
+  hLeft.appendChild(tx('div', 'c-title', 'Material importieren'));
+  hdr.appendChild(hLeft);
+  container.appendChild(hdr);
+
+  var wrap = mk('div', '');
+  wrap.style.cssText = 'padding:0 28px 40px;max-width:860px;display:flex;flex-direction:column;gap:20px;';
+  container.appendChild(wrap);
+
+  // ── Hilfsfunktionen ───────────────────────────────────────────
+  function row2() {
+    var r = mk('div', ''); r.style.cssText = 'display:flex;gap:10px;';
+    Array.from(arguments).forEach(function(e) { r.appendChild(e); }); return r;
+  }
+  function fg(label, el) {
+    var g = mk('div', 'fg'); g.style.flex = '1';
+    g.appendChild(tx('label', 'fl', label)); g.appendChild(el); return g;
+  }
+  function finp(ph, type) {
+    var i = document.createElement('input'); i.className = 'finp';
+    i.placeholder = ph; if (type) i.type = type; return i;
+  }
+  function fsel(opts) {
+    var s = document.createElement('select'); s.className = 'finp';
+    opts.forEach(function(o) {
+      var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; s.appendChild(op);
+    }); return s;
+  }
+
+  // ── Metadaten-Karte ───────────────────────────────────────────
+  var metaCard = mk('div', '');
+  metaCard.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;';
+  var metaTitle = tx('div', '', 'Quelle');
+  metaTitle.style.cssText = 'font-weight:600;font-size:13px;color:var(--tx2);';
+  metaCard.appendChild(metaTitle);
+  wrap.appendChild(metaCard);
+
+  var buchInp = finp('z.B. Lambacher Schweizer 8');
+  var typSel  = fsel([['schulbuch','📖 Schulbuch'],['aufgabenpool','🗃 Aufgabenpool'],['sammlung','📋 Sammlung'],['eigenmaterial','📄 Eigenmaterial']]);
+  var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
+  var jgInp   = finp('z.B. 8'); jgInp.style.maxWidth = '80px';
+  var kapInp  = finp('z.B. 8.3 Flächen (optional)');
+  var seiteInp = finp('z.B. 142', 'number'); seiteInp.style.maxWidth = '110px';
+
+  metaCard.appendChild(row2(fg('Buchtitel / Quelle', buchInp), fg('Typ', typSel)));
+  metaCard.appendChild(row2(fg('Fach', fachSel), fg('Jahrgang', jgInp)));
+  metaCard.appendChild(row2(fg('Kapitel', kapInp), fg('Erste Seite', seiteInp)));
+
+  // ── Datei-Upload ──────────────────────────────────────────────
+  var fileCard = mk('div', '');
+  fileCard.style.cssText = 'background:var(--card);border:2px dashed var(--border);border-radius:12px;padding:36px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;';
+  wrap.appendChild(fileCard);
+  var fileLabel = tx('div', '', '📄 PDF oder Bild hierher ziehen — oder klicken zum Auswählen');
+  fileLabel.style.cssText = 'font-size:14px;color:var(--tx2);';
+  fileCard.appendChild(fileLabel);
+  var fileInput = document.createElement('input');
+  fileInput.type = 'file'; fileInput.accept = '.pdf,image/*'; fileInput.style.display = 'none';
+  fileCard.appendChild(fileInput);
+
+  var _file = null;
+  fileCard.onclick = function() { fileInput.click(); };
+  fileCard.ondragover = function(e) { e.preventDefault(); fileCard.style.borderColor = 'var(--acc)'; };
+  fileCard.ondragleave = function() { fileCard.style.borderColor = ''; };
+  fileCard.ondrop = function(e) {
+    e.preventDefault(); fileCard.style.borderColor = '';
+    var f = e.dataTransfer.files[0]; if (f) setFile(f);
+  };
+  fileInput.onchange = function() { if (fileInput.files[0]) setFile(fileInput.files[0]); };
+  function setFile(f) {
+    _file = f;
+    fileLabel.textContent = '✓ ' + f.name;
+    fileLabel.style.color = 'var(--acc)';
+  }
+
+  // ── Analyse-Button + Status ───────────────────────────────────
+  var bottomRow = mk('div', ''); bottomRow.style.cssText = 'display:flex;align-items:center;gap:14px;';
+  var analyseBtn = btn('⚡ Seite analysieren', 'btn btn-pri');
+  var statusEl = tx('div', '', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);';
+  bottomRow.appendChild(analyseBtn);
+  bottomRow.appendChild(statusEl);
+  wrap.appendChild(bottomRow);
+
+  // ── Ergebnis-Bereich ──────────────────────────────────────────
+  var resultsWrap = mk('div', '');
+  resultsWrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
+  wrap.appendChild(resultsWrap);
+
+  var _aufgaben = [];
+
+  // ── KI-Analyse ────────────────────────────────────────────────
+  analyseBtn.onclick = async function() {
+    if (!_file) { statusEl.textContent = '⚠️ Bitte zuerst eine Datei auswählen.'; return; }
+    if (!buchInp.value.trim()) { statusEl.textContent = '⚠️ Bitte Buchtitel eingeben.'; return; }
+    analyseBtn.disabled = true; analyseBtn.textContent = '⏳ Analysiere…';
+    statusEl.textContent = ''; statusEl.style.color = 'var(--tx2)';
+    resultsWrap.innerHTML = ''; _aufgaben = [];
+    try {
+      statusEl.textContent = '⏳ Datei wird gelesen…';
+      var imgs = await fileToDataURLs(_file, { longEdge: 1568, quality: 0.88 });
+      statusEl.textContent = '⏳ KI analysiert ' + imgs.length + ' Seite(n)…';
+      var resized = await Promise.all(imgs.map(function(u) { return _impResizeImg(u, 1200, 0.82); }));
+      var blocks = [];
+      resized.forEach(function(r, i) {
+        blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } });
+        if (i < resized.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
+      });
+      blocks.push({ type: 'text', text: IMP_KI_PROMPT });
+      var raw = await callKI(blocks, { maxTokens: 8000 });
+      var parsed;
+      try { parsed = robustJsonParsePr(raw); } catch(e) {
+        try { parsed = JSON.parse(raw); } catch(e2) { throw new Error('KI-Antwort nicht lesbar'); }
+      }
+      var aufg = (parsed.aufgaben || []).filter(function(a) { return a.typ !== 'lehrtext'; });
+      if (!aufg.length) { statusEl.textContent = '⚠️ Keine Aufgaben erkannt — evtl. enthält die Seite nur Lehrtext.'; return; }
+      _aufgaben = aufg;
+      statusEl.textContent = '';
+      renderResults();
+    } catch(e) {
+      statusEl.textContent = '❌ ' + e.message;
+    } finally {
+      analyseBtn.disabled = false; analyseBtn.textContent = '⚡ Seite analysieren';
+    }
+  };
+
+  // ── Ergebnis rendern ──────────────────────────────────────────
+  function renderResults() {
+    resultsWrap.innerHTML = '';
+    var rHdr = mk('div', '');
+    rHdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:4px 0;';
+    var rTitle = tx('div', '', _aufgaben.length + ' Aufgaben erkannt — bitte prüfen und speichern');
+    rTitle.style.cssText = 'font-weight:600;font-size:14px;';
+    rHdr.appendChild(rTitle);
+    var saveAllBtn = btn('✓ Alle ' + _aufgaben.length + ' speichern', 'btn btn-pri btn-sm');
+    saveAllBtn.onclick = saveAll;
+    rHdr.appendChild(saveAllBtn);
+    resultsWrap.appendChild(rHdr);
+
+    _aufgaben.forEach(function(a, i) {
+      var card = mk('div', '');
+      card.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;';
+
+      // Zeile 1: Nr + editierbare Chips
+      var top = mk('div', ''); top.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
+      var nrLabel = tx('span', '', 'A' + (a.nr || (i + 1)));
+      nrLabel.style.cssText = 'font-weight:700;font-size:13px;min-width:32px;';
+      top.appendChild(nrLabel);
+
+      function miniSel(opts, current, onChange) {
+        var s = document.createElement('select'); s.className = 'finp';
+        s.style.cssText = 'font-size:12px;padding:2px 8px;height:auto;width:auto;';
+        opts.forEach(function(o) {
+          var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1];
+          if (current === o[0]) op.selected = true;
+          s.appendChild(op);
+        });
+        s.onchange = function() { onChange(s.value); };
+        return s;
+      }
+
+      top.appendChild(miniSel(
+        [['berechnen','berechnen'],['begründen','begründen'],['erklären','erklären'],['zeichnen','zeichnen'],['messen','messen'],['konstruieren','konstruieren'],['beschreiben','beschreiben'],['vergleichen','vergleichen'],['ausfüllen','ausfüllen'],['MC','MC']],
+        a.operator, function(v) { a.operator = v; }
+      ));
+      top.appendChild(miniSel(
+        [['grundlegend','○ grundlegend'],['standard','◑ standard'],['anspruchsvoll','● anspruchsvoll']],
+        a.schwierigkeit || a.schwierigkeitsstufe, function(v) { a.schwierigkeit = v; }
+      ));
+      top.appendChild(miniSel(
+        [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']],
+        a.umfang, function(v) { a.umfang = v; }
+      ));
+      card.appendChild(top);
+
+      // Anforderung (editierbar)
+      var anf = document.createElement('textarea'); anf.className = 'finp';
+      anf.style.cssText = 'font-size:12px;resize:vertical;min-height:44px;';
+      anf.placeholder = 'Anforderung an Schülerinnen';
+      anf.value = a.anforderung || '';
+      anf.oninput = function() { a.anforderung = anf.value.trim(); };
+      card.appendChild(anf);
+
+      // Aufgabentext (readonly)
+      var aufgText = [a.aufgabenstellung, a.text].filter(Boolean).join(' ');
+      if (aufgText) {
+        var textDiv = tx('div', '', aufgText);
+        textDiv.style.cssText = 'font-size:12px;color:var(--tx2);border-left:3px solid var(--border);padding-left:10px;line-height:1.5;';
+        card.appendChild(textDiv);
+      }
+
+      resultsWrap.appendChild(card);
+    });
+  }
+
+  // ── Speichern ─────────────────────────────────────────────────
+  async function saveAll() {
+    var buch     = buchInp.value.trim();
+    var fach     = fachSel.value;
+    var jg       = jgInp.value.trim() || null;
+    var kap      = kapInp.value.trim() || null;
+    var seite    = seiteInp.value ? Number(seiteInp.value) : null;
+    var herkunft = typSel.value === 'eigenmaterial' ? 'eigenmaterial' : 'schulbuch';
+    var ts       = Date.now();
+
+    var rows = _aufgaben.map(function(a, i) {
+      return {
+        id:           'db_' + ts + '_' + i + '_' + Math.random().toString(36).slice(2, 6),
+        fach:         fach,
+        herkunft:     herkunft,
+        buch:         buch || null,
+        kapitel:      kap,
+        seite:        seite,
+        nr:           String(a.nr || (i + 1)),
+        inhalt:       [a.aufgabenstellung, a.text].filter(Boolean).join(' ') || null,
+        anforderung:  a.anforderung || null,
+        operator:     a.operator || null,
+        schwierigkeit: a.schwierigkeit || a.schwierigkeitsstufe || null,
+        umfang:       a.umfang || null,
+        jahrgang:     jg,
+      };
+    });
+
+    var saveBtn = resultsWrap.querySelector('.btn-pri');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ Speichert…'; }
+    statusEl.style.color = 'var(--tx2)';
+
+    try {
+      await sbInsert('inhalte', rows);
+      statusEl.textContent = '✓ ' + rows.length + ' Aufgaben gespeichert.';
+      statusEl.style.color = '#16a34a';
+      resultsWrap.innerHTML = '';
+      _aufgaben = [];
+    } catch(e) {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '✓ Alle ' + rows.length + ' speichern'; }
+      statusEl.textContent = '❌ Speichern fehlgeschlagen: ' + e.message;
+      statusEl.style.color = '#dc2626';
+    }
+  }
 }
 
 // ── Fach-Ansicht ──────────────────────────────────────────────────
@@ -1082,6 +1374,8 @@ function dbRender() {
 
   if (DB.view === 'landing') {
     buildLanding(content);
+  } else if (DB.view === 'import') {
+    buildImportView(content);
   } else if (DB.view === 'fach') {
     buildFachView(content);
   } else if (DB.view === 'methoden') {

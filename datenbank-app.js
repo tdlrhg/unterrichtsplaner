@@ -20,6 +20,7 @@ const FAECHER = [
 const DB = {
   view: 'landing',    // 'landing' | 'fach'
   fach: null,
+  buch: null,         // null | Buchtitel-String → Filter auf eine Quelle
   herkunft: null,     // null | 'schulbuch' | 'eigenmaterial'
   suchtext: '',
   offset: 0,
@@ -85,7 +86,7 @@ function buildDBSidebar(sb) {
     inner.appendChild(tx('span', '', f.icon));
     inner.appendChild(tx('span', 'sb-item-label', f.label));
     row.appendChild(inner);
-    row.onclick = () => { DB.view = 'fach'; DB.fach = f.key; DB.herkunft = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
+    row.onclick = () => { DB.view = 'fach'; DB.fach = f.key; DB.buch = null; DB.herkunft = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
     sb.appendChild(row);
   });
 
@@ -135,6 +136,7 @@ const REGAL_FARBEN = {
 };
 const TYP_SYMBOL = { schulbuch: '📚', sammlung: '📂', aufgabenpool: '🗃' };
 const TYP_ORDER  = { schulbuch: 0, sammlung: 1, aufgabenpool: 2 };
+var SHELF_H = 155; // Regalhöhe (px)
 
 function jgNorm(val) {
   if (!val) return [];
@@ -149,81 +151,146 @@ function countBuchAufgaben(buch) {
   }, 0);
 }
 
+// Buchrücken generisch
+function mkSpine(titel, breite, hoehe, grad, textColor, topIcon, bottomLabel, onclick, tooltip) {
+  var el = mk('div', '');
+  el.style.cssText = 'width:' + breite + 'px;height:' + hoehe + 'px;border-radius:2px 5px 5px 2px;cursor:pointer;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s,filter .15s;background:' + grad + ';box-shadow:inset -2px 0 5px rgba(0,0,0,.45),inset 2px 0 3px rgba(255,255,255,.08),2px 2px 6px rgba(0,0,0,.5);overflow:hidden;';
+  var deko = mk('div', '');
+  deko.style.cssText = 'position:absolute;inset:0;background:repeating-linear-gradient(to bottom,transparent,transparent 16px,rgba(255,255,255,.04) 16px,rgba(255,255,255,.04) 17px);pointer-events:none;';
+  el.appendChild(deko);
+  var t = tx('div', '', titel);
+  t.style.cssText = 'writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;font-weight:700;color:' + textColor + ';text-align:center;padding:5px 3px;line-height:1.25;max-height:' + (hoehe - 26) + 'px;overflow:hidden;z-index:1;';
+  el.appendChild(t);
+  if (topIcon) { var ic = tx('div', '', topIcon); ic.style.cssText = 'position:absolute;top:4px;font-size:11px;z-index:1;'; el.appendChild(ic); }
+  if (bottomLabel) { var bl = tx('div', '', bottomLabel); bl.style.cssText = 'position:absolute;bottom:3px;font-size:8px;color:' + textColor + ';opacity:.6;z-index:1;'; el.appendChild(bl); }
+  el.onmouseenter = function() { el.style.transform = 'translateY(-10px)'; el.style.filter = 'brightness(1.25)'; };
+  el.onmouseleave = function() { el.style.transform = ''; el.style.filter = ''; };
+  if (tooltip) el.title = tooltip;
+  el.onclick = onclick;
+  return el;
+}
+
+// Regalzeile: [Pille links] + [Bücherfläche + Brett rechts]
+function mkRegalRow(pillCfg, booksFn, hasSep) {
+  var row = mk('div', '');
+  row.style.cssText = 'display:flex;align-items:stretch;' + (hasSep ? 'border-bottom:1px solid rgba(255,255,255,.05);' : '');
+
+  var pill = mk('div', '');
+  pill.style.cssText = 'width:84px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;padding:10px 6px;border-right:1px solid rgba(255,255,255,.07);background:' + pillCfg.color + '12;transition:background .15s;';
+  pill.onmouseenter = function() { pill.style.background = pillCfg.color + '22'; };
+  pill.onmouseleave = function() { pill.style.background = pillCfg.color + '12'; };
+  pill.onclick = pillCfg.onclick;
+  var pillIco = tx('div', '', pillCfg.icon); pillIco.style.fontSize = '20px';
+  var pillLbl = tx('div', '', pillCfg.label);
+  pillLbl.style.cssText = 'font-size:10px;font-weight:800;color:' + pillCfg.color + ';text-align:center;letter-spacing:.04em;text-transform:uppercase;line-height:1.2;';
+  pill.appendChild(pillIco); pill.appendChild(pillLbl);
+  if (pillCfg.sub) { var ps = tx('div', '', pillCfg.sub); ps.style.cssText = 'font-size:9px;color:rgba(255,255,255,.3);text-align:center;'; pill.appendChild(ps); }
+  row.appendChild(pill);
+
+  var shelfWrap = mk('div', ''); shelfWrap.style.cssText = 'flex:1;display:flex;flex-direction:column;min-width:0;';
+  var area = mk('div', '');
+  area.style.cssText = 'flex:1;display:flex;align-items:flex-end;gap:2px;padding:8px 10px 0;background:linear-gradient(to bottom,#1a1a1f,#0a0a0e);height:' + SHELF_H + 'px;position:relative;overflow:hidden;';
+  var shadow = mk('div', '');
+  shadow.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:20px;background:linear-gradient(to top,rgba(0,0,0,.6),transparent);pointer-events:none;z-index:2;';
+  area.appendChild(shadow);
+  booksFn(area);
+  shelfWrap.appendChild(area);
+  var brett = mk('div', '');
+  brett.style.cssText = 'height:13px;background:linear-gradient(to bottom,#6b2f3e,#4a1f2c);border-top:1px solid rgba(255,255,255,.12);box-shadow:0 3px 8px rgba(0,0,0,.5);';
+  shelfWrap.appendChild(brett);
+  row.appendChild(shelfWrap);
+  return row;
+}
+
 function buildBuecherregal(container) {
-  const fachOrder = ['mathe', 'bio', 'chemie'];
-  const byFach = {};
+  var fachOrder = ['mathe', 'bio', 'chemie'];
+  var byFach = {};
   SCHULBUCHDB.forEach(function(b) {
     var f = b.fach || 'sonstige';
     if (!byFach[f]) byFach[f] = [];
     byFach[f].push(b);
   });
-  const faecher = fachOrder.filter(function(f) { return byFach[f] && byFach[f].length; });
-  if (!faecher.length) return;
+  var faecher = fachOrder.filter(function(f) { return byFach[f] && byFach[f].length; });
+  var hasExtra = METHDB.length > 0 || DIDARTDB.length > 0;
+  if (!faecher.length && !hasExtra) return;
 
-  const buecherWand = mk('div', '');
-  buecherWand.style.cssText = 'background:#0f0f12;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);margin:0 28px 28px;';
-  container.appendChild(buecherWand);
+  var wand = mk('div', '');
+  wand.style.cssText = 'background:#0f0f12;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);margin:0 28px 28px;';
+  container.appendChild(wand);
 
-  faecher.forEach(function(fach) {
-    var farbe = REGAL_FARBEN[fach] || { spine: ['#374151','#6b7280'], text: '#f3f4f6' };
-    var buecher = byFach[fach];
-    var fInfo = fachInfo(fach);
+  // ── Fach-Zeilen ───────────────────────────────────────────────
+  faecher.forEach(function(fach, idx) {
+    var farbe  = REGAL_FARBEN[fach] || { spine: ['#374151','#6b7280'], text: '#f3f4f6' };
+    var fInfo  = fachInfo(fach);
+    var buecher = (byFach[fach] || []).slice().sort(function(a, b) { return (TYP_ORDER[a.typ] || 1) - (TYP_ORDER[b.typ] || 1); });
 
-    var regalWrap = mk('div', ''); regalWrap.style.cssText = 'position:relative;';
-    var regal = mk('div', '');
-    regal.style.cssText = 'display:flex;align-items:flex-end;gap:3px;padding:16px 16px 0;background:linear-gradient(to bottom,#1a1a1f,#0a0a0e);height:220px;position:relative;overflow:hidden;';
+    var pill = { icon: fInfo.icon, label: fInfo.label, color: fInfo.color,
+      onclick: function() { DB.view = 'fach'; DB.fach = fach; DB.buch = null; DB.herkunft = null; DB.suchtext = ''; DB.offset = 0; dbRender(); } };
 
-    var wandText = tx('div', '', fInfo.label.toUpperCase());
-    wandText.style.cssText = 'position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:72px;font-weight:900;letter-spacing:0.15em;color:' + farbe.spine[1] + ';opacity:0.15;white-space:nowrap;pointer-events:none;user-select:none;line-height:1;';
-    regal.appendChild(wandText);
+    var row = mkRegalRow(pill, function(area) {
+      var wt = tx('div', '', fInfo.label.toUpperCase());
+      wt.style.cssText = 'position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:44px;font-weight:900;letter-spacing:.14em;color:' + farbe.spine[1] + ';opacity:.13;white-space:nowrap;pointer-events:none;user-select:none;';
+      area.appendChild(wt);
+      buecher.forEach(function(buch) {
+        var kap  = Math.max(1, (buch.kapitel || []).length);
+        var aufg = countBuchAufgaben(buch);
+        var w    = Math.min(60, Math.max(28, 24 + kap * 3));
+        var h    = Math.min(SHELF_H - 16, Math.max(85, 80 + kap * 3));
+        var jgA  = jgNorm(buch.jahrgang);
+        area.appendChild(mkSpine(
+          buch.titel || '–', w, h,
+          'linear-gradient(to right,' + farbe.spine[0] + ',' + farbe.spine[1] + ')',
+          farbe.text, TYP_SYMBOL[buch.typ] || '📖',
+          jgA.length ? 'Jg.' + jgA.join('/') : null,
+          function() { DB.view = 'fach'; DB.fach = buch.fach || fach; DB.buch = buch.titel; DB.herkunft = 'schulbuch'; DB.suchtext = ''; DB.offset = 0; dbRender(); },
+          buch.titel + (buch.verlag ? ' · ' + buch.verlag : '') + '\n' + kap + ' Kapitel · ' + aufg + ' Aufg.'
+        ));
+      });
+    }, idx < faecher.length - 1 || hasExtra);
 
-    var bodenSchatten = mk('div', '');
-    bodenSchatten.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:30px;background:linear-gradient(to top,rgba(0,0,0,.6),transparent);pointer-events:none;z-index:2;';
-    regal.appendChild(bodenSchatten);
-
-    buecher.sort(function(a, b) { return (TYP_ORDER[a.typ] || 1) - (TYP_ORDER[b.typ] || 1); });
-
-    buecher.forEach(function(buch) {
-      var kap    = Math.max(1, (buch.kapitel || []).length);
-      var aufg   = countBuchAufgaben(buch);
-      var breite = Math.min(80, Math.max(40, 36 + kap * 4));
-      var hoehe  = Math.min(190, Math.max(140, 130 + kap * 3));
-
-      var buch_el = mk('div', '');
-      buch_el.style.cssText = 'width:' + breite + 'px;height:' + hoehe + 'px;border-radius:3px 6px 6px 3px;cursor:pointer;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:transform .15s,filter .15s;background:linear-gradient(to right,' + farbe.spine[0] + ',' + farbe.spine[1] + ');box-shadow:inset -3px 0 6px rgba(0,0,0,.4),inset 3px 0 4px rgba(255,255,255,.08),2px 2px 8px rgba(0,0,0,.5);overflow:hidden;';
-
-      var deko = mk('div', '');
-      deko.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;background:repeating-linear-gradient(to bottom,transparent,transparent 20px,rgba(255,255,255,.04) 20px,rgba(255,255,255,.04) 21px);pointer-events:none;';
-      buch_el.appendChild(deko);
-
-      var titelEl = tx('div', '', buch.titel || '–');
-      titelEl.style.cssText = 'writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;font-weight:700;color:' + farbe.text + ';text-align:center;padding:8px 4px;line-height:1.3;max-height:' + (hoehe - 40) + 'px;overflow:hidden;z-index:1;';
-      buch_el.appendChild(titelEl);
-
-      var jgArr = jgNorm(buch.jahrgang);
-      if (jgArr.length) {
-        var jgEl = tx('div', '', 'Jg.' + jgArr.join('/'));
-        jgEl.style.cssText = 'position:absolute;bottom:6px;font-size:9px;color:' + farbe.text + ';opacity:.7;z-index:1;';
-        buch_el.appendChild(jgEl);
-      }
-      var typEl = tx('div', '', TYP_SYMBOL[buch.typ] || '📖');
-      typEl.style.cssText = 'position:absolute;top:6px;font-size:14px;z-index:1;';
-      buch_el.appendChild(typEl);
-
-      buch_el.onmouseenter = function() { buch_el.style.transform = 'translateY(-12px)'; buch_el.style.filter = 'brightness(1.2)'; };
-      buch_el.onmouseleave = function() { buch_el.style.transform = ''; buch_el.style.filter = ''; };
-      buch_el.title = buch.titel + (buch.verlag ? ' · ' + buch.verlag : '') + '\n' + kap + ' Kapitel · ' + aufg + ' Aufgaben';
-      buch_el.onclick = function() { DB.view = 'fach'; DB.fach = buch.fach || 'mathe'; DB.herkunft = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
-
-      regal.appendChild(buch_el);
-    });
-
-    regalWrap.appendChild(regal);
-    var brett = mk('div', '');
-    brett.style.cssText = 'height:22px;background:#522030;border-top:1px solid rgba(255,255,255,.1);box-shadow:0 4px 10px rgba(0,0,0,.5);';
-    regalWrap.appendChild(brett);
-    buecherWand.appendChild(regalWrap);
+    wand.appendChild(row);
   });
+
+  // ── Methoden + Didaktik nebeneinander ─────────────────────────
+  if (hasExtra) {
+    var extraRow = mk('div', ''); extraRow.style.cssText = 'display:flex;align-items:stretch;';
+    var defs = [
+      { key:'methoden', icon:'🛠️', label:'Methoden', color:'#7c3aed', spine:['#3b0764','#6d28d9'], text:'#e9d5ff',
+        items: METHDB,   getT: function(m) { return m.name || m.titel || '–'; } },
+      { key:'didaktik', icon:'🗺️', label:'Didaktik', color:'#0891b2', spine:['#0c4a6e','#0369a1'], text:'#bae6fd',
+        items: DIDARTDB, getT: function(d) { return d.titel || d.name || '–'; } },
+    ];
+    defs.forEach(function(t, ti) {
+      var half = mk('div', '');
+      half.style.cssText = 'flex:1;display:flex;flex-direction:column;min-width:0;' + (ti === 0 ? 'border-right:1px solid rgba(255,255,255,.05);' : '');
+      var pill2 = { icon: t.icon, label: t.label, color: t.color,
+        sub: t.items.length + ' Eintr.',
+        onclick: function() { DB.view = t.key; DB.fach = null; dbRender(); } };
+      var innerRow = mkRegalRow(pill2, function(area) {
+        var wt2 = tx('div', '', t.label.toUpperCase());
+        wt2.style.cssText = 'position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:32px;font-weight:900;letter-spacing:.14em;color:' + t.spine[1] + ';opacity:.13;white-space:nowrap;pointer-events:none;user-select:none;';
+        area.appendChild(wt2);
+        t.items.slice(0, 22).forEach(function(item) {
+          var titel = t.getT(item);
+          area.appendChild(mkSpine(
+            titel, 26, Math.min(SHELF_H - 16, 100),
+            'linear-gradient(to right,' + t.spine[0] + ',' + t.spine[1] + ')',
+            t.text, null, null,
+            function() { DB.view = t.key; DB.fach = null; dbRender(); },
+            titel
+          ));
+        });
+        if (!t.items.length) {
+          var emp = tx('div', '', 'Noch keine Einträge');
+          emp.style.cssText = 'position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.2);white-space:nowrap;';
+          area.appendChild(emp);
+        }
+      }, false);
+      half.appendChild(innerRow);
+      extraRow.appendChild(half);
+    });
+    wand.appendChild(extraRow);
+  }
 }
 
 // ── Landing Page ──────────────────────────────────────────────────
@@ -235,33 +302,8 @@ async function buildLanding(container) {
   hdr.appendChild(left);
   container.appendChild(hdr);
 
-  // ── Bücherregal ───────────────────────────────────────────────
+  // Bücherregal — zeigt alle Quellen auf einen Blick
   buildBuecherregal(container);
-
-  // ── Methoden & Didaktik Tiles ─────────────────────────────────
-  const grid = mk('div', '');
-  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;padding:0 28px 28px;';
-  container.appendChild(grid);
-
-  var extraTiles = [
-    { key: 'methoden', icon: '🛠️', label: 'Methoden', color: '#7c3aed', getCount: function() { return METHDB.length; },  sub: 'Unterrichtsmethoden' },
-    { key: 'didaktik', icon: '🗺️', label: 'Didaktik', color: '#0891b2', getCount: function() { return DIDARTDB.length; }, sub: 'Artikel & Wissensbausteine' },
-  ];
-  extraTiles.forEach(function(t) {
-    var tile = mk('div', '');
-    tile.style.cssText = 'border:2px solid ' + t.color + '44;border-radius:16px;padding:32px 24px;cursor:pointer;transition:all .2s;background:' + t.color + '0a;display:flex;flex-direction:column;align-items:flex-start;gap:10px;';
-    tile.onmouseenter = function() { tile.style.background = t.color + '18'; tile.style.transform = 'translateY(-3px)'; tile.style.boxShadow = '0 8px 24px ' + t.color + '22'; };
-    tile.onmouseleave = function() { tile.style.background = t.color + '0a'; tile.style.transform = ''; tile.style.boxShadow = ''; };
-    tile.onclick = function() { DB.view = t.key; DB.fach = null; dbRender(); };
-    tile.appendChild(tx('div', '', t.icon)).style.fontSize = '40px';
-    tile.appendChild(tx('div', 'db-tile-label', t.label));
-    var cw = mk('div', ''); cw.style.cssText = 'display:flex;align-items:baseline;gap:6px;';
-    var cEl = tx('div', 'db-tile-count', t.getCount()); cEl.style.color = t.color;
-    cw.appendChild(cEl); cw.appendChild(tx('div', 'db-tile-sub', 'Einträge'));
-    tile.appendChild(cw);
-    tile.appendChild(tx('div', 'db-tile-sub', t.sub));
-    grid.appendChild(tile);
-  });
 }
 
 // ── Fach-Ansicht ──────────────────────────────────────────────────
@@ -309,6 +351,7 @@ async function buildFachView(container) {
     wrap.innerHTML = '<div style="padding:20px;color:var(--tx3);text-align:center">⏳ Lädt…</div>';
     const filters = { fach: f.key };
     if (DB.herkunft) filters.herkunft = DB.herkunft;
+    if (DB.buch)     filters.buch     = DB.buch;
 
     const rows = await sbSelect('inhalte', {
       fts: DB.suchtext || null,
@@ -320,8 +363,9 @@ async function buildFachView(container) {
 
     wrap.innerHTML = '';
     subT.textContent = rows.length + (rows.length === LIMIT ? '+' : '') + ' Einträge'
+      + (DB.buch ? ' · 📖 ' + DB.buch : '')
       + (DB.suchtext ? ' · „' + DB.suchtext + '"' : '')
-      + (DB.herkunft === 'schulbuch' ? ' · Schulbuch' : DB.herkunft === 'eigenmaterial' ? ' · Eigenmaterial' : '');
+      + (!DB.buch && DB.herkunft === 'schulbuch' ? ' · Schulbuch' : !DB.buch && DB.herkunft === 'eigenmaterial' ? ' · Eigenmaterial' : '');
 
     if (!rows.length) {
       const e = tx('div', '', 'Keine Einträge gefunden.');
@@ -514,19 +558,18 @@ function dbRender() {
     .then(function(r) { return r.json(); }).catch(function() { return null; })
     .then(function(gh) { if (gh && gh.commit && gh.commit.committer) _ghDate = gh.commit.committer.date; checkDBVersion(); });
 
-  // Daten im Hintergrund laden
-  sbDownload('methoden.json').then(function(d) {
-    METHDB = Array.isArray(d) ? d : [];
-  }).catch(function() {});
-  sbDownload('didaktik-artikel.json').then(function(d) {
-    DIDARTDB = Array.isArray(d) ? d : [];
-  }).catch(function() {});
-  sbDownload('schulbuecher.json').then(function(d) {
-    SCHULBUCHDB = Array.isArray(d) ? d : [];
-    // Bücherregal nachträglich einfügen falls Landing noch sichtbar
-    if (DB.view === 'landing' && SCHULBUCHDB.length) {
+  // Alle Quelldaten laden, dann Regal einblenden
+  Promise.all([
+    sbDownload('schulbuecher.json').catch(function() { return null; }),
+    sbDownload('methoden.json').catch(function() { return null; }),
+    sbDownload('didaktik-artikel.json').catch(function() { return null; }),
+  ]).then(function(res) {
+    if (Array.isArray(res[0])) SCHULBUCHDB = res[0];
+    if (Array.isArray(res[1])) METHDB      = res[1];
+    if (Array.isArray(res[2])) DIDARTDB    = res[2];
+    if (DB.view === 'landing') {
       var c = document.getElementById('db-content');
       if (c) { c.innerHTML = ''; buildLanding(c); }
     }
-  }).catch(function() {});
+  });
 })();

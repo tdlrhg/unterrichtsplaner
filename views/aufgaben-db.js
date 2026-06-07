@@ -270,11 +270,8 @@ function viewAufgabenDB() {
         promises.push(Promise.resolve(null));
       }
 
-      if (quelleMat && moreMat) {
-        promises.push(sbSelect('materialien', { fts: suchText, filters: fachFilter, limit: LIMIT, offset: offsetMat }));
-      } else {
-        promises.push(Promise.resolve(null));
-      }
+      // materialien-Tabelle existiert nicht mehr (→ inhalte mit herkunft='eigenmaterial')
+      promises.push(Promise.resolve(null));
 
       const [sbRows, matRows] = await Promise.all(promises);
       loadingEl.remove();

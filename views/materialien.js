@@ -46,7 +46,11 @@ function viewMaterialien() {
   const closeBtn = btn('✕', 'btn btn-ghost btn-sm matd-close');
   closeBtn.onclick = () => { overlay.classList.remove('open'); panel.querySelector('.matd-panel-body')?.remove(); };
   overlay.onclick  = e => { if (e.target === overlay) closeBtn.onclick(); };
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBtn.onclick(); });
+  function _esc(e) {
+    if (!overlay.isConnected) { document.removeEventListener('keydown', _esc); return; }
+    if (e.key === 'Escape') closeBtn.onclick();
+  }
+  document.addEventListener('keydown', _esc);
   panHdr.appendChild(panTitle); panHdr.appendChild(closeBtn);
   panel.appendChild(panHdr);
   overlay.appendChild(panel);

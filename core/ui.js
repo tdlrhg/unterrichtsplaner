@@ -387,19 +387,7 @@ Antworte NUR mit diesem JSON:
 {"id": "exakte-ID-aus-der-Liste", "name": "Methodenname", "begruendung": "1-2 Sätze warum diese Methode hier passt"}`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': antKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 300, messages: [{ role: 'user', content: prompt }] }),
-    });
-    if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
-    const data = await res.json();
-    const parsed = JSON.parse(data.content?.[0]?.text?.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    const parsed = JSON.parse((await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 300 })).match(/\{[\s\S]*\}/)?.[0] || '{}');
     if (!parsed.name) throw new Error('Kein Vorschlag erhalten.');
     phase.methodeId = parsed.id || null;
     phase.methode = parsed.name;

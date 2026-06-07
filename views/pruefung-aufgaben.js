@@ -378,7 +378,7 @@ Antworte NUR mit reinem JSON:
   async function generateFeinstrukturForTask(aufg, aufgNr, lernziele, quellenTexte) {
     let spezifikation = '';
     try {
-      const raw = await callKI([{ type: 'text', text: buildFeinstrukturPrompt(aufg, aufgNr, lernziele, quellenTexte) }], 1500);
+      const raw = await callKI([{ type: 'text', text: buildFeinstrukturPrompt(aufg, aufgNr, lernziele, quellenTexte) }], { maxTokens: 1500 });
       const parsed = parseKI(raw);
       spezifikation = parsed.spezifikation || '';
     } catch (parseErr) {
@@ -450,7 +450,7 @@ Antworte NUR mit reinem JSON:
     p += `WICHTIG\n- Behalte Thema und Grundidee der Aufgabe bei\n- Überarbeite nur die Feinstruktur, nicht die ganze Klassenarbeit\n- Wenn Punkteangaben vorhanden sind, liefere weiter Punkte pro Teilaufgabe mit |Zahl\n- Verwende nur diese Anforderungsbereiche: ${erlaubt.length ? erlaubt.join(', ') : 'reproduktion, leichteAnwendung, mittlereAnwendung, transfer'}\n- Gib nur die neue Feinstruktur zurück, kein Kommentar\n\n`;
     p += `Antworte NUR mit reinem JSON:\n{"spezifikation":"reproduktion|1a: ... → ...|2\\nleichteAnwendung|1b: ... → ...|3"}`;
     statusEl.textContent = `⏳ Feinstruktur wird überarbeitet (${label})...`;
-    const raw = await callKI([{ type: 'text', text: p }], 1800);
+    const raw = await callKI([{ type: 'text', text: p }], { maxTokens: 1800 });
     const parsed = parseKI(raw);
     if (!parsed.spezifikation) throw new Error('Keine neue Feinstruktur erhalten');
     fs.spezifikation = parsed.spezifikation;
@@ -878,7 +878,7 @@ Antworte NUR mit reinem JSON:
         if (erlaubt.length) p += `Anforderungsbereiche – Erlaubt: ${erlaubt.join(', ')} | VERBOTEN: ${verboten.join(', ')}\n`;
         p += `\nAntworte NUR mit reinem JSON:\n{"titel":"Kurzer Titel","beschreibung":"Was Schüler hier tun (1 Satz)"}`;
         try {
-          const raw = await callKI([{ type: 'text', text: p }], 600);
+          const raw = await callKI([{ type: 'text', text: p }], { maxTokens: 600 });
           const parsed = parseKI(raw);
           if (parsed.titel) aufg.titel = parsed.titel;
           if (parsed.beschreibung) aufg.beschreibung = parsed.beschreibung;
@@ -1494,7 +1494,7 @@ Antworte NUR mit reinem JSON:
       p += `\nERZEUGE GENAU ${anzahl} Teilaufgabe(n). Nicht mehr, nicht weniger.\n`;
       const example = afbLines.map((k, i) => `${k}|${fs.nr}${LETTERS[i]}: Vorgabe → Schülertätigkeit`).join('\\n') || `leichteAnwendung|${fs.nr}a: Vorgabe → Schülertätigkeit`;
       p += `Antworte NUR mit reinem JSON:\n{"spezifikation":"${example}"}`;
-      const raw = await callKI([{ type: 'text', text: p }], 1500);
+      const raw = await callKI([{ type: 'text', text: p }], { maxTokens: 1500 });
       fs.spezifikation = (parseKI(raw).spezifikation) || fs.spezifikation;
       savePruefungsDB();
     });
@@ -1636,7 +1636,7 @@ Antworte NUR mit reinem JSON:
           p += `\nDer Umfang richtet sich nach der Beschreibung (z.B. Tabelle mit 9 Zeilen = 9 Zeilen im Aufgabentext).`;
           p += `\nFuer "loesung": vollstaendiger Loesungsweg mit allen Zwischenschritten und Ergebnissen.`;
           p += `\nAntworte NUR mit reinem JSON:\n{"konkret":[{"aufgabe":"vollstaendiger Aufgabentext","loesung":"vollstaendiger Loesungsweg"}]}`;
-          const raw = await callKI([{ type: 'text', text: p }], 1800);
+          const raw = await callKI([{ type: 'text', text: p }], { maxTokens: 1800 });
           // Eigener Parser für {aufgabe, loesung}-Arrays — unabhängig von robustJsonParsePr
           let items = null;
           const cleaned = raw.replace(/^```[a-zA-Z]*\n?/m, '').replace(/```\s*$/m, '').trim();
@@ -1905,7 +1905,7 @@ Antworte NUR mit reinem JSON:
 ]}
 anforderung: Punktverteilung auf vier Bereiche (Summe = gesamtpunkte, 0 wenn nicht vorhanden):
 reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
-      const raw = await callKI([{ type: 'text', text: p }], 2000);
+      const raw = await callKI([{ type: 'text', text: p }], { maxTokens: 2000 });
       const parsed = parseKI(raw);
       pr.strukturVorschlag = (parsed.hauptaufgaben || []).map(a => ({
         ...a,

@@ -279,18 +279,7 @@ Antworte NUR mit validem JSON:
   {"typ":"aufgabe","nr":"1","seite":146,"aufgabenstellung":null,"text":"Löse das Gleichungssystem grafisch und rechnerisch.","schwierigkeit":"○","grafik":null,"kompetenzen":["UF1"],"anforderung":"Schüler lösen ein lineares Gleichungssystem sowohl grafisch als auch mit dem Gleichsetzungsverfahren.","operator":"berechnen","umfang":"mittel","schwierigkeitsstufe":"standard"}
 ]}`;
 
-  async function callKI(blocks, maxTokens) {
-    const antKey = localStorage.getItem('ant_key');
-    if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages: [{ role: 'user', content: blocks }] }),
-    });
-    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err?.error?.message || res.statusText); }
-    const data = await res.json();
-    return data.content?.[0]?.text || '';
-  }
+  // callKI kommt aus core/ki.js (global geladen)
 
   function imgBlock(dataUrl) {
     return { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: dataUrl.split(',')[1] } };
@@ -324,7 +313,7 @@ Antworte NUR mit validem JSON:
       });
       blocks.push({ type: 'text', text: prompt });
 
-      const raw = await callKI(blocks, 8000);
+      const raw = await callKI(blocks, { maxTokens: 8000 });
       let batchAufgaben = [];
 
       if (verbatim) {
@@ -631,7 +620,7 @@ Regeln:
         ];
 
         try {
-          const raw = await callKI(blocks, 4000);
+          const raw = await callKI(blocks, { maxTokens: 4000 });
 
           // Parse Pipe-Format: nr|titel|seiteVon|seiteBis
           const lines = raw.split('\n').map(l => l.trim()).filter(l => l && l.includes('|'));

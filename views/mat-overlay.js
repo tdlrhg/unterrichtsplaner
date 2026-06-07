@@ -837,14 +837,7 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
           titel: mat.titel || '', blockTitel: blockTitelRe,
         }) });
 
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 3000, messages: [{ role: 'user', content }] })
-        });
-        if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error('API ' + res.status + ': ' + (err.error?.message || res.statusText)); }
-        const d = await res.json();
-        const rawKiText = d.content?.[0]?.text || '';
+        const rawKiText = await callKI(content, { model: KI_MODEL_HAIKU, maxTokens: 3000 });
         console.log('[Neuanalyse] KI-Antwort:', rawKiText.slice(0, 300));
         const match = rawKiText.match(/\{[\s\S]*\}/);
         if (!match) throw new Error('Kein JSON in der KI-Antwort. Antwort: ' + rawKiText.slice(0, 200));

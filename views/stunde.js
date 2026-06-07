@@ -166,19 +166,7 @@ ${stunde.lernziel ? 'Stundenbeschreibung (Kontext):\n' + stunde.lernziel : ''}
 Antworte NUR als JSON-Array von Strings:
 ["Die SuS können … und zeigen dies, indem sie …"]`;
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': antKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 800,
-          messages: [{ role: 'user', content: prompt }] }),
-      });
-      const data = await res.json();
-      const text = data.content?.[0]?.text || '';
+      const text = await callKI(prompt, { maxTokens: 800 });
       const parsed = safeParseArray(text.match(/\[[\s\S]*\]/)?.[0] || '[]');
       if (!parsed.length) throw new Error('Keine Lernziele erhalten');
       const neu = parsed.map(z => ({ id: uid(), text: typeof z === 'string' ? z : (z.text || '') }));
@@ -436,14 +424,7 @@ Beispiel:
 mat_abc_1|gut|Passt direkt zum Thema Fotosynthese|ja
 mat_abc_2|anpassung|Nur Teilaufgabe 1 verwenden|nein`;
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, messages: [{ role: 'user', content: prompt }] }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error?.message || res.statusText);
-      const text = d.content?.[0]?.text || '';
+      const text = await callKI(prompt, { maxTokens: 1000 });
       const results = text.split('\n').map(l => l.trim()).filter(l => l.includes('|')).map(l => {
         const parts = l.split('|');
         return { id: parts[0]?.trim(), bewertung: parts[1]?.trim(), hinweis: parts[2]?.trim(), favorit: parts[3]?.trim() === 'ja' };
@@ -573,14 +554,7 @@ Materialdatenbank (id|Titel|Themen|Fach|Jahrgang|Typ):
 ${matSummary}`;
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: prompt }] }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error?.message || res.statusText);
-      const raw = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/)?.[0];
+      const raw = (await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 600 })).match(/\{[\s\S]*\}/)?.[0];
       if (!raw) throw new Error('Kein JSON erhalten');
       const sanitized = raw.replace(/[\x00-\x1F\x7F]/g, c => (c==='\n'||c==='\r'||c==='\t') ? ' ' : '');
       let vorschlaege;
@@ -652,14 +626,7 @@ Methoden für Sicherung:\n${methPool('Sicherung')}
 Antworte NUR mit JSON:
 {"Einstieg":{"id":"ID-oder-null","name":"Name","begr":"1 Satz"},"Erarbeitung":{"id":"ID-oder-null","name":"Name","begr":"1 Satz"},"Sicherung":{"id":"ID-oder-null","name":"Name","begr":"1 Satz"}}`;
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 500, messages: [{ role: 'user', content: prompt }] }),
-        });
-        const d = await res.json();
-        if (!res.ok) throw new Error(d.error?.message || res.statusText);
-        const parsed = JSON.parse(d.content?.[0]?.text?.match(/\{[\s\S]*\}/)?.[0] || '{}');
+        const parsed = JSON.parse((await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 500 })).match(/\{[\s\S]*\}/)?.[0] || '{}');
         ['Einstieg','Erarbeitung','Sicherung'].forEach(t => { if (parsed[t]?.name) stunde.methoden[t] = parsed[t]; });
         scheduleSave(); renderMethodeBody();
       } catch(e) { alert('Fehler: ' + e.message); kiAlleBtn.textContent = '✨ KI schlägt alle drei vor'; kiAlleBtn.disabled = false; }

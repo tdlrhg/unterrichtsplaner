@@ -1,6 +1,15 @@
 // ── Materialdatenbank ─────────────────────────────────────────────
 let MATDB = [];
 
+// Lazy-invalidierter O(1)-Index für id → Material.
+// Nach jeder MATDB-Mutation invalidateMatCache() rufen.
+let _matCache = null;
+function matByIdLookup(id) {
+  if (!_matCache) _matCache = new Map(MATDB.map(m => [m.id, m]));
+  return _matCache.get(id) || null;
+}
+function invalidateMatCache() { _matCache = null; }
+
 // ── Methodendatenbank ─────────────────────────────────────────────
 let METHDB = [];
 

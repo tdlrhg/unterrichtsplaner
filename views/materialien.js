@@ -224,7 +224,7 @@ function viewMaterialien() {
   bulkDelBtn.onclick = () => {
     const n = selIds.size;
     if (!confirm(n + (n === 1 ? ' Eintrag' : ' Einträge') + ' löschen?')) return;
-    MATDB = MATDB.filter(m => !selIds.has(m.id));
+    MATDB = MATDB.filter(m => !selIds.has(m.id)); invalidateMatCache();
     selIds.clear();
     saveMatDB();
     selMode = false;
@@ -311,7 +311,7 @@ function viewMaterialien() {
       delBtn.onclick = e => {
         e.stopPropagation();
         if (!confirm('„' + mat.titel + '" löschen?')) return;
-        MATDB = MATDB.filter(m => m.id !== mat.id);
+        MATDB = MATDB.filter(m => m.id !== mat.id); invalidateMatCache();
         saveMatDB(); card.remove();
         countTxt.textContent = filteredList().length + ' von ' + MATDB.length + ' Materialien';
       };

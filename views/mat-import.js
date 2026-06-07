@@ -186,7 +186,7 @@ function buildR2Browser(subTitle, renderCards) {
               r2key: key, r2url,
               importiertAm: new Date().toISOString(),
             };
-            MATDB.unshift(entry);
+            MATDB.unshift(entry); invalidateMatCache();
             saveMatDB(); renderCards();
             subTitle.textContent = MATDB.length + ' Einträge';
             row.classList.add('mat-r2-file-exists');
@@ -874,7 +874,7 @@ function buildImportAssistent(subTitle, renderCards) {
             importiertAm:new Date().toISOString(),
             unterrichtsphase:[],sozialformenGeeignet:[],methodenGeeignet:[],blockId:null});
         }
-        newEntries.forEach(e=>MATDB.push(e));
+        newEntries.forEach(e=>MATDB.push(e)); invalidateMatCache();
         await sbUpload('materialien.json',MATDB);
         const restIds=new Set(rest.map(s=>s.id));
         S.zsSegments=S.zsSegments.filter(s=>!restIds.has(s.id));
@@ -925,7 +925,7 @@ function buildImportAssistent(subTitle, renderCards) {
           if(rest.length) entry.dateipfadeWeitere=rest.map(m=>m.r2Path);
           newEntries.push(entry);
         }
-        newEntries.forEach(e=>MATDB.push(e));
+        newEntries.forEach(e=>MATDB.push(e)); invalidateMatCache();
         await sbUpload('materialien.json',MATDB);
         // Gematchte Segmente entfernen (egal ob gerade oder schon früher hochgeladen)
         S.zsSegments=S.zsSegments.filter(s=>!matchedSegIds.has(s.id));
@@ -1157,7 +1157,7 @@ function buildScanPanel(subTitle, renderCards, onClose) {
         }
 
         const idx = MATDB.findIndex(m => m.id === e.id);
-        if (idx >= 0) MATDB[idx] = e; else MATDB.unshift(e);
+        if (idx >= 0) MATDB[idx] = e; else MATDB.unshift(e); invalidateMatCache();
       });
 
       clearInterval(timer);

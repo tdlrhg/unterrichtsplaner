@@ -226,7 +226,7 @@ Antworte NUR als JSON-Array von Strings:
       return;
     }
     stunde.materialIds.forEach(mid => {
-      const mat = MATDB.find(m => m.id === mid);
+      const mat = matByIdLookup(mid);
       if (!mat) return;
       const row = mk('div', '');
       row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bord);';
@@ -414,7 +414,7 @@ Antworte NUR als JSON-Array von Strings:
     if (!selected.size) return;
     kiBtn.disabled = true; kiBtn.textContent = '⏳ KI bewertet…';
     const lernzieleText = (stunde.lernziele||[]).map(z=>z.text).join('\n') || '–';
-    const selMats = [...selected].map(id => MATDB.find(m=>m.id===id)).filter(Boolean);
+    const selMats = [...selected].map(id => matByIdLookup(id)).filter(Boolean);
     const matListe = selMats.map((m,i) =>
       `[${i+1}] id:"${m.id}" | Titel:"${m.titel}" | Themen:${(m.themen||[]).join(',')||'–'} | Typ:${m.materialtyp||'–'} | Jg:${(m.jahrgang||[]).join('/')||'–'} | Phase:${(m.unterrichtsphase||[]).join('/')||'–'}${m.beschreibung?' | Beschreibung:'+m.beschreibung.slice(0,120):''}`
     ).join('\n');
@@ -455,7 +455,7 @@ mat_abc_2|anpassung|Nur Teilaufgabe 1 verwenden|nein`;
         kiVorschlaegeListe.innerHTML = '';
         if (hdrEl) kiVorschlaegeListe.appendChild(hdrEl);
         kiVorschlaegeListe.dataset.vorschlagIds.split(',').filter(Boolean).forEach(id => {
-          const mat = MATDB.find(m => m.id === id);
+          const mat = matByIdLookup(id);
           if (mat) kiVorschlaegeListe.appendChild(buildMatRow(mat));
         });
       }
@@ -599,7 +599,7 @@ ${matSummary}`;
         hint.style.cssText = 'padding:12px;color:var(--tx3);font-size:12px;';
         kiVorschlaegeListe.appendChild(hint);
       } else {
-        vorschlaege.forEach(v => { const mat = MATDB.find(m => m.id === v.id); if (mat) kiVorschlaegeListe.appendChild(renderMatCard(mat, v.grund, null)); });
+        vorschlaege.forEach(v => { const mat = matByIdLookup(v.id); if (mat) kiVorschlaegeListe.appendChild(renderMatCard(mat, v.grund, null)); });
       }
     } catch(e) {
       kiSpin.remove();
@@ -821,7 +821,7 @@ Antworte NUR mit JSON:
         const antKey = localStorage.getItem('ant_key');
         if (!antKey) { alert('Bitte API-Key hinterlegen.'); return; }
         altBtn.textContent = '⏳'; altBtn.disabled = true;
-        const matInfos = (stunde.materialIds||[]).map(id => MATDB.find(m=>m.id===id)).filter(Boolean);
+        const matInfos = (stunde.materialIds||[]).map(id => matByIdLookup(id)).filter(Boolean);
         const matTexte = matInfos.map(m => `${m.titel}: ${(m.beschreibung||'').slice(0,100)}`).join(' | ');
         const methListe = METHDB.map(m => `${m.name}: ${m.beschreibung}`).join('\n');
         const prompt = `Schlage 3 alternative Unterrichtsmethoden (nicht "${stunde.methodeKiVorschlag?.name}") für folgende Unterrichtsstunde vor.
@@ -917,7 +917,7 @@ Antworte NUR als JSON-Array (keine Zeilenumbrüche in Strings): [{"methode":"Nam
         const antKey = localStorage.getItem('ant_key');
         if (!antKey || !(stunde.materialIds||[]).length) return;
         try {
-          const matInfos = (stunde.materialIds||[]).map(id => MATDB.find(mm=>mm.id===id)).filter(Boolean);
+          const matInfos = (stunde.materialIds||[]).map(id => matByIdLookup(id)).filter(Boolean);
           const matTexte = matInfos.map(mm => `${mm.titel}: ${(mm.beschreibung||'').slice(0,100)}`).join(' | ');
           const methDetail = `Beschreibung: ${m.beschreibung||''}. Ziel: ${m.ziel||''}`;
           const prompt = `Beurteile, ob diese Unterrichtsmethode für die Stunde geeignet ist.
@@ -987,7 +987,7 @@ Hinweis = ein kurzer Satz ohne Sonderzeichen`;
       const antKey = localStorage.getItem('ant_key');
       if (!antKey) { alert('Bitte API-Key hinterlegen.'); return; }
       kiAnalBtn.textContent = '⏳ Analysiert…'; kiAnalBtn.disabled = true;
-      const matInfos = (stunde.materialIds||[]).map(id => MATDB.find(m=>m.id===id)).filter(Boolean);
+      const matInfos = (stunde.materialIds||[]).map(id => matByIdLookup(id)).filter(Boolean);
       const matTexte = matInfos.map(m => [
         'Titel: ' + m.titel,
         m.beschreibung ? 'Beschreibung: ' + m.beschreibung.slice(0,200) : '',

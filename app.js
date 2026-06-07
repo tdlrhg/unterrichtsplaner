@@ -135,7 +135,7 @@ function buildSetup() {
     sbDownload('didaktik-artikel.json').catch(() => []),
     sbDownload('schulbuecher.json').catch(() => []),
   ]);
-  MATDB = Array.isArray(matdb) ? matdb : [];
+  MATDB = Array.isArray(matdb) ? matdb : []; invalidateMatCache();
   KLPDB = Array.isArray(klpdb) ? klpdb : [];
   METHDB = Array.isArray(methdb) ? methdb : [];
   DIDAKTIKDB = (didaktik && typeof didaktik === 'object' && !Array.isArray(didaktik)) ? didaktik : {};

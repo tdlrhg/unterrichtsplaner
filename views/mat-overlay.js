@@ -856,7 +856,7 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
           ({ quelle, materialnummer: materialnummer || null, r2key, r2url, kontextR2key, dateipfad, dateipfadeWeitere, kontextPfad, seiten, importiertAm, id }))(MATDB[idx]);
         // Materialnummer: KI-Wert übernehmen wenn noch nicht gesetzt
         if (!keep.materialnummer) delete keep.materialnummer;
-        Object.assign(MATDB[idx], enriched, keep);
+        Object.assign(MATDB[idx], enriched, keep); invalidateMatCache();
         saveMatDB(); renderCards();
         overlay.classList.remove('open'); body.remove();
         const fresh = MATDB.find(m => m.id === mat.id);
@@ -1170,7 +1170,7 @@ Antworte NUR als JSON:
       if (!shared) keysToDelete.push(ctxKey);
     }
 
-    MATDB = MATDB.filter(m => m.id !== mat.id);
+    MATDB = MATDB.filter(m => m.id !== mat.id); invalidateMatCache();
     saveMatDB(); overlay.classList.remove('open'); body.remove(); renderCards();
 
     // R2-Dateien im Hintergrund löschen

@@ -21,21 +21,20 @@ const FAECHER = [
 const COLS = [
   { key: 'src',    label: 'Aufgabe',       hCls: 'db-col-hdr-src',    cCls: 'db-col-src'    },
   { key: 'inhalt', label: 'Inhalt',        hCls: 'db-col-hdr-inhalt', cCls: 'db-col-inhalt' },
-  { key: 'seite',  label: 'Seite',         hCls: 'db-col-hdr-op',     cCls: 'db-col-op'     },
   { key: 'schw',   label: 'Schwierigkeit', hCls: 'db-col-hdr-schw',   cCls: 'db-col-schw'   },
 ];
 
 var COL_CONFIG = (function() {
   try {
     var s = JSON.parse(localStorage.getItem('db_col_config') || 'null');
-    if (s && s.v === 2 && Array.isArray(s.order) && s.order.length === COLS.length &&
+    if (s && s.v === 3 && Array.isArray(s.order) && s.order.length === COLS.length &&
         Array.isArray(s.widths) && s.widths.length === COLS.length) return s;
   } catch(e) {}
-  return { v: 2, order: [0,1,2,3], widths: [80, null, 80, 150] };
+  return { v: 3, order: [0,1,2], widths: [80, null, 150] };
 })();
 
 function saveColConfig() {
-  try { localStorage.setItem('db_col_config', JSON.stringify({ ...COL_CONFIG, v: 2 })); } catch(e) {}
+  try { localStorage.setItem('db_col_config', JSON.stringify({ ...COL_CONFIG, v: 3 })); } catch(e) {}
 }
 
 function colTemplate() {
@@ -935,6 +934,8 @@ async function buildFachView(container) {
       var ghdr = mk('div', '');
       ghdr.style.cssText = 'padding:8px 12px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;cursor:pointer;';
       var hText = 'Aufgabe ' + g.key;
+      var ref0 = g.items[0];
+      if (!DB.seite && ref0 && ref0.seite != null) hText += ' · S. ' + ref0.seite;
       if (g.aufgabenstellung) hText += ' · ' + g.aufgabenstellung.slice(0, 90);
       ghdr.textContent = hText;
       ghdr.title = hasSubtasks ? 'Alle Teilaufgaben ansehen' : 'Aufgabe ansehen';
@@ -1024,19 +1025,10 @@ function renderRow(a, onSaved, compact) {
   if (!compact && a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
   cells[1] = mid;
 
-  // Zelle 2: Seite
-  var opCol = mk('div', 'db-col-op'); opCol.dataset.colIdx = 2;
-  if (a.seite != null) {
-    var seiteLabel = tx('span', '', 'S. ' + a.seite);
-    seiteLabel.style.cssText = 'font-size:12px;color:var(--tx2);font-weight:600;';
-    opCol.appendChild(seiteLabel);
-  }
-  cells[2] = opCol;
-
-  // Zelle 3: Schwierigkeit
-  var schwCol = mk('div', 'db-col-schw'); schwCol.dataset.colIdx = 3;
+  // Zelle 2: Schwierigkeit
+  var schwCol = mk('div', 'db-col-schw'); schwCol.dataset.colIdx = 2;
   if (a.schwierigkeit) schwCol.appendChild(mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit] || ''));
-  cells[3] = schwCol;
+  cells[2] = schwCol;
 
   // In konfigurierter Reihenfolge einhängen
   COL_CONFIG.order.forEach(function(i) { row.appendChild(cells[i]); });

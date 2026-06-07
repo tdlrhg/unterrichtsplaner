@@ -946,9 +946,8 @@ async function buildFachView(container) {
       })(g, hasSubtasks);
       wrap.appendChild(ghdr);
       g.items.forEach(function(row) {
-        var indent = hasSubtasks;
         var rowEl = renderRow(row, function() { DB.offset = 0; load(); }, true);
-        rowEl.style.marginLeft = indent ? '16px' : '0';
+        rowEl.style.marginLeft = '16px';
         wrap.appendChild(rowEl);
       });
     });

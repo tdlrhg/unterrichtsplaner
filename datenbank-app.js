@@ -889,13 +889,24 @@ async function buildFachView(container) {
     if (DB.jahrgang)      filters.jahrgang      = DB.jahrgang;
     if (DB.seite != null) filters.seite         = DB.seite;
 
-    const rows = await sbSelect('inhalte', {
+    var rows = await sbSelect('inhalte', {
       fts: DB.suchtext || null,
       filters,
       limit: LIMIT,
       offset: DB.offset,
-      order: 'herkunft,buch,seite,nr',
+      order: 'herkunft,buch,seite',
     }).catch(function() { return []; });
+
+    // nr natürlich sortieren: numerischer Teil, dann Buchstabe (8 < 8a < 8b < 9 < 10)
+    rows.sort(function(a, b) {
+      if (a.buch   !== b.buch)   return (a.buch   || '') < (b.buch   || '') ? -1 : 1;
+      if (a.seite  !== b.seite)  return (a.seite  || 0)  - (b.seite  || 0);
+      var pa = String(a.nr || '').match(/^(\d+)([a-z]*)$/i) || ['', '0', ''];
+      var pb = String(b.nr || '').match(/^(\d+)([a-z]*)$/i) || ['', '0', ''];
+      var nd = parseInt(pa[1], 10) - parseInt(pb[1], 10);
+      if (nd !== 0) return nd;
+      return pa[2] < pb[2] ? -1 : pa[2] > pb[2] ? 1 : 0;
+    });
 
     wrap.innerHTML = '';
     var parts = [];

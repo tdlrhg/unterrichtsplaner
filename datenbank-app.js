@@ -22,6 +22,10 @@ const DB = {
   fach: null,
   buch: null,         // null | Buchtitel-String → Filter auf eine Quelle
   herkunft: null,     // null | 'schulbuch' | 'eigenmaterial'
+  operator: null,
+  schwierigkeit: null,
+  umfang: null,
+  jahrgang: null,
   suchtext: '',
   offset: 0,
 };
@@ -74,7 +78,7 @@ function buildDBSidebar(sb) {
   homeInner.appendChild(tx('span', '', '🏠'));
   homeInner.appendChild(tx('span', 'sb-item-label', 'Übersicht'));
   homeRow.appendChild(homeInner);
-  homeRow.onclick = () => { DB.view = 'landing'; DB.fach = null; DB.buch = null; DB.herkunft = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
+  homeRow.onclick = () => { DB.view = 'landing'; DB.fach = null; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
   sb.appendChild(homeRow);
 
   sb.appendChild(mk('div', 'sb-sep'));
@@ -86,7 +90,7 @@ function buildDBSidebar(sb) {
     inner.appendChild(tx('span', '', f.icon));
     inner.appendChild(tx('span', 'sb-item-label', f.label));
     row.appendChild(inner);
-    row.onclick = () => { DB.view = 'fach'; DB.fach = f.key; DB.buch = null; DB.herkunft = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
+    row.onclick = () => { DB.view = 'fach'; DB.fach = f.key; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
     sb.appendChild(row);
   });
 
@@ -310,31 +314,38 @@ function buildLanding(container) {
 async function buildFachView(container) {
   const f = fachInfo(DB.fach);
 
+  // ── Header ────────────────────────────────────────────────────
   const hdr = mk('div', 'c-hdr');
-  const left = mk('div', '');
-  left.appendChild(tx('div', 'c-title', f.icon + ' ' + f.label));
+  const hdrLeft = mk('div', '');
+  hdrLeft.appendChild(tx('div', 'c-title', f.icon + ' ' + f.label));
   const subT = tx('div', 'c-sub', '');
-  left.appendChild(subT);
-  hdr.appendChild(left);
+  hdrLeft.appendChild(subT);
+  hdr.appendChild(hdrLeft);
+  const neuBtn = btn('+ Neu', 'btn btn-sm');
+  neuBtn.style.cssText = 'margin-left:auto;flex-shrink:0;';
+  hdr.appendChild(neuBtn);
   container.appendChild(hdr);
 
-  // Toolbar
-  const toolbar = mk('div', '');
-  toolbar.style.cssText = 'padding:10px 16px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--bord);';
+  // ── Suche ─────────────────────────────────────────────────────
+  const searchRow = mk('div', '');
+  searchRow.style.cssText = 'padding:9px 16px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--bord);';
   const searchInp = document.createElement('input');
   searchInp.type = 'text'; searchInp.className = 'finp';
   searchInp.placeholder = '🔍 Suchen…';
   searchInp.value = DB.suchtext;
   searchInp.style.cssText = 'flex:1;max-width:400px;';
-  toolbar.appendChild(searchInp);
-  container.appendChild(toolbar);
+  searchRow.appendChild(searchInp);
+  container.appendChild(searchRow);
 
-  // Tabellen-Bereich
+  // ── Filter-Leiste (Platzhalter, wird nach load-Definition befüllt) ─
+  const filterContainer = mk('div', '');
+  container.appendChild(filterContainer);
+
+  // ── Tabellen-Bereich ──────────────────────────────────────────
   const tableWrap = mk('div', '');
   tableWrap.style.cssText = 'padding:8px 16px 16px;';
   container.appendChild(tableWrap);
 
-  // Spalten-Header
   const tableHead = mk('div', 'db-table-head');
   [['Quelle','db-col-hdr-src'],['Inhalt','db-col-hdr-inhalt'],['Operator','db-col-hdr-op'],['Schwierigkeit','db-col-hdr-schw']].forEach(function(pair) {
     tableHead.appendChild(tx('div', 'db-col-hdr ' + pair[1], pair[0]));
@@ -350,8 +361,12 @@ async function buildFachView(container) {
   async function load() {
     wrap.innerHTML = '<div style="padding:20px;color:var(--tx3);text-align:center">⏳ Lädt…</div>';
     const filters = { fach: f.key };
-    if (DB.herkunft) filters.herkunft = DB.herkunft;
-    if (DB.buch)     filters.buch     = DB.buch;
+    if (DB.herkunft)      filters.herkunft      = DB.herkunft;
+    if (DB.buch)          filters.buch          = DB.buch;
+    if (DB.operator)      filters.operator      = DB.operator;
+    if (DB.schwierigkeit) filters.schwierigkeit = DB.schwierigkeit;
+    if (DB.umfang)        filters.umfang        = DB.umfang;
+    if (DB.jahrgang)      filters.jahrgang      = DB.jahrgang;
 
     const rows = await sbSelect('inhalte', {
       fts: DB.suchtext || null,
@@ -362,11 +377,16 @@ async function buildFachView(container) {
     }).catch(function() { return []; });
 
     wrap.innerHTML = '';
-    var herkunftSuffix = DB.buch ? '' : DB.herkunft === 'schulbuch' ? ' · Schulbuch' : DB.herkunft === 'eigenmaterial' ? ' · Eigenmaterial' : '';
+    var parts = [];
+    if (DB.buch)          parts.push('📖 ' + DB.buch);
+    else if (DB.herkunft === 'schulbuch') parts.push('Schulbuch');
+    else if (DB.herkunft === 'eigenmaterial') parts.push('Eigenmaterial');
+    if (DB.operator)      parts.push(DB.operator);
+    if (DB.schwierigkeit) parts.push(DB.schwierigkeit);
+    if (DB.umfang)        parts.push(DB.umfang);
+    if (DB.suchtext)      parts.push('„' + DB.suchtext + '"');
     subT.textContent = rows.length + (rows.length === LIMIT ? '+' : '') + ' Einträge'
-      + (DB.buch ? ' · 📖 ' + DB.buch : '')
-      + (DB.suchtext ? ' · „' + DB.suchtext + '"' : '')
-      + herkunftSuffix;
+      + (parts.length ? ' · ' + parts.join(' · ') : '');
 
     if (!rows.length) {
       const e = tx('div', '', 'Keine Einträge gefunden.');
@@ -375,7 +395,9 @@ async function buildFachView(container) {
       return;
     }
 
-    rows.forEach(function(row) { wrap.appendChild(renderRow(row)); });
+    rows.forEach(function(row) {
+      wrap.appendChild(renderRow(row, function() { DB.offset = 0; load(); }));
+    });
 
     if (rows.length === LIMIT) {
       const mehr = btn('Weitere ' + LIMIT + ' laden…', 'btn btn-ghost btn-sm');
@@ -385,17 +407,24 @@ async function buildFachView(container) {
     }
   }
 
-  let debounce;
+  // Suche: Debounce
+  var _debounce;
   searchInp.oninput = function() {
-    clearTimeout(debounce);
-    debounce = setTimeout(function() { DB.suchtext = searchInp.value.trim(); DB.offset = 0; load(); }, 400);
+    clearTimeout(_debounce);
+    _debounce = setTimeout(function() { DB.suchtext = searchInp.value.trim(); DB.offset = 0; load(); }, 400);
   };
+
+  // Neu-Button
+  neuBtn.onclick = function() { openEntryModal(null, 'create', function() { DB.offset = 0; load(); }); };
+
+  // Filter-Leiste einbauen
+  buildFilterBar(filterContainer, load);
 
   load();
 }
 
 // ── Eintrag-Zeile (Tabellen-Grid) ────────────────────────────────
-function renderRow(a) {
+function renderRow(a, onSaved) {
   const isSchulbuch = !a.herkunft || a.herkunft === 'schulbuch';
   const accentColor = isSchulbuch ? '#0f766e' : '#16a34a';
   const rowBg       = SCHW_BG[a.schwierigkeit] || 'transparent';
@@ -433,66 +462,381 @@ function renderRow(a) {
   if (a.schwierigkeit) schwCol.appendChild(mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit] || ''));
   row.appendChild(schwCol);
 
-  // ── Aufklapper ────────────────────────────────────────────────
-  row.onclick = function() {
-    var next = row.nextElementSibling;
-    if (next && next.classList.contains('row-detail')) {
-      next.remove(); row.classList.remove('db-row-active'); return;
-    }
-    document.querySelectorAll('.row-detail').forEach(function(el) { el.remove(); });
-    document.querySelectorAll('.db-row-active').forEach(function(el) { el.classList.remove('db-row-active'); });
-    row.classList.add('db-row-active');
-
-    const detail = mk('div', 'row-detail');
-    detail.style.cssText = 'border-left:3px solid ' + accentColor + ';border-radius:0 0 8px 8px;padding:16px 20px;background:var(--surf2);margin-bottom:2px;';
-
-    const secWrap = mk('div', '');
-    secWrap.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:20px;';
-
-    var sections = [
-      { titel: 'Grunddaten', felder: [
-        ['Inhalt', a.inhalt || a.beschreibung],
-        ['Anforderung', a.anforderung],
-        ['Buch / Titel', a.buch || a.titel],
-        ['Kapitel', a.uk_titel || a.kapitel_titel],
-        ['Seite', a.seite],
-        ['Nr.', a.nr],
-        ['Jahrgang', a.jahrgang],
-        ['Thema', a.thema],
-        ['Herkunft', a.herkunft || 'schulbuch'],
-      ]},
-      { titel: 'Prüfungsperspektive', felder: [
-        ['Operator', a.operator],
-        ['Schwierigkeit', a.schwierigkeit],
-        ['Umfang', a.umfang],
-        ['Mit Lösung', a.hat_loesung != null ? (a.hat_loesung ? 'ja' : 'nein') : null],
-      ]},
-    ];
-
-    sections.forEach(function(sec) {
-      const col = mk('div', '');
-      const secTitle = tx('div', '', sec.titel);
-      secTitle.style.cssText = 'font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + accentColor + ';margin-bottom:10px;';
-      col.appendChild(secTitle);
-      const fieldList = mk('div', '');
-      fieldList.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
-      sec.felder.forEach(function(pair) {
-        var label = pair[0]; var val = pair[1];
-        if (val === null || val === undefined || val === '') return;
-        const field = mk('div', '');
-        field.appendChild(tx('div', 'detail-field-label', label));
-        field.appendChild(tx('div', 'detail-field-value', String(val)));
-        fieldList.appendChild(field);
-      });
-      col.appendChild(fieldList);
-      secWrap.appendChild(col);
-    });
-
-    detail.appendChild(secWrap);
-    row.after(detail);
-  };
+  // ── Klick → Vollbild-Modal ────────────────────────────────────
+  row.onclick = function() { openEntryModal(a, 'view', onSaved); };
 
   return row;
+}
+
+// ── Filter-Leiste ─────────────────────────────────────────────────
+function buildFilterBar(containerEl, loadFn) {
+  containerEl.innerHTML = '';
+  const bar = mk('div', 'db-filter-bar');
+
+  function refresh() { loadFn(); buildFilterBar(containerEl, loadFn); }
+
+  function fchipGroup(opts, dbKey) {
+    const g = mk('div', 'db-filter-group');
+    opts.forEach(function(opt) {
+      const active = DB[dbKey] === opt.val;
+      const chip = tx('div', 'db-fchip' + (active ? ' on' : ''), opt.label);
+      if (active && opt.color) {
+        chip.style.cssText = 'background:' + opt.color + '18;color:' + opt.color + ';border-color:' + opt.color + '60;';
+      }
+      chip.onclick = function() {
+        DB[dbKey] = (DB[dbKey] === opt.val) ? null : opt.val;
+        DB.offset = 0;
+        refresh();
+      };
+      g.appendChild(chip);
+    });
+    return g;
+  }
+
+  function sep() {
+    const s = mk('div', 'db-filter-sep');
+    return s;
+  }
+
+  // Herkunft
+  bar.appendChild(fchipGroup([
+    { val: 'schulbuch',     label: '📖 Schulbuch',    color: '#0f766e' },
+    { val: 'eigenmaterial', label: '📄 Eigenmaterial', color: '#16a34a' },
+  ], 'herkunft'));
+
+  bar.appendChild(sep());
+
+  // Schwierigkeit
+  bar.appendChild(fchipGroup([
+    { val: 'grundlegend',   label: '○ grundlegend',   color: SCHW_FARBEN.grundlegend },
+    { val: 'standard',      label: '◑ standard',      color: SCHW_FARBEN.standard },
+    { val: 'anspruchsvoll', label: '● anspruchsvoll',  color: SCHW_FARBEN.anspruchsvoll },
+  ], 'schwierigkeit'));
+
+  bar.appendChild(sep());
+
+  // Operator (Select)
+  const opSel = document.createElement('select');
+  opSel.className = 'db-filter-sel';
+  [['', 'Operator ▾']].concat(Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; })).forEach(function(opt) {
+    const o = document.createElement('option');
+    o.value = opt[0]; o.textContent = opt[1];
+    if (DB.operator === opt[0]) o.selected = true;
+    opSel.appendChild(o);
+  });
+  opSel.onchange = function() { DB.operator = opSel.value || null; DB.offset = 0; refresh(); };
+  bar.appendChild(opSel);
+
+  bar.appendChild(sep());
+
+  // Umfang
+  bar.appendChild(fchipGroup([
+    { val: 'kurz',  label: 'kurz',  color: '#6d28d9' },
+    { val: 'mittel',label: 'mittel',color: '#6d28d9' },
+    { val: 'lang',  label: 'lang',  color: '#6d28d9' },
+  ], 'umfang'));
+
+  // Filter löschen (nur wenn aktiv)
+  var anyActive = DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang;
+  if (anyActive) {
+    bar.appendChild(sep());
+    const clrBtn = btn('✕ Filter', 'btn btn-ghost btn-sm');
+    clrBtn.style.cssText += 'font-size:10.5px;padding:2px 8px;color:var(--tx3);';
+    clrBtn.onclick = function() {
+      DB.herkunft = null; DB.schwierigkeit = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.offset = 0;
+      refresh();
+    };
+    bar.appendChild(clrBtn);
+  }
+
+  containerEl.appendChild(bar);
+}
+
+// ── Entry-Modal ───────────────────────────────────────────────────
+var _modalOverlay = null;
+
+function closeEntryModal() {
+  if (_modalOverlay) { _modalOverlay.remove(); _modalOverlay = null; }
+}
+
+function openEntryModal(entry, mode, onSaved) {
+  closeEntryModal();
+  const overlay = mk('div', 'db-modal-overlay');
+  overlay.onclick = function(e) { if (e.target === overlay) closeEntryModal(); };
+  _modalOverlay = overlay;
+
+  const modal = mk('div', 'db-modal');
+  overlay.appendChild(modal);
+
+  function renderModal(curMode, curEntry) {
+    modal.innerHTML = '';
+
+    // Header
+    const hdr = mk('div', 'db-modal-hdr');
+    const hdrLeft = mk('div', '');
+    hdrLeft.style.cssText = 'display:flex;align-items:center;gap:10px;flex:1;min-width:0;';
+    if (curMode === 'view' && curEntry) {
+      const fi = fachInfo(curEntry.fach);
+      hdrLeft.appendChild(tx('span', '', fi.icon));
+      var tp = [];
+      if (curEntry.buch)  tp.push(curEntry.buch);
+      if (curEntry.seite) tp.push('S. ' + curEntry.seite);
+      if (curEntry.nr)    tp.push('Nr. ' + curEntry.nr);
+      hdrLeft.appendChild(tx('div', 'db-modal-title', tp.join(' · ') || (curEntry.inhalt || '').slice(0, 70) || 'Eintrag'));
+    } else {
+      hdrLeft.appendChild(tx('div', 'db-modal-title', curMode === 'create' ? 'Neuer Eintrag' : 'Eintrag bearbeiten'));
+    }
+    hdr.appendChild(hdrLeft);
+
+    const hdrRight = mk('div', '');
+    hdrRight.style.cssText = 'display:flex;align-items:center;gap:6px;flex-shrink:0;';
+    if (curMode === 'view' && curEntry) {
+      const editBtn = btn('✏️ Bearbeiten', 'btn btn-sm');
+      editBtn.onclick = function() { renderModal('edit', curEntry); };
+      hdrRight.appendChild(editBtn);
+    }
+    const closeBtn = btn('✕', 'btn btn-ghost btn-sm');
+    closeBtn.style.cssText += 'font-size:13px;padding:3px 8px;';
+    closeBtn.onclick = closeEntryModal;
+    hdrRight.appendChild(closeBtn);
+    hdr.appendChild(hdrRight);
+    modal.appendChild(hdr);
+
+    // Body
+    if (curMode === 'view') {
+      modal.appendChild(buildModalViewBody(curEntry));
+    } else {
+      const result = buildModalForm(curEntry || {}, curMode);
+      modal.appendChild(result.formEl);
+
+      // Footer
+      const footer = mk('div', 'db-modal-footer');
+      if (curMode === 'edit' && curEntry && curEntry.id) {
+        const delBtn = btn('🗑 Löschen', 'btn btn-ghost btn-sm');
+        delBtn.style.color = '#ef4444';
+        delBtn.onclick = async function() {
+          if (!confirm('Eintrag wirklich löschen?')) return;
+          delBtn.disabled = true; delBtn.textContent = '⏳';
+          try {
+            await sbDelete('inhalte', curEntry.id);
+            closeEntryModal();
+            if (onSaved) onSaved();
+          } catch(e) {
+            alert('Fehler: ' + e.message);
+            delBtn.disabled = false; delBtn.textContent = '🗑 Löschen';
+          }
+        };
+        footer.appendChild(delBtn);
+      }
+      const right = mk('div', '');
+      right.style.cssText = 'display:flex;gap:8px;margin-left:auto;';
+      const cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm');
+      cancelBtn.onclick = function() {
+        if (curMode === 'create') closeEntryModal();
+        else renderModal('view', curEntry);
+      };
+      right.appendChild(cancelBtn);
+      const saveBtn = btn('✓ Speichern', 'btn btn-sm');
+      saveBtn.onclick = async function() {
+        const data = result.getData();
+        if (!data.inhalt && !data.thema) { alert('Inhalt oder Thema ist erforderlich.'); return; }
+        saveBtn.disabled = true; saveBtn.textContent = '⏳ Speichert…';
+        try {
+          let saved;
+          if (curMode === 'create') {
+            const newRow = Object.assign({ id: 'db_' + Date.now() + '_' + Math.random().toString(36).slice(2), fach: DB.fach }, data);
+            await sbInsert('inhalte', [newRow]);
+            saved = newRow;
+          } else {
+            saved = await sbUpdate('inhalte', curEntry.id, data);
+            if (!saved) saved = Object.assign({}, curEntry, data);
+          }
+          closeEntryModal();
+          if (onSaved) onSaved(saved);
+        } catch(e) {
+          alert('Fehler beim Speichern: ' + e.message);
+          saveBtn.disabled = false; saveBtn.textContent = '✓ Speichern';
+        }
+      };
+      right.appendChild(saveBtn);
+      footer.appendChild(right);
+      modal.appendChild(footer);
+    }
+  }
+
+  renderModal(mode, entry);
+  document.body.appendChild(overlay);
+
+  function onEsc(e) { if (e.key === 'Escape') { closeEntryModal(); document.removeEventListener('keydown', onEsc); } }
+  document.addEventListener('keydown', onEsc);
+}
+
+// ── Modal: Ansichts-Body ──────────────────────────────────────────
+function buildModalViewBody(a) {
+  const body = mk('div', 'db-modal-body');
+
+  // Links: Hauptinhalt
+  const left = mk('div', 'db-modal-left');
+
+  function secTitle(t) { left.appendChild(tx('div', 'db-modal-section-title', t)); }
+  function mText(val, cls) {
+    const d = tx('div', 'db-modal-text' + (cls ? ' ' + cls : ''), val);
+    left.appendChild(d);
+  }
+
+  if (a.inhalt) { secTitle('Inhalt / Aufgabe'); mText(a.inhalt); }
+  if (a.anforderung) { secTitle('Anforderung'); mText(a.anforderung, 'db-modal-anforderung'); }
+  if (a.thema && a.thema !== a.inhalt) { secTitle('Thema'); mText(a.thema); }
+  if (!a.inhalt && !a.anforderung && !a.thema) {
+    left.appendChild(tx('div', 'db-modal-text', '(Kein Inhalt hinterlegt)'));
+  }
+
+  body.appendChild(left);
+
+  // Rechts: Metadaten
+  const right = mk('div', 'db-modal-right');
+
+  function meta(label, val, chip) {
+    const f = mk('div', 'db-modal-field');
+    f.appendChild(tx('div', 'db-modal-field-label', label));
+    if (chip) f.appendChild(chip);
+    else f.appendChild(tx('div', 'db-modal-field-value', val != null ? String(val) : '–'));
+    right.appendChild(f);
+  }
+  function secR(t) { right.appendChild(tx('div', 'db-modal-section-title', t)); }
+
+  // Quelle
+  secR('Quelle');
+  meta('Herkunft', (!a.herkunft || a.herkunft === 'schulbuch') ? '📖 Schulbuch' : '📄 Eigenmaterial');
+  if (a.buch)           meta('Buch', a.buch);
+  if (a.uk_titel || a.kapitel_titel) meta('Kapitel', a.uk_titel || a.kapitel_titel);
+  if (a.seite != null)  meta('Seite', a.seite);
+  if (a.nr)             meta('Nr.', a.nr);
+  if (a.jahrgang)       meta('Jahrgang', 'Klasse ' + a.jahrgang);
+
+  // Prüfungsperspektive
+  secR('Prüfungsperspektive');
+  if (a.operator)      meta('Operator', null, mkChip(a.operator, opColor(a.operator)));
+  if (a.schwierigkeit) meta('Schwierigkeit', null, mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit]));
+  if (a.umfang)        meta('Umfang', a.umfang);
+  if (a.hat_loesung != null) meta('Lösung', a.hat_loesung ? '✓ vorhanden' : '✗ ohne');
+  if (!a.operator && !a.schwierigkeit && !a.umfang && a.hat_loesung == null) {
+    right.appendChild(tx('div', 'db-modal-field-value', '(keine Daten)'));
+  }
+
+  // Kompetenzen
+  if (a.kompetenzen && a.kompetenzen.length) {
+    secR('Kompetenzen');
+    const chips = mk('div', '');
+    chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
+    (Array.isArray(a.kompetenzen) ? a.kompetenzen : [a.kompetenzen]).forEach(function(k) {
+      chips.appendChild(mkChip(k, '#6d28d9'));
+    });
+    right.appendChild(chips);
+  }
+
+  body.appendChild(right);
+  return body;
+}
+
+// ── Modal: Formular ───────────────────────────────────────────────
+function buildModalForm(a, mode) {
+  const body = mk('div', 'db-modal-body db-modal-form');
+
+  // Links: Textfelder
+  const left = mk('div', 'db-modal-left');
+
+  function fldTextarea(label, key, placeholder, rows) {
+    const w = mk('div', 'db-form-field');
+    const lbl = document.createElement('label'); lbl.textContent = label;
+    w.appendChild(lbl);
+    const ta = document.createElement('textarea');
+    ta.className = 'db-form-textarea'; ta.rows = rows || 5;
+    ta.placeholder = placeholder || ''; ta.value = a[key] || '';
+    ta.dataset.key = key;
+    w.appendChild(ta);
+    return w;
+  }
+
+  function fldInp(label, key, placeholder, type) {
+    const w = mk('div', 'db-form-field');
+    const lbl = document.createElement('label'); lbl.textContent = label;
+    w.appendChild(lbl);
+    const inp = document.createElement('input');
+    inp.className = 'db-form-inp'; inp.type = type || 'text';
+    inp.placeholder = placeholder || ''; inp.value = a[key] != null ? a[key] : '';
+    inp.dataset.key = key;
+    w.appendChild(inp);
+    return w;
+  }
+
+  left.appendChild(fldTextarea('Inhalt / Aufgabenstellung', 'inhalt', 'Was steht in der Aufgabe?', 6));
+  left.appendChild(fldTextarea('Anforderung', 'anforderung', 'Was sollen Schülerinnen konkret tun?', 3));
+  left.appendChild(fldInp('Thema', 'thema', 'z.B. Gleichsetzungsverfahren'));
+  body.appendChild(left);
+
+  // Rechts: Metadaten
+  const right = mk('div', 'db-modal-right');
+
+  function fldSel(label, key, opts) {
+    const w = mk('div', 'db-form-field');
+    const lbl = document.createElement('label'); lbl.textContent = label;
+    w.appendChild(lbl);
+    const sel = document.createElement('select');
+    sel.className = 'db-form-sel'; sel.dataset.key = key;
+    [['', '–']].concat(opts).forEach(function(opt) {
+      const o = document.createElement('option');
+      o.value = opt[0]; o.textContent = opt[1];
+      if (String(a[key] || '') === opt[0]) o.selected = true;
+      sel.appendChild(o);
+    });
+    w.appendChild(sel);
+    return w;
+  }
+
+  // Quelle
+  right.appendChild(tx('div', 'db-form-section-title', 'Quelle'));
+  right.appendChild(fldSel('Herkunft', 'herkunft', [['schulbuch','📖 Schulbuch'],['eigenmaterial','📄 Eigenmaterial']]));
+  right.appendChild(fldInp('Buch / Titel', 'buch', 'z.B. Lambacher Schweizer 7'));
+  right.appendChild(fldInp('Kapitel', 'kapitel_titel', 'z.B. Lineare Gleichungssysteme'));
+
+  const seiteNr = mk('div', 'db-form-row');
+  seiteNr.appendChild(fldInp('Seite', 'seite', '', 'number'));
+  seiteNr.appendChild(fldInp('Nr.', 'nr', 'z.B. 7a'));
+  right.appendChild(seiteNr);
+
+  // Klassifizierung
+  right.appendChild(tx('div', 'db-form-section-title', 'Klassifizierung'));
+  right.appendChild(fldSel('Fach', 'fach', FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; })));
+  right.appendChild(fldInp('Jahrgang', 'jahrgang', '5–10', 'number'));
+  right.appendChild(fldSel('Operator', 'operator', Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; })));
+  right.appendChild(fldSel('Schwierigkeit', 'schwierigkeit', [['grundlegend','○ grundlegend'],['standard','◑ standard'],['anspruchsvoll','● anspruchsvoll']]));
+  right.appendChild(fldSel('Umfang', 'umfang', [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']]));
+
+  const loesW = mk('div', 'db-form-field');
+  const loesLbl = document.createElement('label'); loesLbl.textContent = 'Mit Lösung';
+  loesW.appendChild(loesLbl);
+  const loesChk = document.createElement('input');
+  loesChk.type = 'checkbox'; loesChk.dataset.key = 'hat_loesung';
+  loesChk.checked = !!a.hat_loesung;
+  loesChk.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:var(--pri);margin-top:2px;';
+  loesW.appendChild(loesChk);
+  right.appendChild(loesW);
+
+  body.appendChild(right);
+
+  function getData() {
+    const data = {};
+    body.querySelectorAll('[data-key]').forEach(function(el) {
+      const k = el.dataset.key;
+      if (el.type === 'checkbox') data[k] = el.checked;
+      else if (el.type === 'number') data[k] = el.value !== '' ? Number(el.value) : null;
+      else data[k] = el.value.trim() || null;
+    });
+    return data;
+  }
+
+  return { formEl: body, getData };
 }
 
 // ── Render ────────────────────────────────────────────────────────

@@ -89,6 +89,26 @@ async function sbSelect(table, { filters = {}, fts = null, limit = 50, offset = 
   return await res.json();
 }
 
+// Einzelne Zeile aktualisieren (PATCH per id)
+async function sbUpdate(table, id, changes) {
+  const url = _URL + '/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id);
+  const res = await fetch(url, {
+    method: 'PATCH',
+    headers: { ..._H(), 'Prefer': 'return=representation' },
+    body: JSON.stringify(changes),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  const arr = await res.json();
+  return arr[0] || null;
+}
+
+// Einzelne Zeile löschen (DELETE per id)
+async function sbDelete(table, id) {
+  const url = _URL + '/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id);
+  const res = await fetch(url, { method: 'DELETE', headers: _H() });
+  if (!res.ok) throw new Error(await res.text());
+}
+
 // Anzahl Zeilen in einer Tabelle (optional mit eq-Filtern)
 async function sbCount(table, filters = {}) {
   let url = _URL + '/rest/v1/' + table + '?select=id';

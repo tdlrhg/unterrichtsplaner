@@ -363,10 +363,11 @@ function buildLanding(container) {
 function dbGroupByParent(rows) {
   var groups = {}, order = [];
   rows.forEach(function(r) {
-    var parent = String(r.nr || '').replace(/[a-zA-Z]+$/, '').trim() || String(r.nr || '?');
-    if (!groups[parent]) { groups[parent] = { key: parent, aufgabenstellung: null, items: [] }; order.push(parent); }
-    if (!groups[parent].aufgabenstellung && r.aufgabenstellung) groups[parent].aufgabenstellung = r.aufgabenstellung;
-    groups[parent].items.push(r);
+    var parentNr = String(r.nr || '').replace(/[a-zA-Z]+$/, '').trim() || String(r.nr || '?');
+    var key = (r.buch || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr;
+    if (!groups[key]) { groups[key] = { key: parentNr, aufgabenstellung: null, items: [] }; order.push(key); }
+    if (!groups[key].aufgabenstellung && r.aufgabenstellung) groups[key].aufgabenstellung = r.aufgabenstellung;
+    groups[key].items.push(r);
   });
   return order.map(function(k) { return groups[k]; });
 }

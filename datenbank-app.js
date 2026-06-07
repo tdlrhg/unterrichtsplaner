@@ -853,16 +853,12 @@ async function buildFachView(container) {
   hdr.appendChild(neuBtn);
   container.appendChild(hdr);
 
-  // ── Suche ─────────────────────────────────────────────────────
-  const searchRow = mk('div', '');
-  searchRow.style.cssText = 'padding:9px 16px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--bord);';
+  // ── Suche (wird in Filterleiste eingebaut) ────────────────────
   const searchInp = document.createElement('input');
   searchInp.type = 'text'; searchInp.className = 'finp';
   searchInp.placeholder = '🔍 Suchen…';
   searchInp.value = DB.suchtext;
-  searchInp.style.cssText = 'flex:1;max-width:400px;';
-  searchRow.appendChild(searchInp);
-  container.appendChild(searchRow);
+  searchInp.style.cssText = 'width:160px;flex-shrink:0;font-size:12px;padding:3px 8px;height:28px;';
 
   // ── Filter-Leiste (Platzhalter, wird nach load-Definition befüllt) ─
   const filterContainer = mk('div', '');
@@ -962,7 +958,7 @@ async function buildFachView(container) {
   neuBtn.onclick = function() { openEntryModal(null, 'create', function() { DB.offset = 0; load(); }); };
 
   // Filter-Leiste einbauen
-  buildFilterBar(filterContainer, load);
+  buildFilterBar(filterContainer, load, searchInp);
 
   load();
 }
@@ -1027,11 +1023,17 @@ function renderRow(a, onSaved, compact) {
 }
 
 // ── Filter-Leiste ─────────────────────────────────────────────────
-function buildFilterBar(containerEl, loadFn) {
+function buildFilterBar(containerEl, loadFn, searchInp) {
   containerEl.innerHTML = '';
   const bar = mk('div', 'db-filter-bar');
 
-  function refresh() { loadFn(); buildFilterBar(containerEl, loadFn); }
+  function refresh() { loadFn(); buildFilterBar(containerEl, loadFn, searchInp); }
+
+  // Suchfeld
+  if (searchInp) {
+    bar.appendChild(searchInp);
+    const s = mk('div', 'db-filter-sep'); bar.appendChild(s);
+  }
 
   function fchipGroup(opts, dbKey) {
     const g = mk('div', 'db-filter-group');

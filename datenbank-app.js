@@ -358,6 +358,19 @@ function buildLanding(container) {
   buildBuecherregal(container);
 }
 
+// ── Aufgaben-Gruppierung ──────────────────────────────────────────
+// Gruppiert Zeilen nach führender Nummer: "8a","8b" → Gruppe "8"; "9" → Gruppe "9"
+function dbGroupByParent(rows) {
+  var groups = {}, order = [];
+  rows.forEach(function(r) {
+    var parent = String(r.nr || '').replace(/[a-zA-Z]+$/, '').trim() || String(r.nr || '?');
+    if (!groups[parent]) { groups[parent] = { key: parent, aufgabenstellung: null, items: [] }; order.push(parent); }
+    if (!groups[parent].aufgabenstellung && r.aufgabenstellung) groups[parent].aufgabenstellung = r.aufgabenstellung;
+    groups[parent].items.push(r);
+  });
+  return order.map(function(k) { return groups[k]; });
+}
+
 // ── Import-View ───────────────────────────────────────────────────
 
 const IMP_KI_PROMPT = `Du analysierst eine Seite aus einem Schulbuch oder Unterrichtsmaterial (Gymnasium, Mathematik oder Naturwissenschaften).
@@ -523,11 +536,63 @@ function buildImportView(container) {
   };
 
   // ── Ergebnis rendern ──────────────────────────────────────────
+  function miniSel(opts, current, onChange) {
+    var s = document.createElement('select'); s.className = 'finp';
+    s.style.cssText = 'font-size:12px;padding:2px 8px;height:auto;width:auto;';
+    opts.forEach(function(o) {
+      var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1];
+      if (current === o[0]) op.selected = true;
+      s.appendChild(op);
+    });
+    s.onchange = function() { onChange(s.value); };
+    return s;
+  }
+
+  function buildAufgabeCard(a, indent) {
+    var card = mk('div', '');
+    card.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;'
+      + (indent ? 'margin-left:20px;border-left:3px solid var(--acc, #2563eb);' : '');
+
+    var top = mk('div', ''); top.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
+    var nrLabel = tx('span', '', a.nr || '?');
+    nrLabel.style.cssText = 'font-weight:700;font-size:13px;min-width:28px;color:var(--tx2);';
+    top.appendChild(nrLabel);
+
+    top.appendChild(miniSel(
+      [['berechnen','berechnen'],['begründen','begründen'],['erklären','erklären'],['zeichnen','zeichnen'],['messen','messen'],['konstruieren','konstruieren'],['beschreiben','beschreiben'],['vergleichen','vergleichen'],['ausfüllen','ausfüllen'],['MC','MC']],
+      a.operator, function(v) { a.operator = v; }
+    ));
+    top.appendChild(miniSel(
+      [['grundlegend','○ grundlegend'],['standard','◑ standard'],['anspruchsvoll','● anspruchsvoll']],
+      a.schwierigkeit || a.schwierigkeitsstufe, function(v) { a.schwierigkeit = v; }
+    ));
+    top.appendChild(miniSel(
+      [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']],
+      a.umfang, function(v) { a.umfang = v; }
+    ));
+    card.appendChild(top);
+
+    var anf = document.createElement('textarea'); anf.className = 'finp';
+    anf.style.cssText = 'font-size:12px;resize:vertical;min-height:40px;';
+    anf.placeholder = 'Anforderung an Schülerinnen';
+    anf.value = a.anforderung || '';
+    anf.oninput = function() { a.anforderung = anf.value.trim(); };
+    card.appendChild(anf);
+
+    var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';
+    if (aufgText) {
+      var textDiv = tx('div', '', aufgText);
+      textDiv.style.cssText = 'font-size:12px;color:var(--tx2);border-left:3px solid var(--border);padding-left:10px;line-height:1.5;';
+      card.appendChild(textDiv);
+    }
+    return card;
+  }
+
   function renderResults() {
     resultsWrap.innerHTML = '';
     var rHdr = mk('div', '');
     rHdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:4px 0;';
-    var rTitle = tx('div', '', _aufgaben.length + ' Aufgaben erkannt — bitte prüfen und speichern');
+    var rTitle = tx('div', '', _aufgaben.length + ' Einträge erkannt — bitte prüfen und speichern');
     rTitle.style.cssText = 'font-weight:600;font-size:14px;';
     rHdr.appendChild(rTitle);
     var saveAllBtn = btn('✓ Alle ' + _aufgaben.length + ' speichern', 'btn btn-pri btn-sm');
@@ -535,59 +600,32 @@ function buildImportView(container) {
     rHdr.appendChild(saveAllBtn);
     resultsWrap.appendChild(rHdr);
 
-    _aufgaben.forEach(function(a, i) {
-      var card = mk('div', '');
-      card.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;';
+    var groups = dbGroupByParent(_aufgaben);
+    groups.forEach(function(g) {
+      var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);
 
-      // Zeile 1: Nr + editierbare Chips
-      var top = mk('div', ''); top.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
-      var nrLabel = tx('span', '', 'A' + (a.nr || (i + 1)));
-      nrLabel.style.cssText = 'font-weight:700;font-size:13px;min-width:32px;';
-      top.appendChild(nrLabel);
-
-      function miniSel(opts, current, onChange) {
-        var s = document.createElement('select'); s.className = 'finp';
-        s.style.cssText = 'font-size:12px;padding:2px 8px;height:auto;width:auto;';
-        opts.forEach(function(o) {
-          var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1];
-          if (current === o[0]) op.selected = true;
-          s.appendChild(op);
-        });
-        s.onchange = function() { onChange(s.value); };
-        return s;
+      if (!hasSubtasks) {
+        // Einzelaufgabe — direkt als Karte
+        resultsWrap.appendChild(buildAufgabeCard(g.items[0], false));
+        return;
       }
 
-      top.appendChild(miniSel(
-        [['berechnen','berechnen'],['begründen','begründen'],['erklären','erklären'],['zeichnen','zeichnen'],['messen','messen'],['konstruieren','konstruieren'],['beschreiben','beschreiben'],['vergleichen','vergleichen'],['ausfüllen','ausfüllen'],['MC','MC']],
-        a.operator, function(v) { a.operator = v; }
-      ));
-      top.appendChild(miniSel(
-        [['grundlegend','○ grundlegend'],['standard','◑ standard'],['anspruchsvoll','● anspruchsvoll']],
-        a.schwierigkeit || a.schwierigkeitsstufe, function(v) { a.schwierigkeit = v; }
-      ));
-      top.appendChild(miniSel(
-        [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']],
-        a.umfang, function(v) { a.umfang = v; }
-      ));
-      card.appendChild(top);
+      // Gruppe mit Teilaufgaben
+      var groupWrap = mk('div', '');
+      groupWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
 
-      // Anforderung (editierbar)
-      var anf = document.createElement('textarea'); anf.className = 'finp';
-      anf.style.cssText = 'font-size:12px;resize:vertical;min-height:44px;';
-      anf.placeholder = 'Anforderung an Schülerinnen';
-      anf.value = a.anforderung || '';
-      anf.oninput = function() { a.anforderung = anf.value.trim(); };
-      card.appendChild(anf);
+      var groupHdr = mk('div', '');
+      groupHdr.style.cssText = 'padding:6px 4px 2px;font-weight:700;font-size:13px;color:var(--tx1);';
+      var hdrText = 'Aufgabe ' + g.key;
+      if (g.aufgabenstellung) hdrText += ' · ' + g.aufgabenstellung.slice(0, 100);
+      groupHdr.textContent = hdrText;
+      groupWrap.appendChild(groupHdr);
 
-      // Aufgabentext (readonly)
-      var aufgText = [a.aufgabenstellung, a.text].filter(Boolean).join(' ');
-      if (aufgText) {
-        var textDiv = tx('div', '', aufgText);
-        textDiv.style.cssText = 'font-size:12px;color:var(--tx2);border-left:3px solid var(--border);padding-left:10px;line-height:1.5;';
-        card.appendChild(textDiv);
-      }
+      g.items.forEach(function(a) {
+        groupWrap.appendChild(buildAufgabeCard(a, true));
+      });
 
-      resultsWrap.appendChild(card);
+      resultsWrap.appendChild(groupWrap);
     });
   }
 
@@ -837,8 +875,26 @@ async function buildFachView(container) {
       return;
     }
 
-    rows.forEach(function(row) {
-      wrap.appendChild(renderRow(row, function() { DB.offset = 0; load(); }));
+    var groups = dbGroupByParent(rows);
+    groups.forEach(function(g) {
+      var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);
+      if (!hasSubtasks) {
+        wrap.appendChild(renderRow(g.items[0], function() { DB.offset = 0; load(); }));
+        return;
+      }
+      // Gruppenheader
+      var ghdr = mk('div', '');
+      ghdr.style.cssText = 'padding:8px 12px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;';
+      var hText = 'Aufgabe ' + g.key;
+      if (g.aufgabenstellung) hText += ' · ' + g.aufgabenstellung.slice(0, 90);
+      ghdr.textContent = hText;
+      wrap.appendChild(ghdr);
+      g.items.forEach(function(row) {
+        var rowEl = renderRow(row, function() { DB.offset = 0; load(); });
+        rowEl.style.marginLeft = '16px';
+        rowEl.style.borderLeft = '3px solid var(--acc, #2563eb)';
+        wrap.appendChild(rowEl);
+      });
     });
 
     if (rows.length === LIMIT) {

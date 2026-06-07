@@ -74,7 +74,7 @@ function buildDBSidebar(sb) {
   homeInner.appendChild(tx('span', '', '🏠'));
   homeInner.appendChild(tx('span', 'sb-item-label', 'Übersicht'));
   homeRow.appendChild(homeInner);
-  homeRow.onclick = () => { DB.view = 'landing'; DB.fach = null; dbRender(); };
+  homeRow.onclick = () => { DB.view = 'landing'; DB.fach = null; DB.buch = null; DB.herkunft = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
   sb.appendChild(homeRow);
 
   sb.appendChild(mk('div', 'sb-sep'));
@@ -136,7 +136,7 @@ const REGAL_FARBEN = {
 };
 const TYP_SYMBOL = { schulbuch: '📚', sammlung: '📂', aufgabenpool: '🗃' };
 const TYP_ORDER  = { schulbuch: 0, sammlung: 1, aufgabenpool: 2 };
-var SHELF_H = 155; // Regalhöhe (px)
+const SHELF_H = 155; // Regalhöhe (px)
 
 function jgNorm(val) {
   if (!val) return [];
@@ -203,7 +203,7 @@ function mkRegalRow(pillCfg, booksFn, hasSep) {
 }
 
 function buildBuecherregal(container) {
-  var fachOrder = ['mathe', 'bio', 'chemie'];
+  var fachOrder = FAECHER.map(function(f) { return f.key; });
   var byFach = {};
   SCHULBUCHDB.forEach(function(b) {
     var f = b.fach || 'sonstige';
@@ -294,7 +294,7 @@ function buildBuecherregal(container) {
 }
 
 // ── Landing Page ──────────────────────────────────────────────────
-async function buildLanding(container) {
+function buildLanding(container) {
   const hdr = mk('div', 'c-hdr');
   const left = mk('div', '');
   left.appendChild(tx('div', 'c-title', 'Material-Datenbank'));
@@ -362,10 +362,11 @@ async function buildFachView(container) {
     }).catch(function() { return []; });
 
     wrap.innerHTML = '';
+    var herkunftSuffix = DB.buch ? '' : DB.herkunft === 'schulbuch' ? ' · Schulbuch' : DB.herkunft === 'eigenmaterial' ? ' · Eigenmaterial' : '';
     subT.textContent = rows.length + (rows.length === LIMIT ? '+' : '') + ' Einträge'
       + (DB.buch ? ' · 📖 ' + DB.buch : '')
       + (DB.suchtext ? ' · „' + DB.suchtext + '"' : '')
-      + (!DB.buch && DB.herkunft === 'schulbuch' ? ' · Schulbuch' : !DB.buch && DB.herkunft === 'eigenmaterial' ? ' · Eigenmaterial' : '');
+      + herkunftSuffix;
 
     if (!rows.length) {
       const e = tx('div', '', 'Keine Einträge gefunden.');

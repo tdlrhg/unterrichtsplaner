@@ -6,6 +6,7 @@
     .then(function(r) { return r.json(); })
     .catch(function() { return {}; });
   const q = v.built ? '?v=' + encodeURIComponent(v.built) : '';
+  window.__VERSION_Q__ = q; // für Inline-Funktionen (z.B. pdfjsLib.workerSrc)
 
   for (const item of (window.__SCRIPTS__ || [])) {
     await new Promise(function(ok) {

@@ -19,23 +19,23 @@ const FAECHER = [
 
 // ── Spalten-Konfiguration ──────────────────────────────────────────
 const COLS = [
-  { key: 'src',    label: 'Quelle',        hCls: 'db-col-hdr-src',    cCls: 'db-col-src'    },
+  { key: 'src',    label: 'Aufgabe',       hCls: 'db-col-hdr-src',    cCls: 'db-col-src'    },
   { key: 'inhalt', label: 'Inhalt',        hCls: 'db-col-hdr-inhalt', cCls: 'db-col-inhalt' },
-  { key: 'op',     label: 'Operator',      hCls: 'db-col-hdr-op',     cCls: 'db-col-op'     },
+  { key: 'seite',  label: 'Seite',         hCls: 'db-col-hdr-op',     cCls: 'db-col-op'     },
   { key: 'schw',   label: 'Schwierigkeit', hCls: 'db-col-hdr-schw',   cCls: 'db-col-schw'   },
 ];
 
 var COL_CONFIG = (function() {
   try {
     var s = JSON.parse(localStorage.getItem('db_col_config') || 'null');
-    if (s && Array.isArray(s.order) && s.order.length === COLS.length &&
+    if (s && s.v === 2 && Array.isArray(s.order) && s.order.length === COLS.length &&
         Array.isArray(s.widths) && s.widths.length === COLS.length) return s;
   } catch(e) {}
-  return { order: [0,1,2,3], widths: [210, null, 130, 150] };
+  return { v: 2, order: [0,1,2,3], widths: [80, null, 80, 150] };
 })();
 
 function saveColConfig() {
-  try { localStorage.setItem('db_col_config', JSON.stringify(COL_CONFIG)); } catch(e) {}
+  try { localStorage.setItem('db_col_config', JSON.stringify({ ...COL_CONFIG, v: 2 })); } catch(e) {}
 }
 
 function colTemplate() {
@@ -1022,9 +1022,13 @@ function renderRow(a, onSaved, compact) {
   if (!compact && a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
   cells[1] = mid;
 
-  // Zelle 2: Operator
+  // Zelle 2: Seite
   var opCol = mk('div', 'db-col-op'); opCol.dataset.colIdx = 2;
-  if (a.operator) opCol.appendChild(mkChip(a.operator, opColor(a.operator)));
+  if (a.seite != null) {
+    var seiteLabel = tx('span', '', 'S. ' + a.seite);
+    seiteLabel.style.cssText = 'font-size:12px;color:var(--tx2);font-weight:600;';
+    opCol.appendChild(seiteLabel);
+  }
   cells[2] = opCol;
 
   // Zelle 3: Schwierigkeit

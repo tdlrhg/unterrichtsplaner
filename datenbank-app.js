@@ -638,10 +638,76 @@ function buildImportView(container) {
 
     try {
       await sbInsert('inhalte', rows);
-      statusEl.textContent = '✓ ' + rows.length + ' Aufgaben gespeichert.';
-      statusEl.style.color = '#16a34a';
-      resultsWrap.innerHTML = '';
       _aufgaben = [];
+
+      // ── Ende-Screen ───────────────────────────────────────────
+      wrap.innerHTML = '';
+      var done = mk('div', '');
+      done.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:28px;padding:60px 20px;text-align:center;';
+
+      var check = tx('div', '', '✓');
+      check.style.cssText = 'font-size:48px;color:#16a34a;line-height:1;';
+      done.appendChild(check);
+
+      var msg = tx('div', '', rows.length + ' Aufgaben gespeichert');
+      msg.style.cssText = 'font-size:22px;font-weight:700;color:var(--tx1);';
+      done.appendChild(msg);
+
+      var sub = tx('div', '', buch + (seite ? ' · Seite ' + seite : ''));
+      sub.style.cssText = 'font-size:14px;color:var(--tx2);margin-top:-16px;';
+      done.appendChild(sub);
+
+      var actions = mk('div', '');
+      actions.style.cssText = 'display:flex;flex-direction:column;gap:10px;width:100%;max-width:360px;';
+
+      function actionBtn(label, desc, onclick) {
+        var b = mk('div', '');
+        b.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;cursor:pointer;text-align:left;transition:background .15s;';
+        b.onmouseenter = function() { b.style.background = 'var(--hover,#f1f5f9)'; };
+        b.onmouseleave = function() { b.style.background = 'var(--card)'; };
+        b.appendChild(tx('div', '', label)).style.cssText = 'font-weight:600;font-size:14px;';
+        b.appendChild(tx('div', '', desc)).style.cssText = 'font-size:12px;color:var(--tx2);margin-top:2px;';
+        b.onclick = onclick;
+        return b;
+      }
+
+      actions.appendChild(actionBtn(
+        '↑ Nächste Seite hochladen',
+        'Gleiche Quelle · Seite ' + (seite ? seite + 1 : '?'),
+        function() {
+          seiteInp.value = seite ? seite + 1 : '';
+          fileLabel.textContent = '📄 PDF oder Bild hierher ziehen — oder klicken zum Auswählen';
+          fileLabel.style.color = 'var(--tx2)';
+          _file = null;
+          statusEl.textContent = ''; statusEl.style.color = 'var(--tx2)';
+          wrap.innerHTML = '';
+          // Formular-Elemente wieder einbauen
+          wrap.appendChild(metaCard);
+          wrap.appendChild(fileCard);
+          wrap.appendChild(bottomRow);
+          wrap.appendChild(resultsWrap);
+        }
+      ));
+
+      actions.appendChild(actionBtn(
+        '→ Gespeicherte Einträge ansehen',
+        fachInfo(fach).icon + ' ' + fachInfo(fach).label + ' · ' + buch,
+        function() {
+          DB.view = 'fach'; DB.fach = fach; DB.buch = buch || null;
+          DB.herkunft = 'schulbuch'; DB.suchtext = ''; DB.offset = 0;
+          dbRender();
+        }
+      ));
+
+      actions.appendChild(actionBtn(
+        '✕ Neues Material importieren',
+        'Andere Quelle, anderes Fach',
+        function() { DB.view = 'import'; dbRender(); }
+      ));
+
+      done.appendChild(actions);
+      wrap.appendChild(done);
+
     } catch(e) {
       if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '✓ Alle ' + rows.length + ' speichern'; }
       statusEl.textContent = '❌ Speichern fehlgeschlagen: ' + e.message;

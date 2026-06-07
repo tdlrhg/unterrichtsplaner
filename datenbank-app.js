@@ -554,41 +554,38 @@ function buildImportView(container) {
 
   function buildAufgabeCard(a, indent) {
     var card = mk('div', '');
-    card.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;'
-      + (indent ? 'margin-left:20px;border-left:3px solid var(--acc, #2563eb);' : '');
+    card.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:0;'
+      + (indent ? 'margin-left:20px;border-left:3px solid var(--acc,#2563eb);' : '');
 
-    var top = mk('div', ''); top.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;';
-    var nrLabel = tx('span', '', a.nr || '?');
-    nrLabel.style.cssText = 'font-weight:700;font-size:13px;min-width:28px;color:var(--tx2);';
-    top.appendChild(nrLabel);
+    // ── Einzeilige Hauptzeile ──────────────────────────────────
+    var row = mk('div', ''); row.style.cssText = 'display:flex;align-items:center;gap:8px;min-height:32px;';
 
-    top.appendChild(miniSel(
+    var nrLabel = tx('span', '', 'A' + (a.nr || '?'));
+    nrLabel.style.cssText = 'font-weight:700;font-size:12px;min-width:36px;color:var(--tx2);flex-shrink:0;';
+    row.appendChild(nrLabel);
+
+    row.appendChild(miniSel(
       [['berechnen','berechnen'],['begründen','begründen'],['erklären','erklären'],['zeichnen','zeichnen'],['messen','messen'],['konstruieren','konstruieren'],['beschreiben','beschreiben'],['vergleichen','vergleichen'],['ausfüllen','ausfüllen'],['MC','MC']],
       a.operator, function(v) { a.operator = v; }
     ));
-    top.appendChild(miniSel(
+    row.appendChild(miniSel(
       [['grundlegend','○ grundlegend'],['standard','◑ standard'],['anspruchsvoll','● anspruchsvoll']],
       a.schwierigkeit || a.schwierigkeitsstufe, function(v) { a.schwierigkeit = v; }
     ));
-    top.appendChild(miniSel(
+    row.appendChild(miniSel(
       [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']],
       a.umfang, function(v) { a.umfang = v; }
     ));
-    card.appendChild(top);
 
-    var anf = document.createElement('textarea'); anf.className = 'finp';
-    anf.style.cssText = 'font-size:12px;resize:vertical;min-height:40px;';
-    anf.placeholder = 'Anforderung an Schülerinnen';
-    anf.value = a.anforderung || '';
-    anf.oninput = function() { a.anforderung = anf.value.trim(); };
-    card.appendChild(anf);
-
+    // Aufgabentext klein dahinter
     var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';
     if (aufgText) {
-      var textDiv = tx('div', '', aufgText);
-      textDiv.style.cssText = 'font-size:12px;color:var(--tx2);border-left:3px solid var(--border);padding-left:10px;line-height:1.5;';
-      card.appendChild(textDiv);
+      var preview = tx('span', '', aufgText.slice(0, 80) + (aufgText.length > 80 ? '…' : ''));
+      preview.style.cssText = 'font-size:11px;color:var(--tx3);flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
+      row.appendChild(preview);
     }
+
+    card.appendChild(row);
     return card;
   }
 
@@ -607,26 +604,19 @@ function buildImportView(container) {
     var groups = dbGroupByParent(_aufgaben);
     groups.forEach(function(g) {
       var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);
-
-      if (!hasSubtasks) {
-        // Einzelaufgabe — direkt als Karte
-        resultsWrap.appendChild(buildAufgabeCard(g.items[0], false));
-        return;
-      }
-
-      // Gruppe mit Teilaufgaben
       var groupWrap = mk('div', '');
-      groupWrap.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+      groupWrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
 
+      // Gruppenheader — immer, auch für Einzelaufgaben
       var groupHdr = mk('div', '');
-      groupHdr.style.cssText = 'padding:6px 4px 2px;font-weight:700;font-size:13px;color:var(--tx1);';
-      var hdrText = 'Aufgabe ' + g.key;
-      if (g.aufgabenstellung) hdrText += ' · ' + g.aufgabenstellung.slice(0, 100);
+      groupHdr.style.cssText = 'padding:8px 4px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;';
+      var hdrText = 'AUFGABE ' + g.key;
+      if (g.aufgabenstellung) hdrText += ' · ' + g.aufgabenstellung.slice(0, 80);
       groupHdr.textContent = hdrText;
       groupWrap.appendChild(groupHdr);
 
       g.items.forEach(function(a) {
-        groupWrap.appendChild(buildAufgabeCard(a, true));
+        groupWrap.appendChild(buildAufgabeCard(a, hasSubtasks));
       });
 
       resultsWrap.appendChild(groupWrap);

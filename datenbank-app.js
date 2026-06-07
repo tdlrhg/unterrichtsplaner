@@ -1,5 +1,12 @@
 // ── Material-Datenbank App ────────────────────────────────────────
 
+// Shims damit methoden.js / didaktik.js ohne Änderung funktionieren
+var METHDB    = [];
+var DIDARTDB  = [];
+var DIDAKTIKDB = {};
+var S = null; // wird nach DB-Init gesetzt
+function render() { dbRender(); }
+
 const FAECHER = [
   { key: 'mathe',  label: 'Mathematik', icon: '📐', color: '#2563eb' },
   { key: 'bio',    label: 'Biologie',   icon: '🌿', color: '#16a34a' },
@@ -73,6 +80,24 @@ function buildDBSidebar(sb) {
     row.onclick = () => { DB.view = 'fach'; DB.fach = f.key; DB.herkunft = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
     sb.appendChild(row);
   });
+
+  sb.appendChild(mk('div', 'sb-sep'));
+
+  var methRow = mk('div', 'sb-item' + (DB.view === 'methoden' ? ' active' : ''));
+  var methInner = mk('div', ''); methInner.style.cssText = 'display:flex;gap:8px;align-items:center;';
+  methInner.appendChild(tx('span', '', '🛠️'));
+  methInner.appendChild(tx('span', 'sb-item-label', 'Methoden'));
+  methRow.appendChild(methInner);
+  methRow.onclick = function() { DB.view = 'methoden'; DB.fach = null; dbRender(); };
+  sb.appendChild(methRow);
+
+  var didRow = mk('div', 'sb-item' + (DB.view === 'didaktik' ? ' active' : ''));
+  var didInner = mk('div', ''); didInner.style.cssText = 'display:flex;gap:8px;align-items:center;';
+  didInner.appendChild(tx('span', '', '🗺️'));
+  didInner.appendChild(tx('span', 'sb-item-label', 'Didaktik'));
+  didRow.appendChild(didInner);
+  didRow.onclick = function() { DB.view = 'didaktik'; DB.fach = null; dbRender(); };
+  sb.appendChild(didRow);
 
   const handle = mk('div', 'sb-resize-handle');
   sb.appendChild(handle);
@@ -154,6 +179,27 @@ async function buildLanding(container) {
       matRow.querySelector('span:last-child').textContent = '📄 ' + (mat != null ? mat : 0)   + ' Eigenmaterialien';
     }).catch(function() { countEl.textContent = '?'; });
   }
+
+  // ── Methoden & Didaktik Tiles ──────────────────────────────────
+  var extraTiles = [
+    { key: 'methoden',  icon: '🛠️', label: 'Methoden',  color: '#7c3aed', getCount: function() { return METHDB.length; },   sub: 'Unterrichtsmethoden' },
+    { key: 'didaktik',  icon: '🗺️', label: 'Didaktik',  color: '#0891b2', getCount: function() { return DIDARTDB.length; },  sub: 'Artikel & Wissensbausteine' },
+  ];
+  extraTiles.forEach(function(t) {
+    var tile = mk('div', '');
+    tile.style.cssText = 'border:2px solid ' + t.color + '44;border-radius:16px;padding:32px 24px;cursor:pointer;transition:all .2s;background:' + t.color + '0a;display:flex;flex-direction:column;align-items:flex-start;gap:10px;';
+    tile.onmouseenter = function() { tile.style.background = t.color + '18'; tile.style.transform = 'translateY(-3px)'; tile.style.boxShadow = '0 8px 24px ' + t.color + '22'; };
+    tile.onmouseleave = function() { tile.style.background = t.color + '0a'; tile.style.transform = ''; tile.style.boxShadow = ''; };
+    tile.onclick = function() { DB.view = t.key; DB.fach = null; dbRender(); };
+    tile.appendChild(tx('div', '', t.icon)).style.fontSize = '40px';
+    tile.appendChild(tx('div', 'db-tile-label', t.label));
+    var cw = mk('div', ''); cw.style.cssText = 'display:flex;align-items:baseline;gap:6px;';
+    var cEl = tx('div', 'db-tile-count', t.getCount()); cEl.style.color = t.color;
+    cw.appendChild(cEl); cw.appendChild(tx('div', 'db-tile-sub', 'Einträge'));
+    tile.appendChild(cw);
+    tile.appendChild(tx('div', 'db-tile-sub', t.sub));
+    grid.appendChild(tile);
+  });
 }
 
 // ── Fach-Ansicht ──────────────────────────────────────────────────
@@ -358,11 +404,18 @@ function dbRender() {
     buildLanding(content);
   } else if (DB.view === 'fach') {
     buildFachView(content);
+  } else if (DB.view === 'methoden') {
+    content.appendChild(viewMethoden());
+  } else if (DB.view === 'didaktik') {
+    content.appendChild(viewDidaktik());
   }
 }
 
 // ── Init ──────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('DOMContentLoaded', async function() {
+  // S-Alias für methoden.js / didaktik.js (die schreiben S._xxx für State)
+  S = DB;
+
   const root = document.getElementById('root');
   root.innerHTML = '';
 
@@ -380,4 +433,12 @@ window.addEventListener('DOMContentLoaded', function() {
 
   root.appendChild(app);
   buildLanding(content);
+
+  // Methoden & Didaktik im Hintergrund laden
+  sbDownload('methoden.json').then(function(d) {
+    METHDB = Array.isArray(d) ? d : [];
+  }).catch(function() {});
+  sbDownload('didaktik-artikel.json').then(function(d) {
+    DIDARTDB = Array.isArray(d) ? d : [];
+  }).catch(function() {});
 });

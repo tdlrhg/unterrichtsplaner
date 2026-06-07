@@ -136,14 +136,9 @@ function buildSidebar() {
     () => { S.view = 'materialien'; S.sel = null; render(); }
   ));
   sb.appendChild(sbRow(
-    '🛠️ Methoden', null,
-    S.view === 'methoden',
-    () => { S.view = 'methoden'; S.sel = null; render(); }
-  ));
-  sb.appendChild(sbRow(
-    '🗺️ Didaktik', null,
-    S.view === 'didaktik',
-    () => { S.view = 'didaktik'; S.sel = null; render(); }
+    '📚 → Datenbank', null,
+    false,
+    () => { window.location.href = 'datenbank.html'; }
   ));
   sb.appendChild(sbRow(
     '📖 Bücher & Sammlungen', null,

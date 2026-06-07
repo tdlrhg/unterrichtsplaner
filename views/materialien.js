@@ -83,16 +83,10 @@ function viewMaterialien() {
       (m.dateipfadeWeitere || []).forEach(k => { if (k) referenced.add(k); });
     });
 
-    // R2 rekursiv auflisten
-    async function listAllR2(prefix) {
-      const { folders, files } = await r2List(prefix);
-      let all = files.map(f => f.key);
-      for (const folder of folders) all = all.concat(await listAllR2(folder));
-      return all;
-    }
-
     try {
-      const allKeys = await listAllR2('');
+      // delimiter='' → flaches Listing aller Keys, paginiert (kein rekursiver Folder-Scan)
+      const { files: allFiles } = await r2ListAll('', '');
+      const allKeys = allFiles.map(f => f.key);
       const orphans = allKeys.filter(k => !referenced.has(k));
 
       if (!orphans.length) {

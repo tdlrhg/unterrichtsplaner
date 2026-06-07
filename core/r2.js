@@ -75,8 +75,10 @@ async function r2Upload(key, blob, contentType = 'application/pdf') {
   return pub ? `${pub}/${key}` : urlStr;
 }
 
-// ── R2 List (ListObjectsV2) ──────────────────────────────────────
-async function r2List(prefix = '', delimiter = '/') {
+// ── R2 List (ListObjectsV2, eine Seite) ──────────────────────────
+// Gibt { folders, files, truncated, nextToken } zurück.
+// continuationToken: Wert aus dem vorherigen nextToken für Paginierung.
+async function r2List(prefix = '', delimiter = '/', continuationToken = '') {
   const endpoint  = (localStorage.getItem('r2_endpoint') || '').replace(/\/$/, '');
   const bucket    = localStorage.getItem('r2_bucket') || '';
   const accessKey = localStorage.getItem('r2_access_key') || '';
@@ -84,8 +86,9 @@ async function r2List(prefix = '', delimiter = '/') {
   if (!endpoint || !bucket || !accessKey || !secretKey) throw new Error('R2-Zugangsdaten fehlen.');
 
   const params = new URLSearchParams({ 'list-type': '2' });
-  if (prefix)    params.set('prefix', prefix);
-  if (delimiter) params.set('delimiter', delimiter);
+  if (prefix)            params.set('prefix', prefix);
+  if (delimiter)         params.set('delimiter', delimiter);
+  if (continuationToken) params.set('continuation-token', continuationToken);
 
   const urlObj = new URL(`${endpoint}/${bucket}?${params}`);
   const host   = urlObj.host;
@@ -115,11 +118,27 @@ async function r2List(prefix = '', delimiter = '/') {
   if (!res.ok) throw new Error(`R2 List fehlgeschlagen (${res.status})`);
   const xml  = await res.text();
   const doc  = new DOMParser().parseFromString(xml, 'text/xml');
-  const folders = [...doc.querySelectorAll('CommonPrefixes Prefix')].map(n => n.textContent);
-  const files   = [...doc.querySelectorAll('Contents')].map(n => ({
+  const folders   = [...doc.querySelectorAll('CommonPrefixes Prefix')].map(n => n.textContent);
+  const files     = [...doc.querySelectorAll('Contents')].map(n => ({
     key:  n.querySelector('Key')?.textContent || '',
     size: parseInt(n.querySelector('Size')?.textContent || '0'),
   }));
+  const truncated = doc.querySelector('IsTruncated')?.textContent === 'true';
+  const nextToken = doc.querySelector('NextContinuationToken')?.textContent || '';
+  return { folders, files, truncated, nextToken };
+}
+
+// ── R2 ListAll (paginiert, alle Objekte unter prefix) ────────────
+// delimiter=''  → flaches Listing aller Keys (kein Ordner-Splitting)
+// delimiter='/' → Ordner-Struktur (eine Ebene pro Aufruf)
+async function r2ListAll(prefix = '', delimiter = '/') {
+  let folders = [], files = [], token = '';
+  do {
+    const page = await r2List(prefix, delimiter, token);
+    folders    = folders.concat(page.folders);
+    files      = files.concat(page.files);
+    token      = page.nextToken;
+  } while (token);
   return { folders, files };
 }
 

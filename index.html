@@ -20,6 +20,7 @@ window.__SCRIPTS__ = [
   'lib/pdf.min.js',
   function() { if(typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js' + (window.__VERSION_Q__ || ''); },
   'lib/pdf-lib.min.js',
+  'core/media.js',
   'core/kalender-data.js',
   'core/kalender-view.js',
   'core/klp.js',

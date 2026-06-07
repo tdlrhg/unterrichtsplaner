@@ -777,44 +777,15 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
       if (!antKey) { alert('Kein Anthropic API-Key in den Einstellungen.'); return; }
       reBtn.disabled = true;
 
-      // Universelle Konvertierung: PDF oder Bild → Array von dataURLs
-      async function fileToDataURLs(key, buf) {
-        if (_isImage(key)) {
-          const ext = (key.split('.').pop() || 'jpg').toLowerCase();
-          const mime = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
-          // Blob → FileReader → base64 (zuverlässig für große Dateien)
-          const blob = new Blob([buf], { type: mime });
-          const dataUrl = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-          return [dataUrl];
-        }
-        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
-        const urls = [];
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          urls.push(await renderPdfPageDataURL(page));
-        }
-        await pdf.destroy();
-        return urls;
-      }
-
-      function toImgContent(dataURL) {
-        const [hdr, data] = dataURL.split(',');
-        return { type: 'image', source: { type: 'base64', media_type: hdr.match(/data:([^;]+)/)[1], data } };
-      }
-
+      // bufToDataURLs + dataURLtoBlock kommen aus core/media.js
       try {
         reBtn.textContent = '⏳ Lade Material…';
-        const matURLs = await fileToDataURLs(_matKey, await r2Download(_matKey));
+        const matURLs = await bufToDataURLs(_matKey, await r2Download(_matKey));
 
         const weitereURLs = [];
         for (const wKey of (mat.dateipfadeWeitere || [])) {
           reBtn.textContent = '⏳ Lade Datei 2…';
-          const urls = await fileToDataURLs(wKey, await r2Download(wKey));
+          const urls = await bufToDataURLs(wKey, await r2Download(wKey));
           weitereURLs.push(...urls);
         }
 
@@ -822,15 +793,15 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
         const _ktxKey = mat.kontextR2key || mat.kontextPfad;
         if (_ktxKey) {
           reBtn.textContent = '⏳ Lade Kontext…';
-          ktxURLs = await fileToDataURLs(_ktxKey, await r2Download(_ktxKey));
+          ktxURLs = await bufToDataURLs(_ktxKey, await r2Download(_ktxKey));
         }
 
         reBtn.textContent = '⏳ KI analysiert…';
         const content = [];
-        if (ktxURLs.length) { content.push({ type: 'text', text: '=== KONTEXT ===' }); ktxURLs.forEach(u => content.push(toImgContent(u))); }
+        if (ktxURLs.length) { content.push({ type: 'text', text: '=== KONTEXT ===' }); ktxURLs.forEach(u => content.push(dataURLtoBlock(u))); }
         content.push({ type: 'text', text: '=== MATERIAL ===' });
-        matURLs.forEach(u => content.push(toImgContent(u)));
-        if (weitereURLs.length) { content.push({ type: 'text', text: '=== WEITERES MATERIAL ===' }); weitereURLs.forEach(u => content.push(toImgContent(u))); }
+        matURLs.forEach(u => content.push(dataURLtoBlock(u)));
+        if (weitereURLs.length) { content.push({ type: 'text', text: '=== WEITERES MATERIAL ===' }); weitereURLs.forEach(u => content.push(dataURLtoBlock(u))); }
         const blockTitelRe = getBlockTitel(mat.blockId);
         content.push({ type: 'text', text: buildMaterialAnalysisPrompt({
           fach: mat.fach || [], materialtyp: mat.materialtyp || '',
@@ -877,40 +848,7 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
       if (mchkPanel) { mchkPanel.remove(); mchkPanel = null; }
       mchkBtn.disabled = true; mchkBtn.textContent = '⏳ Lade PDF…';
 
-      async function pdfPagesForMchk(r2key) {
-        const buf = await r2Download(r2key);
-        if (_isImage(r2key)) {
-          const ext = (r2key.split('.').pop() || 'jpg').toLowerCase();
-          const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
-          const blob = new Blob([buf], { type: mime });
-          const dataUrl = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-          return [dataUrl];
-        }
-        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
-        const urls = [];
-        for (let i = 1; i <= Math.min(pdf.numPages, 4); i++) {
-          const page = await pdf.getPage(i);
-          const vp0 = page.getViewport({ scale: 1 });
-          const vp = page.getViewport({ scale: 600 / vp0.width });
-          const cv = document.createElement('canvas');
-          cv.width = vp.width; cv.height = vp.height;
-          await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
-          urls.push(cv.toDataURL('image/jpeg', 0.75));
-          cv.width = 0; cv.height = 0;
-          page.cleanup();
-        }
-        await pdf.destroy();
-        return urls;
-      }
-      function toImgC(dataURL) {
-        const [hdr, data] = dataURL.split(',');
-        return { type: 'image', source: { type: 'base64', media_type: hdr.match(/data:([^;]+)/)[1], data } };
-      }
+      // bufToDataURLs + dataURLtoBlock kommen aus core/media.js
       function showMchkPanel(el) {
         mchkPanel = mk('div', '');
         mchkPanel.style.cssText = 'margin:8px 0;padding:10px 12px;background:var(--bg2);border:1px solid var(--bdr);border-radius:8px;font-size:12px;display:flex;flex-direction:column;gap:7px;';
@@ -919,11 +857,11 @@ Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetr
       }
 
       try {
-        const matURLs = await pdfPagesForMchk(_matKey);
+        const matURLs = await bufToDataURLs(_matKey, await r2Download(_matKey), { maxPages: 4, longEdge: 800, quality: 0.75 });
 
         // Call 1: Gibt es eine übertragbare Methode?
         const c1 = [{ type: 'text', text: '=== MATERIAL ===' }];
-        matURLs.forEach(u => c1.push(toImgC(u)));
+        matURLs.forEach(u => c1.push(dataURLtoBlock(u)));
         c1.push({ type: 'text', text: `Analysiere dieses Unterrichtsmaterial für eine NRW-Lehrkraft.
 Materialname: "${mat.titel || ''}"
 

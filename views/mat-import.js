@@ -1,8 +1,7 @@
 // ── mat-import.js – Import-Assistent, Scan-Panel, R2-Browser ──
 // ── Materialien-Datenbank ─────────────────────────────────────────
 let _kontextFiles  = [];
-const MAT_ANALYSIS_LONG_EDGE = 1568;
-
+// MAT_ANALYSIS_LONG_EDGE kommt aus core/media.js
 
 // ── KI-Analyse: zentraler Prompt + Normalisierung ────────────────
 
@@ -113,19 +112,7 @@ function normalizeMaterialResult(raw) {
   return out;
 }
 
-async function renderPdfPageDataURL(page, longEdge = MAT_ANALYSIS_LONG_EDGE, quality = 0.88) {
-  const vp0 = page.getViewport({ scale: 1 });
-  const scale = longEdge / Math.max(vp0.width, vp0.height);
-  const vp = page.getViewport({ scale });
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(vp.width);
-  canvas.height = Math.round(vp.height);
-  await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-  const dataURL = canvas.toDataURL('image/jpeg', quality);
-  canvas.width = 0; canvas.height = 0;
-  page.cleanup();
-  return dataURL;
-}
+// renderPdfPage kommt aus core/media.js
 
 function buildR2Browser(subTitle, renderCards) {
   const p = mk('div', 'mat-r2browser');

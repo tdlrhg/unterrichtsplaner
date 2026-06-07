@@ -1564,7 +1564,8 @@ function buildModalForm(a, mode) {
     return w;
   }
 
-  left.appendChild(fldTextarea('Inhalt / Aufgabenstellung', 'inhalt', 'Was steht in der Aufgabe?', 6));
+  left.appendChild(fldTextarea('Aufgabenstellung (gemeinsamer Obersatz)', 'aufgabenstellung', 'Gemeinsamer Text aller Teilaufgaben — leer lassen bei Einzelaufgaben', 2));
+  left.appendChild(fldTextarea('Inhalt / Teilaufgabe', 'inhalt', 'Was steht in der Aufgabe?', 5));
   left.appendChild(fldTextarea('Anforderung', 'anforderung', 'Was sollen Schülerinnen konkret tun?', 3));
   left.appendChild(fldInp('Thema', 'thema', 'z.B. Gleichsetzungsverfahren'));
   body.appendChild(left);

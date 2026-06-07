@@ -995,6 +995,11 @@ function renderRow(a, onSaved, compact) {
     var nrEl = tx('div', '', nrStr);
     nrEl.style.cssText = 'font-weight:700;font-size:13px;color:var(--tx2);padding:2px 0;';
     src.appendChild(nrEl);
+  } else if (DB.buch && isSchulbuch) {
+    // Buch ist bereits gefiltert — nur Seite zeigen
+    var seiteEl = tx('div', 'db-kap-name', a.seite ? 'S. ' + a.seite : '–');
+    seiteEl.style.fontSize = '13px';
+    src.appendChild(seiteEl);
   } else {
     var hBadge = tx('div', 'db-herkunft-badge', isSchulbuch ? '📖 Schulbuch' : '📄 Eigenmaterial');
     hBadge.style.color = accentColor;

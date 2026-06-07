@@ -1106,12 +1106,13 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     }
     DB.offset = 0; refresh();
   };
-  // Bücher asynchron laden
+  // Bücher asynchron laden — ohne herkunft-Filter, da herkunft oft null ist
   if (fach) {
-    sbSelect('inhalte', { filters: { fach: fach, herkunft: 'schulbuch' }, limit: 200, order: 'buch' })
+    sbSelect('inhalte', { filters: { fach: fach }, limit: 500, order: 'buch' })
       .then(function(rows) {
         var seen = {}, books = [];
         rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; books.push(r.buch); } });
+        books.sort();
         books.forEach(function(b) {
           var o = document.createElement('option');
           o.value = b; o.textContent = b;

@@ -182,6 +182,7 @@
   cursor: pointer;
   height: 26px;
   font-family: inherit;
+  max-width: 160px;
 }
 .db-filter-sel:focus { outline: none; border-color: var(--pri); }
 

@@ -933,9 +933,8 @@ async function buildFachView(container) {
       // Gruppenheader (klickbar → Gruppen-Modal)
       var ghdr = mk('div', '');
       ghdr.style.cssText = 'padding:8px 12px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;cursor:pointer;';
-      var hText = 'Aufgabe ' + g.key;
       var ref0 = g.items[0];
-      if (!DB.seite && ref0 && ref0.seite != null) hText += ' · S. ' + ref0.seite;
+      var hText = (!DB.seite && ref0 && ref0.seite != null ? 'S. ' + ref0.seite + ' · ' : '') + 'Aufgabe ' + g.key;
       if (g.aufgabenstellung) hText += ' · ' + g.aufgabenstellung.slice(0, 90);
       ghdr.textContent = hText;
       ghdr.title = hasSubtasks ? 'Alle Teilaufgaben ansehen' : 'Aufgabe ansehen';

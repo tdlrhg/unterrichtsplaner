@@ -377,18 +377,22 @@ const IMP_KI_PROMPT = `Du analysierst eine Seite aus einem Schulbuch oder Unterr
 
 Erfasse NUR Aufgaben (kein Lehrtext, keine Erklärungen).
 
-Für jede Aufgabe / Teilaufgabe ein Eintrag:
-- nr: Aufgabennummer inkl. Teilaufgabe (z.B. "7a") — bei Hauptaufgabe ohne Buchstabe (z.B. "7")
-- aufgabenstellung: gemeinsame Aufgabenstellung bei Teilaufgaben-Gruppen, sonst null
-- text: NUR der individuelle Teil bei Teilaufgaben, bei Einzelaufgaben der volle Text. Einzeilig, Formeln als Text.
-- anforderung: Ein Satz was Schüler konkret tun müssen (z.B. "Schüler berechnen den Flächeninhalt eines Parallelogramms.")
+WICHTIG — Teilaufgaben immer einzeln erfassen:
+Hat eine Aufgabe Teilaufgaben (a, b, c, d …) — egal ob als Absätze ODER als Spalten in einer Tabelle — erstelle für jede Teilaufgabe einen eigenen Eintrag mit nr "8a", "8b" usw. Nie eine Aufgabe mit Teilaufgaben als einzelnen Eintrag erfassen.
+
+Für jeden Eintrag:
+- nr: Aufgabennummer inkl. Teilaufgabe (z.B. "8a", "10c") — nur bei echten Einzelaufgaben ohne Teilaufgaben die bloße Zahl (z.B. "9")
+- aufgabenstellung: die gemeinsame Aufgabenstellung / Arbeitsanweisung der Hauptaufgabe (gilt für alle Teilaufgaben), sonst null
+- text: der individuelle Teil der Teilaufgabe (z.B. die Werte aus der Tabellenspalte), bei Einzelaufgaben der volle Text. Einzeilig.
+- anforderung: Ein Satz was Schüler konkret tun müssen
 - operator: genau eines von: berechnen|begründen|erklären|zeichnen|messen|konstruieren|beschreiben|vergleichen|ausfüllen|MC
 - umfang: genau eines von: kurz|mittel|lang  (kurz = 1–2 min, mittel = 3–7 min, lang = 8+ min)
 - schwierigkeit: genau eines von: grundlegend|standard|anspruchsvoll
 
 Antworte NUR mit validem JSON:
 {"aufgaben": [
-  {"nr":"7a","aufgabenstellung":"Berechne den Flächeninhalt.","text":"Parallelogramm: a = 8 cm, h = 5 cm","anforderung":"Schüler berechnen den Flächeninhalt eines Parallelogramms aus gegebenen Maßen.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"}
+  {"nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt.","text":"Fig. 1: Parallelogramm mit a = 7 cm, h = 3 cm","anforderung":"Schüler berechnen den Flächeninhalt eines Parallelogramms aus gegebenen Maßen.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"},
+  {"nr":"10a","aufgabenstellung":"Übertrage die Tabelle und bestimme die fehlenden Größen.","text":"a = 4 cm, h_a = 3,5 cm, h_b = 2 cm","anforderung":"Schüler berechnen fehlende Größen eines Parallelogramms.","operator":"berechnen","umfang":"mittel","schwierigkeit":"standard"}
 ]}`;
 
 function _impResizeImg(dataUrl, maxW, q) {

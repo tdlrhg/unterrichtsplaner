@@ -419,7 +419,7 @@ function dbRender() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', async function() {
+(async function() {
   // S-Alias für methoden.js / didaktik.js (die schreiben S._xxx für State)
   S = DB;
 
@@ -466,4 +466,4 @@ window.addEventListener('DOMContentLoaded', async function() {
   sbDownload('didaktik-artikel.json').then(function(d) {
     DIDARTDB = Array.isArray(d) ? d : [];
   }).catch(function() {});
-});
+})();

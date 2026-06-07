@@ -553,40 +553,22 @@ function buildImportView(container) {
   }
 
   function buildAufgabeCard(a, indent) {
-    var card = mk('div', '');
-    card.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;flex-direction:column;gap:0;'
-      + (indent ? 'margin-left:20px;border-left:3px solid var(--acc,#2563eb);' : '');
-
-    // ── Einzeilige Hauptzeile ──────────────────────────────────
-    var row = mk('div', ''); row.style.cssText = 'display:flex;align-items:center;gap:8px;min-height:32px;';
+    var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';
+    var row = mk('div', '');
+    row.style.cssText = 'display:flex;align-items:baseline;gap:8px;padding:3px 0 3px '
+      + (indent ? '20px' : '4px') + ';'
+      + (indent ? 'border-left:2px solid var(--acc,#2563eb);padding-left:12px;' : '');
 
     var nrLabel = tx('span', '', 'A' + (a.nr || '?'));
-    nrLabel.style.cssText = 'font-weight:700;font-size:12px;min-width:36px;color:var(--tx2);flex-shrink:0;';
+    nrLabel.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);flex-shrink:0;min-width:32px;';
     row.appendChild(nrLabel);
 
-    row.appendChild(miniSel(
-      [['berechnen','berechnen'],['begründen','begründen'],['erklären','erklären'],['zeichnen','zeichnen'],['messen','messen'],['konstruieren','konstruieren'],['beschreiben','beschreiben'],['vergleichen','vergleichen'],['ausfüllen','ausfüllen'],['MC','MC']],
-      a.operator, function(v) { a.operator = v; }
-    ));
-    row.appendChild(miniSel(
-      [['grundlegend','○ grundlegend'],['standard','◑ standard'],['anspruchsvoll','● anspruchsvoll']],
-      a.schwierigkeit || a.schwierigkeitsstufe, function(v) { a.schwierigkeit = v; }
-    ));
-    row.appendChild(miniSel(
-      [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']],
-      a.umfang, function(v) { a.umfang = v; }
-    ));
-
-    // Aufgabentext klein dahinter
-    var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';
     if (aufgText) {
-      var preview = tx('span', '', aufgText.slice(0, 80) + (aufgText.length > 80 ? '…' : ''));
-      preview.style.cssText = 'font-size:11px;color:var(--tx3);flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;';
-      row.appendChild(preview);
+      var txt = tx('span', '', aufgText.slice(0, 120) + (aufgText.length > 120 ? '…' : ''));
+      txt.style.cssText = 'font-size:12px;color:var(--tx1);line-height:1.4;';
+      row.appendChild(txt);
     }
-
-    card.appendChild(row);
-    return card;
+    return row;
   }
 
   function renderResults() {

@@ -972,7 +972,7 @@ async function buildFachView(container) {
   neuBtn.onclick = function() { openEntryModal(null, 'create', function() { DB.offset = 0; load(); }); };
 
   // Filter-Leiste einbauen
-  buildFilterBar(filterContainer, load, searchInp);
+  buildFilterBar(filterContainer, load, searchInp, f.key);
 
   load();
 }
@@ -1037,11 +1037,11 @@ function renderRow(a, onSaved, compact) {
 }
 
 // ── Filter-Leiste ─────────────────────────────────────────────────
-function buildFilterBar(containerEl, loadFn, searchInp) {
+function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   containerEl.innerHTML = '';
   const bar = mk('div', 'db-filter-bar');
 
-  function refresh() { loadFn(); buildFilterBar(containerEl, loadFn, searchInp); }
+  function refresh() { loadFn(); buildFilterBar(containerEl, loadFn, searchInp, fach); }
 
   // Suchfeld + Seitenfilter
   if (searchInp) bar.appendChild(searchInp);
@@ -1087,11 +1087,47 @@ function buildFilterBar(containerEl, loadFn, searchInp) {
     return s;
   }
 
-  // Herkunft
-  bar.appendChild(fchipGroup([
-    { val: 'schulbuch',     label: '📖 Schulbuch',    color: '#0f766e' },
-    { val: 'eigenmaterial', label: '📄 Eigenmaterial', color: '#16a34a' },
-  ], 'herkunft'));
+  // Schulbuch-Dropdown
+  var buchSel = document.createElement('select');
+  buchSel.className = 'db-filter-sel';
+  var buchOptDefault = document.createElement('option');
+  buchOptDefault.value = ''; buchOptDefault.textContent = '📖 Schulbuch';
+  buchSel.appendChild(buchOptDefault);
+  buchSel.onchange = function() {
+    if (buchSel.value) {
+      DB.buch = buchSel.value; DB.herkunft = 'schulbuch';
+    } else {
+      DB.buch = null; DB.herkunft = null;
+    }
+    DB.offset = 0; refresh();
+  };
+  // Bücher asynchron laden
+  if (fach) {
+    sbSelect('inhalte', { filters: { fach: fach, herkunft: 'schulbuch' }, limit: 200, order: 'buch' })
+      .then(function(rows) {
+        var seen = {}, books = [];
+        rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; books.push(r.buch); } });
+        books.forEach(function(b) {
+          var o = document.createElement('option');
+          o.value = b; o.textContent = b;
+          if (DB.buch === b) o.selected = true;
+          buchSel.appendChild(o);
+        });
+        if (DB.buch) buchSel.value = DB.buch;
+      });
+  }
+  bar.appendChild(buchSel);
+
+  // Eigenmaterial-Chip
+  var emActive = DB.herkunft === 'eigenmaterial';
+  var emChip = tx('div', 'db-fchip' + (emActive ? ' on' : ''), '📄 Eigenmaterial');
+  if (emActive) emChip.style.cssText = 'background:#16a34a18;color:#16a34a;border-color:#16a34a60;';
+  emChip.onclick = function() {
+    DB.herkunft = emActive ? null : 'eigenmaterial';
+    DB.buch = null;
+    DB.offset = 0; refresh();
+  };
+  bar.appendChild(emChip);
 
   bar.appendChild(sep());
 
@@ -1126,13 +1162,13 @@ function buildFilterBar(containerEl, loadFn, searchInp) {
   ], 'umfang'));
 
   // Filter löschen (nur wenn aktiv)
-  var anyActive = DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang || DB.seite != null;
+  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang || DB.seite != null;
   if (anyActive) {
     bar.appendChild(sep());
     const clrBtn = btn('✕ Filter', 'btn btn-ghost btn-sm');
     clrBtn.style.cssText += 'font-size:10.5px;padding:2px 8px;color:var(--tx3);';
     clrBtn.onclick = function() {
-      DB.herkunft = null; DB.schwierigkeit = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.seite = null; DB.offset = 0;
+      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.seite = null; DB.offset = 0;
       refresh();
     };
     bar.appendChild(clrBtn);

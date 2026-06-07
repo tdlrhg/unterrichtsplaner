@@ -687,13 +687,7 @@ Antworte NUR mit JSON:
           const mp = (pool.length ? pool : METHDB).map(m => `ID:${m.id}|${m.name}${m.beschreibung?' – '+m.beschreibung.slice(0,80):''}`).join('\n');
           const p = `Wähle die passendste Methode für die ${typ}-Phase. Fach: ${fp.fach}, Jg: ${fp.jahrgang}, Lernziel: ${stunde.lernziel||'–'}\nMethoden:\n${mp}\nJSON: {"id":"ID","name":"Name","begr":"1 Satz"}`;
           try {
-            const res = await fetch('https://api.anthropic.com/v1/messages', {
-              method: 'POST',
-              headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-              body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 200, messages: [{ role: 'user', content: p }] }),
-            });
-            const d = await res.json(); if (!res.ok) throw new Error(d.error?.message);
-            const parsed = JSON.parse(d.content?.[0]?.text?.match(/\{[\s\S]*\}/)?.[0] || '{}');
+            const parsed = JSON.parse((await callKI(p, { model: KI_MODEL_HAIKU, maxTokens: 200 })).match(/\{[\s\S]*\}/)?.[0] || '{}');
             if (parsed.name) { stunde.methoden[typ] = parsed; scheduleSave(); renderMethodeBody(); }
           } catch(e) { alert('Fehler: ' + e.message); kiBtn.textContent = '✨'; kiBtn.disabled = false; }
         };
@@ -801,14 +795,7 @@ ${methListe}
 
 Antworte NUR als JSON-Array (keine Zeilenumbrüche in Strings): [{"methode":"Name","begruendung":"Ein Satz"}]`;
         try {
-          const res = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 500, messages: [{ role: 'user', content: prompt }] }),
-          });
-          const d = await res.json();
-          if (!res.ok) throw new Error(d.error?.message || res.statusText);
-          const text = d.content?.[0]?.text || '';
+          const text = await callKI(prompt, { maxTokens: 500 });
           const alternativen = safeParseArray(text.match(/\[[\s\S]*\]/)?.[0] || '[]');
           const existingAlt = s3body.querySelector('.methode-alts');
           if (existingAlt) existingAlt.remove();
@@ -898,13 +885,7 @@ ${methDetail}
 Antworte als: BEWERTUNG|HINWEIS
 Bewertung = "kann ich machen" oder "schwierig" oder "völlig ungeeignet"
 Hinweis = ein kurzer Satz ohne Sonderzeichen`;
-          const res = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-            body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 200, messages: [{ role: 'user', content: prompt }] }),
-          });
-          const d = await res.json();
-          const text = (d.content?.[0]?.text || '').trim();
+          const text = (await callKI(prompt, { maxTokens: 200 })).trim();
           const parts = text.split('|');
           const bew = parts[0]?.trim().toLowerCase();
           const validBews = ['kann ich machen', 'schwierig', 'völlig ungeeignet'];
@@ -975,15 +956,7 @@ Verfügbare Methoden: ${methNamen}
 Antworte NUR als JSON (keine Zeilenumbrüche in Strings):
 {"methode":"Methodenname","begruendung":"Ein Satz warum"}`;
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 300, messages: [{ role: 'user', content: prompt }] }),
-        });
-        const d = await res.json();
-        if (!res.ok) throw new Error(d.error?.message || res.statusText);
-        const text = d.content?.[0]?.text || '';
-        const parsed = JSON.parse(text.replace(/\r\n|\r|\n/g,' ').match(/\{[^{}]*\}/)?.[0] || '{}');
+        const parsed = JSON.parse((await callKI(prompt, { maxTokens: 300 })).replace(/\r\n|\r|\n/g,' ').match(/\{[^{}]*\}/)?.[0] || '{}');
         if (!parsed.methode) throw new Error('Keine Methode erhalten');
         stunde.methodeKiVorschlag = { name: parsed.methode, begruendung: parsed.begruendung || '' };
         scheduleSave(); renderMethodeBody();
@@ -1048,13 +1021,7 @@ Für offene Parameter wähle aus:
 Antworte NUR als JSON mit den offenen Feldern (Vorgaben weglassen):
 {}`;
     try {
-      const res2 = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 200, messages: [{ role: 'user', content: prompt }] }),
-      });
-      const data = await res2.json();
-      const parsed = JSON.parse(data.content?.[0]?.text?.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      const parsed = JSON.parse((await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 200 })).match(/\{[\s\S]*\}/)?.[0] || '{}');
       const gewählt = [];
       if (parsed.dauer && !stunde.dauer) { stunde.dauer = parsed.dauer; gewählt.push('dauer'); }
       if (parsed.sozialformen?.length && !pr.sozialformen?.length) { pr.sozialformen = parsed.sozialformen; gewählt.push('sozialformen'); }
@@ -1246,19 +1213,7 @@ Antworte NUR als JSON-Objekt. WICHTIG: Keine Zeilenumbrüche innerhalb von Strin
     { "titel": "Einstieg", "inhalt": "Konkrete Beschreibung in einem Satz ohne Zeilenumbruch", "methode": "z.B. Unterrichtsgespräch", "sozialform": "z.B. Plenum", "minuten": 10 }
   ]
 }`;
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': antKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1400,
-          messages: [{ role: 'user', content: prompt }] }),
-      });
-      const data = await res.json();
-      const text = data.content?.[0]?.text || '';
+      const text = await callKI(prompt, { maxTokens: 1400 });
       const raw = text.match(/\{[\s\S]*\}/)?.[0] || '{}';
       const sanitized = raw.replace(/[\r\n\t]+/g, ' ');
       const parsed = JSON.parse(sanitized);
@@ -1471,23 +1426,7 @@ Antworte NUR mit diesem JSON (kein Text davor oder danach):
   "klpIds": ["ID1", "ID2"]
 }`;
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': antKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5',
-        max_tokens: 800,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-    if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
-    const data = await res.json();
-    const text = data.content?.[0]?.text || '';
+    const text = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 800 });
     const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
     if (!parsed.titel) throw new Error('Kein Vorschlag erhalten.');
 

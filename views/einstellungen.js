@@ -576,13 +576,7 @@ function viewKursEinstellungen(kursId) {
       if (lg.fachsprache) p += 'Fachsprache: ' + lg.fachsprache + '\n';
       if (lg.foerderung?.length) p += 'Förderbedarf: ' + lg.foerderung.join(', ') + '\n';
       if (lg.besonderheitenText) p += 'Besonderheiten: ' + lg.besonderheitenText + '\n';
-      const res2 = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 600, messages: [{ role: 'user', content: p }] })
-      });
-      const d = await res2.json();
-      lg.konsequenzen = d.content?.[0]?.text || '';
+      lg.konsequenzen = await callKI(p, { maxTokens: 600 });
       konsTa.value = lg.konsequenzen;
       scheduleSave(); aiStatus.textContent = '✓';
     } catch(e) { aiStatus.textContent = 'Fehler: ' + e.message; }

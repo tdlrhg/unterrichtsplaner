@@ -358,13 +358,7 @@ Ist diese Zuordnung didaktisch sinnvoll? 2–3 Sätze: Ja/Nein + Begründung. Fa
     kiZuordBtn.textContent = '⏳'; kiZuordBtn.disabled = true;
     kiZuordResult.style.display = 'none';
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 250, messages: [{ role: 'user', content: prompt }] }),
-      });
-      const d = await res.json();
-      kiZuordResult.textContent = '💡 ' + (d.content?.[0]?.text || 'Keine Antwort.');
+      kiZuordResult.textContent = '💡 ' + (await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 250 }) || 'Keine Antwort.');
     } catch(e) { kiZuordResult.textContent = 'Fehler: ' + e.message; }
     kiZuordResult.style.display = '';
     kiZuordBtn.textContent = '💡 KI fragen'; kiZuordBtn.disabled = false;
@@ -480,14 +474,7 @@ oder falls kein Feld passt:
 Mögliche Felder: jahrgang (kommagetrennte Liste z.B. "7, 8"), themen (kommagetrennte Liste), beschreibung, persoenlicheAnmerkungen, rolleImKontext`;
 
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
-        });
-        if (!res.ok) throw new Error('API ' + res.status);
-        const d = await res.json();
-        const raw = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/)?.[0];
+        const raw = (await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 400 })).match(/\{[\s\S]*\}/)?.[0];
         if (!raw) throw new Error('Kein JSON in Antwort');
         const sanitized = raw.replace(/[\x00-\x1F\x7F]/g, c => (c==='\n'||c==='\r'||c==='\t') ? ' ' : '');
         let antwort, feldUpdate;
@@ -887,14 +874,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
 {"method": {"name": "...", "beschreibung": "...", "ziel": "...", "hinweise": "..."}} ODER {"method": null}` });
 
         mchkBtn.textContent = '⏳ KI analysiert…';
-        const r1 = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: c1 }] })
-        });
-        if (!r1.ok) throw new Error('API ' + r1.status);
-        const d1 = await r1.json();
-        const j1 = (d1.content?.[0]?.text || '').match(/\{[\s\S]*\}/);
+        const j1 = (await callKI(c1, { model: KI_MODEL_HAIKU, maxTokens: 600 })).match(/\{[\s\S]*\}/);
         if (!j1) throw new Error('Kein JSON in Antwort');
         const { method } = robustParseObj(j1[0]);
 
@@ -910,14 +890,7 @@ Antworte NUR mit JSON (kein Text davor/danach):
         mchkBtn.textContent = '⏳ Vergleiche Methoden…';
         const methList = METHDB.map(m => `ID: ${m.id} | ${m.name}${m.beschreibung ? ' – ' + m.beschreibung.slice(0, 80) : ''}`).join('\n');
         const p2 = `Vorgeschlagene neue Methode:\nName: "${method.name}"\nBeschreibung: "${method.beschreibung}"\n\nBereits vorhandene Methoden (${METHDB.length}):\n${methList}\n\nGibt es einen semantisch ähnlichen Eintrag? Antworte NUR mit JSON:\n{"matchId": "exakte-ID-oder-null", "matchName": "Name-oder-null"}`;
-        const r2 = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 120, messages: [{ role: 'user', content: p2 }] })
-        });
-        if (!r2.ok) throw new Error('API ' + r2.status);
-        const d2 = await r2.json();
-        const j2 = (d2.content?.[0]?.text || '').match(/\{[\s\S]*\}/);
+        const j2 = (await callKI(p2, { model: KI_MODEL_HAIKU, maxTokens: 120 })).match(/\{[\s\S]*\}/);
         const { matchId, matchName } = j2 ? robustParseObj(j2[0]) : { matchId: null, matchName: null };
         const matchEntry = matchId && METHDB.find(x => x.id === matchId);
 
@@ -1020,14 +993,7 @@ Antworte NUR als JSON:
 }`;
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 800, messages: [{ role: 'user', content: prompt }] }),
-      });
-      if (!res.ok) throw new Error('API ' + res.status);
-      const d = await res.json();
-      const raw = (d.content?.[0]?.text || '').match(/\{[\s\S]*\}/)?.[0];
+      const raw = (await callKI(prompt, { maxTokens: 800 })).match(/\{[\s\S]*\}/)?.[0];
       if (!raw) throw new Error('Kein JSON erhalten');
       const { vorschlaege, neueMethode } = robustParseObj(raw);
 
@@ -1123,14 +1089,7 @@ async function klpKiVorschlag(mat, onResult) {
   ).join('\n\n');
   const blockTitelKlp = getBlockTitel(mat.blockId);
   const prompt = `Du bist Assistent für NRW-Lehrkräfte. Analysiere das Unterrichtsmaterial und wähle passende KLP-Kompetenzen.\n\nMaterial:\n- Titel: ${mat.titel || '–'}\n- Fach: ${(mat.fach || []).join(', ') || '–'}\n- Jahrgang: ${(mat.jahrgang || []).join(', ') || '–'}\n- Themen: ${(mat.themen || []).join(', ') || '–'}\n- Beschreibung: ${mat.beschreibung || '–'}${blockTitelKlp ? '\n- Themenblock: ' + blockTitelKlp : ''}\n\nWähle 2–6 passende KLP-Einträge. Antworte NUR mit JSON-Array der IDs: ["ID1","ID2"]\n\nKLP-Einträge:\n${klpText}`;
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 256, messages: [{ role: 'user', content: prompt }] }),
-  });
-  if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
-  const data = await res.json();
-  const text = data.content?.[0]?.text || '[]';
+  const text = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 256 });
   let ids = [];
   try { ids = JSON.parse(text.match(/\[[\s\S]*\]/)?.[0] || '[]'); } catch(_) {
     ids = [...text.matchAll(/"([^"]+)"/g)].map(m => m[1]);

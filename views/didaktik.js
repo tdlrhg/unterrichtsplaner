@@ -484,37 +484,14 @@ Regeln:
 Die Seiten des Artikels sind als Bilder beigefügt.`;
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': antKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 8000,
-          messages: [{
-            role: 'user',
-            content: [
-              // Alle Bilder als content blocks
-              ...uploadedImages.map(img => ({
-                type: 'image',
-                source: {
-                  type: 'base64',
-                  media_type: img.mediaType,
-                  data: img.dataUrl.split(',')[1],
-                }
-              })),
-              { type: 'text', text: prompt }
-            ]
-          }],
-        }),
-      });
-      if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
-      const data = await res.json();
-      const rawText = data.content?.[0]?.text || '';
+      const _blocks = [
+        ...uploadedImages.map(img => ({
+          type: 'image',
+          source: { type: 'base64', media_type: img.mediaType, data: img.dataUrl.split(',')[1] }
+        })),
+        { type: 'text', text: prompt }
+      ];
+      const rawText = await callKI(_blocks, { maxTokens: 8000 });
       let jsonStr = rawText.match(/\{[\s\S]*\}/)?.[0] || '{}';
       // Robuste Bereinigung: trailing commas, abgeschnittene Arrays/Objekte schließen
       jsonStr = jsonStr

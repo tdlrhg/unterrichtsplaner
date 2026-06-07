@@ -479,14 +479,7 @@ materialtyp: aus ["Kein Material","Texte","Karten","Arbeitsblätter","Experiment
           ...images.map(img => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: img.dataUrl.split(',')[1] } })),
           { type: 'text', text: prompt },
         ];
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8000, messages: [{ role: 'user', content: contentBlocks }] }),
-        });
-        if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
-        const data = await res.json();
-        const raw = data.content?.[0]?.text || '';
+        const raw = await callKI(contentBlocks, { maxTokens: 8000 });
         let jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || '{}';
         jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
         let parsed;

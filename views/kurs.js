@@ -798,23 +798,7 @@ Antworte NUR mit einem JSON-Objekt:
 }`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': antKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
-    if (!res.ok) throw new Error((await res.json())?.error?.message || res.statusText);
-    const data = await res.json();
-    const text = data.content?.[0]?.text || '';
+    const text = await callKI(prompt, { maxTokens: 2000 });
     const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
     if (!parsed.items?.length) throw new Error('Keine Vorschläge erhalten.');
 
@@ -866,13 +850,7 @@ Antworte NUR mit einem JSON-Objekt:
           `${i+1}. ${e.titel} (${e.stunden || '?'} Std.): ${e.beschreibung || ''}`
         ).join('\n');
         const iterPrompt = `Du hast folgenden Planungsvorschlag gemacht:\n\n${vorschlagText}\n\nDie Lehrerin hat folgendes Feedback:\n„${feedback}"\n\nBitte überarbeite den Vorschlag entsprechend. Halte dich weiterhin an die Hierarchie (Stunde=45/90 Min, Einheit=2-4 Std, kurze prägnante Titel). Antworte NUR mit dem gleichen JSON-Format:\n{"begruendung": "...", "items": [{"titel": "...", "beschreibung": "...", "stunden": 2, "klpIds": []}]}`;
-        const res2 = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: { 'x-api-key': antKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true', 'content-type': 'application/json' },
-          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: iterPrompt }] }),
-        });
-        const d2 = await res2.json();
-        const t2 = d2.content?.[0]?.text || '';
+        const t2 = await callKI(iterPrompt, { maxTokens: 1500 });
         const p2 = JSON.parse(t2.match(/\{[\s\S]*\}/)?.[0] || '{}');
         if (!p2.items?.length) throw new Error('Kein Vorschlag erhalten.');
         parsed.items = p2.items;

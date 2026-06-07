@@ -52,16 +52,7 @@ function refreshTopbar() {
 // ── Topbar ───────────────────────────────────────────────────────
 function buildTopbar() {
   const bar = mk('div', 'topbar');
-  const titleWrap = mk('div', '');
-  titleWrap.style.cssText = 'display:flex;align-items:baseline;gap:12px;';
-  titleWrap.appendChild(tx('div', 'topbar-title', 'Unterrichtsplaner'));
-  const dbLink = mk('a', 'topbar-app-link'); dbLink.href = 'datenbank.html'; dbLink.textContent = '📚 Datenbank';
-  titleWrap.appendChild(dbLink);
-  const prLink = mk('a', 'topbar-app-link');
-  prLink.href = 'pruefung.html';
-  prLink.textContent = '📋 Prüfungsplaner';
-  titleWrap.appendChild(prLink);
-  bar.appendChild(titleWrap);
+  bar.appendChild(buildAppNav('up'));
   const right = mk('div', 'topbar-right');
   if (S.saving) {
     const s = mk('div', '');

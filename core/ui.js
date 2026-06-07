@@ -27,6 +27,26 @@ function btn(text, cls, style) {
   return b;
 }
 
+// ── App-Navigation (alle drei Seiten, feste Reihenfolge) ─────────
+function buildAppNav(current) {
+  const nav = mk('div', 'topbar-nav');
+  [
+    { key: 'up', label: '📐 Unterrichtsplaner', href: 'index.html' },
+    { key: 'pr', label: '📋 Prüfungsplaner',    href: 'pruefung.html' },
+    { key: 'db', label: '📚 Datenbank',          href: 'datenbank.html' },
+  ].forEach(function(item) {
+    if (item.key === current) {
+      nav.appendChild(tx('span', 'topbar-nav-current', item.label));
+    } else {
+      const a = mk('a', 'topbar-nav-link');
+      a.href = item.href;
+      a.textContent = item.label;
+      nav.appendChild(a);
+    }
+  });
+  return nav;
+}
+
 function cardHdr(title) {
   const h = mk('div', 'card-hdr');
   h.appendChild(tx('div', 'card-title', title));

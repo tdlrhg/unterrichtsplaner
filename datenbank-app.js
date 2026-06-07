@@ -47,14 +47,7 @@ function opColor(op) { return OP_FARBEN2[op] || '#64748b'; }
 // ── Topbar ────────────────────────────────────────────────────────
 function buildDBTopbar() {
   const bar = mk('div', 'topbar');
-  const titleWrap = mk('div', '');
-  titleWrap.style.cssText = 'display:flex;align-items:baseline;gap:14px;';
-  titleWrap.appendChild(tx('div', 'topbar-title', 'Material-Datenbank'));
-  const upLink = mk('a', 'topbar-app-link'); upLink.href = 'index.html'; upLink.textContent = '📐 Unterrichtsplaner';
-  const prLink = mk('a', 'topbar-app-link'); prLink.href = 'pruefung.html'; prLink.textContent = '📋 Prüfungsplaner';
-  titleWrap.appendChild(upLink);
-  titleWrap.appendChild(prLink);
-  bar.appendChild(titleWrap);
+  bar.appendChild(buildAppNav('db'));
   const right = mk('div', 'topbar-right');
   if (DB_VERSION) {
     const d = new Date(DB_VERSION);

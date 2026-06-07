@@ -1362,6 +1362,19 @@ function openEntryModal(entry, mode, onSaved) {
           } else {
             saved = await sbUpdate('inhalte', curEntry.id, data);
             if (!saved) saved = Object.assign({}, curEntry, data);
+            // aufgabenstellung auf alle Geschwister übertragen
+            if (data.aufgabenstellung != null && curEntry.buch && curEntry.seite != null) {
+              var parentNr = String(curEntry.nr || '').replace(/[a-zA-Z]+$/, '').trim();
+              sbSelect('inhalte', { filters: { fach: curEntry.fach, buch: curEntry.buch, seite: curEntry.seite }, limit: 50 })
+                .then(function(siblings) {
+                  siblings.forEach(function(s) {
+                    if (s.id === curEntry.id) return;
+                    var sParent = String(s.nr || '').replace(/[a-zA-Z]+$/, '').trim();
+                    if (sParent === parentNr && s.aufgabenstellung !== data.aufgabenstellung)
+                      sbUpdate('inhalte', s.id, { aufgabenstellung: data.aufgabenstellung });
+                  });
+                });
+            }
           }
           closeEntryModal();
           if (onSaved) onSaved(saved);

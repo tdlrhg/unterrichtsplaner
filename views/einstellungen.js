@@ -289,7 +289,7 @@ function viewEinstellungen() {
         });
         const dedupedRows = [...new Map(rows.map(r => [r.id, r])).values()];
         if (dedupedRows.length) {
-          await sbInsert('schulbuch_aufgaben', dedupedRows);
+          await sbInsert('inhalte', dedupedRows);
           migStatus.textContent = `✓ ${dedupedRows.length} Schulbuch-Aufgaben übertragen (${rows.length - dedupedRows.length} Duplikate übersprungen).`;
         } else {
           migStatus.textContent = '⚠ Keine Schulbuch-Aufgaben gefunden.';
@@ -319,7 +319,7 @@ function viewEinstellungen() {
         }
       }
       if (what === 'all') {
-        const [cntSA, cntMat] = await Promise.all([sbCount('schulbuch_aufgaben'), sbCount('materialien')]);
+        const [cntSA, cntMat] = await Promise.all([sbCount('inhalte'), sbCount('materialien')]);
         migStatus.textContent = `✓ Fertig — ${cntSA ?? '?'} Schulbuch-Aufgaben, ${cntMat ?? '?'} Materialien in Supabase.`;
         migStatus.style.color = '#16a34a';
       }

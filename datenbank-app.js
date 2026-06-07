@@ -7,6 +7,9 @@ var DIDAKTIKDB = {};
 var S = null; // wird nach DB-Init gesetzt
 function render() { dbRender(); }
 
+var DB_VERSION = null;
+var DB_VERSION_STATUS = null;
+
 const FAECHER = [
   { key: 'mathe',  label: 'Mathematik', icon: '📐', color: '#2563eb' },
   { key: 'bio',    label: 'Biologie',   icon: '🌿', color: '#16a34a' },
@@ -52,7 +55,18 @@ function buildDBTopbar() {
   titleWrap.appendChild(upLink);
   titleWrap.appendChild(prLink);
   bar.appendChild(titleWrap);
-  bar.appendChild(mk('div', 'topbar-right'));
+  const right = mk('div', 'topbar-right');
+  if (DB_VERSION) {
+    const d = new Date(DB_VERSION);
+    const label = d.toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' })
+      + ' ' + d.toLocaleTimeString('de-DE', { hour:'2-digit', minute:'2-digit' });
+    const indicator = DB_VERSION_STATUS === 'current' ? ' ✓' : DB_VERSION_STATUS === 'deploying' ? ' ⏳' : '';
+    const vSpan = tx('span', 'topbar-version', label + indicator);
+    vSpan.title = 'Klicken zum Neu laden'; vSpan.style.cursor = 'pointer';
+    vSpan.onclick = function() { location.reload(true); };
+    right.appendChild(vSpan);
+  }
+  bar.appendChild(right);
   return bar;
 }
 
@@ -433,6 +447,24 @@ window.addEventListener('DOMContentLoaded', async function() {
 
   root.appendChild(app);
   buildLanding(content);
+
+  // Versions-Check (wie in app.js)
+  var _dbStarted = Date.now();
+  var _ghDate = null;
+  async function checkDBVersion() {
+    var v = await fetch('version.json', { cache: 'no-store' }).then(function(r) { return r.json(); }).catch(function() { return null; });
+    if (!v) return;
+    var prev = DB_VERSION_STATUS;
+    DB_VERSION = v.built;
+    if (_ghDate) DB_VERSION_STATUS = new Date(v.built) >= new Date(_ghDate) ? 'current' : 'deploying';
+    if (prev === 'deploying' && DB_VERSION_STATUS === 'current' && Date.now() - _dbStarted > 10000) { location.reload(true); return; }
+    var oldTop = document.querySelector('.topbar');
+    if (oldTop) oldTop.replaceWith(buildDBTopbar());
+    if (DB_VERSION_STATUS === 'deploying') setTimeout(checkDBVersion, 30000);
+  }
+  fetch('https://api.github.com/repos/tdlrhg/unterrichtsplaner/commits/main', { headers: { 'Accept': 'application/vnd.github.v3+json' } })
+    .then(function(r) { return r.json(); }).catch(function() { return null; })
+    .then(function(gh) { if (gh && gh.commit && gh.commit.committer) _ghDate = gh.commit.committer.date; checkDBVersion(); });
 
   // Methoden & Didaktik im Hintergrund laden
   sbDownload('methoden.json').then(function(d) {

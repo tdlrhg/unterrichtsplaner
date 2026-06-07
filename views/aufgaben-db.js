@@ -265,7 +265,7 @@ function viewAufgabenDB() {
         const sbFilter = { ...fachFilter };
         if (filterOperator)     sbFilter.operator = filterOperator;
         if (filterSchwierigkeit) sbFilter.schwierigkeit = filterSchwierigkeit;
-        promises.push(sbSelect('schulbuch_aufgaben', { fts: suchText, filters: sbFilter, limit: LIMIT, offset: offsetSB, order: 'buch,seite,nr' }));
+        promises.push(sbSelect('inhalte', { fts: suchText, filters: sbFilter, limit: LIMIT, offset: offsetSB, order: 'buch,seite,nr' }));
       } else {
         promises.push(Promise.resolve(null));
       }

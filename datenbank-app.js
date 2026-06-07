@@ -976,7 +976,8 @@ function renderRow(a, onSaved, compact) {
   // Zelle 0: Quelle — im compact-Modus nur die Nr
   var src = mk('div', 'db-col-src'); src.dataset.colIdx = 0;
   if (compact) {
-    var nrEl = tx('div', '', 'A' + (a.nr || '?'));
+    var nrStr = String(a.nr || '?').match(/[a-zA-Z]+$/) ? String(a.nr).match(/[a-zA-Z]+$/)[0] : (a.nr || '?');
+    var nrEl = tx('div', '', nrStr);
     nrEl.style.cssText = 'font-weight:700;font-size:13px;color:var(--tx2);padding:2px 0;';
     src.appendChild(nrEl);
   } else {

@@ -13,35 +13,40 @@
 </head>
 <body>
 <div id="root"></div>
-<script src="core/supabase.js"></script>
-<script src="core/r2.js"></script>
-<script src="lib/pdf.min.js"></script>
-<script>if(typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js';</script>
-<script src="lib/pdf-lib.min.js"></script>
-<script src="core/kalender-data.js"></script>
-<script src="core/kalender-view.js"></script>
-<script src="core/klp.js"></script>
-<script src="core/state.js"></script>
-<script src="core/ui.js"></script>
-<script src="views/kurs.js"></script>
-<script src="views/zeitachse.js"></script>
-<script src="views/einstellungen.js"></script>
-<script src="views/materialien.js"></script>
-<script src="views/mat-import.js"></script>
-<script src="views/mat-overlay.js"></script>
-<script src="views/methoden.js"></script>
-<script src="views/didaktik.js"></script>
-<script src="views/schulbuch.js"></script>
-<script src="views/aufgaben-db.js"></script>
-<script src="views/kurs-detail.js"></script>
-<script src="views/stunde.js"></script>
-<script src="views/freie-stunden.js"></script>
-<script src="modal/base.js"></script>
-<script src="modal/planung.js"></script>
-<script src="modal/kalender.js"></script>
-<script src="modal/kurse.js"></script>
-<script src="sidebar.js"></script>
-<script src="content.js"></script>
-<script src="app.js"></script>
+<script>
+window.__SCRIPTS__ = [
+  'core/supabase.js',
+  'core/r2.js',
+  'lib/pdf.min.js',
+  function() { if(typeof pdfjsLib !== 'undefined') pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.min.js'; },
+  'lib/pdf-lib.min.js',
+  'core/kalender-data.js',
+  'core/kalender-view.js',
+  'core/klp.js',
+  'core/state.js',
+  'core/ui.js',
+  'views/kurs.js',
+  'views/zeitachse.js',
+  'views/einstellungen.js',
+  'views/materialien.js',
+  'views/mat-import.js',
+  'views/mat-overlay.js',
+  'views/methoden.js',
+  'views/didaktik.js',
+  'views/schulbuch.js',
+  'views/aufgaben-db.js',
+  'views/kurs-detail.js',
+  'views/stunde.js',
+  'views/freie-stunden.js',
+  'modal/base.js',
+  'modal/planung.js',
+  'modal/kalender.js',
+  'modal/kurse.js',
+  'sidebar.js',
+  'content.js',
+  'app.js'
+];
+</script>
+<script src="core/loader.js"></script>
 </body>
 </html>

@@ -14,23 +14,27 @@
 </head>
 <body>
 <div id="root"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>if(typeof pdfjsLib!=='undefined') pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
-<script src="core/supabase.js"></script>
-<script src="core/r2.js"></script>
-<script src="core/klp.js"></script>
-<script src="core/state.js"></script>
-<script src="core/ui.js"></script>
-<!-- Prüfungsplaner Module (Ladereihenfolge: Utils → State → KI → Views → Bootstrap) -->
-<script src="lib/pruefung-utils.js"></script>
-<script src="lib/pruefung-state.js"></script>
-<script src="lib/pruefung-ki.js"></script>
-<script src="views/pruefung-alte-arbeiten.js"></script>
-<script src="views/pruefung-checklisten.js"></script>
-<script src="views/pruefung-lernziele.js"></script>
-<script src="views/pruefung-aufgaben.js"></script>
-<script src="views/pruefung-detail.js"></script>
-<script src="views/pruefung-shell.js"></script>
-<script src="pruefung-app.js"></script>
+<script>
+window.__SCRIPTS__ = [
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+  function() { if(typeof pdfjsLib!=='undefined') pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; },
+  'core/supabase.js',
+  'core/r2.js',
+  'core/klp.js',
+  'core/state.js',
+  'core/ui.js',
+  'lib/pruefung-utils.js',
+  'lib/pruefung-state.js',
+  'lib/pruefung-ki.js',
+  'views/pruefung-alte-arbeiten.js',
+  'views/pruefung-checklisten.js',
+  'views/pruefung-lernziele.js',
+  'views/pruefung-aufgaben.js',
+  'views/pruefung-detail.js',
+  'views/pruefung-shell.js',
+  'pruefung-app.js'
+];
+</script>
+<script src="core/loader.js"></script>
 </body>
 </html>

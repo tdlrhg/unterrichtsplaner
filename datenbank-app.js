@@ -826,72 +826,146 @@ function openEntryModal(entry, mode, onSaved) {
   document.addEventListener('keydown', onEsc);
 }
 
-// ── Modal: Ansichts-Body ──────────────────────────────────────────
+// ── Modal: Ansichts-Body (3 Reiter) ─────────────────────────────
 function buildModalViewBody(a) {
-  const body = mk('div', 'db-modal-body');
+  const wrap = mk('div', 'db-modal-tabwrap');
 
-  // Links: Hauptinhalt
-  const left = mk('div', 'db-modal-left');
+  // ── Tab-Leiste ────────────────────────────────────────────────
+  const tabbar = mk('div', 'db-modal-tabbar');
+  const tabs = [], panes = [];
 
-  function secTitle(t) { left.appendChild(tx('div', 'db-modal-section-title', t)); }
-  function mText(val, cls) {
-    const d = tx('div', 'db-modal-text' + (cls ? ' ' + cls : ''), val);
-    left.appendChild(d);
-  }
+  [
+    { label: '📋 Grunddaten' },
+    { label: '📚 Unterrichtsdaten' },
+    { label: '✏️ Prüfungsdaten' },
+  ].forEach(function(def, idx) {
+    const tab = document.createElement('button');
+    tab.className = 'db-modal-tab' + (idx === 0 ? ' active' : '');
+    tab.textContent = def.label;
+    tab.onclick = function() {
+      tabs.forEach(function(t, i) { t.classList.toggle('active', i === idx); });
+      panes.forEach(function(p, i) { p.classList.toggle('active', i === idx); });
+    };
+    tabs.push(tab);
+    tabbar.appendChild(tab);
+  });
+  wrap.appendChild(tabbar);
 
-  if (a.inhalt) { secTitle('Inhalt / Aufgabe'); mText(a.inhalt); }
-  if (a.anforderung) { secTitle('Anforderung'); mText(a.anforderung, 'db-modal-anforderung'); }
-  if (a.thema && a.thema !== a.inhalt) { secTitle('Thema'); mText(a.thema); }
-  if (!a.inhalt && !a.anforderung && !a.thema) {
-    left.appendChild(tx('div', 'db-modal-text', '(Kein Inhalt hinterlegt)'));
-  }
+  const tabBody = mk('div', 'db-modal-tab-body');
+  wrap.appendChild(tabBody);
 
-  body.appendChild(left);
-
-  // Rechts: Metadaten
-  const right = mk('div', 'db-modal-right');
-
-  function meta(label, val, chip) {
+  // Shared helpers
+  function mkL() { return mk('div', 'db-modal-left'); }
+  function mkR() { return mk('div', 'db-modal-right'); }
+  function sec(parent, title) { parent.appendChild(tx('div', 'db-modal-section-title', title)); }
+  function fld(parent, label, val, chip) {
     const f = mk('div', 'db-modal-field');
     f.appendChild(tx('div', 'db-modal-field-label', label));
     if (chip) f.appendChild(chip);
     else f.appendChild(tx('div', 'db-modal-field-value', val != null ? String(val) : '–'));
-    right.appendChild(f);
+    parent.appendChild(f);
   }
-  function secR(t) { right.appendChild(tx('div', 'db-modal-section-title', t)); }
-
-  // Quelle
-  secR('Quelle');
-  meta('Herkunft', (!a.herkunft || a.herkunft === 'schulbuch') ? '📖 Schulbuch' : '📄 Eigenmaterial');
-  if (a.buch)           meta('Buch', a.buch);
-  if (a.uk_titel || a.kapitel_titel) meta('Kapitel', a.uk_titel || a.kapitel_titel);
-  if (a.seite != null)  meta('Seite', a.seite);
-  if (a.nr)             meta('Nr.', a.nr);
-  if (a.jahrgang)       meta('Jahrgang', 'Klasse ' + a.jahrgang);
-
-  // Prüfungsperspektive
-  secR('Prüfungsperspektive');
-  if (a.operator)      meta('Operator', null, mkChip(a.operator, opColor(a.operator)));
-  if (a.schwierigkeit) meta('Schwierigkeit', null, mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit]));
-  if (a.umfang)        meta('Umfang', a.umfang);
-  if (a.hat_loesung != null) meta('Lösung', a.hat_loesung ? '✓ vorhanden' : '✗ ohne');
-  if (!a.operator && !a.schwierigkeit && !a.umfang && a.hat_loesung == null) {
-    right.appendChild(tx('div', 'db-modal-field-value', '(keine Daten)'));
+  function empty(parent, text) {
+    const d = tx('div', 'db-modal-text', text);
+    d.style.color = 'var(--tx3)';
+    parent.appendChild(d);
   }
 
-  // Kompetenzen
-  if (a.kompetenzen && a.kompetenzen.length) {
-    secR('Kompetenzen');
-    const chips = mk('div', '');
-    chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
-    (Array.isArray(a.kompetenzen) ? a.kompetenzen : [a.kompetenzen]).forEach(function(k) {
-      chips.appendChild(mkChip(k, '#6d28d9'));
-    });
-    right.appendChild(chips);
-  }
+  // ── Pane 0: Grunddaten ────────────────────────────────────────
+  var p0 = mk('div', 'db-modal-tab-pane split active');
+  panes.push(p0);
+  {
+    const L = mkL();
+    if (a.inhalt) {
+      sec(L, 'Inhalt / Aufgabe');
+      L.appendChild(tx('div', 'db-modal-text', a.inhalt));
+    }
+    if (a.thema && a.thema !== a.inhalt) {
+      sec(L, 'Thema');
+      L.appendChild(tx('div', 'db-modal-text', a.thema));
+    }
+    if (!a.inhalt && !a.thema) empty(L, '(Kein Inhalt hinterlegt)');
+    p0.appendChild(L);
 
-  body.appendChild(right);
-  return body;
+    const R = mkR();
+    sec(R, 'Quelle');
+    fld(R, 'Herkunft', (!a.herkunft || a.herkunft === 'schulbuch') ? '📖 Schulbuch' : '📄 Eigenmaterial');
+    if (a.buch)                        fld(R, 'Buch', a.buch);
+    if (a.uk_titel || a.kapitel_titel) fld(R, 'Kapitel', a.uk_titel || a.kapitel_titel);
+    if (a.seite != null)               fld(R, 'Seite', a.seite);
+    if (a.nr)                          fld(R, 'Nr.', a.nr);
+    sec(R, 'Einordnung');
+    if (a.thema)    fld(R, 'Thema', a.thema);
+    var fi = fachInfo(a.fach);
+    fld(R, 'Fach', fi.icon + ' ' + fi.label);
+    if (a.jahrgang) fld(R, 'Jahrgang', 'Klasse ' + a.jahrgang);
+    if (a.typ)      fld(R, 'Typ', a.typ);
+    p0.appendChild(R);
+  }
+  tabBody.appendChild(p0);
+
+  // ── Pane 1: Unterrichtsdaten ──────────────────────────────────
+  var p1 = mk('div', 'db-modal-tab-pane split');
+  panes.push(p1);
+  {
+    const L = mkL();
+    sec(L, 'Anforderung');
+    if (a.anforderung) {
+      L.appendChild(tx('div', 'db-modal-text db-modal-anforderung', a.anforderung));
+    } else {
+      empty(L, '(Noch keine Anforderung hinterlegt)');
+    }
+    p1.appendChild(L);
+
+    const R = mkR();
+    var hasKomp = a.kompetenzen && a.kompetenzen.length;
+    if (hasKomp) {
+      sec(R, 'Kompetenzen');
+      const chips = mk('div', '');
+      chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
+      (Array.isArray(a.kompetenzen) ? a.kompetenzen : [a.kompetenzen]).forEach(function(k) {
+        chips.appendChild(mkChip(k, '#6d28d9'));
+      });
+      R.appendChild(chips);
+    }
+    if (a.inhaltsfeld) {
+      sec(R, 'Inhaltsfeld');
+      fld(R, 'Inhaltsfeld', a.inhaltsfeld);
+    }
+    if (!hasKomp && !a.inhaltsfeld) {
+      empty(R, '(Noch keine Unterrichtsdaten hinterlegt)');
+    }
+    p1.appendChild(R);
+  }
+  tabBody.appendChild(p1);
+
+  // ── Pane 2: Prüfungsdaten ─────────────────────────────────────
+  var p2 = mk('div', 'db-modal-tab-pane split');
+  panes.push(p2);
+  {
+    const L = mkL();
+    if (a.inhalt || a.thema) {
+      sec(L, 'Aufgabe (Referenz)');
+      var refText = tx('div', 'db-modal-text', (a.inhalt || a.thema || '').slice(0, 400) + ((a.inhalt || '').length > 400 ? ' …' : ''));
+      refText.style.color = 'var(--tx2)';
+      L.appendChild(refText);
+    }
+    p2.appendChild(L);
+
+    const R = mkR();
+    sec(R, 'Klassifikation');
+    if (a.operator)      fld(R, 'Operator',      null, mkChip(a.operator, opColor(a.operator)));
+    if (a.schwierigkeit) fld(R, 'Schwierigkeit', null, mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit]));
+    if (a.umfang)        fld(R, 'Umfang', a.umfang);
+    if (a.hat_loesung != null) fld(R, 'Lösung', a.hat_loesung ? '✓ vorhanden' : '✗ ohne');
+    if (!a.operator && !a.schwierigkeit && !a.umfang && a.hat_loesung == null) {
+      empty(R, '(Noch keine Prüfungsdaten hinterlegt)');
+    }
+    p2.appendChild(R);
+  }
+  tabBody.appendChild(p2);
+
+  return wrap;
 }
 
 // ── Modal: Formular ───────────────────────────────────────────────

@@ -61,6 +61,7 @@ const DB = {
   schwierigkeit: null,
   umfang: null,
   jahrgang: null,
+  seite: null,
   suchtext: '',
   offset: 0,
 };
@@ -886,6 +887,7 @@ async function buildFachView(container) {
     if (DB.schwierigkeit) filters.schwierigkeit = DB.schwierigkeit;
     if (DB.umfang)        filters.umfang        = DB.umfang;
     if (DB.jahrgang)      filters.jahrgang      = DB.jahrgang;
+    if (DB.seite != null) filters.seite         = DB.seite;
 
     const rows = await sbSelect('inhalte', {
       fts: DB.suchtext || null,
@@ -903,6 +905,7 @@ async function buildFachView(container) {
     if (DB.operator)      parts.push(DB.operator);
     if (DB.schwierigkeit) parts.push(DB.schwierigkeit);
     if (DB.umfang)        parts.push(DB.umfang);
+    if (DB.seite != null) parts.push('S. ' + DB.seite);
     if (DB.suchtext)      parts.push('„' + DB.suchtext + '"');
     subT.textContent = rows.length + (rows.length === LIMIT ? '+' : '') + ' Einträge'
       + (parts.length ? ' · ' + parts.join(' · ') : '');
@@ -1029,11 +1032,26 @@ function buildFilterBar(containerEl, loadFn, searchInp) {
 
   function refresh() { loadFn(); buildFilterBar(containerEl, loadFn, searchInp); }
 
-  // Suchfeld
-  if (searchInp) {
-    bar.appendChild(searchInp);
-    const s = mk('div', 'db-filter-sep'); bar.appendChild(s);
-  }
+  // Suchfeld + Seitenfilter
+  if (searchInp) bar.appendChild(searchInp);
+
+  var seiteInp = document.createElement('input');
+  seiteInp.type = 'number'; seiteInp.placeholder = 'S.';
+  seiteInp.title = 'Nach Seite filtern';
+  seiteInp.value = DB.seite != null ? DB.seite : '';
+  seiteInp.style.cssText = 'width:52px;flex-shrink:0;font-size:12px;padding:3px 6px;height:28px;border:1px solid var(--bord);border-radius:6px;background:var(--surf);color:var(--tx1);';
+  var _seiteDebounce;
+  seiteInp.oninput = function() {
+    clearTimeout(_seiteDebounce);
+    _seiteDebounce = setTimeout(function() {
+      var v = seiteInp.value.trim();
+      DB.seite = v !== '' ? Number(v) : null;
+      DB.offset = 0;
+      refresh();
+    }, 400);
+  };
+  bar.appendChild(seiteInp);
+  bar.appendChild(mk('div', 'db-filter-sep'));
 
   function fchipGroup(opts, dbKey) {
     const g = mk('div', 'db-filter-group');
@@ -1097,13 +1115,13 @@ function buildFilterBar(containerEl, loadFn, searchInp) {
   ], 'umfang'));
 
   // Filter löschen (nur wenn aktiv)
-  var anyActive = DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang;
+  var anyActive = DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang || DB.seite != null;
   if (anyActive) {
     bar.appendChild(sep());
     const clrBtn = btn('✕ Filter', 'btn btn-ghost btn-sm');
     clrBtn.style.cssText += 'font-size:10.5px;padding:2px 8px;color:var(--tx3);';
     clrBtn.onclick = function() {
-      DB.herkunft = null; DB.schwierigkeit = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.offset = 0;
+      DB.herkunft = null; DB.schwierigkeit = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.seite = null; DB.offset = 0;
       refresh();
     };
     bar.appendChild(clrBtn);

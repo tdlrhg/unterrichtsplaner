@@ -543,6 +543,8 @@ function buildImportView(container) {
                        .replace(/""\s*\n\s*"/g, '",\n  "')
                        .replace(/""\s*}/g, '"}')
                        .replace(/""\s*]/g, '"]');
+      // Ungültige Backslashes escapen (z.B. LaTeX \frac, \cdot → \\frac, \\cdot)
+      cleaned = cleaned.replace(/\\(?!["\\/bfnrtu0-9])/g, '\\\\');
       var parsed;
       try { parsed = robustJsonParsePr(cleaned); } catch(e) {
         try { parsed = JSON.parse(cleaned); } catch(e2) {

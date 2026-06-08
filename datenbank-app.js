@@ -537,8 +537,10 @@ function buildImportView(container) {
       var parsed;
       try { parsed = robustJsonParsePr(cleaned); } catch(e) {
         try { parsed = JSON.parse(cleaned); } catch(e2) {
-          console.error('[Import] JSON-Parse fehlgeschlagen:', e2, 'Antwort:', cleaned);
-          throw new Error('KI-Antwort nicht lesbar: ' + cleaned.slice(0, 120));
+          console.error('[Import] Parse-Fehler:', e2.message);
+          console.error('[Import] Länge:', cleaned.length, '| Ende:', cleaned.slice(-80));
+          console.error('[Import] Vollständig:', cleaned);
+          throw new Error('KI-Antwort nicht lesbar (Länge ' + cleaned.length + '): …' + cleaned.slice(-60));
         }
       }
       var aufg = (parsed.aufgaben || []).filter(function(a) { return a.typ !== 'lehrtext'; });

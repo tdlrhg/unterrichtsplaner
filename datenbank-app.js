@@ -763,6 +763,74 @@ function buildImportView(container) {
   }
 }
 
+// ── Autocomplete-Dropdown für Eingabefelder ───────────────────────
+// Hängt ein Custom-Dropdown an ein <input>-Element.
+// fetchFn() → Promise<string[]>  (wird beim ersten Öffnen einmal aufgerufen)
+function attachAutocomplete(inp, fetchFn) {
+  var allOptions = null; // gecacht nach erstem Laden
+  var dropdown = null;
+
+  function showDropdown(filter) {
+    removeDropdown();
+    var opts = (allOptions || []).filter(function(o) {
+      return !filter || o.toLowerCase().includes(filter.toLowerCase());
+    });
+    if (!opts.length) return;
+    dropdown = mk('div', '');
+    dropdown.style.cssText = 'position:absolute;z-index:9999;background:var(--surf);'
+      + 'border:1px solid var(--bord);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);'
+      + 'max-height:220px;overflow-y:auto;min-width:100%;';
+    opts.forEach(function(o) {
+      var item = tx('div', '', o);
+      item.style.cssText = 'padding:7px 12px;font-size:13px;cursor:pointer;color:var(--tx1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      item.onmouseenter = function() { item.style.background = 'var(--surf2)'; };
+      item.onmouseleave = function() { item.style.background = ''; };
+      item.onmousedown = function(e) {
+        e.preventDefault(); // verhindert blur am Input
+        inp.value = o;
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+        removeDropdown();
+      };
+      dropdown.appendChild(item);
+    });
+    // Positionierung relativ zum nächsten position:relative-Vorfahren
+    var wrap = inp.parentElement;
+    wrap.style.position = 'relative';
+    wrap.appendChild(dropdown);
+  }
+
+  function removeDropdown() {
+    if (dropdown) { dropdown.remove(); dropdown = null; }
+  }
+
+  inp.removeAttribute('list'); // datalist deaktivieren falls vorhanden
+
+  inp.addEventListener('focus', function() {
+    if (!allOptions) {
+      fetchFn().then(function(opts) {
+        allOptions = opts;
+        if (document.activeElement === inp) showDropdown(inp.value);
+      });
+    } else {
+      showDropdown(inp.value);
+    }
+  });
+  inp.addEventListener('input', function() {
+    if (allOptions) showDropdown(inp.value);
+  });
+  inp.addEventListener('blur', function() {
+    // Kurz warten, damit onmousedown des Items noch feuern kann
+    setTimeout(removeDropdown, 150);
+  });
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { removeDropdown(); inp.blur(); }
+    if (e.key === 'ArrowDown' && dropdown) {
+      var first = dropdown.firstChild;
+      if (first) { first.style.background = 'var(--surf2)'; first.focus && first.focus(); }
+    }
+  });
+}
+
 // ── Fach-Ansicht ──────────────────────────────────────────────────
 // ── Tabellen-Header mit Resize + Drag-Reorder ─────────────────────
 var _colDragFromPos = null;
@@ -1439,27 +1507,26 @@ function openGroupModal(group, onRefresh) {
   // Kapitel-Felder mit Autocomplete
   var kapF = mkInp('Kapitel', 'kapitel_titel', 'z.B. IV Lineare Gleichungssysteme');
   var kapInp = kapF.querySelector('input');
-  var kapListId = 'db-grp-kapitel-' + Date.now();
-  kapInp.setAttribute('list', kapListId);
-  var kapDl = document.createElement('datalist'); kapDl.id = kapListId; kapF.appendChild(kapDl);
   if (ref.buch) {
-    sbSelect('inhalte', { select: 'kapitel', filters: { buch: ref.buch }, limit: 1000 }).then(function(rows) {
-      var seen = {}, kaps = [];
-      rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
-      kaps.sort().forEach(function(k) { var o = document.createElement('option'); o.value = k; kapDl.appendChild(o); });
+    attachAutocomplete(kapInp, function() {
+      return sbSelect('inhalte', { select: 'kapitel', filters: { buch: ref.buch }, limit: 1000 }).then(function(rows) {
+        var seen = {}, kaps = [];
+        rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
+        return kaps.sort();
+      });
     });
   }
 
   var ukF = mkInp('Unterkapitel', 'uk_titel', 'z.B. Gleichungssysteme grafisch lösen');
   var ukInp = ukF.querySelector('input');
-  var ukListId = 'db-grp-uk-' + Date.now();
-  ukInp.setAttribute('list', ukListId);
-  var ukDl = document.createElement('datalist'); ukDl.id = ukListId; ukF.appendChild(ukDl);
   if (ref.buch) {
-    sbSelect('inhalte', { select: 'uk_titel', filters: Object.assign({ buch: ref.buch }, ref.kapitel ? { kapitel: ref.kapitel } : {}), limit: 500 }).then(function(rows) {
-      var seen = {}, uks = [];
-      rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
-      uks.sort().forEach(function(u) { var o = document.createElement('option'); o.value = u; ukDl.appendChild(o); });
+    attachAutocomplete(ukInp, function() {
+      var kapVal = kapInp.value || ref.kapitel || ref.kapitel_titel;
+      return sbSelect('inhalte', { select: 'uk_titel', filters: Object.assign({ buch: ref.buch }, kapVal ? { kapitel: kapVal } : {}), limit: 500 }).then(function(rows) {
+        var seen = {}, uks = [];
+        rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
+        return uks.sort();
+      });
     });
   }
 
@@ -1768,21 +1835,16 @@ function buildModalBody(a, editable) {
     ta.placeholder = placeholder || ''; ta.value = a[key] || '';
     ta.dataset.key = key; f.appendChild(ta); parent.appendChild(f); return f;
   }
-  // Eingabefeld mit Autocomplete-Vorschlägen (datalist)
-  // fetchFn = async function(currentVal) → Array von Strings
+  // Eingabefeld mit Autocomplete-Dropdown
   function efldSuggest(parent, label, key, placeholder, fetchFn) {
     const f = mk('div', 'db-form-field');
     if (label) { const lbl = document.createElement('label'); lbl.textContent = label; f.appendChild(lbl); }
-    const listId = 'db-suggest-' + key + '-' + Date.now();
     const inp = document.createElement('input');
     inp.className = 'db-form-inp'; inp.type = 'text';
     inp.placeholder = placeholder || ''; inp.value = a[key] != null ? String(a[key]) : '';
-    inp.dataset.key = key; inp.setAttribute('list', listId);
-    const dl = document.createElement('datalist'); dl.id = listId;
-    f.appendChild(inp); f.appendChild(dl); parent.appendChild(f);
-    if (fetchFn) fetchFn(inp.value).then(function(vals) {
-      vals.forEach(function(v) { var o = document.createElement('option'); o.value = v; dl.appendChild(o); });
-    });
+    inp.dataset.key = key;
+    f.appendChild(inp); parent.appendChild(f);
+    if (fetchFn) attachAutocomplete(inp, fetchFn);
     return { f, inp };
   }
 

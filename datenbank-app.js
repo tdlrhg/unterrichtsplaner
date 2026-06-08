@@ -454,6 +454,14 @@ function buildImportView(container) {
   wrap.appendChild(metaCard);
 
   var buchInp = finp('z.B. Lambacher Schweizer 8');
+  var buchList = document.createElement('datalist');
+  buchList.id = 'imp-buch-list-' + Date.now();
+  buchInp.setAttribute('list', buchList.id);
+  document.body.appendChild(buchList);
+  sbSelect('inhalte', { limit: 500, order: 'buch' }).then(function(rows) {
+    var seen = {};
+    rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; var o = document.createElement('option'); o.value = r.buch; buchList.appendChild(o); } });
+  });
   var typSel  = fsel([['schulbuch','📖 Schulbuch'],['aufgabenpool','🗃 Aufgabenpool'],['sammlung','📋 Sammlung'],['eigenmaterial','📄 Eigenmaterial']]);
   var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
   var jgInp   = finp('z.B. 8'); jgInp.style.maxWidth = '80px';

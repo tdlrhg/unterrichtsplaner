@@ -19,26 +19,31 @@ const FAECHER = [
 
 // ── Spalten-Konfiguration ──────────────────────────────────────────
 const COLS = [
-  { key: 'src',    label: 'Aufgabe',       hCls: 'db-col-hdr-src',    cCls: 'db-col-src',    sortField: 'seite'          },
-  { key: 'inhalt', label: 'Inhalt',        hCls: 'db-col-hdr-inhalt', cCls: 'db-col-inhalt', sortField: 'inhalt'         },
-  { key: 'schw',   label: 'AFB / Niveau',  hCls: 'db-col-hdr-schw',   cCls: 'db-col-schw',   sortField: 'schwierigkeit'  },
+  { key: 'src',      label: 'Aufgabe',      hCls: 'db-col-hdr-src',    cCls: 'db-col-src',    sortField: 'seite',         mandatory: true  },
+  { key: 'inhalt',   label: 'Inhalt',       hCls: 'db-col-hdr-inhalt', cCls: 'db-col-inhalt', sortField: 'inhalt'                          },
+  { key: 'schw',     label: 'AFB / Niveau', hCls: 'db-col-hdr-schw',   cCls: 'db-col-schw',   sortField: 'schwierigkeit'                   },
+  { key: 'operator', label: 'Operator',     hCls: 'db-col-hdr-op',     cCls: 'db-col-op',     sortField: 'operator',      defaultOff: true },
+  { key: 'umfang',   label: 'Umfang',       hCls: 'db-col-hdr-umfang', cCls: 'db-col-umfang', sortField: null,            defaultOff: true },
 ];
 
 var COL_CONFIG = (function() {
   try {
     var s = JSON.parse(localStorage.getItem('db_col_config') || 'null');
-    if (s && s.v === 3 && Array.isArray(s.order) && s.order.length === COLS.length &&
-        Array.isArray(s.widths) && s.widths.length === COLS.length) return s;
+    if (s && s.v === 4 && Array.isArray(s.order) && Array.isArray(s.widths) && Array.isArray(s.hidden)) return s;
   } catch(e) {}
-  return { v: 3, order: [0,1,2], widths: [80, null, 150] };
+  return { v: 4, order: [0,1,2,3,4], widths: [210, null, 160, 110, 80], hidden: [3,4] };
 })();
 
 function saveColConfig() {
-  try { localStorage.setItem('db_col_config', JSON.stringify({ ...COL_CONFIG, v: 3 })); } catch(e) {}
+  try { localStorage.setItem('db_col_config', JSON.stringify(COL_CONFIG)); } catch(e) {}
+}
+
+function visibleCols() {
+  return COL_CONFIG.order.filter(function(i) { return COL_CONFIG.hidden.indexOf(i) === -1; });
 }
 
 function colTemplate() {
-  return COL_CONFIG.order.map(function(i) {
+  return visibleCols().map(function(i) {
     var w = COL_CONFIG.widths[i];
     return w ? w + 'px' : '1fr';
   }).join(' ');
@@ -766,7 +771,8 @@ function buildTableHead(onSortChange) {
   const head = mk('div', 'db-table-head');
   head.style.gridTemplateColumns = colTemplate();
 
-  COL_CONFIG.order.forEach(function(colIdx, visualPos) {
+  var visCols = visibleCols();
+  visCols.forEach(function(colIdx, visualPos) {
     const col = COLS[colIdx];
     const hCell = mk('div', 'db-col-hdr ' + col.hCls);
     hCell.dataset.colIdx = colIdx;
@@ -794,7 +800,7 @@ function buildTableHead(onSortChange) {
     }
 
     // ── Resize-Handle (nicht nach der letzten Spalte) ──────────────
-    if (visualPos < COLS.length - 1) {
+    if (visualPos < visCols.length - 1) {
       const rh = mk('div', 'db-col-resize-handle');
       rh.title = 'Spaltenbreite ziehen';
       rh.draggable = false;
@@ -847,7 +853,7 @@ function buildTableHead(onSortChange) {
       });
     });
     hCell.addEventListener('dragover', function(e) {
-      if (_colDragFromPos === null || _colDragFromPos === visualPos) return;
+      if (_colDragFromPos === null || _colDragFromPos === visualPos) return; // eslint-disable-line
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       hCell.classList.add('db-col-drag-over');
@@ -861,16 +867,14 @@ function buildTableHead(onSortChange) {
       var fromPos = _colDragFromPos;
       var toPos = visualPos;
       if (fromPos === null || fromPos === toPos) return;
-
-      var newOrder = COL_CONFIG.order.slice();
-      var moved = newOrder.splice(fromPos, 1)[0];
-      newOrder.splice(toPos, 0, moved);
-      COL_CONFIG.order = newOrder;
+      // Reorder nur innerhalb der sichtbaren Spalten, Rest bleibt am Ende
+      var vis = visibleCols();
+      var fromIdx = vis[fromPos], toIdx = vis[toPos];
+      var newOrder = COL_CONFIG.order.filter(function(i) { return vis.indexOf(i) === -1; });
+      vis.splice(fromPos, 1); vis.splice(toPos, 0, fromIdx);
+      COL_CONFIG.order = vis.concat(newOrder);
       saveColConfig();
-
-      // Header neu aufbauen (selbe Position im DOM)
       head.replaceWith(buildTableHead(onSortChange));
-      // Zeilen-Zellen in allen sichtbaren Rows neu ordnen
       document.querySelectorAll('.db-row').forEach(reorderRowCells);
     });
 
@@ -887,7 +891,7 @@ function reorderRowCells(rowEl) {
     if (idx !== undefined) cellMap[idx] = cell;
   });
   while (rowEl.firstChild) rowEl.removeChild(rowEl.firstChild);
-  COL_CONFIG.order.forEach(function(colIdx) {
+  visibleCols().forEach(function(colIdx) {
     if (cellMap[colIdx]) rowEl.appendChild(cellMap[colIdx]);
   });
   rowEl.style.gridTemplateColumns = colTemplate();
@@ -903,8 +907,11 @@ async function buildFachView(container) {
   const subT = tx('div', 'c-sub', '');
   hdrLeft.appendChild(subT);
   hdr.appendChild(hdrLeft);
+  const colPickerBtn = btn('⚙ Spalten', 'btn btn-ghost btn-sm');
+  colPickerBtn.style.cssText = 'margin-left:auto;flex-shrink:0;font-size:11px;position:relative;';
+  hdr.appendChild(colPickerBtn);
   const neuBtn = btn('+ Neu', 'btn btn-sm');
-  neuBtn.style.cssText = 'margin-left:auto;flex-shrink:0;';
+  neuBtn.style.cssText = 'flex-shrink:0;';
   hdr.appendChild(neuBtn);
   container.appendChild(hdr);
 
@@ -937,6 +944,49 @@ async function buildFachView(container) {
     if (oldHead) oldHead.replaceWith(buildTableHead(onSortChange));
     load();
   }
+
+  // ── Spalten-Picker ────────────────────────────────────────────
+  colPickerBtn.onclick = function(e) {
+    e.stopPropagation();
+    var existing = document.getElementById('db-col-picker');
+    if (existing) { existing.remove(); return; }
+    var picker = mk('div', '');
+    picker.id = 'db-col-picker';
+    picker.style.cssText = 'position:absolute;top:calc(100% + 4px);right:0;z-index:200;'
+      + 'background:var(--surf);border:1px solid var(--bord);border-radius:10px;'
+      + 'padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.18);min-width:170px;';
+    picker.appendChild(tx('div', '', 'Spalten anzeigen')).style.cssText =
+      'font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;';
+    COLS.forEach(function(col, idx) {
+      if (col.mandatory) return; // "Aufgabe" immer sichtbar
+      var row = mk('div', '');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;';
+      var chk = document.createElement('input');
+      chk.type = 'checkbox'; chk.checked = COL_CONFIG.hidden.indexOf(idx) === -1;
+      chk.style.cssText = 'width:14px;height:14px;cursor:pointer;accent-color:var(--pri);flex-shrink:0;';
+      var lbl = tx('span', '', col.label);
+      lbl.style.cssText = 'font-size:13px;color:var(--tx1);';
+      row.appendChild(chk); row.appendChild(lbl);
+      row.onclick = function() { chk.checked = !chk.checked; toggle(); };
+      chk.onclick = function(ev) { ev.stopPropagation(); toggle(); };
+      function toggle() {
+        var h = COL_CONFIG.hidden.indexOf(idx);
+        if (chk.checked) { if (h !== -1) COL_CONFIG.hidden.splice(h, 1); }
+        else              { if (h === -1) COL_CONFIG.hidden.push(idx); }
+        // Spalte auch in order halten (falls neu)
+        if (COL_CONFIG.order.indexOf(idx) === -1) COL_CONFIG.order.push(idx);
+        saveColConfig();
+        var oldHead = tableWrap.querySelector('.db-table-head');
+        if (oldHead) oldHead.replaceWith(buildTableHead(onSortChange));
+        document.querySelectorAll('.db-row').forEach(reorderRowCells);
+      }
+      picker.appendChild(row);
+    });
+    colPickerBtn.style.position = 'relative';
+    colPickerBtn.appendChild(picker);
+    var close = function(ev) { if (!picker.contains(ev.target) && ev.target !== colPickerBtn) { picker.remove(); document.removeEventListener('click', close); } };
+    setTimeout(function() { document.addEventListener('click', close); }, 0);
+  };
 
   tableWrap.appendChild(buildTableHead(onSortChange));
 
@@ -1126,8 +1176,23 @@ function renderRow(a, onSaved, compact) {
   if (a.niveau)        schwCol.appendChild(mkChip(a.niveau, NIVEAU_FARBEN[a.niveau] || '#64748b', NIVEAU_ICONS[a.niveau] || ''));
   cells[2] = schwCol;
 
-  // In konfigurierter Reihenfolge einhängen
-  COL_CONFIG.order.forEach(function(i) { row.appendChild(cells[i]); });
+  // Zelle 3: Operator (optional)
+  var opCol = mk('div', 'db-col-op'); opCol.dataset.colIdx = 3;
+  if (a.operator) opCol.appendChild(mkChip(a.operator, opColor(a.operator)));
+  cells[3] = opCol;
+
+  // Zelle 4: Umfang (optional)
+  var umfCol = mk('div', 'db-col-umfang'); umfCol.dataset.colIdx = 4;
+  umfCol.style.cssText = 'display:flex;justify-content:center;align-items:center;';
+  if (a.umfang) {
+    var umfEl = tx('div', '', a.umfang);
+    umfEl.style.cssText = 'font-size:11px;color:var(--tx3);font-weight:600;';
+    umfCol.appendChild(umfEl);
+  }
+  cells[4] = umfCol;
+
+  // Nur sichtbare Spalten in konfigurierter Reihenfolge einhängen
+  visibleCols().forEach(function(i) { row.appendChild(cells[i]); });
 
   // Klick → Vollbild-Modal
   row.onclick = function() { openEntryModal(a, 'view', onSaved); };

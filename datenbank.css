@@ -89,6 +89,9 @@
 .db-col-inhalt { overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
 .db-col-op     { display: flex; justify-content: center; }
 .db-col-schw   { display: flex; justify-content: center; }
+.db-col-umfang { display: flex; justify-content: center; }
+
+.db-col-hdr-umfang { background: rgba(15,118,110,.07); color: #0f766e; }
 
 .db-herkunft-badge {
   font-size: 9px;

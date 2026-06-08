@@ -62,6 +62,7 @@ const DB = {
   umfang: null,
   jahrgang: null,
   kapitel: null,
+  uk_titel: null,
   seite: null,
   sortCol: null,   // null | 'seite' | 'inhalt' | 'schwierigkeit'
   sortDir: 'asc',  // 'asc' | 'desc'
@@ -956,6 +957,7 @@ async function buildFachView(container) {
     if (DB.umfang)        filters.umfang        = DB.umfang;
     if (DB.jahrgang)      filters.jahrgang      = DB.jahrgang;
     if (DB.kapitel)       filters.kapitel       = DB.kapitel;
+    if (DB.uk_titel)      filters.uk_titel      = DB.uk_titel;
     if (DB.seite != null) filters.seite         = DB.seite;
 
     // Sortier-Reihenfolge aufbauen
@@ -1004,6 +1006,7 @@ async function buildFachView(container) {
     if (DB.niveau)        parts.push(DB.niveau);
     if (DB.umfang)        parts.push(DB.umfang);
     if (DB.kapitel)       parts.push(DB.kapitel);
+    if (DB.uk_titel)      parts.push(DB.uk_titel);
     if (DB.seite != null) parts.push('S. ' + DB.seite);
     if (DB.suchtext)      parts.push('„' + DB.suchtext + '"');
     subT.textContent = rows.length + (rows.length >= LIMIT ? '+' : '') + ' Einträge'
@@ -1096,7 +1099,7 @@ function renderRow(a, onSaved, compact) {
     src.appendChild(hBadge);
     if (isSchulbuch) {
       src.appendChild(tx('div', 'db-buch-name', a.buch || '–'));
-      var sub = (a.uk_titel || a.kapitel_titel || '') + (a.seite ? ' · S. ' + a.seite : '');
+      var sub = (a.uk_titel || a.kapitel || a.kapitel_titel || '') + (a.seite ? ' · S. ' + a.seite : '');
       if (sub.trim()) src.appendChild(tx('div', 'db-kap-name', sub));
     } else {
       src.appendChild(tx('div', 'db-buch-name', a.titel || a.dateiname || '–'));
@@ -1190,7 +1193,7 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   buchSel.onchange = function() {
     DB.buch = buchSel.value || null;
     DB.herkunft = null;   // Eigenmaterial-Filter beim Buch-Wechsel immer löschen
-    DB.kapitel = null;
+    DB.kapitel = null; DB.uk_titel = null;
     DB.offset = 0; refresh();
   };
   // Bücher laden (gecacht pro Fach)
@@ -1226,20 +1229,44 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     var kapDef = document.createElement('option'); kapDef.value = ''; kapDef.textContent = 'Kapitel';
     kapSel.appendChild(kapDef);
     kapSel.onchange = function() {
-      DB.kapitel = kapSel.value || null; DB.seite = null; DB.offset = 0; refresh();
+      DB.kapitel = kapSel.value || null; DB.uk_titel = null; DB.seite = null; DB.offset = 0; refresh();
     };
-    sbSelect('inhalte', { filters: { fach: fach, buch: DB.buch }, limit: 500, order: 'kapitel' })
+    sbSelect('inhalte', { select: 'kapitel', filters: { fach: fach, buch: DB.buch }, limit: 1000 })
       .then(function(rows) {
         var seen = {}, kaps = [];
         rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
+        kaps.sort();
         kaps.forEach(function(k) {
           var o = document.createElement('option'); o.value = k; o.textContent = k;
           if (DB.kapitel === k) o.selected = true;
           kapSel.appendChild(o);
         });
-        if (DB.kapitel) kapSel.value = DB.kapitel;
       });
     bar.appendChild(kapSel);
+  }
+
+  // Unterkapitel-Dropdown (nur wenn Kapitel gewählt)
+  if (DB.kapitel && fach) {
+    var ukSel = document.createElement('select');
+    ukSel.className = 'db-filter-sel';
+    var ukDef = document.createElement('option'); ukDef.value = ''; ukDef.textContent = 'Unterkapitel';
+    ukSel.appendChild(ukDef);
+    ukSel.onchange = function() {
+      DB.uk_titel = ukSel.value || null; DB.seite = null; DB.offset = 0; refresh();
+    };
+    sbSelect('inhalte', { select: 'uk_titel', filters: { fach: fach, buch: DB.buch, kapitel: DB.kapitel }, limit: 500 })
+      .then(function(rows) {
+        var seen = {}, uks = [];
+        rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
+        uks.sort();
+        uks.forEach(function(u) {
+          var o = document.createElement('option'); o.value = u; o.textContent = u;
+          if (DB.uk_titel === u) o.selected = true;
+          ukSel.appendChild(o);
+        });
+        if (!uks.length) ukSel.style.display = 'none'; // verstecken wenn keine Unterkapitel vorhanden
+      });
+    bar.appendChild(ukSel);
   }
 
   // Eigenmaterial-Chip
@@ -1272,13 +1299,13 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   ], 'niveau'));
 
   // Filter löschen (nur wenn aktiv)
-  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.niveau || DB.umfang || DB.jahrgang || DB.kapitel || DB.seite != null;
+  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.niveau || DB.umfang || DB.jahrgang || DB.kapitel || DB.uk_titel || DB.seite != null;
   if (anyActive) {
     bar.appendChild(sep());
     const clrBtn = btn('✕ Filter', 'btn btn-ghost btn-sm');
     clrBtn.style.cssText += 'font-size:10.5px;padding:2px 8px;color:var(--tx3);';
     clrBtn.onclick = function() {
-      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.niveau = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.seite = null; DB.offset = 0;
+      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.niveau = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.uk_titel = null; DB.seite = null; DB.offset = 0;
       refresh();
     };
     bar.appendChild(clrBtn);
@@ -1581,14 +1608,16 @@ function buildModalBody(a, editable) {
     if (editable) {
       esel(R, 'Herkunft', 'herkunft', [['schulbuch','📖 Schulbuch'],['eigenmaterial','📄 Eigenmaterial']]);
       efld(R, 'Buch / Titel', 'buch', 'text', 'z.B. Lambacher Schweizer 7');
-      efld(R, 'Kapitel', 'kapitel_titel', 'text', 'z.B. Lineare Gleichungssysteme');
+      efld(R, 'Kapitel', 'kapitel_titel', 'text', 'z.B. IV Lineare Gleichungssysteme');
+      efld(R, 'Unterkapitel', 'uk_titel', 'text', 'z.B. Gleichungssysteme grafisch lösen');
       const seiteNr = mk('div', 'db-form-row');
       efld(seiteNr, 'Seite', 'seite', 'number', ''); efld(seiteNr, 'Nr.', 'nr', 'text', 'z.B. 7a');
       R.appendChild(seiteNr);
     } else {
       vfld(R, 'Herkunft', (!a.herkunft || a.herkunft === 'schulbuch') ? '📖 Schulbuch' : '📄 Eigenmaterial');
       if (a.buch)                        vfld(R, 'Buch', a.buch);
-      if (a.uk_titel || a.kapitel_titel) vfld(R, 'Kapitel', a.uk_titel || a.kapitel_titel);
+      if (a.kapitel || a.kapitel_titel)  vfld(R, 'Kapitel', a.kapitel || a.kapitel_titel);
+      if (a.uk_titel)                    vfld(R, 'Unterkapitel', a.uk_titel);
       if (a.seite != null)               vfld(R, 'Seite', a.seite);
       if (a.nr)                          vfld(R, 'Nr.', a.nr);
     }
@@ -1763,7 +1792,8 @@ function buildModalViewBody(a) {
     sec(R, 'Quelle');
     fld(R, 'Herkunft', (!a.herkunft || a.herkunft === 'schulbuch') ? '📖 Schulbuch' : '📄 Eigenmaterial');
     if (a.buch)                        fld(R, 'Buch', a.buch);
-    if (a.uk_titel || a.kapitel_titel) fld(R, 'Kapitel', a.uk_titel || a.kapitel_titel);
+    if (a.kapitel || a.kapitel_titel)  fld(R, 'Kapitel', a.kapitel || a.kapitel_titel);
+    if (a.uk_titel)                    fld(R, 'Unterkapitel', a.uk_titel);
     if (a.seite != null)               fld(R, 'Seite', a.seite);
     if (a.nr)                          fld(R, 'Nr.', a.nr);
     sec(R, 'Einordnung');

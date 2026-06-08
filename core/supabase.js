@@ -149,3 +149,18 @@ async function sbDelete(table, id) {
   const res = await fetch(url, { method: 'DELETE', headers: _H() });
   if (!res.ok) throw new Error(await res.text());
 }
+
+// Synchronisiert eine ID-basierte Tabelle per Vollabgleich:
+// - alle aktuellen rows werden upserted
+// - Zeilen, deren id nicht mehr lokal existiert, werden gelöscht
+async function sbSyncById(table, rows) {
+  const cleanRows = (rows || []).filter(r => r && r.id);
+  await sbInsert(table, cleanRows);
+  const remoteRows = await sbSelectAll(table, { select: 'id', limit: 1000 });
+  const keepIds = new Set(cleanRows.map(r => r.id));
+  const staleIds = (remoteRows || []).map(r => r.id).filter(id => id && !keepIds.has(id));
+  for (const id of staleIds) {
+    await sbDelete(table, id);
+  }
+  return { ok: true, count: cleanRows.length, deleted: staleIds.length };
+}

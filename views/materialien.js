@@ -365,7 +365,12 @@ function viewMaterialien() {
 }
 
 function saveMatDB() {
-  sbUpload('materialien.json', MATDB).catch(e => console.error('Speichern fehlgeschlagen:', e));
+  const rows = MATDB.map(materialToSupabaseRow).filter(r => r.id);
+  sbSyncById('materialien', rows)
+    .catch(e => console.error('Supabase-Sync fehlgeschlagen:', e))
+    .finally(() => {
+      sbUpload('materialien.json', MATDB).catch(e => console.error('JSON-Fallback speichern fehlgeschlagen:', e));
+    });
 }
 async function extractPdfText(blob) {
   try {

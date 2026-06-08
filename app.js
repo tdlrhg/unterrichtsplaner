@@ -91,45 +91,62 @@ function buildSetup() {
   return w;
 }
 
+function normalizeArray(value) {
+  if (Array.isArray(value)) return value.filter(v => v !== null && v !== undefined && v !== '').map(v => String(v));
+  if (value === null || value === undefined || value === '') return [];
+  return [String(value)];
+}
+
+function materialFromSupabaseRow(row, legacy = {}) {
+  const mapped = {
+    id: row.id,
+    dateiname: row.dateiname || legacy.dateiname || '',
+    dateipfad: row.r2_pfad || legacy.dateipfad || null,
+    r2key: row.r2_pfad || legacy.r2key || null,
+    fach: normalizeArray(row.fach),
+    titel: row.titel || legacy.titel || row.dateiname || '',
+    themen: normalizeArray(row.themen),
+    jahrgang: normalizeArray(row.jahrgang),
+    beschreibung: row.beschreibung || '',
+    rolleImKontext: row.rolle || '',
+    unterrichtsphase: normalizeArray(row.unterrichtsphase),
+    kognitiveBeanspruchung: row.kognitive_beanspruchung || '',
+    hatLoesung: row.hat_loesung ?? legacy.hatLoesung ?? false,
+  };
+  return {
+    ...legacy,
+    ...mapped,
+    fach: mapped.fach.length ? mapped.fach : normalizeArray(legacy.fach),
+    themen: mapped.themen.length ? mapped.themen : normalizeArray(legacy.themen),
+    jahrgang: mapped.jahrgang.length ? mapped.jahrgang : normalizeArray(legacy.jahrgang),
+    unterrichtsphase: mapped.unterrichtsphase.length ? mapped.unterrichtsphase : normalizeArray(legacy.unterrichtsphase),
+    beschreibung: mapped.beschreibung || legacy.beschreibung || '',
+    rolleImKontext: mapped.rolleImKontext || legacy.rolleImKontext || '',
+    kognitiveBeanspruchung: mapped.kognitiveBeanspruchung || legacy.kognitiveBeanspruchung || '',
+  };
+}
+
+function materialToSupabaseRow(m) {
+  return {
+    id: m.id,
+    dateiname: m.dateiname || m.titel || null,
+    r2_pfad: m.r2key || m.dateipfad || null,
+    fach: Array.isArray(m.fach) ? m.fach : (m.fach ? [String(m.fach)] : []),
+    titel: m.titel || null,
+    themen: Array.isArray(m.themen) ? m.themen : (m.themen ? [String(m.themen)] : []),
+    jahrgang: Array.isArray(m.jahrgang) ? m.jahrgang : (m.jahrgang ? [String(m.jahrgang)] : []),
+    beschreibung: m.beschreibung || m.kurzinhalt || null,
+    rolle: m.rolleImKontext || m.rolle || null,
+    unterrichtsphase: Array.isArray(m.unterrichtsphase) ? m.unterrichtsphase : (m.unterrichtsphase ? [String(m.unterrichtsphase)] : []),
+    kognitive_beanspruchung: m.kognitiveBeanspruchung || null,
+    hat_loesung: m.hatLoesung ?? null,
+  };
+}
+
 // ── Init ─────────────────────────────────────────────────────────
 (async () => {
   render();
   let _ghDate = null;
-
-  function normalizeArray(value) {
-    if (Array.isArray(value)) return value.filter(v => v !== null && v !== undefined && v !== '').map(v => String(v));
-    if (value === null || value === undefined || value === '') return [];
-    return [String(value)];
-  }
-
-  function materialFromSupabaseRow(row, legacy = {}) {
-    const mapped = {
-      id: row.id,
-      dateiname: row.dateiname || legacy.dateiname || '',
-      dateipfad: row.r2_pfad || legacy.dateipfad || null,
-      r2key: row.r2_pfad || legacy.r2key || null,
-      fach: normalizeArray(row.fach),
-      titel: row.titel || legacy.titel || row.dateiname || '',
-      themen: normalizeArray(row.themen),
-      jahrgang: normalizeArray(row.jahrgang),
-      beschreibung: row.beschreibung || '',
-      rolleImKontext: row.rolle || '',
-      unterrichtsphase: normalizeArray(row.unterrichtsphase),
-      kognitiveBeanspruchung: row.kognitive_beanspruchung || '',
-      hatLoesung: row.hat_loesung ?? legacy.hatLoesung ?? false,
-    };
-    return {
-      ...legacy,
-      ...mapped,
-      fach: mapped.fach.length ? mapped.fach : normalizeArray(legacy.fach),
-      themen: mapped.themen.length ? mapped.themen : normalizeArray(legacy.themen),
-      jahrgang: mapped.jahrgang.length ? mapped.jahrgang : normalizeArray(legacy.jahrgang),
-      unterrichtsphase: mapped.unterrichtsphase.length ? mapped.unterrichtsphase : normalizeArray(legacy.unterrichtsphase),
-      beschreibung: mapped.beschreibung || legacy.beschreibung || '',
-      rolleImKontext: mapped.rolleImKontext || legacy.rolleImKontext || '',
-      kognitiveBeanspruchung: mapped.kognitiveBeanspruchung || legacy.kognitiveBeanspruchung || '',
-    };
-  }
 
   async function loadMaterialDB() {
     const [tableRows, legacyJson] = await Promise.all([

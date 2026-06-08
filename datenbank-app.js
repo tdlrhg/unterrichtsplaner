@@ -1197,15 +1197,15 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     if (DB.buch) buchSel.value = DB.buch;
   }
   if (fach) {
-    if (_buchCache[fach]) {
+    if (_buchCache[fach] && _buchCache[fach].length) {
       populateBuchSel(_buchCache[fach]);
     } else {
-      sbSelect('inhalte', { filters: { fach: fach }, limit: 500, order: 'buch' })
+      sbSelect('inhalte', { select: 'buch', filters: { fach: fach }, limit: 5000, order: 'buch' })
         .then(function(rows) {
           var seen = {}, books = [];
           rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; books.push(r.buch); } });
           books.sort();
-          _buchCache[fach] = books;
+          _buchCache[fach] = books.length ? books : null; // leere Arrays nicht cachen
           populateBuchSel(books);
         });
     }
@@ -1268,15 +1268,6 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   });
   opSel.onchange = function() { DB.operator = opSel.value || null; DB.offset = 0; refresh(); };
   bar.appendChild(opSel);
-
-  bar.appendChild(sep());
-
-  // Umfang
-  bar.appendChild(fchipGroup([
-    { val: 'kurz',  label: 'kurz',  color: '#6d28d9' },
-    { val: 'mittel',label: 'mittel',color: '#6d28d9' },
-    { val: 'lang',  label: 'lang',  color: '#6d28d9' },
-  ], 'umfang'));
 
   // Filter löschen (nur wenn aktiv)
   var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang || DB.kapitel || DB.seite != null;

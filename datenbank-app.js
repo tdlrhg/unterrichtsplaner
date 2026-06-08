@@ -857,6 +857,12 @@ function buildImportView(container) {
   }
 }
 
+// Gibt den typgerechten Label für eine Gruppe zurück, z.B. "Lehrtext 3"
+function grpTypLabel(g) {
+  var typ = g && g.items && g.items[0] && g.items[0].typ;
+  return (TYP_LABELS[typ] || 'Aufgabe') + ' ' + (g ? g.key : '');
+}
+
 // ── Autocomplete-Dropdown für Eingabefelder ───────────────────────
 // Hängt ein Custom-Dropdown an ein <input>-Element.
 // fetchFn() → Promise<string[]>  (wird beim ersten Öffnen einmal aufgerufen)
@@ -1316,7 +1322,7 @@ async function buildFachView(container) {
       ghdr.style.cssText = 'padding:4px 12px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;cursor:pointer;';
       // Wenn kein Seiten-Trenner aktiv (weil seite gefiltert oder null): Seite in Header anzeigen
       var showSeiteInHdr = DB.seite || !ref0 || ref0.seite == null;
-      var hText = (showSeiteInHdr && ref0 && ref0.seite != null ? 'S. ' + ref0.seite + ' · ' : '') + 'Aufgabe ' + g.key;
+      var hText = (showSeiteInHdr && ref0 && ref0.seite != null ? 'S. ' + ref0.seite + ' · ' : '') + grpTypLabel(g);
       if (g.aufgabenstellung) hText += ' · ' + g.aufgabenstellung.slice(0, 90);
       ghdr.textContent = hText;
       ghdr.title = hasSubtasks ? 'Alle Teilaufgaben ansehen' : 'Aufgabe ansehen';
@@ -1679,7 +1685,7 @@ function openGroupModal(group, onRefresh) {
   hdrLeft.style.cssText = 'display:flex;align-items:center;gap:10px;flex:1;min-width:0;';
   var fi = fachInfo(ref.fach);
   hdrLeft.appendChild(tx('span', '', fi.icon));
-  var tp = ['Aufgabe ' + group.key];
+  var tp = [grpTypLabel(group)];
   if (ref.buch)  tp.push(ref.buch);
   if (ref.seite) tp.push('S. ' + ref.seite);
   hdrLeft.appendChild(tx('div', 'db-modal-title', tp.join(' · ')));
@@ -1852,7 +1858,7 @@ function openGroupModal(group, onRefresh) {
 
   // Footer mit Gruppe-Löschen
   var footer = mk('div', 'db-modal-footer');
-  var delGrpBtn = btn('🗑 Aufgabe ' + group.key + ' komplett löschen', 'btn btn-ghost btn-sm');
+  var delGrpBtn = btn('🗑 ' + grpTypLabel(group) + ' komplett löschen', 'btn btn-ghost btn-sm');
   delGrpBtn.style.color = '#ef4444';
   delGrpBtn.onclick = async function() {
     if (!confirm('Alle ' + group.items.length + ' Einträge dieser Aufgabe löschen?')) return;
@@ -1863,7 +1869,7 @@ function openGroupModal(group, onRefresh) {
       if (onRefresh) onRefresh();
     } catch(e) {
       alert('Fehler beim Löschen: ' + e.message);
-      delGrpBtn.disabled = false; delGrpBtn.textContent = '🗑 Aufgabe ' + group.key + ' komplett löschen';
+      delGrpBtn.disabled = false; delGrpBtn.textContent = '🗑 ' + grpTypLabel(group) + ' komplett löschen';
     }
   };
   footer.appendChild(delGrpBtn);

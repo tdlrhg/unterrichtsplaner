@@ -1271,28 +1271,14 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     { val: 'schwer',  label: '▼ schwer',  color: NIVEAU_FARBEN.schwer },
   ], 'niveau'));
 
-  bar.appendChild(sep());
-
-  // Operator (Select)
-  const opSel = document.createElement('select');
-  opSel.className = 'db-filter-sel';
-  [['', 'Operator ▾']].concat(Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; })).forEach(function(opt) {
-    const o = document.createElement('option');
-    o.value = opt[0]; o.textContent = opt[1];
-    if (DB.operator === opt[0]) o.selected = true;
-    opSel.appendChild(o);
-  });
-  opSel.onchange = function() { DB.operator = opSel.value || null; DB.offset = 0; refresh(); };
-  bar.appendChild(opSel);
-
   // Filter löschen (nur wenn aktiv)
-  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.niveau || DB.operator || DB.umfang || DB.jahrgang || DB.kapitel || DB.seite != null;
+  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.niveau || DB.umfang || DB.jahrgang || DB.kapitel || DB.seite != null;
   if (anyActive) {
     bar.appendChild(sep());
     const clrBtn = btn('✕ Filter', 'btn btn-ghost btn-sm');
     clrBtn.style.cssText += 'font-size:10.5px;padding:2px 8px;color:var(--tx3);';
     clrBtn.onclick = function() {
-      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.niveau = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.seite = null; DB.offset = 0;
+      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.niveau = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.seite = null; DB.offset = 0;
       refresh();
     };
     bar.appendChild(clrBtn);
@@ -1653,8 +1639,15 @@ function buildModalBody(a, editable) {
     p1.appendChild(L);
 
     const R = mkR();
+    sec(R, 'Aufgabenniveau');
+    if (editable) {
+      esel(R, '', 'niveau', [['leicht','▽ leicht'],['mittel','▾ mittel'],['schwer','▼ schwer']]);
+    } else {
+      if (a.niveau) vfld(R, 'Niveau', null, mkChip(a.niveau, NIVEAU_FARBEN[a.niveau] || '#64748b', NIVEAU_ICONS[a.niveau]));
+      else vempty(R, '(Noch kein Niveau eingetragen)');
+    }
+    var hasKomp = a.kompetenzen && a.kompetenzen.length;
     if (!editable) {
-      var hasKomp = a.kompetenzen && a.kompetenzen.length;
       if (hasKomp) {
         sec(R, 'Kompetenzen');
         const chips = mk('div', ''); chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
@@ -1662,7 +1655,6 @@ function buildModalBody(a, editable) {
         R.appendChild(chips);
       }
       if (a.inhaltsfeld) { sec(R, 'Inhaltsfeld'); vfld(R, 'Inhaltsfeld', a.inhaltsfeld); }
-      if (!hasKomp && !a.inhaltsfeld) vempty(R, '(Noch keine Unterrichtsdaten hinterlegt)');
     }
     p1.appendChild(R);
   }
@@ -1685,7 +1677,6 @@ function buildModalBody(a, editable) {
     if (editable) {
       esel(R, 'Operator', 'operator', Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; }));
       esel(R, 'Anforderungsbereich', 'schwierigkeit', [['grundlegend','○ grundlegend (AB I)'],['standard','◑ standard (AB II)'],['anspruchsvoll','● anspruchsvoll (AB III)']]);
-      esel(R, 'Aufgabenniveau', 'niveau', [['leicht','▽ leicht'],['mittel','▾ mittel'],['schwer','▼ schwer']]);
       esel(R, 'Umfang', 'umfang', [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']]);
       const loesW = mk('div', 'db-form-field');
       const loesLbl = document.createElement('label'); loesLbl.textContent = 'Mit Lösung'; loesW.appendChild(loesLbl);
@@ -1695,12 +1686,11 @@ function buildModalBody(a, editable) {
       loesChk.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:var(--pri);margin-top:4px;';
       loesW.appendChild(loesChk); R.appendChild(loesW);
     } else {
-      if (a.operator)      vfld(R, 'Operator',             null, mkChip(a.operator, opColor(a.operator)));
-      if (a.schwierigkeit) vfld(R, 'Anforderungsbereich',  null, mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit]));
-      if (a.niveau)        vfld(R, 'Aufgabenniveau',       null, mkChip(a.niveau, NIVEAU_FARBEN[a.niveau] || '#64748b', NIVEAU_ICONS[a.niveau]));
+      if (a.operator)      vfld(R, 'Operator',            null, mkChip(a.operator, opColor(a.operator)));
+      if (a.schwierigkeit) vfld(R, 'Anforderungsbereich', null, mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit]));
       if (a.umfang)        vfld(R, 'Umfang', a.umfang);
       if (a.hat_loesung != null) vfld(R, 'Lösung', a.hat_loesung ? '✓ vorhanden' : '✗ ohne');
-      if (!a.operator && !a.schwierigkeit && !a.niveau && !a.umfang && a.hat_loesung == null) vempty(R, '(Noch keine Prüfungsdaten hinterlegt)');
+      if (!a.operator && !a.schwierigkeit && !a.umfang && a.hat_loesung == null) vempty(R, '(Noch keine Prüfungsdaten hinterlegt)');
     }
     p2.appendChild(R);
   }

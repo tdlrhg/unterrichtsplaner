@@ -392,19 +392,23 @@ function dbGroupByParent(rows) {
 
 const IMP_KI_PROMPT = `Du analysierst eine Seite aus einem Schulbuch oder Unterrichtsmaterial (Gymnasium, Mathematik oder Naturwissenschaften).
 
-Erfasse NUR Aufgaben (kein Lehrtext, keine Erklärungen).
+Erfasse ALLE Inhalte der Seite: Aufgaben, Beispiele UND Lehrtexte.
 
 WICHTIG — Teilaufgaben immer einzeln erfassen:
 Hat eine Aufgabe Teilaufgaben (a, b, c, d …) — egal ob als Absätze ODER als Spalten in einer Tabelle — erstelle für jede Teilaufgabe einen eigenen Eintrag mit nr "8a", "8b" usw. Nie eine Aufgabe mit Teilaufgaben als einzelnen Eintrag erfassen.
 
 Für jeden Eintrag:
-- nr: Aufgabennummer inkl. Teilaufgabe (z.B. "8a", "10c") — nur bei echten Einzelaufgaben ohne Teilaufgaben die bloße Zahl (z.B. "9")
-- aufgabenstellung: der gemeinsame Obersatz der Hauptaufgabe, WÖRTLICH aus dem Buch — nur wenn er für alle Teilaufgaben gilt, sonst null
-- text: NUR der spezifische Text der Teilaufgabe, WÖRTLICH aus dem Buch. NIEMALS die aufgabenstellung wiederholen. NIEMALS Werte, Maße oder Beschreibungen ergänzen, die nicht im Bild stehen. Bei Einzelaufgaben ohne Teilaufgaben: voller Text der Aufgabe.
-- anforderung: Ein Satz was Schüler konkret tun müssen
-- operator: genau eines von: berechnen|begründen|erklären|zeichnen|messen|konstruieren|beschreiben|vergleichen|ausfüllen|MC
-- umfang: genau eines von: kurz|mittel|lang  (kurz = 1–2 min, mittel = 3–7 min, lang = 8+ min)
-- schwierigkeit: genau eines von: grundlegend|standard|anspruchsvoll
+- typ: genau eines von: aufgabe|beispiel|lehrtext
+  · aufgabe = Übungsaufgabe, die Schüler selbst lösen sollen
+  · beispiel = Musteraufgabe oder Musterrechnung mit vorgegebener Lösung
+  · lehrtext = Erklärung, Definition, Merksatz, Fließtext
+- nr: Aufgaben/Beispielnummer inkl. Teilaufgabe (z.B. "8a", "B2") — bei Lehrtexten die Überschrift (z.B. "Definition", "Merksatz")
+- aufgabenstellung: gemeinsamer Obersatz der Hauptaufgabe, WÖRTLICH — nur wenn er für alle Teilaufgaben gilt, bei Lehrtexten null
+- text: spezifischer Text des Eintrags, WÖRTLICH aus dem Buch. Bei Aufgaben NIEMALS aufgabenstellung wiederholen. Keine Ergänzungen.
+- anforderung: Ein Satz was Schüler tun müssen — bei Lehrtexten null
+- operator: genau eines von: berechnen|begründen|erklären|zeichnen|messen|konstruieren|beschreiben|vergleichen|ausfüllen|MC — bei Lehrtexten/Beispielen null
+- umfang: genau eines von: kurz|mittel|lang — bei Lehrtexten null
+- schwierigkeit: genau eines von: grundlegend|standard|anspruchsvoll — bei Lehrtexten null
 
 JSON-FORMAT — sehr wichtig:
 - Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
@@ -414,44 +418,10 @@ JSON-FORMAT — sehr wichtig:
 - Keine Backslashes in Stringwerten
 
 {"aufgaben": [
-  {"nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Berechne den Flächeninhalt der Fig. 1.","anforderung":"Schüler berechnen den Flächeninhalt einer Figur.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"},
-  {"nr":"8b","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Schätze den Flächeninhalt der Fig. 2. Bestimme anschließend den Flächeninhalt in mm2, indem du die benötigten Längen misst.","anforderung":"Schüler schätzen und messen den Flächeninhalt einer Figur.","operator":"messen","umfang":"mittel","schwierigkeit":"standard"}
-]}`;
-
-const IMP_KI_PROMPT_BEISPIEL = `Du analysierst eine Seite aus einem Schulbuch (Gymnasium, Mathematik oder Naturwissenschaften).
-
-Erfasse NUR Beispiele (Musteraufgaben, Musterberechnungen, Musterlösungen). Keine Aufgaben, keine Lehrtexte, keine Definitionen.
-
-Für jedes Beispiel:
-- nr: Bezeichnung oder Nummer des Beispiels, z.B. "B1", "Beispiel 2", "Musteraufgabe 1"
-- aufgabenstellung: Die Aufgabenstellung des Beispiels, WÖRTLICH aus dem Buch (was wird berechnet/gezeigt?)
-- text: Die Lösung / alle Lösungsschritte, WÖRTLICH aus dem Buch, einzeilig (Zeilenumbrüche durch " | " ersetzen)
-
-JSON-FORMAT — sehr wichtig:
-- Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
-- Alle Stringwerte einzeilig
-- Keine Backslashes in Stringwerten, keine LaTeX-Notation
-
-{"aufgaben": [
-  {"nr":"B1","aufgabenstellung":"Berechne den Flächeninhalt des Rechtecks mit a = 6 cm und b = 4 cm.","text":"Gegeben: a = 6 cm, b = 4 cm | Gesucht: A | A = a · b = 6 cm · 4 cm = 24 cm²"}
-]}`;
-
-const IMP_KI_PROMPT_LEHRTEXT = `Du analysierst eine Seite aus einem Schulbuch (Gymnasium, Mathematik oder Naturwissenschaften).
-
-Erfasse NUR Lehrtexte: Erklärungen, Definitionen, Merksätze, Zusammenfassungen, Wiederholungen, Einführungstexte. Keine Aufgaben, keine Beispiele.
-
-Für jeden Textblock:
-- nr: Überschrift oder Typ des Textblocks, z.B. "Definition", "Merksatz", "Einführung", "Wiederholung", oder die Kapitelüberschrift
-- aufgabenstellung: null
-- text: Der vollständige Text des Blocks, WÖRTLICH aus dem Buch, einzeilig (Zeilenumbrüche durch " | " ersetzen)
-
-JSON-FORMAT — sehr wichtig:
-- Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
-- Alle Stringwerte einzeilig
-- Keine Backslashes in Stringwerten, keine LaTeX-Notation
-
-{"aufgaben": [
-  {"nr":"Merksatz","aufgabenstellung":null,"text":"Ein Term ist eine mathematische Schreibweise, die Zahlen, Variablen und Rechenzeichen enthält. | Beispiele: 3x + 5, a² - b², 7 · (x + 2)"}
+  {"typ":"lehrtext","nr":"Merksatz","aufgabenstellung":null,"text":"Der Flächeninhalt eines Rechtecks berechnet sich mit A = a · b.","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
+  {"typ":"beispiel","nr":"B1","aufgabenstellung":"Berechne den Flächeninhalt.","text":"a = 6 cm, b = 4 cm → A = 6 · 4 = 24 cm²","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
+  {"typ":"aufgabe","nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Berechne den Flächeninhalt der Fig. 1.","anforderung":"Schüler berechnen den Flächeninhalt einer Figur.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"},
+  {"typ":"aufgabe","nr":"8b","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Schätze den Flächeninhalt der Fig. 2. Bestimme den Flächeninhalt in mm2 durch Messen.","anforderung":"Schüler schätzen und messen den Flächeninhalt einer Figur.","operator":"messen","umfang":"mittel","schwierigkeit":"standard"}
 ]}`;
 
 function _impResizeImg(dataUrl, maxW, q) {
@@ -521,14 +491,13 @@ function buildImportView(container) {
     rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; var o = document.createElement('option'); o.value = r.buch; buchList.appendChild(o); } });
   });
   var typSel  = fsel([['schulbuch','📖 Schulbuch'],['aufgabenpool','🗃 Aufgabenpool'],['sammlung','📋 Sammlung'],['eigenmaterial','📄 Eigenmaterial']]);
-  var inhaltTypSel = fsel([['aufgabe','📝 Aufgaben'],['beispiel','📐 Beispiele'],['lehrtext','📖 Lehrtexte']]);
   var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
   var jgInp   = finp('z.B. 8'); jgInp.style.maxWidth = '80px';
   var kapInp   = finp('z.B. IV Flächen (optional)');
   var ukInp    = finp('z.B. Flächeninhalt berechnen (optional)');
   var seiteInp = finp('z.B. 142', 'number'); seiteInp.style.maxWidth = '110px';
 
-  metaCard.appendChild(row2(fg('Buchtitel / Quelle', buchInp), fg('Herkunft', typSel), fg('Inhaltstyp', inhaltTypSel)));
+  metaCard.appendChild(row2(fg('Buchtitel / Quelle', buchInp), fg('Typ', typSel)));
   metaCard.appendChild(row2(fg('Fach', fachSel), fg('Jahrgang', jgInp)));
   metaCard.appendChild(row2(fg('Kapitel', kapInp), fg('Unterkapitel', ukInp), fg('Erste Seite', seiteInp)));
 
@@ -611,10 +580,7 @@ function buildImportView(container) {
         blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } });
         if (i < resized.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
       });
-      var kiPrompt = inhaltTypSel.value === 'beispiel' ? IMP_KI_PROMPT_BEISPIEL
-                   : inhaltTypSel.value === 'lehrtext'  ? IMP_KI_PROMPT_LEHRTEXT
-                   : IMP_KI_PROMPT;
-      blocks.push({ type: 'text', text: kiPrompt });
+      blocks.push({ type: 'text', text: IMP_KI_PROMPT });
       var raw = await callKI(blocks, { maxTokens: 16000 });
       // Markdown-Codeblock ``` entfernen falls vorhanden
       var cleaned = raw.trim().replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
@@ -663,13 +629,15 @@ function buildImportView(container) {
     return s;
   }
 
+  var TYP_CYCLE = ['aufgabe', 'beispiel', 'lehrtext'];
+
   function buildAufgabeCard(a, indent) {
     var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';
     var row = mk('div', '');
     row.style.cssText = 'display:flex;align-items:baseline;gap:8px;padding:1px 0 1px '
       + (indent ? '20px' : '4px') + ';';
 
-    var nrLabel = tx('span', '', 'A' + (a.nr || '?'));
+    var nrLabel = tx('span', '', (a.nr || '?'));
     nrLabel.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);flex-shrink:0;min-width:32px;';
     row.appendChild(nrLabel);
 
@@ -679,6 +647,31 @@ function buildImportView(container) {
       row.appendChild(txt);
     }
     return row;
+  }
+
+  // Typ-Badge für Gruppe: zeigt aktuellen Typ, Klick → nächster Typ
+  function mkTypBadge(groupItems, onUpdate) {
+    var cur = groupItems[0].typ || 'aufgabe';
+    var badge = document.createElement('span');
+    function render() {
+      var c = TYP_FARBEN[cur] || '#64748b';
+      badge.textContent = (TYP_ICONS[cur] ? TYP_ICONS[cur] + ' ' : '') + (TYP_LABELS[cur] || cur);
+      badge.style.cssText = 'display:inline-block;font-size:10px;font-weight:700;padding:2px 9px;'
+        + 'border-radius:20px;cursor:pointer;user-select:none;'
+        + 'background:' + c + '18;color:' + c + ';border:1px solid ' + c + '38;'
+        + 'text-transform:uppercase;letter-spacing:.06em;';
+      badge.title = 'Typ ändern (klicken)';
+    }
+    render();
+    badge.onclick = function(e) {
+      e.stopPropagation();
+      var idx = TYP_CYCLE.indexOf(cur);
+      cur = TYP_CYCLE[(idx + 1) % TYP_CYCLE.length];
+      groupItems.forEach(function(item) { item.typ = cur; });
+      render();
+      if (onUpdate) onUpdate(cur);
+    };
+    return badge;
   }
 
   function renderResults() {
@@ -697,17 +690,18 @@ function buildImportView(container) {
     groups.forEach(function(g) {
       var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);
       var groupWrap = mk('div', '');
-      groupWrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+      groupWrap.style.cssText = 'display:flex;flex-direction:column;gap:2px;padding:4px 0;';
 
-      // Gruppenheader — immer, auch für Einzelaufgaben
+      // Gruppenheader mit klickbarem Typ-Badge
       var groupHdr = mk('div', '');
-      groupHdr.style.cssText = 'padding:8px 4px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;';
-      var typHeader = inhaltTypSel.value === 'beispiel' ? 'BEISPIEL'
-                    : inhaltTypSel.value === 'lehrtext'  ? 'TEXT'
-                    : 'AUFGABE';
-      var hdrText = typHeader + ' ' + g.key;
-      if (g.aufgabenstellung) hdrText += ' · ' + g.aufgabenstellung.slice(0, 80);
-      groupHdr.textContent = hdrText;
+      groupHdr.style.cssText = 'display:flex;align-items:center;gap:7px;padding:4px 4px 2px;';
+      var typBadge = mkTypBadge(g.items, function(newTyp) {
+        // Gruppenheader-Text ggf. aktualisieren — kein re-render nötig
+      });
+      groupHdr.appendChild(typBadge);
+      var hdrText = tx('span', '', g.key + (g.aufgabenstellung ? ' · ' + g.aufgabenstellung.slice(0, 80) : ''));
+      hdrText.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;';
+      groupHdr.appendChild(hdrText);
       groupWrap.appendChild(groupHdr);
 
       g.items.forEach(function(a) {
@@ -746,7 +740,7 @@ function buildImportView(container) {
         schwierigkeit: a.schwierigkeit || a.schwierigkeitsstufe || null,
         umfang:       a.umfang || null,
         jahrgang:     jg,
-        typ:          inhaltTypSel.value || 'aufgabe',
+        typ:          a.typ || 'aufgabe',
       };
     });
 

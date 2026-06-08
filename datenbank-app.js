@@ -390,10 +390,16 @@ Für jeden Eintrag:
 - umfang: genau eines von: kurz|mittel|lang  (kurz = 1–2 min, mittel = 3–7 min, lang = 8+ min)
 - schwierigkeit: genau eines von: grundlegend|standard|anspruchsvoll
 
-Antworte NUR mit validem JSON:
+JSON-FORMAT — sehr wichtig:
+- Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
+- Alle Stringwerte einzeilig (keine Zeilenumbrüche innerhalb von Strings)
+- Keine Anführungszeichen innerhalb von Stringwerten
+- Keine LaTeX-Notation (schreibe z.B. "x^2" statt "\frac{x}{2}")
+- Keine Backslashes in Stringwerten
+
 {"aufgaben": [
   {"nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Berechne den Flächeninhalt der Fig. 1.","anforderung":"Schüler berechnen den Flächeninhalt einer Figur.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"},
-  {"nr":"8b","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Schätze den Flächeninhalt der Fig. 2. Bestimme anschließend den Flächeninhalt in mm², indem du die benötigten Längen misst.","anforderung":"Schüler schätzen und messen den Flächeninhalt einer Figur.","operator":"messen","umfang":"mittel","schwierigkeit":"standard"}
+  {"nr":"8b","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Schätze den Flächeninhalt der Fig. 2. Bestimme anschließend den Flächeninhalt in mm2, indem du die benötigten Längen misst.","anforderung":"Schüler schätzen und messen den Flächeninhalt einer Figur.","operator":"messen","umfang":"mittel","schwierigkeit":"standard"}
 ]}`;
 
 function _impResizeImg(dataUrl, maxW, q) {

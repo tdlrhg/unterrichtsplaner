@@ -396,34 +396,40 @@ const IMP_KI_PROMPT = `Du analysierst eine Seite aus einem Schulbuch oder Unterr
 
 Erfasse ALLE Inhalte der Seite: Aufgaben, Beispiele UND Lehrtexte.
 
-WICHTIG — Teilaufgaben immer einzeln erfassen:
+VERBATIM-REGEL (gilt für ALLE Typen):
+Gib jeden Text EXAKT so wieder, wie er im Buch steht — Wort für Wort, Zeichen für Zeichen. Kürze NICHTS, lasse NICHTS weg, formuliere NICHTS um. Auch kurze Sätze, Einschübe oder Fußnoten müssen vollständig erfasst werden.
+
+WICHTIG — Aufgaben: Teilaufgaben immer einzeln erfassen:
 Hat eine Aufgabe Teilaufgaben (a, b, c, d …) — egal ob als Absätze ODER als Spalten in einer Tabelle — erstelle für jede Teilaufgabe einen eigenen Eintrag mit nr "8a", "8b" usw. Nie eine Aufgabe mit Teilaufgaben als einzelnen Eintrag erfassen.
+
+WICHTIG — Lehrtexte: Absätze als separate Einträge erfassen:
+Hat ein Lehrtext mehrere klar getrennte Abschnitte (z.B. Einführung + Definition + Merksatz), erstelle für jeden Abschnitt einen eigenen Eintrag. Zusammengehörende Sätze desselben Abschnitts bleiben in einem Eintrag.
 
 Für jeden Eintrag:
 - typ: genau eines von: aufgabe|beispiel|lehrtext
   · aufgabe = Übungsaufgabe, die Schüler selbst lösen sollen
   · beispiel = Musteraufgabe oder Musterrechnung mit vorgegebener Lösung
-  · lehrtext = Erklärung, Definition, Merksatz, Fließtext
-- nr: Aufgaben/Beispielnummer inkl. Teilaufgabe (z.B. "8a", "B2") — bei Lehrtexten die Überschrift (z.B. "Definition", "Merksatz")
-- aufgabenstellung: gemeinsamer Obersatz der Hauptaufgabe, WÖRTLICH — nur wenn er für alle Teilaufgaben gilt, bei Lehrtexten null
-- text: spezifischer Text des Eintrags, WÖRTLICH aus dem Buch. Bei Aufgaben NIEMALS aufgabenstellung wiederholen. Keine Ergänzungen.
-- anforderung: Ein Satz was Schüler tun müssen — bei Lehrtexten null
+  · lehrtext = Erklärung, Definition, Merksatz, Fließtext, Einführung
+- nr: Aufgaben-/Beispielnummer inkl. Teilaufgabe (z.B. "8a", "B2") — bei Lehrtexten die Überschrift oder Typ (z.B. "Definition", "Merksatz", "1.1 Terme")
+- aufgabenstellung: gemeinsamer Obersatz der Hauptaufgabe, VERBATIM — nur wenn er für alle Teilaufgaben gilt; bei Lehrtexten und Beispielen null
+- text: der vollständige Text des Eintrags, VERBATIM und VOLLSTÄNDIG aus dem Buch. Zeilenumbrüche innerhalb des Textes durch " | " ersetzen. Bei Aufgaben NIEMALS aufgabenstellung wiederholen.
+- anforderung: Ein Satz was Schüler konkret tun müssen — bei Lehrtexten null
 - operator: genau eines von: berechnen|begründen|erklären|zeichnen|messen|konstruieren|beschreiben|vergleichen|ausfüllen|MC — bei Lehrtexten/Beispielen null
 - umfang: genau eines von: kurz|mittel|lang — bei Lehrtexten null
 - schwierigkeit: genau eines von: grundlegend|standard|anspruchsvoll — bei Lehrtexten null
 
 JSON-FORMAT — sehr wichtig:
 - Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
-- Alle Stringwerte einzeilig (keine Zeilenumbrüche innerhalb von Strings)
+- Alle Stringwerte einzeilig (keine Zeilenumbrüche — stattdessen " | " verwenden)
 - Keine Anführungszeichen innerhalb von Stringwerten
 - Keine LaTeX-Notation (schreibe z.B. "x^2" statt "\frac{x}{2}")
 - Keine Backslashes in Stringwerten
 
 {"aufgaben": [
-  {"typ":"lehrtext","nr":"Merksatz","aufgabenstellung":null,"text":"Der Flächeninhalt eines Rechtecks berechnet sich mit A = a · b.","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
-  {"typ":"beispiel","nr":"B1","aufgabenstellung":"Berechne den Flächeninhalt.","text":"a = 6 cm, b = 4 cm → A = 6 · 4 = 24 cm²","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
+  {"typ":"lehrtext","nr":"Merksatz","aufgabenstellung":null,"text":"Der Flächeninhalt eines Rechtecks mit den Seiten a und b berechnet sich mit der Formel A = a · b. | Die Einheit des Flächeninhalts ist cm², m² oder mm².","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
+  {"typ":"beispiel","nr":"B1","aufgabenstellung":null,"text":"Berechne den Flächeninhalt des Rechtecks mit a = 6 cm und b = 4 cm. | Lösung: A = a · b = 6 cm · 4 cm = 24 cm²","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
   {"typ":"aufgabe","nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Berechne den Flächeninhalt der Fig. 1.","anforderung":"Schüler berechnen den Flächeninhalt einer Figur.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"},
-  {"typ":"aufgabe","nr":"8b","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Schätze den Flächeninhalt der Fig. 2. Bestimme den Flächeninhalt in mm2 durch Messen.","anforderung":"Schüler schätzen und messen den Flächeninhalt einer Figur.","operator":"messen","umfang":"mittel","schwierigkeit":"standard"}
+  {"typ":"aufgabe","nr":"8b","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Schätze den Flächeninhalt der Fig. 2. Bestimme den Flächeninhalt in mm2, indem du die benötigten Längen misst.","anforderung":"Schüler schätzen und messen den Flächeninhalt einer Figur.","operator":"messen","umfang":"mittel","schwierigkeit":"standard"}
 ]}`;
 
 function _impResizeImg(dataUrl, maxW, q) {
@@ -1346,7 +1352,7 @@ function renderRow(a, onSaved, compact) {
   var inhaltText = compact
     ? (a.inhalt || '–')
     : (a.inhalt || a.thema || a.beschreibung || '–');
-  mid.appendChild(tx('div', 'db-inhalt-text', inhaltText.slice(0, 150)));
+  mid.appendChild(tx('div', 'db-inhalt-text', inhaltText.replace(/ \| /g, ' · ').slice(0, 150)));
   if (!compact && a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
   cells[1] = mid;
 
@@ -1973,7 +1979,7 @@ function buildModalBody(a, editable) {
     if (label) { const lbl = document.createElement('label'); lbl.textContent = label; f.appendChild(lbl); }
     const ta = document.createElement('textarea');
     ta.className = 'db-form-textarea'; ta.rows = rows || 4;
-    ta.placeholder = placeholder || ''; ta.value = a[key] || '';
+    ta.placeholder = placeholder || ''; ta.value = (a[key] || '').replace(/ \| /g, '\n');
     ta.dataset.key = key; f.appendChild(ta); parent.appendChild(f); return f;
   }
   // Eingabefeld mit Autocomplete-Dropdown
@@ -2071,7 +2077,7 @@ function buildModalBody(a, editable) {
         L.appendChild(tx('div', 'db-modal-text', a.aufgabenstellung));
       }
       sec(L, a.aufgabenstellung ? 'Teilaufgabe' : 'Inhalt / Aufgabe');
-      if (a.inhalt) L.appendChild(tx('div', 'db-modal-text', a.inhalt));
+      if (a.inhalt) L.appendChild(tx('div', 'db-modal-text', a.inhalt.replace(/ \| /g, '\n')));
       else vempty(L, '(Kein Inhalt hinterlegt)');
     }
     p0.appendChild(L);
@@ -2158,6 +2164,7 @@ function buildModalBody(a, editable) {
       const k = el.dataset.key;
       if (el.type === 'checkbox') data[k] = el.checked;
       else if (el.type === 'number') data[k] = el.value !== '' ? Number(el.value) : null;
+      else if (el.tagName === 'TEXTAREA') data[k] = el.value.replace(/\r?\n/g, ' | ').replace(/ \|  \| /g, ' | ').trim() || null;
       else data[k] = el.value.trim() || null;
     });
     return data;
@@ -2322,7 +2329,7 @@ function buildModalForm(a, mode) {
     w.appendChild(lbl);
     const ta = document.createElement('textarea');
     ta.className = 'db-form-textarea'; ta.rows = rows || 5;
-    ta.placeholder = placeholder || ''; ta.value = a[key] || '';
+    ta.placeholder = placeholder || ''; ta.value = (a[key] || '').replace(/ \| /g, '\n');
     ta.dataset.key = key;
     w.appendChild(ta);
     return w;

@@ -861,16 +861,19 @@ function buildImportView(container) {
 // Hängt ein Custom-Dropdown an ein <input>-Element.
 // fetchFn() → Promise<string[]>  (wird beim ersten Öffnen einmal aufgerufen)
 function attachAutocomplete(inp, fetchFn) {
-  var dropdown  = null;
-  var _timer    = null;
-  var _fetchId  = 0;   // verhindert veraltete Fetch-Ergebnisse
+  var dropdown = null;
+  var _timer   = null;
+  var _fetchId = 0;
+  var _active  = false; // zuverlässiger als document.activeElement
 
   function reposition() {
     if (!dropdown) return;
     var r = inp.getBoundingClientRect();
+    // Sicherheit: falls Input noch nicht gerendert oder nicht sichtbar
+    if (!r.width && !r.height) return;
     dropdown.style.left  = r.left + 'px';
     dropdown.style.top   = (r.bottom + 2) + 'px';
-    dropdown.style.width = Math.max(r.width, 160) + 'px';
+    dropdown.style.width = Math.max(r.width, 180) + 'px';
   }
 
   function showDropdown(allOpts, filter) {
@@ -882,18 +885,20 @@ function attachAutocomplete(inp, fetchFn) {
     if (!filtered.length) return;
 
     dropdown = mk('div', '');
-    dropdown.style.cssText = 'position:fixed;z-index:99999;background:var(--surf);'
-      + 'border:1px solid var(--bord);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.22);'
-      + 'max-height:220px;overflow-y:auto;';
+    dropdown.style.cssText = 'position:fixed;z-index:99999;'
+      + 'background:#fff;color:#111;'
+      + 'border:1px solid #ccc;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.22);'
+      + 'max-height:220px;overflow-y:auto;font-family:inherit;';
     filtered.forEach(function(o) {
       var item = tx('div', '', o);
-      item.style.cssText = 'padding:7px 12px;font-size:13px;cursor:pointer;color:var(--tx1);'
+      item.style.cssText = 'padding:8px 13px;font-size:13px;cursor:pointer;'
         + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-      item.onmouseenter = function() { item.style.background = 'var(--surf2)'; };
+      item.onmouseenter = function() { item.style.background = '#f0fdf4'; };
       item.onmouseleave = function() { item.style.background = ''; };
       item.onmousedown  = function(e) {
         e.preventDefault();
         inp.value = o;
+        inp.dispatchEvent(new Event('input',  { bubbles: true }));
         inp.dispatchEvent(new Event('change', { bubbles: true }));
         removeDropdown();
       };
@@ -901,44 +906,55 @@ function attachAutocomplete(inp, fetchFn) {
     });
     document.body.appendChild(dropdown);
     reposition();
-    window.addEventListener('scroll', removeDropdown, { passive: true, capture: true });
+    window.addEventListener('scroll', reposition, { passive: true, capture: true });
   }
 
   function removeDropdown() {
     if (dropdown) {
       dropdown.remove();
       dropdown = null;
-      window.removeEventListener('scroll', removeDropdown, { capture: true });
+      window.removeEventListener('scroll', reposition, { capture: true });
     }
   }
 
-  // Immer frisch fetchen (kein Cache), damit abhängige Felder (Buch → Kapitel)
-  // nach jeder Änderung aktuelle Optionen liefern.
   function trigger(filter) {
     clearTimeout(_timer);
     _timer = setTimeout(function() {
       var id = ++_fetchId;
       fetchFn().then(function(opts) {
-        if (id !== _fetchId) return;             // veralteter Fetch
-        if (document.activeElement === inp) showDropdown(opts || [], filter);
+        if (id !== _fetchId) return;  // veralteter Fetch verwerfen
+        if (_active) showDropdown(opts || [], filter);
       }).catch(function() {});
-    }, 120);
+    }, 80);
   }
 
   inp.removeAttribute('list');
 
-  inp.addEventListener('focus', function() { trigger(inp.value); });   // alle / gefiltert
-  inp.addEventListener('click', function() { if (!dropdown) trigger(inp.value); }); // erneuter Klick auf fokussiertes Feld
-  inp.addEventListener('input', function() { trigger(inp.value); });   // gefiltert
-  inp.addEventListener('blur',  function() {
+  inp.addEventListener('focus', function() {
+    _active = true;
+    trigger(inp.value);
+  });
+  inp.addEventListener('click', function() {
+    // erneuter Klick auf bereits fokussiertes Feld
+    if (!dropdown) trigger(inp.value);
+  });
+  inp.addEventListener('input', function() {
+    trigger(inp.value);
+  });
+  inp.addEventListener('blur', function() {
+    _active = false;
     clearTimeout(_timer);
-    setTimeout(removeDropdown, 150);
+    setTimeout(removeDropdown, 200);
   });
   inp.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') { removeDropdown(); inp.blur(); }
     if (e.key === 'ArrowDown' && dropdown) {
       var first = dropdown.firstChild;
-      if (first) { first.style.background = 'var(--surf2)'; first.focus && first.focus(); }
+      if (first) { first.style.background = '#f0fdf4'; first.focus && first.focus(); }
+    }
+    if (e.key === 'Enter' && dropdown) {
+      var active = dropdown.querySelector('[style*="f0fdf4"]');
+      if (active) { active.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); }
     }
   });
 }

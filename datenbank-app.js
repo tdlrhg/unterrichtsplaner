@@ -538,6 +538,11 @@ function buildImportView(container) {
       cleaned = cleaned.replace(/"((?:[^"\\]|\\.)*)"/g, function(m, inner) {
         return '"' + inner.replace(/\n/g, '\\n').replace(/\r/g, '').replace(/\t/g, '\\t') + '"';
       });
+      // Doppeltes Anführungszeichen am Stringende (KI-Fehler: "text"" → "text")
+      cleaned = cleaned.replace(/"",/g, '",')
+                       .replace(/""\s*\n\s*"/g, '",\n  "')
+                       .replace(/""\s*}/g, '"}')
+                       .replace(/""\s*]/g, '"]');
       var parsed;
       try { parsed = robustJsonParsePr(cleaned); } catch(e) {
         try { parsed = JSON.parse(cleaned); } catch(e2) {

@@ -21,7 +21,7 @@ const FAECHER = [
 const COLS = [
   { key: 'src',    label: 'Aufgabe',       hCls: 'db-col-hdr-src',    cCls: 'db-col-src',    sortField: 'seite'          },
   { key: 'inhalt', label: 'Inhalt',        hCls: 'db-col-hdr-inhalt', cCls: 'db-col-inhalt', sortField: 'inhalt'         },
-  { key: 'schw',   label: 'Schwierigkeit', hCls: 'db-col-hdr-schw',   cCls: 'db-col-schw',   sortField: 'schwierigkeit'  },
+  { key: 'schw',   label: 'AB / Niveau',   hCls: 'db-col-hdr-schw',   cCls: 'db-col-schw',   sortField: 'schwierigkeit'  },
 ];
 
 var COL_CONFIG = (function() {
@@ -58,6 +58,7 @@ const DB = {
   herkunft: null,     // null | 'schulbuch' | 'eigenmaterial'
   operator: null,
   schwierigkeit: null,
+  niveau: null,
   umfang: null,
   jahrgang: null,
   kapitel: null,
@@ -85,6 +86,8 @@ const OP_FARBEN2  = { 'berechnen':'#2563eb', 'begründen':'#7c3aed', 'erklären'
 const SCHW_FARBEN = { 'grundlegend':'#16a34a', 'standard':'#2563eb', 'anspruchsvoll':'#b45309' };
 const SCHW_ICONS  = { 'grundlegend':'○', 'standard':'◑', 'anspruchsvoll':'●' };
 const SCHW_BG     = { 'grundlegend':'rgba(22,163,74,.05)', 'standard':'rgba(37,99,235,.05)', 'anspruchsvoll':'rgba(180,83,9,.05)' };
+const NIVEAU_FARBEN = { 'leicht':'#0891b2', 'mittel':'#7c3aed', 'schwer':'#be123c' };
+const NIVEAU_ICONS  = { 'leicht':'▽', 'mittel':'▾', 'schwer':'▼' };
 
 function opColor(op) { return OP_FARBEN2[op] || '#64748b'; }
 
@@ -116,7 +119,7 @@ function buildDBSidebar(sb) {
   homeInner.appendChild(tx('span', '', '🏠'));
   homeInner.appendChild(tx('span', 'sb-item-label', 'Übersicht'));
   homeRow.appendChild(homeInner);
-  homeRow.onclick = () => { DB.view = 'landing'; DB.fach = null; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
+  homeRow.onclick = () => { DB.view = 'landing'; DB.fach = null; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.niveau = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
   sb.appendChild(homeRow);
 
   const impRow = mk('div', 'sb-item' + (DB.view === 'import' ? ' active' : ''));
@@ -136,7 +139,7 @@ function buildDBSidebar(sb) {
     inner.appendChild(tx('span', '', f.icon));
     inner.appendChild(tx('span', 'sb-item-label', f.label));
     row.appendChild(inner);
-    row.onclick = () => { DB.view = 'fach'; DB.fach = f.key; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
+    row.onclick = () => { DB.view = 'fach'; DB.fach = f.key; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.niveau = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
     sb.appendChild(row);
   });
 
@@ -949,6 +952,7 @@ async function buildFachView(container) {
     if (DB.buch)          filters.buch          = DB.buch;
     if (DB.operator)      filters.operator      = DB.operator;
     if (DB.schwierigkeit) filters.schwierigkeit = DB.schwierigkeit;
+    if (DB.niveau)        filters.niveau        = DB.niveau;
     if (DB.umfang)        filters.umfang        = DB.umfang;
     if (DB.jahrgang)      filters.jahrgang      = DB.jahrgang;
     if (DB.kapitel)       filters.kapitel       = DB.kapitel;
@@ -997,6 +1001,7 @@ async function buildFachView(container) {
     else if (DB.herkunft === 'eigenmaterial') parts.push('Eigenmaterial');
     if (DB.operator)      parts.push(DB.operator);
     if (DB.schwierigkeit) parts.push(DB.schwierigkeit);
+    if (DB.niveau)        parts.push(DB.niveau);
     if (DB.umfang)        parts.push(DB.umfang);
     if (DB.kapitel)       parts.push(DB.kapitel);
     if (DB.seite != null) parts.push('S. ' + DB.seite);
@@ -1108,9 +1113,11 @@ function renderRow(a, onSaved, compact) {
   if (!compact && a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
   cells[1] = mid;
 
-  // Zelle 2: Schwierigkeit
+  // Zelle 2: Anforderungsbereich + Niveau
   var schwCol = mk('div', 'db-col-schw'); schwCol.dataset.colIdx = 2;
+  schwCol.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;';
   if (a.schwierigkeit) schwCol.appendChild(mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit] || ''));
+  if (a.niveau)        schwCol.appendChild(mkChip(a.niveau, NIVEAU_FARBEN[a.niveau] || '#64748b', NIVEAU_ICONS[a.niveau] || ''));
   cells[2] = schwCol;
 
   // In konfigurierter Reihenfolge einhängen
@@ -1248,12 +1255,21 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
 
   bar.appendChild(sep());
 
-  // Schwierigkeit
+  // Anforderungsbereich (NRW AB I–III)
   bar.appendChild(fchipGroup([
-    { val: 'grundlegend',   label: '○ grundlegend',   color: SCHW_FARBEN.grundlegend },
-    { val: 'standard',      label: '◑ standard',      color: SCHW_FARBEN.standard },
-    { val: 'anspruchsvoll', label: '● anspruchsvoll',  color: SCHW_FARBEN.anspruchsvoll },
+    { val: 'grundlegend',   label: '○ AB I',    color: SCHW_FARBEN.grundlegend },
+    { val: 'standard',      label: '◑ AB II',   color: SCHW_FARBEN.standard },
+    { val: 'anspruchsvoll', label: '● AB III',  color: SCHW_FARBEN.anspruchsvoll },
   ], 'schwierigkeit'));
+
+  bar.appendChild(sep());
+
+  // Aufgabenniveau
+  bar.appendChild(fchipGroup([
+    { val: 'leicht',  label: '▽ leicht',  color: NIVEAU_FARBEN.leicht },
+    { val: 'mittel',  label: '▾ mittel',  color: NIVEAU_FARBEN.mittel },
+    { val: 'schwer',  label: '▼ schwer',  color: NIVEAU_FARBEN.schwer },
+  ], 'niveau'));
 
   bar.appendChild(sep());
 
@@ -1270,13 +1286,13 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   bar.appendChild(opSel);
 
   // Filter löschen (nur wenn aktiv)
-  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang || DB.kapitel || DB.seite != null;
+  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.niveau || DB.operator || DB.umfang || DB.jahrgang || DB.kapitel || DB.seite != null;
   if (anyActive) {
     bar.appendChild(sep());
     const clrBtn = btn('✕ Filter', 'btn btn-ghost btn-sm');
     clrBtn.style.cssText += 'font-size:10.5px;padding:2px 8px;color:var(--tx3);';
     clrBtn.onclick = function() {
-      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.seite = null; DB.offset = 0;
+      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.niveau = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.seite = null; DB.offset = 0;
       refresh();
     };
     bar.appendChild(clrBtn);
@@ -1668,7 +1684,8 @@ function buildModalBody(a, editable) {
     sec(R, 'Klassifikation');
     if (editable) {
       esel(R, 'Operator', 'operator', Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; }));
-      esel(R, 'Schwierigkeit', 'schwierigkeit', [['grundlegend','○ grundlegend'],['standard','◑ standard'],['anspruchsvoll','● anspruchsvoll']]);
+      esel(R, 'Anforderungsbereich', 'schwierigkeit', [['grundlegend','○ grundlegend (AB I)'],['standard','◑ standard (AB II)'],['anspruchsvoll','● anspruchsvoll (AB III)']]);
+      esel(R, 'Aufgabenniveau', 'niveau', [['leicht','▽ leicht'],['mittel','▾ mittel'],['schwer','▼ schwer']]);
       esel(R, 'Umfang', 'umfang', [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']]);
       const loesW = mk('div', 'db-form-field');
       const loesLbl = document.createElement('label'); loesLbl.textContent = 'Mit Lösung'; loesW.appendChild(loesLbl);
@@ -1678,11 +1695,12 @@ function buildModalBody(a, editable) {
       loesChk.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:var(--pri);margin-top:4px;';
       loesW.appendChild(loesChk); R.appendChild(loesW);
     } else {
-      if (a.operator)      vfld(R, 'Operator',      null, mkChip(a.operator, opColor(a.operator)));
-      if (a.schwierigkeit) vfld(R, 'Schwierigkeit', null, mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit]));
+      if (a.operator)      vfld(R, 'Operator',             null, mkChip(a.operator, opColor(a.operator)));
+      if (a.schwierigkeit) vfld(R, 'Anforderungsbereich',  null, mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit]));
+      if (a.niveau)        vfld(R, 'Aufgabenniveau',       null, mkChip(a.niveau, NIVEAU_FARBEN[a.niveau] || '#64748b', NIVEAU_ICONS[a.niveau]));
       if (a.umfang)        vfld(R, 'Umfang', a.umfang);
       if (a.hat_loesung != null) vfld(R, 'Lösung', a.hat_loesung ? '✓ vorhanden' : '✗ ohne');
-      if (!a.operator && !a.schwierigkeit && !a.umfang && a.hat_loesung == null) vempty(R, '(Noch keine Prüfungsdaten hinterlegt)');
+      if (!a.operator && !a.schwierigkeit && !a.niveau && !a.umfang && a.hat_loesung == null) vempty(R, '(Noch keine Prüfungsdaten hinterlegt)');
     }
     p2.appendChild(R);
   }

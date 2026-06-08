@@ -1212,13 +1212,46 @@ async function buildFachView(container) {
     }
 
     var groups = dbGroupByParent(rows);
+    var _lastSeiteBuch = null; // für Seiten-Trenner
     groups.forEach(function(g) {
       var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);
+      var ref0 = g.items[0];
+
+      // ── Seiten-Trenner ───────────────────────────────────────────
+      // Nur wenn kein einzelner Seiten-Filter aktiv ist und seite bekannt
+      if (!DB.seite && ref0 && ref0.seite != null) {
+        var seiteBuchKey = (ref0.buch || '') + '::' + ref0.seite;
+        if (seiteBuchKey !== _lastSeiteBuch) {
+          if (_lastSeiteBuch !== null) {
+            // Trennlinie zwischen Seiten
+            var sep = mk('div', '');
+            sep.style.cssText = 'margin:6px 0 2px;border-top:1px solid var(--bord);';
+            wrap.appendChild(sep);
+          }
+          // Seiten-Header
+          var pageHdr = mk('div', '');
+          pageHdr.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px 2px;';
+          var pagePill = tx('span', '', 'Seite ' + ref0.seite);
+          pagePill.style.cssText = 'font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;'
+            + 'color:var(--pri);background:rgba(15,118,110,.08);border:1px solid rgba(15,118,110,.18);'
+            + 'border-radius:20px;padding:2px 9px;';
+          pageHdr.appendChild(pagePill);
+          if (!DB.buch && ref0.buch) {
+            var buchLabel = tx('span', '', ref0.buch);
+            buchLabel.style.cssText = 'font-size:11px;color:var(--tx3);font-weight:500;';
+            pageHdr.appendChild(buchLabel);
+          }
+          wrap.appendChild(pageHdr);
+          _lastSeiteBuch = seiteBuchKey;
+        }
+      }
+
       // Gruppenheader (klickbar → Gruppen-Modal)
       var ghdr = mk('div', '');
-      ghdr.style.cssText = 'padding:8px 12px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;cursor:pointer;';
-      var ref0 = g.items[0];
-      var hText = (!DB.seite && ref0 && ref0.seite != null ? 'S. ' + ref0.seite + ' · ' : '') + 'Aufgabe ' + g.key;
+      ghdr.style.cssText = 'padding:4px 12px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;cursor:pointer;';
+      // Wenn kein Seiten-Trenner aktiv (weil seite gefiltert oder null): Seite in Header anzeigen
+      var showSeiteInHdr = DB.seite || !ref0 || ref0.seite == null;
+      var hText = (showSeiteInHdr && ref0 && ref0.seite != null ? 'S. ' + ref0.seite + ' · ' : '') + 'Aufgabe ' + g.key;
       if (g.aufgabenstellung) hText += ' · ' + g.aufgabenstellung.slice(0, 90);
       ghdr.textContent = hText;
       ghdr.title = hasSubtasks ? 'Alle Teilaufgaben ansehen' : 'Aufgabe ansehen';

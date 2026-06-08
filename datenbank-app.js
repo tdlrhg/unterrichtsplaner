@@ -532,9 +532,13 @@ function buildImportView(container) {
       });
       blocks.push({ type: 'text', text: IMP_KI_PROMPT });
       var raw = await callKI(blocks, { maxTokens: 8000 });
+      console.log('[Import] KI-Rohantwort:', raw);
       var parsed;
       try { parsed = robustJsonParsePr(raw); } catch(e) {
-        try { parsed = JSON.parse(raw); } catch(e2) { throw new Error('KI-Antwort nicht lesbar'); }
+        try { parsed = JSON.parse(raw); } catch(e2) {
+          console.error('[Import] JSON-Parse fehlgeschlagen:', e2, 'Antwort:', raw);
+          throw new Error('KI-Antwort nicht lesbar: ' + String(raw).slice(0, 120));
+        }
       }
       var aufg = (parsed.aufgaben || []).filter(function(a) { return a.typ !== 'lehrtext'; });
       if (!aufg.length) { statusEl.textContent = '⚠️ Keine Aufgaben erkannt — evtl. enthält die Seite nur Lehrtext.'; return; }

@@ -1404,25 +1404,136 @@ function openGroupModal(group, onRefresh) {
   if (ref.seite) tp.push('S. ' + ref.seite);
   hdrLeft.appendChild(tx('div', 'db-modal-title', tp.join(' · ')));
   hdr.appendChild(hdrLeft);
+  var hdrRight = mk('div', '');
+  hdrRight.style.cssText = 'display:flex;align-items:center;gap:6px;flex-shrink:0;';
+  var editAufgBtn = btn('✏️ Aufgabe bearbeiten', 'btn btn-sm');
+  hdrRight.appendChild(editAufgBtn);
   var closeBtn = btn('✕', 'btn btn-ghost btn-sm');
-  closeBtn.style.cssText += 'font-size:13px;padding:3px 8px;flex-shrink:0;';
+  closeBtn.style.cssText += 'font-size:13px;padding:3px 8px;';
   closeBtn.onclick = closeEntryModal;
-  hdr.appendChild(closeBtn);
+  hdrRight.appendChild(closeBtn);
+  hdr.appendChild(hdrRight);
   modal.appendChild(hdr);
+
+  // Gemeinsames Edit-Panel (zunächst versteckt)
+  var sharedPanel = mk('div', '');
+  sharedPanel.style.cssText = 'display:none;padding:16px 20px;border-bottom:1px solid var(--bord);background:var(--surf2);gap:12px;flex-direction:column;';
+
+  function mkInp(labelTxt, key, placeholder) {
+    var f = mk('div', 'db-form-field');
+    var lbl = document.createElement('label'); lbl.textContent = labelTxt; f.appendChild(lbl);
+    var inp = document.createElement('input');
+    inp.className = 'db-form-inp'; inp.type = 'text';
+    inp.placeholder = placeholder || ''; inp.value = ref[key] || '';
+    inp.dataset.key = key; f.appendChild(inp); return f;
+  }
+  function mkTA(labelTxt, key, placeholder) {
+    var f = mk('div', 'db-form-field');
+    var lbl = document.createElement('label'); lbl.textContent = labelTxt; f.appendChild(lbl);
+    var ta = document.createElement('textarea');
+    ta.className = 'db-form-textarea'; ta.rows = 3;
+    ta.placeholder = placeholder || ''; ta.value = ref[key] || '';
+    ta.dataset.key = key; f.appendChild(ta); return f;
+  }
+
+  // Kapitel-Felder mit Autocomplete
+  var kapF = mkInp('Kapitel', 'kapitel_titel', 'z.B. IV Lineare Gleichungssysteme');
+  var kapInp = kapF.querySelector('input');
+  var kapListId = 'db-grp-kapitel-' + Date.now();
+  kapInp.setAttribute('list', kapListId);
+  var kapDl = document.createElement('datalist'); kapDl.id = kapListId; kapF.appendChild(kapDl);
+  if (ref.buch) {
+    sbSelect('inhalte', { select: 'kapitel', filters: { buch: ref.buch }, limit: 1000 }).then(function(rows) {
+      var seen = {}, kaps = [];
+      rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
+      kaps.sort().forEach(function(k) { var o = document.createElement('option'); o.value = k; kapDl.appendChild(o); });
+    });
+  }
+
+  var ukF = mkInp('Unterkapitel', 'uk_titel', 'z.B. Gleichungssysteme grafisch lösen');
+  var ukInp = ukF.querySelector('input');
+  var ukListId = 'db-grp-uk-' + Date.now();
+  ukInp.setAttribute('list', ukListId);
+  var ukDl = document.createElement('datalist'); ukDl.id = ukListId; ukF.appendChild(ukDl);
+  if (ref.buch) {
+    sbSelect('inhalte', { select: 'uk_titel', filters: Object.assign({ buch: ref.buch }, ref.kapitel ? { kapitel: ref.kapitel } : {}), limit: 500 }).then(function(rows) {
+      var seen = {}, uks = [];
+      rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
+      uks.sort().forEach(function(u) { var o = document.createElement('option'); o.value = u; ukDl.appendChild(o); });
+    });
+  }
+
+  var aufgF = mkTA('Aufgabenstellung', 'aufgabenstellung', 'Gemeinsamer Text aller Teilaufgaben');
+
+  sharedPanel.appendChild(kapF);
+  sharedPanel.appendChild(ukF);
+  sharedPanel.appendChild(aufgF);
+
+  // Speichern-Zeile
+  var panelFooter = mk('div', '');
+  panelFooter.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-top:4px;';
+  var cancelPanelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm');
+  cancelPanelBtn.onclick = function() { sharedPanel.style.display = 'none'; editAufgBtn.textContent = '✏️ Aufgabe bearbeiten'; };
+  var savePanelBtn = btn('✓ Für alle speichern', 'btn btn-sm');
+  savePanelBtn.onclick = async function() {
+    var patch = {};
+    sharedPanel.querySelectorAll('[data-key]').forEach(function(el) {
+      patch[el.dataset.key] = el.value.trim() || null;
+    });
+    savePanelBtn.disabled = true; savePanelBtn.textContent = '⏳';
+    try {
+      await Promise.all(group.items.map(function(item) { return sbUpdate('inhalte', item.id, patch); }));
+      group.items.forEach(function(item) { Object.assign(item, patch); });
+      // Anzeige aktualisieren
+      closeEntryModal();
+      if (onRefresh) onRefresh();
+    } catch(e) {
+      alert('Fehler: ' + e.message);
+      savePanelBtn.disabled = false; savePanelBtn.textContent = '✓ Für alle speichern';
+    }
+  };
+  panelFooter.appendChild(cancelPanelBtn);
+  panelFooter.appendChild(savePanelBtn);
+  sharedPanel.appendChild(panelFooter);
+  modal.appendChild(sharedPanel);
+
+  editAufgBtn.onclick = function() {
+    var open = sharedPanel.style.display !== 'none';
+    sharedPanel.style.display = open ? 'none' : 'flex';
+    editAufgBtn.textContent = open ? '✏️ Aufgabe bearbeiten' : '✕ Abbrechen';
+  };
 
   // Body
   var body = mk('div', 'db-modal-body');
-  body.style.padding = '0';
+  body.style.cssText = 'padding:0;display:block;overflow-y:auto;';
 
-  // Aufgabenstellung (gemeinsamer Stamm)
+  // Aufgabenstellung (Lesemodus)
   var aufgst = group.aufgabenstellung || ref.aufgabenstellung;
   if (aufgst) {
     var stBlock = mk('div', '');
     stBlock.style.cssText = 'padding:16px 20px 12px;border-bottom:1px solid var(--sep);';
-    stBlock.appendChild(tx('div', 'db-modal-section-title', 'Aufgabe'));
-    var stText = tx('div', 'db-modal-text', aufgst);
-    stBlock.appendChild(stText);
+    stBlock.appendChild(tx('div', 'db-modal-section-title', 'Aufgabenstellung'));
+    stBlock.appendChild(tx('div', 'db-modal-text', aufgst));
     body.appendChild(stBlock);
+  }
+  // Kapitel-Info (falls vorhanden)
+  var kapInfo = ref.kapitel || ref.kapitel_titel;
+  if (kapInfo || ref.uk_titel) {
+    var kapBlock = mk('div', '');
+    kapBlock.style.cssText = 'padding:8px 20px 10px;border-bottom:1px solid var(--sep);display:flex;gap:16px;flex-wrap:wrap;';
+    if (kapInfo) {
+      var ki = mk('div', '');
+      ki.appendChild(tx('div', 'db-modal-field-label', 'Kapitel'));
+      ki.appendChild(tx('div', 'db-modal-field-value', kapInfo));
+      kapBlock.appendChild(ki);
+    }
+    if (ref.uk_titel) {
+      var ui = mk('div', '');
+      ui.appendChild(tx('div', 'db-modal-field-label', 'Unterkapitel'));
+      ui.appendChild(tx('div', 'db-modal-field-value', ref.uk_titel));
+      kapBlock.appendChild(ui);
+    }
+    body.appendChild(kapBlock);
   }
 
   // Teilaufgaben-Liste
@@ -1433,11 +1544,9 @@ function openGroupModal(group, onRefresh) {
     var card = mk('div', '');
     card.style.cssText = 'display:flex;align-items:flex-start;gap:12px;padding:12px 20px;'
       + (idx < group.items.length - 1 ? 'border-bottom:1px solid var(--sep);' : '');
-
     var letterEl = tx('div', '', letter);
     letterEl.style.cssText = 'font-weight:800;font-size:15px;color:var(--acc,#2563eb);min-width:20px;padding-top:1px;flex-shrink:0;';
     card.appendChild(letterEl);
-
     var cardMain = mk('div', '');
     cardMain.style.cssText = 'flex:1;min-width:0;';
     if (item.inhalt) {
@@ -1447,18 +1556,16 @@ function openGroupModal(group, onRefresh) {
     }
     var chips = mk('div', '');
     chips.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;';
-    if (item.operator)     chips.appendChild(tx('span', 'db-chip db-chip-op',   item.operator));
+    if (item.operator)      chips.appendChild(tx('span', 'db-chip db-chip-op', item.operator));
     if (item.schwierigkeit) chips.appendChild(tx('span', 'db-chip db-chip-' + item.schwierigkeit, item.schwierigkeit));
-    if (item.umfang)        chips.appendChild(tx('span', 'db-chip',             item.umfang));
+    if (item.umfang)        chips.appendChild(tx('span', 'db-chip', item.umfang));
     if (chips.children.length) cardMain.appendChild(chips);
     card.appendChild(cardMain);
-
     var editBtn = btn('✏️', 'btn btn-ghost btn-sm');
     editBtn.title = 'Teilaufgabe ' + item.nr + ' bearbeiten';
     editBtn.style.cssText += 'flex-shrink:0;font-size:12px;padding:3px 7px;';
-    editBtn.onclick = function() { openEntryModal(item, 'view', onRefresh); };
+    editBtn.onclick = function() { openEntryModal(item, 'edit', onRefresh); };
     card.appendChild(editBtn);
-
     list.appendChild(card);
   });
   body.appendChild(list);

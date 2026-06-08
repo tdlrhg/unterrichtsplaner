@@ -72,7 +72,7 @@ async function sbQueryFTS(table, ftsQuery, filters = {}, limit = 10) {
 // Generische SELECT-Abfrage mit eq-Filtern, FTS, Order, Limit, Offset
 // nullFilters: Array von Spalten, die per IS NULL gefiltert werden
 // select: Spalten-Auswahl (default '*')
-async function sbSelect(table, { select = '*', filters = {}, nullFilters = [], fts = null, limit = 50, offset = 0, order = null } = {}) {
+async function sbSelect(table, { select = '*', filters = {}, nullFilters = [], fts = null, limit = 50, offset = 0, order = null, rawParams = [] } = {}) {
   const params = ['select=' + select];
   if (fts && fts.trim()) {
     params.push('search_vector=wfts(german).' + encodeURIComponent(fts.trim()));
@@ -83,6 +83,7 @@ async function sbSelect(table, { select = '*', filters = {}, nullFilters = [], f
     }
   });
   nullFilters.forEach(function(col) { params.push(col + '=is.null'); });
+  rawParams.forEach(function(p) { params.push(p); });
   if (order) params.push('order=' + order);
   params.push('limit=' + limit);
   if (offset) params.push('offset=' + offset);

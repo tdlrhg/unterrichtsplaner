@@ -1187,7 +1187,11 @@ async function buildFachView(container) {
     if (DB.niveau)        filters.niveau        = DB.niveau;
     if (DB.umfang)        filters.umfang        = DB.umfang;
     if (DB.jahrgang)      filters.jahrgang      = DB.jahrgang;
-    if (DB.kapitel)       filters.kapitel       = DB.kapitel;
+    // Kapitel: OR über beide Spalten (kapitel + kapitel_titel) für Rückwärtskompatibilität
+    var rawParams = [];
+    if (DB.kapitel) {
+      rawParams.push('or=(kapitel.eq.' + encodeURIComponent(DB.kapitel) + ',kapitel_titel.eq.' + encodeURIComponent(DB.kapitel) + ')');
+    }
     if (DB.uk_titel)      filters.uk_titel      = DB.uk_titel;
     if (DB.typ)           filters.typ           = DB.typ;
     if (DB.seite != null) filters.seite         = DB.seite;
@@ -1206,6 +1210,7 @@ async function buildFachView(container) {
       fts: DB.suchtext || null,
       filters,
       nullFilters: [],
+      rawParams,
       limit: LIMIT,
       offset: DB.offset,
       order: orderStr,
@@ -1549,10 +1554,10 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     kapSel.onchange = function() {
       DB.kapitel = kapSel.value || null; DB.uk_titel = null; DB.seite = null; DB.offset = 0; refresh();
     };
-    sbSelect('inhalte', { select: 'kapitel', filters: { fach: fach, buch: DB.buch }, limit: 1000 })
+    sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { fach: fach, buch: DB.buch }, limit: 1000 })
       .then(function(rows) {
         var seen = {}, kaps = [];
-        rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
+        rows.forEach(function(r) { var k = r.kapitel || r.kapitel_titel; if (k && !seen[k]) { seen[k] = true; kaps.push(k); } });
         kaps.sort();
         kaps.forEach(function(k) {
           var o = document.createElement('option'); o.value = k; o.textContent = k;
@@ -1828,6 +1833,26 @@ function openGroupModal(group, onRefresh) {
   });
   body.appendChild(list);
   modal.appendChild(body);
+
+  // Footer mit Gruppe-Löschen
+  var footer = mk('div', 'db-modal-footer');
+  var delGrpBtn = btn('🗑 Aufgabe ' + group.key + ' komplett löschen', 'btn btn-ghost btn-sm');
+  delGrpBtn.style.color = '#ef4444';
+  delGrpBtn.onclick = async function() {
+    if (!confirm('Alle ' + group.items.length + ' Einträge dieser Aufgabe löschen?')) return;
+    delGrpBtn.disabled = true; delGrpBtn.textContent = '⏳ Löscht…';
+    try {
+      await Promise.all(group.items.map(function(item) { return sbDelete('inhalte', item.id); }));
+      closeEntryModal();
+      if (onRefresh) onRefresh();
+    } catch(e) {
+      alert('Fehler beim Löschen: ' + e.message);
+      delGrpBtn.disabled = false; delGrpBtn.textContent = '🗑 Aufgabe ' + group.key + ' komplett löschen';
+    }
+  };
+  footer.appendChild(delGrpBtn);
+  modal.appendChild(footer);
+
   document.body.appendChild(overlay);
 }
 
@@ -2529,6 +2554,12 @@ function dbRender() {
     .then(function(gh) { if (gh && gh.commit && gh.commit.committer) _ghDate = gh.commit.committer.date; checkDBVersion(); });
 
   // Alle Quelldaten laden, dann Regal einblenden
+  function reloadLanding() {
+    if (DB.view === 'landing') {
+      var c = document.getElementById('db-content');
+      if (c) { c.innerHTML = ''; buildLanding(c); }
+    }
+  }
   Promise.all([
     sbDownload('schulbuecher.json').catch(function() { return null; }),
     sbDownload('methoden.json').catch(function() { return null; }),
@@ -2537,9 +2568,23 @@ function dbRender() {
     if (Array.isArray(res[0])) SCHULBUCHDB = res[0];
     if (Array.isArray(res[1])) METHDB      = res[1];
     if (Array.isArray(res[2])) DIDARTDB    = res[2];
-    if (DB.view === 'landing') {
-      var c = document.getElementById('db-content');
-      if (c) { c.innerHTML = ''; buildLanding(c); }
-    }
+    reloadLanding();
+    // Zusätzlich: Bücher aus der DB ins Regal laden (Aufgabenpools etc.)
+    sbSelect('inhalte', { select: 'fach,buch,herkunft', limit: 5000 }).then(function(rows) {
+      var changed = false;
+      var seen = {};
+      rows.forEach(function(r) {
+        if (!r.buch || !r.fach) return;
+        var key = r.fach + '::' + r.buch;
+        if (seen[key]) return;
+        seen[key] = true;
+        var exists = SCHULBUCHDB.some(function(b) { return b.fach === r.fach && b.titel === r.buch; });
+        if (!exists) {
+          SCHULBUCHDB.push({ fach: r.fach, titel: r.buch, typ: 'aufgabenpool', kapitel: [], jahrgang: null });
+          changed = true;
+        }
+      });
+      if (changed) reloadLanding();
+    }).catch(function() {});
   });
 })();

@@ -423,8 +423,9 @@ function dbGroupByParent(rows) {
   var groups = {}, order = [];
   rows.forEach(function(r) {
     var parentNr = String(r.nr || '').replace(/[a-zA-Z]+$/, '').trim() || String(r.nr || '?');
-    var key = (r.buch || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr;
-    if (!groups[key]) { groups[key] = { key: parentNr, aufgabenstellung: null, items: [] }; order.push(key); }
+    // gruppen_key aus DB bevorzugen, Fallback auf Frontend-Berechnung
+    var key = r.gruppen_key || ((r.buch || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr);
+    if (!groups[key]) { groups[key] = { key: parentNr, gruppen_key: key, aufgabenstellung: null, items: [] }; order.push(key); }
     if (!groups[key].aufgabenstellung && r.aufgabenstellung) groups[key].aufgabenstellung = r.aufgabenstellung;
     groups[key].items.push(r);
   });
@@ -772,6 +773,9 @@ function buildImportView(container) {
     var ts       = Date.now();
 
     var rows = _aufgaben.map(function(a, i) {
+      var nr   = String(a.nr || (i + 1));
+      var nrBase = nr.replace(/[a-zA-Z]+$/, '').trim() || nr;
+      var gKey = buch && seite != null ? buch + '||' + seite + '||' + nrBase : 'db_' + ts + '_' + nrBase;
       return {
         id:           'db_' + ts + '_' + i + '_' + Math.random().toString(36).slice(2, 6),
         fach:         fach,
@@ -780,7 +784,8 @@ function buildImportView(container) {
         kapitel:      kap,
         uk_titel:     uk,
         seite:        seite,
-        nr:           String(a.nr || (i + 1)),
+        nr:           nr,
+        gruppen_key:  gKey,
         aufgabenstellung: a.aufgabenstellung || null,
         inhalt:       a.text || a.aufgabenstellung || null,
         anforderung:  a.anforderung || null,
@@ -1984,15 +1989,13 @@ function openEntryModal(entry, mode, onSaved) {
         } else {
           saved = await sbUpdate('inhalte', curEntry.id, data);
           if (!saved) saved = Object.assign({}, curEntry, data);
-          // Strukturfelder auf alle Geschwister übertragen
+          // Strukturfelder auf alle Geschwister übertragen (via gruppen_key)
           var strukturChanged = data.aufgabenstellung != null || data.kapitel_titel != null || data.uk_titel != null;
-          if (strukturChanged && curEntry.buch && curEntry.seite != null) {
-            var parentNr = parseNr(curEntry.nr)[0];
-            sbSelect('inhalte', { filters: { fach: curEntry.fach, buch: curEntry.buch, seite: curEntry.seite }, limit: 50 })
+          if (strukturChanged && curEntry.gruppen_key) {
+            sbSelect('inhalte', { filters: { gruppen_key: curEntry.gruppen_key }, limit: 50 })
               .then(function(siblings) {
                 siblings.forEach(function(s) {
                   if (s.id === curEntry.id) return;
-                  if (parseNr(s.nr)[0] !== parentNr) return;
                   var patch = {};
                   if (data.aufgabenstellung != null && s.aufgabenstellung !== data.aufgabenstellung)
                     patch.aufgabenstellung = data.aufgabenstellung;

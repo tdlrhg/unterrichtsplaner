@@ -1159,7 +1159,8 @@ async function buildFachView(container) {
 
   const LIMIT = 500;
 
-  async function load() {
+  async function load(opts) {
+    var _savedScroll = (opts && opts.keepScroll) ? container.scrollTop : null;
     wrap.innerHTML = '<div style="padding:20px;color:var(--tx3);text-align:center">⏳ Lädt…</div>';
     const filters = { fach: f.key };
     if (DB.herkunft)      filters.herkunft      = DB.herkunft;
@@ -1283,13 +1284,13 @@ async function buildFachView(container) {
       ghdr.title = hasSubtasks ? 'Alle Teilaufgaben ansehen' : 'Aufgabe ansehen';
       ;(function(grp, sub) {
         ghdr.onclick = function() {
-          if (sub) openGroupModal(grp, function() { DB.offset = 0; load(); });
-          else openEntryModal(grp.items[0], 'view', function() { DB.offset = 0; load(); });
+          if (sub) openGroupModal(grp, function() { load({ keepScroll: true }); });
+          else openEntryModal(grp.items[0], 'view', function() { load({ keepScroll: true }); });
         };
       })(g, hasSubtasks);
       wrap.appendChild(ghdr);
       g.items.forEach(function(row) {
-        var rowEl = renderRow(row, function() { DB.offset = 0; load(); }, true);
+        var rowEl = renderRow(row, function() { load({ keepScroll: true }); }, true);
         rowEl.style.marginLeft = '16px';
         if (hasSubtasks) {
           rowEl.onclick = function() { openGroupModal(g, function() { DB.offset = 0; load(); }); };
@@ -1304,6 +1305,8 @@ async function buildFachView(container) {
       mehr.onclick = function() { DB.offset += LIMIT; load(); };
       wrap.appendChild(mehr);
     }
+
+    if (_savedScroll !== null) container.scrollTop = _savedScroll;
   }
 
   // Suche: Debounce
@@ -1314,7 +1317,7 @@ async function buildFachView(container) {
   };
 
   // Neu-Button
-  neuBtn.onclick = function() { openEntryModal(null, 'create', function() { DB.offset = 0; load(); }); };
+  neuBtn.onclick = function() { openEntryModal(null, 'create', function() { DB.offset = 0; load(); }); }; // neuer Eintrag → zurück nach oben ok
 
   // Filter-Leiste einbauen
   buildFilterBar(filterContainer, load, searchInp, f.key);

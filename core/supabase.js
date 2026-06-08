@@ -110,7 +110,7 @@ async function sbSelectAll(table, opts = {}) {
 }
 
 // Anzahl der Einträge (ohne Daten zu laden) – gibt total count zurück
-async function sbCount(table, { filters = {}, fts = null } = {}) {
+async function sbCount(table, { filters = {}, fts = null, rawParams = [] } = {}) {
   const params = ['select=id'];
   if (fts && fts.trim()) {
     params.push('search_vector=wfts(german).' + encodeURIComponent(fts.trim()));
@@ -120,6 +120,7 @@ async function sbCount(table, { filters = {}, fts = null } = {}) {
       params.push(k + '=eq.' + encodeURIComponent(v));
     }
   });
+  rawParams.forEach(function(p) { params.push(p); });
   params.push('limit=1');
   const url = _URL + '/rest/v1/' + table + '?' + params.join('&');
   const res = await fetch(url, { headers: { ..._H(), 'Prefer': 'count=exact' } });

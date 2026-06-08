@@ -5,7 +5,7 @@
     "dokumenttyp": "Unterrichtsfolie",
     "themen": ["Zuordnungen", "funktionaler Zusammenhang", "Wertetabelle", "Preis-Menge"],
     "kurzinhalt": "Einstieg in Zuordnungen ueber Preis-Menge-Situationen. Thematisiert Abhaengigkeiten, Wertetabellen und erste Formeln fuer funktionale Zusammenhaenge.",
-    "rolle": "schuelermaterial",
+    "rolle": "unterrichtssteuerung",
     "jahrgang": ["7"],
     "hatLoesung": false
   },

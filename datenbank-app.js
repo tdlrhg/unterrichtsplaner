@@ -82,6 +82,26 @@ function fachInfo(key) {
   return FAECHER.find(f => f.key === key) || FAECHER[0];
 }
 
+// ── Zentrale Filter-Reset-Funktion ────────────────────────────────
+// Setzt alle Filter zurück — Navigation (view, fach) bleibt unberührt.
+function resetFilters() {
+  DB.buch         = null;
+  DB.herkunft     = null;
+  DB.operator     = null;
+  DB.schwierigkeit = null;
+  DB.niveau       = null;
+  DB.typ          = null;
+  DB.umfang       = null;
+  DB.jahrgang     = null;
+  DB.kapitel      = null;
+  DB.uk_titel     = null;
+  DB.seite        = null;
+  DB.suchtext     = '';
+  DB.sortCol      = null;
+  DB.sortDir      = 'asc';
+  DB.offset       = 0;
+}
+
 // ── Chip ──────────────────────────────────────────────────────────
 function mkChip(text, color, icon) {
   const c = tx('span', '', (icon ? icon + ' ' : '') + text);
@@ -131,7 +151,7 @@ function buildDBSidebar(sb) {
   homeInner.appendChild(tx('span', '', '🏠'));
   homeInner.appendChild(tx('span', 'sb-item-label', 'Übersicht'));
   homeRow.appendChild(homeInner);
-  homeRow.onclick = () => { DB.view = 'landing'; DB.fach = null; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.niveau = null; DB.typ = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
+  homeRow.onclick = () => { DB.view = 'landing'; DB.fach = null; resetFilters(); dbRender(); };
   sb.appendChild(homeRow);
 
   const impRow = mk('div', 'sb-item' + (DB.view === 'import' ? ' active' : ''));
@@ -151,7 +171,7 @@ function buildDBSidebar(sb) {
     inner.appendChild(tx('span', '', f.icon));
     inner.appendChild(tx('span', 'sb-item-label', f.label));
     row.appendChild(inner);
-    row.onclick = () => { DB.view = 'fach'; DB.fach = f.key; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.niveau = null; DB.typ = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
+    row.onclick = () => { DB.view = 'fach'; DB.fach = f.key; resetFilters(); dbRender(); };
     sb.appendChild(row);
   });
 
@@ -1268,7 +1288,7 @@ async function buildFachView(container) {
     var suffix = parts.length ? ' · ' + parts.join(' · ') : '';
     if (rows.length >= LIMIT) {
       subT.textContent = 'Einträge werden gezählt…' + suffix;
-      sbCount('inhalte', { filters }).then(function(total) {
+      sbCount('inhalte', { filters, fts: DB.suchtext || null, rawParams }).then(function(total) {
         subT.textContent = (total != null ? total : rows.length + '+') + ' Einträge' + suffix;
       });
     } else {
@@ -1599,7 +1619,7 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     ukSel.onchange = function() {
       DB.uk_titel = ukSel.value || null; DB.seite = null; DB.offset = 0; refresh();
     };
-    sbSelect('inhalte', { select: 'uk_titel', filters: { fach: fach, buch: DB.buch, kapitel: DB.kapitel }, limit: 500 })
+    sbSelect('inhalte', { select: 'uk_titel', filters: { fach: fach, buch: DB.buch }, rawParams: ['or=(kapitel.eq.' + encodeURIComponent(DB.kapitel) + ',kapitel_titel.eq.' + encodeURIComponent(DB.kapitel) + ')'], limit: 500 })
       .then(function(rows) {
         var seen = {}, uks = [];
         rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
@@ -1659,7 +1679,7 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     const clrBtn = btn('✕ Filter', 'btn btn-ghost btn-sm');
     clrBtn.style.cssText += 'font-size:10.5px;padding:2px 8px;color:var(--tx3);';
     clrBtn.onclick = function() {
-      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.niveau = null; DB.typ = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.uk_titel = null; DB.seite = null; DB.offset = 0;
+      resetFilters();
       refresh();
     };
     bar.appendChild(clrBtn);

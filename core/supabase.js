@@ -89,6 +89,27 @@ async function sbSelect(table, { filters = {}, fts = null, limit = 50, offset = 
   return await res.json();
 }
 
+// Anzahl der Einträge (ohne Daten zu laden) – gibt total count zurück
+async function sbCount(table, { filters = {}, fts = null } = {}) {
+  const params = ['select=id'];
+  if (fts && fts.trim()) {
+    params.push('search_vector=wfts(german).' + encodeURIComponent(fts.trim()));
+  }
+  Object.entries(filters).forEach(([k, v]) => {
+    if (v !== null && v !== undefined && v !== '') {
+      params.push(k + '=eq.' + encodeURIComponent(v));
+    }
+  });
+  params.push('limit=1');
+  const url = _URL + '/rest/v1/' + table + '?' + params.join('&');
+  const res = await fetch(url, { headers: { ..._H(), 'Prefer': 'count=exact' } });
+  if (!res.ok) return null;
+  const range = res.headers.get('Content-Range'); // z.B. "0-0/1234"
+  if (!range) return null;
+  const m = range.match(/\/(\d+)$/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
 // Einzelne Zeile aktualisieren (PATCH per id)
 async function sbUpdate(table, id, changes) {
   const url = _URL + '/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id);

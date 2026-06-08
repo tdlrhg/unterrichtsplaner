@@ -923,13 +923,16 @@ async function buildFachView(container) {
     if (DB.kapitel)       filters.kapitel       = DB.kapitel;
     if (DB.seite != null) filters.seite         = DB.seite;
 
-    var rows = await sbSelect('inhalte', {
-      fts: DB.suchtext || null,
-      filters,
-      limit: LIMIT,
-      offset: DB.offset,
-      order: 'herkunft,buch,seite',
-    }).catch(function() { return []; });
+    var [rows, totalCount] = await Promise.all([
+      sbSelect('inhalte', {
+        fts: DB.suchtext || null,
+        filters,
+        limit: LIMIT,
+        offset: DB.offset,
+        order: 'herkunft,buch,seite',
+      }).catch(function() { return []; }),
+      sbCount('inhalte', { fts: DB.suchtext || null, filters }).catch(function() { return null; }),
+    ]);
 
     // nr natürlich sortieren: numerischer Teil, dann Buchstabe (8 < 8a < 8b < 9 < 10)
     rows.sort(function(a, b) {
@@ -953,7 +956,8 @@ async function buildFachView(container) {
     if (DB.kapitel)       parts.push(DB.kapitel);
     if (DB.seite != null) parts.push('S. ' + DB.seite);
     if (DB.suchtext)      parts.push('„' + DB.suchtext + '"');
-    subT.textContent = rows.length + (rows.length === LIMIT ? '+' : '') + ' Einträge'
+    var countStr = totalCount != null ? totalCount : (rows.length === LIMIT ? '50+' : rows.length);
+    subT.textContent = countStr + ' Einträge'
       + (parts.length ? ' · ' + parts.join(' · ') : '');
 
     if (!rows.length) {
@@ -1097,7 +1101,7 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
       var v = seiteInp.value.trim();
       DB.seite = v !== '' ? Number(v) : null;
       DB.offset = 0;
-      refresh();
+      loadFn(); // kein rebuild der Filterleiste — sonst geht Fokus verloren
     }, 400);
   };
   bar.appendChild(seiteInp);
@@ -1133,11 +1137,8 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   buchOptDefault.value = ''; buchOptDefault.textContent = '📖 Schulbuch';
   buchSel.appendChild(buchOptDefault);
   buchSel.onchange = function() {
-    if (buchSel.value) {
-      DB.buch = buchSel.value; DB.herkunft = 'schulbuch';
-    } else {
-      DB.buch = null; DB.herkunft = null;
-    }
+    DB.buch = buchSel.value || null;
+    DB.kapitel = null;
     DB.offset = 0; refresh();
   };
   // Bücher laden (gecacht pro Fach)

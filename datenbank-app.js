@@ -1588,6 +1588,24 @@ function buildModalBody(a, editable) {
     ta.placeholder = placeholder || ''; ta.value = a[key] || '';
     ta.dataset.key = key; f.appendChild(ta); parent.appendChild(f); return f;
   }
+  // Eingabefeld mit Autocomplete-Vorschlägen (datalist)
+  // fetchFn = async function(currentVal) → Array von Strings
+  function efldSuggest(parent, label, key, placeholder, fetchFn) {
+    const f = mk('div', 'db-form-field');
+    if (label) { const lbl = document.createElement('label'); lbl.textContent = label; f.appendChild(lbl); }
+    const listId = 'db-suggest-' + key + '-' + Date.now();
+    const inp = document.createElement('input');
+    inp.className = 'db-form-inp'; inp.type = 'text';
+    inp.placeholder = placeholder || ''; inp.value = a[key] != null ? String(a[key]) : '';
+    inp.dataset.key = key; inp.setAttribute('list', listId);
+    const dl = document.createElement('datalist'); dl.id = listId;
+    f.appendChild(inp); f.appendChild(dl); parent.appendChild(f);
+    if (fetchFn) fetchFn(inp.value).then(function(vals) {
+      vals.forEach(function(v) { var o = document.createElement('option'); o.value = v; dl.appendChild(o); });
+    });
+    return { f, inp };
+  }
+
   function esel(parent, label, key, opts) {
     const f = mk('div', 'db-form-field');
     if (label) { const lbl = document.createElement('label'); lbl.textContent = label; f.appendChild(lbl); }
@@ -1611,8 +1629,27 @@ function buildModalBody(a, editable) {
     if (editable) {
       esel(R, 'Herkunft', 'herkunft', [['schulbuch','📖 Schulbuch'],['eigenmaterial','📄 Eigenmaterial']]);
       efld(R, 'Buch / Titel', 'buch', 'text', 'z.B. Lambacher Schweizer 7');
-      efld(R, 'Kapitel', 'kapitel_titel', 'text', 'z.B. IV Lineare Gleichungssysteme');
-      efld(R, 'Unterkapitel', 'uk_titel', 'text', 'z.B. Gleichungssysteme grafisch lösen');
+      var kapResult = efldSuggest(R, 'Kapitel', 'kapitel_titel', 'z.B. IV Lineare Gleichungssysteme',
+        function() {
+          if (!a.buch) return Promise.resolve([]);
+          return sbSelect('inhalte', { select: 'kapitel', filters: { buch: a.buch }, limit: 1000 })
+            .then(function(rows) {
+              var seen = {}, kaps = [];
+              rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
+              return kaps.sort();
+            });
+        });
+      efldSuggest(R, 'Unterkapitel', 'uk_titel', 'z.B. Gleichungssysteme grafisch lösen',
+        function() {
+          if (!a.buch) return Promise.resolve([]);
+          var kapVal = kapResult.inp.value || a.kapitel || a.kapitel_titel;
+          return sbSelect('inhalte', { select: 'uk_titel', filters: Object.assign({ buch: a.buch }, kapVal ? { kapitel: kapVal } : {}), limit: 500 })
+            .then(function(rows) {
+              var seen = {}, uks = [];
+              rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
+              return uks.sort();
+            });
+        });
       const seiteNr = mk('div', 'db-form-row');
       efld(seiteNr, 'Seite', 'seite', 'number', ''); efld(seiteNr, 'Nr.', 'nr', 'text', 'z.B. 7a');
       R.appendChild(seiteNr);

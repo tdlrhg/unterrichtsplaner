@@ -862,9 +862,9 @@ function buildImportView(container) {
 // Hängt ein Custom-Dropdown an ein <input>-Element.
 // fetchFn() → Promise<string[]>  (wird beim ersten Öffnen einmal aufgerufen)
 function attachAutocomplete(inp, fetchFn) {
-  var allOptions = null;
-  var fetching   = false;
-  var dropdown   = null;
+  var dropdown  = null;
+  var _timer    = null;
+  var _fetchId  = 0;   // verhindert veraltete Fetch-Ergebnisse
 
   function reposition() {
     if (!dropdown) return;
@@ -874,25 +874,25 @@ function attachAutocomplete(inp, fetchFn) {
     dropdown.style.width = Math.max(r.width, 160) + 'px';
   }
 
-  function showDropdown(filter) {
+  function showDropdown(allOpts, filter) {
     removeDropdown();
-    var lower = (filter || '').toLowerCase();
-    var opts = (allOptions || []).filter(function(o) {
-      return !lower || o.toLowerCase().includes(lower);
-    });
-    if (!opts.length) return;
+    var lower    = (filter || '').toLowerCase();
+    var filtered = lower
+      ? allOpts.filter(function(o) { return o.toLowerCase().includes(lower); })
+      : allOpts;
+    if (!filtered.length) return;
 
     dropdown = mk('div', '');
     dropdown.style.cssText = 'position:fixed;z-index:99999;background:var(--surf);'
       + 'border:1px solid var(--bord);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.22);'
       + 'max-height:220px;overflow-y:auto;';
-    opts.forEach(function(o) {
+    filtered.forEach(function(o) {
       var item = tx('div', '', o);
       item.style.cssText = 'padding:7px 12px;font-size:13px;cursor:pointer;color:var(--tx1);'
         + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
       item.onmouseenter = function() { item.style.background = 'var(--surf2)'; };
       item.onmouseleave = function() { item.style.background = ''; };
-      item.onmousedown = function(e) {
+      item.onmousedown  = function(e) {
         e.preventDefault();
         inp.value = o;
         inp.dispatchEvent(new Event('change', { bubbles: true }));
@@ -902,7 +902,6 @@ function attachAutocomplete(inp, fetchFn) {
     });
     document.body.appendChild(dropdown);
     reposition();
-    // Schließen wenn Seite oder Modal gescrollt wird
     window.addEventListener('scroll', removeDropdown, { passive: true, capture: true });
   }
 
@@ -914,27 +913,25 @@ function attachAutocomplete(inp, fetchFn) {
     }
   }
 
-  function fetchAndShow() {
-    if (fetching) return;
-    fetching = true;
-    fetchFn().then(function(opts) {
-      allOptions = opts;
-      fetching = false;
-      if (document.activeElement === inp) showDropdown(inp.value);
-    }).catch(function() { fetching = false; });
+  // Immer frisch fetchen (kein Cache), damit abhängige Felder (Buch → Kapitel)
+  // nach jeder Änderung aktuelle Optionen liefern.
+  function trigger(filter) {
+    clearTimeout(_timer);
+    _timer = setTimeout(function() {
+      var id = ++_fetchId;
+      fetchFn().then(function(opts) {
+        if (id !== _fetchId) return;             // veralteter Fetch
+        if (document.activeElement === inp) showDropdown(opts || [], filter);
+      }).catch(function() {});
+    }, 120);
   }
 
   inp.removeAttribute('list');
 
-  inp.addEventListener('focus', function() {
-    if (allOptions) showDropdown(inp.value);
-    else fetchAndShow();
-  });
-  inp.addEventListener('input', function() {
-    if (allOptions) showDropdown(inp.value);
-    else fetchAndShow();
-  });
-  inp.addEventListener('blur', function() {
+  inp.addEventListener('focus', function() { trigger(''); });          // alle Optionen
+  inp.addEventListener('input', function() { trigger(inp.value); });   // gefiltert
+  inp.addEventListener('blur',  function() {
+    clearTimeout(_timer);
     setTimeout(removeDropdown, 150);
   });
   inp.addEventListener('keydown', function(e) {

@@ -862,59 +862,79 @@ function buildImportView(container) {
 // Hängt ein Custom-Dropdown an ein <input>-Element.
 // fetchFn() → Promise<string[]>  (wird beim ersten Öffnen einmal aufgerufen)
 function attachAutocomplete(inp, fetchFn) {
-  var allOptions = null; // gecacht nach erstem Laden
-  var dropdown = null;
+  var allOptions = null;
+  var fetching   = false;
+  var dropdown   = null;
+
+  function reposition() {
+    if (!dropdown) return;
+    var r = inp.getBoundingClientRect();
+    dropdown.style.left  = r.left + 'px';
+    dropdown.style.top   = (r.bottom + 2) + 'px';
+    dropdown.style.width = Math.max(r.width, 160) + 'px';
+  }
 
   function showDropdown(filter) {
     removeDropdown();
+    var lower = (filter || '').toLowerCase();
     var opts = (allOptions || []).filter(function(o) {
-      return !filter || o.toLowerCase().includes(filter.toLowerCase());
+      return !lower || o.toLowerCase().includes(lower);
     });
     if (!opts.length) return;
+
     dropdown = mk('div', '');
-    dropdown.style.cssText = 'position:absolute;z-index:9999;background:var(--surf);'
-      + 'border:1px solid var(--bord);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);'
-      + 'max-height:220px;overflow-y:auto;min-width:100%;';
+    dropdown.style.cssText = 'position:fixed;z-index:99999;background:var(--surf);'
+      + 'border:1px solid var(--bord);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.22);'
+      + 'max-height:220px;overflow-y:auto;';
     opts.forEach(function(o) {
       var item = tx('div', '', o);
-      item.style.cssText = 'padding:7px 12px;font-size:13px;cursor:pointer;color:var(--tx1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      item.style.cssText = 'padding:7px 12px;font-size:13px;cursor:pointer;color:var(--tx1);'
+        + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
       item.onmouseenter = function() { item.style.background = 'var(--surf2)'; };
       item.onmouseleave = function() { item.style.background = ''; };
       item.onmousedown = function(e) {
-        e.preventDefault(); // verhindert blur am Input
+        e.preventDefault();
         inp.value = o;
         inp.dispatchEvent(new Event('change', { bubbles: true }));
         removeDropdown();
       };
       dropdown.appendChild(item);
     });
-    // Positionierung relativ zum nächsten position:relative-Vorfahren
-    var wrap = inp.parentElement;
-    wrap.style.position = 'relative';
-    wrap.appendChild(dropdown);
+    document.body.appendChild(dropdown);
+    reposition();
+    // Schließen wenn Seite oder Modal gescrollt wird
+    window.addEventListener('scroll', removeDropdown, { passive: true, capture: true });
   }
 
   function removeDropdown() {
-    if (dropdown) { dropdown.remove(); dropdown = null; }
+    if (dropdown) {
+      dropdown.remove();
+      dropdown = null;
+      window.removeEventListener('scroll', removeDropdown, { capture: true });
+    }
   }
 
-  inp.removeAttribute('list'); // datalist deaktivieren falls vorhanden
+  function fetchAndShow() {
+    if (fetching) return;
+    fetching = true;
+    fetchFn().then(function(opts) {
+      allOptions = opts;
+      fetching = false;
+      if (document.activeElement === inp) showDropdown(inp.value);
+    }).catch(function() { fetching = false; });
+  }
+
+  inp.removeAttribute('list');
 
   inp.addEventListener('focus', function() {
-    if (!allOptions) {
-      fetchFn().then(function(opts) {
-        allOptions = opts;
-        if (document.activeElement === inp) showDropdown(inp.value);
-      });
-    } else {
-      showDropdown(inp.value);
-    }
+    if (allOptions) showDropdown(inp.value);
+    else fetchAndShow();
   });
   inp.addEventListener('input', function() {
     if (allOptions) showDropdown(inp.value);
+    else fetchAndShow();
   });
   inp.addEventListener('blur', function() {
-    // Kurz warten, damit onmousedown des Items noch feuern kann
     setTimeout(removeDropdown, 150);
   });
   inp.addEventListener('keydown', function(e) {

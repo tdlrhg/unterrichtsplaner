@@ -1040,6 +1040,9 @@ async function buildFachView(container) {
       g.items.forEach(function(row) {
         var rowEl = renderRow(row, function() { DB.offset = 0; load(); }, true);
         rowEl.style.marginLeft = '16px';
+        if (hasSubtasks) {
+          rowEl.onclick = function() { openGroupModal(g, function() { DB.offset = 0; load(); }); };
+        }
         wrap.appendChild(rowEl);
       });
     });

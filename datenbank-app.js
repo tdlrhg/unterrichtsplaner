@@ -60,6 +60,7 @@ const DB = {
   schwierigkeit: null,
   umfang: null,
   jahrgang: null,
+  kapitel: null,
   seite: null,
   suchtext: '',
   offset: 0,
@@ -919,6 +920,7 @@ async function buildFachView(container) {
     if (DB.schwierigkeit) filters.schwierigkeit = DB.schwierigkeit;
     if (DB.umfang)        filters.umfang        = DB.umfang;
     if (DB.jahrgang)      filters.jahrgang      = DB.jahrgang;
+    if (DB.kapitel)       filters.kapitel       = DB.kapitel;
     if (DB.seite != null) filters.seite         = DB.seite;
 
     var rows = await sbSelect('inhalte', {
@@ -948,6 +950,7 @@ async function buildFachView(container) {
     if (DB.operator)      parts.push(DB.operator);
     if (DB.schwierigkeit) parts.push(DB.schwierigkeit);
     if (DB.umfang)        parts.push(DB.umfang);
+    if (DB.kapitel)       parts.push(DB.kapitel);
     if (DB.seite != null) parts.push('S. ' + DB.seite);
     if (DB.suchtext)      parts.push('„' + DB.suchtext + '"');
     subT.textContent = rows.length + (rows.length === LIMIT ? '+' : '') + ' Einträge'
@@ -1163,6 +1166,29 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   }
   bar.appendChild(buchSel);
 
+  // Kapitel-Dropdown (nur wenn Buch gewählt)
+  if (DB.buch && fach) {
+    var kapSel = document.createElement('select');
+    kapSel.className = 'db-filter-sel';
+    var kapDef = document.createElement('option'); kapDef.value = ''; kapDef.textContent = 'Kapitel';
+    kapSel.appendChild(kapDef);
+    kapSel.onchange = function() {
+      DB.kapitel = kapSel.value || null; DB.seite = null; DB.offset = 0; refresh();
+    };
+    sbSelect('inhalte', { filters: { fach: fach, buch: DB.buch }, limit: 500, order: 'kapitel' })
+      .then(function(rows) {
+        var seen = {}, kaps = [];
+        rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
+        kaps.forEach(function(k) {
+          var o = document.createElement('option'); o.value = k; o.textContent = k;
+          if (DB.kapitel === k) o.selected = true;
+          kapSel.appendChild(o);
+        });
+        if (DB.kapitel) kapSel.value = DB.kapitel;
+      });
+    bar.appendChild(kapSel);
+  }
+
   // Eigenmaterial-Chip
   var emActive = DB.herkunft === 'eigenmaterial';
   var emChip = tx('div', 'db-fchip' + (emActive ? ' on' : ''), '📄 Eigenmaterial');
@@ -1207,13 +1233,13 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   ], 'umfang'));
 
   // Filter löschen (nur wenn aktiv)
-  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang || DB.seite != null;
+  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang || DB.kapitel || DB.seite != null;
   if (anyActive) {
     bar.appendChild(sep());
     const clrBtn = btn('✕ Filter', 'btn btn-ghost btn-sm');
     clrBtn.style.cssText += 'font-size:10.5px;padding:2px 8px;color:var(--tx3);';
     clrBtn.onclick = function() {
-      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.seite = null; DB.offset = 0;
+      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.seite = null; DB.offset = 0;
       refresh();
     };
     bar.appendChild(clrBtn);

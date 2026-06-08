@@ -68,6 +68,7 @@ const DB = {
   jahrgang: null,
   kapitel: null,
   uk_titel: null,
+  typ: null,        // null | 'aufgabe' | 'beispiel' | 'lehrtext'
   seite: null,
   sortCol: null,   // null | 'seite' | 'inhalt' | 'schwierigkeit'
   sortDir: 'asc',  // 'asc' | 'desc'
@@ -94,6 +95,9 @@ const SCHW_ICONS  = { 'grundlegend':'○', 'standard':'◑', 'anspruchsvoll':'�
 const SCHW_BG     = { 'grundlegend':'rgba(22,163,74,.05)', 'standard':'rgba(37,99,235,.05)', 'anspruchsvoll':'rgba(180,83,9,.05)' };
 const NIVEAU_FARBEN = { 'leicht':'#0891b2', 'mittel':'#7c3aed', 'schwer':'#be123c' };
 const NIVEAU_ICONS  = { 'leicht':'▽', 'mittel':'▾', 'schwer':'▼' };
+const TYP_FARBEN  = { 'aufgabe':'#0f766e', 'beispiel':'#16a34a', 'lehrtext':'#2563eb' };
+const TYP_LABELS  = { 'aufgabe':'Aufgabe', 'beispiel':'Beispiel', 'lehrtext':'Lehrtext' };
+const TYP_ICONS   = { 'aufgabe':'', 'beispiel':'📐', 'lehrtext':'📖' };
 
 function opColor(op) { return OP_FARBEN2[op] || '#64748b'; }
 
@@ -125,7 +129,7 @@ function buildDBSidebar(sb) {
   homeInner.appendChild(tx('span', '', '🏠'));
   homeInner.appendChild(tx('span', 'sb-item-label', 'Übersicht'));
   homeRow.appendChild(homeInner);
-  homeRow.onclick = () => { DB.view = 'landing'; DB.fach = null; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.niveau = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
+  homeRow.onclick = () => { DB.view = 'landing'; DB.fach = null; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.niveau = null; DB.typ = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
   sb.appendChild(homeRow);
 
   const impRow = mk('div', 'sb-item' + (DB.view === 'import' ? ' active' : ''));
@@ -145,7 +149,7 @@ function buildDBSidebar(sb) {
     inner.appendChild(tx('span', '', f.icon));
     inner.appendChild(tx('span', 'sb-item-label', f.label));
     row.appendChild(inner);
-    row.onclick = () => { DB.view = 'fach'; DB.fach = f.key; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.niveau = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
+    row.onclick = () => { DB.view = 'fach'; DB.fach = f.key; DB.buch = null; DB.herkunft = null; DB.operator = null; DB.schwierigkeit = null; DB.niveau = null; DB.typ = null; DB.umfang = null; DB.jahrgang = null; DB.suchtext = ''; DB.offset = 0; dbRender(); };
     sb.appendChild(row);
   });
 
@@ -414,6 +418,42 @@ JSON-FORMAT — sehr wichtig:
   {"nr":"8b","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Schätze den Flächeninhalt der Fig. 2. Bestimme anschließend den Flächeninhalt in mm2, indem du die benötigten Längen misst.","anforderung":"Schüler schätzen und messen den Flächeninhalt einer Figur.","operator":"messen","umfang":"mittel","schwierigkeit":"standard"}
 ]}`;
 
+const IMP_KI_PROMPT_BEISPIEL = `Du analysierst eine Seite aus einem Schulbuch (Gymnasium, Mathematik oder Naturwissenschaften).
+
+Erfasse NUR Beispiele (Musteraufgaben, Musterberechnungen, Musterlösungen). Keine Aufgaben, keine Lehrtexte, keine Definitionen.
+
+Für jedes Beispiel:
+- nr: Bezeichnung oder Nummer des Beispiels, z.B. "B1", "Beispiel 2", "Musteraufgabe 1"
+- aufgabenstellung: Die Aufgabenstellung des Beispiels, WÖRTLICH aus dem Buch (was wird berechnet/gezeigt?)
+- text: Die Lösung / alle Lösungsschritte, WÖRTLICH aus dem Buch, einzeilig (Zeilenumbrüche durch " | " ersetzen)
+
+JSON-FORMAT — sehr wichtig:
+- Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
+- Alle Stringwerte einzeilig
+- Keine Backslashes in Stringwerten, keine LaTeX-Notation
+
+{"aufgaben": [
+  {"nr":"B1","aufgabenstellung":"Berechne den Flächeninhalt des Rechtecks mit a = 6 cm und b = 4 cm.","text":"Gegeben: a = 6 cm, b = 4 cm | Gesucht: A | A = a · b = 6 cm · 4 cm = 24 cm²"}
+]}`;
+
+const IMP_KI_PROMPT_LEHRTEXT = `Du analysierst eine Seite aus einem Schulbuch (Gymnasium, Mathematik oder Naturwissenschaften).
+
+Erfasse NUR Lehrtexte: Erklärungen, Definitionen, Merksätze, Zusammenfassungen, Wiederholungen, Einführungstexte. Keine Aufgaben, keine Beispiele.
+
+Für jeden Textblock:
+- nr: Überschrift oder Typ des Textblocks, z.B. "Definition", "Merksatz", "Einführung", "Wiederholung", oder die Kapitelüberschrift
+- aufgabenstellung: null
+- text: Der vollständige Text des Blocks, WÖRTLICH aus dem Buch, einzeilig (Zeilenumbrüche durch " | " ersetzen)
+
+JSON-FORMAT — sehr wichtig:
+- Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
+- Alle Stringwerte einzeilig
+- Keine Backslashes in Stringwerten, keine LaTeX-Notation
+
+{"aufgaben": [
+  {"nr":"Merksatz","aufgabenstellung":null,"text":"Ein Term ist eine mathematische Schreibweise, die Zahlen, Variablen und Rechenzeichen enthält. | Beispiele: 3x + 5, a² - b², 7 · (x + 2)"}
+]}`;
+
 function _impResizeImg(dataUrl, maxW, q) {
   return new Promise(function(res, rej) {
     var img = new Image();
@@ -481,13 +521,14 @@ function buildImportView(container) {
     rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; var o = document.createElement('option'); o.value = r.buch; buchList.appendChild(o); } });
   });
   var typSel  = fsel([['schulbuch','📖 Schulbuch'],['aufgabenpool','🗃 Aufgabenpool'],['sammlung','📋 Sammlung'],['eigenmaterial','📄 Eigenmaterial']]);
+  var inhaltTypSel = fsel([['aufgabe','📝 Aufgaben'],['beispiel','📐 Beispiele'],['lehrtext','📖 Lehrtexte']]);
   var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
   var jgInp   = finp('z.B. 8'); jgInp.style.maxWidth = '80px';
   var kapInp   = finp('z.B. IV Flächen (optional)');
   var ukInp    = finp('z.B. Flächeninhalt berechnen (optional)');
   var seiteInp = finp('z.B. 142', 'number'); seiteInp.style.maxWidth = '110px';
 
-  metaCard.appendChild(row2(fg('Buchtitel / Quelle', buchInp), fg('Typ', typSel)));
+  metaCard.appendChild(row2(fg('Buchtitel / Quelle', buchInp), fg('Herkunft', typSel), fg('Inhaltstyp', inhaltTypSel)));
   metaCard.appendChild(row2(fg('Fach', fachSel), fg('Jahrgang', jgInp)));
   metaCard.appendChild(row2(fg('Kapitel', kapInp), fg('Unterkapitel', ukInp), fg('Erste Seite', seiteInp)));
 
@@ -570,7 +611,10 @@ function buildImportView(container) {
         blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } });
         if (i < resized.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
       });
-      blocks.push({ type: 'text', text: IMP_KI_PROMPT });
+      var kiPrompt = inhaltTypSel.value === 'beispiel' ? IMP_KI_PROMPT_BEISPIEL
+                   : inhaltTypSel.value === 'lehrtext'  ? IMP_KI_PROMPT_LEHRTEXT
+                   : IMP_KI_PROMPT;
+      blocks.push({ type: 'text', text: kiPrompt });
       var raw = await callKI(blocks, { maxTokens: 16000 });
       // Markdown-Codeblock ``` entfernen falls vorhanden
       var cleaned = raw.trim().replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
@@ -594,8 +638,8 @@ function buildImportView(container) {
           throw new Error('KI-Antwort nicht lesbar — Zeichen an Pos ' + pos + ': ' + JSON.stringify(cleaned.slice(Math.max(0,pos-20), pos+20)));
         }
       }
-      var aufg = (parsed.aufgaben || []).filter(function(a) { return a.typ !== 'lehrtext'; });
-      if (!aufg.length) { statusEl.textContent = '⚠️ Keine Aufgaben erkannt — evtl. enthält die Seite nur Lehrtext.'; return; }
+      var aufg = parsed.aufgaben || [];
+      if (!aufg.length) { statusEl.textContent = '⚠️ Keine Einträge erkannt — bitte Bild prüfen.'; return; }
       _aufgaben = aufg;
       statusEl.textContent = '';
       renderResults();
@@ -658,7 +702,10 @@ function buildImportView(container) {
       // Gruppenheader — immer, auch für Einzelaufgaben
       var groupHdr = mk('div', '');
       groupHdr.style.cssText = 'padding:8px 4px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;';
-      var hdrText = 'AUFGABE ' + g.key;
+      var typHeader = inhaltTypSel.value === 'beispiel' ? 'BEISPIEL'
+                    : inhaltTypSel.value === 'lehrtext'  ? 'TEXT'
+                    : 'AUFGABE';
+      var hdrText = typHeader + ' ' + g.key;
       if (g.aufgabenstellung) hdrText += ' · ' + g.aufgabenstellung.slice(0, 80);
       groupHdr.textContent = hdrText;
       groupWrap.appendChild(groupHdr);
@@ -699,6 +746,7 @@ function buildImportView(container) {
         schwierigkeit: a.schwierigkeit || a.schwierigkeitsstufe || null,
         umfang:       a.umfang || null,
         jahrgang:     jg,
+        typ:          inhaltTypSel.value || 'aufgabe',
       };
     });
 
@@ -1100,6 +1148,7 @@ async function buildFachView(container) {
     if (DB.jahrgang)      filters.jahrgang      = DB.jahrgang;
     if (DB.kapitel)       filters.kapitel       = DB.kapitel;
     if (DB.uk_titel)      filters.uk_titel      = DB.uk_titel;
+    if (DB.typ)           filters.typ           = DB.typ;
     if (DB.seite != null) filters.seite         = DB.seite;
 
     // Sortier-Reihenfolge aufbauen
@@ -1149,6 +1198,7 @@ async function buildFachView(container) {
     if (DB.umfang)        parts.push(DB.umfang);
     if (DB.kapitel)       parts.push(DB.kapitel);
     if (DB.uk_titel)      parts.push(DB.uk_titel);
+    if (DB.typ)           parts.push(TYP_LABELS[DB.typ] || DB.typ);
     if (DB.seite != null) parts.push('S. ' + DB.seite);
     if (DB.suchtext)      parts.push('„' + DB.suchtext + '"');
     subT.textContent = rows.length + (rows.length >= LIMIT ? '+' : '') + ' Einträge'
@@ -1251,6 +1301,16 @@ function renderRow(a, onSaved, compact) {
     }
   }
   cells[0] = src;
+
+  // Typ-Badge (nur für Beispiele und Lehrtexte, nicht für Aufgaben / null)
+  if (a.typ && a.typ !== 'aufgabe') {
+    var typBadge = tx('span', '', (TYP_ICONS[a.typ] ? TYP_ICONS[a.typ] + ' ' : '') + (TYP_LABELS[a.typ] || a.typ));
+    var typColor = TYP_FARBEN[a.typ] || '#64748b';
+    typBadge.style.cssText = 'display:inline-block;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;'
+      + 'background:' + typColor + '18;color:' + typColor + ';border:1px solid ' + typColor + '38;'
+      + 'text-transform:uppercase;letter-spacing:.06em;';
+    src.appendChild(typBadge);
+  }
 
   // Zelle 1: Inhalt — im compact-Modus nur den individuellen Text
   var mid = mk('div', 'db-col-inhalt'); mid.dataset.colIdx = 1;
@@ -1458,14 +1518,23 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     { val: 'schwer',  label: '▼ schwer',  color: NIVEAU_FARBEN.schwer },
   ], 'niveau'));
 
+  bar.appendChild(sep());
+
+  // Inhaltstyp
+  bar.appendChild(fchipGroup([
+    { val: 'aufgabe',  label: '📝 Aufgabe',   color: TYP_FARBEN.aufgabe },
+    { val: 'beispiel', label: '📐 Beispiel',  color: TYP_FARBEN.beispiel },
+    { val: 'lehrtext', label: '📖 Lehrtext',  color: TYP_FARBEN.lehrtext },
+  ], 'typ'));
+
   // Filter löschen (nur wenn aktiv)
-  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.niveau || DB.umfang || DB.jahrgang || DB.kapitel || DB.uk_titel || DB.seite != null;
+  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.niveau || DB.typ || DB.umfang || DB.jahrgang || DB.kapitel || DB.uk_titel || DB.seite != null;
   if (anyActive) {
     bar.appendChild(sep());
     const clrBtn = btn('✕ Filter', 'btn btn-ghost btn-sm');
     clrBtn.style.cssText += 'font-size:10.5px;padding:2px 8px;color:var(--tx3);';
     clrBtn.onclick = function() {
-      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.niveau = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.uk_titel = null; DB.seite = null; DB.offset = 0;
+      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.niveau = null; DB.typ = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.uk_titel = null; DB.seite = null; DB.offset = 0;
       refresh();
     };
     bar.appendChild(clrBtn);
@@ -1931,11 +2000,15 @@ function buildModalBody(a, editable) {
     if (editable) {
       esel(R, 'Fach', 'fach', FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
       efld(R, 'Jahrgang', 'jahrgang', 'number', '5–10');
+      esel(R, 'Inhaltstyp', 'typ', [['aufgabe','📝 Aufgabe'],['beispiel','📐 Beispiel'],['lehrtext','📖 Lehrtext']]);
     } else {
       var fi = fachInfo(a.fach);
       vfld(R, 'Fach', fi.icon + ' ' + fi.label);
       if (a.jahrgang) vfld(R, 'Jahrgang', 'Klasse ' + a.jahrgang);
-      if (a.typ)      vfld(R, 'Typ', a.typ);
+      if (a.typ && a.typ !== 'aufgabe') {
+        var typLabelEl = (TYP_ICONS[a.typ] ? TYP_ICONS[a.typ] + ' ' : '') + (TYP_LABELS[a.typ] || a.typ);
+        vfld(R, 'Inhaltstyp', null, mkChip(typLabelEl, TYP_FARBEN[a.typ] || '#64748b'));
+      }
     }
     p0.appendChild(R);
 

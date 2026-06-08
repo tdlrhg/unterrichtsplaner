@@ -21,7 +21,7 @@ const FAECHER = [
 const COLS = [
   { key: 'src',    label: 'Aufgabe',       hCls: 'db-col-hdr-src',    cCls: 'db-col-src',    sortField: 'seite'          },
   { key: 'inhalt', label: 'Inhalt',        hCls: 'db-col-hdr-inhalt', cCls: 'db-col-inhalt', sortField: 'inhalt'         },
-  { key: 'schw',   label: 'AB / Niveau',   hCls: 'db-col-hdr-schw',   cCls: 'db-col-schw',   sortField: 'schwierigkeit'  },
+  { key: 'schw',   label: 'AFB / Niveau',  hCls: 'db-col-hdr-schw',   cCls: 'db-col-schw',   sortField: 'schwierigkeit'  },
 ];
 
 var COL_CONFIG = (function() {
@@ -1255,11 +1255,11 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
 
   bar.appendChild(sep());
 
-  // Anforderungsbereich (NRW AB I–III)
+  // Anforderungsbereich (NRW AFB I–III)
   bar.appendChild(fchipGroup([
-    { val: 'grundlegend',   label: '○ AB I',    color: SCHW_FARBEN.grundlegend },
-    { val: 'standard',      label: '◑ AB II',   color: SCHW_FARBEN.standard },
-    { val: 'anspruchsvoll', label: '● AB III',  color: SCHW_FARBEN.anspruchsvoll },
+    { val: 'grundlegend',   label: '○ AFB I',   color: SCHW_FARBEN.grundlegend },
+    { val: 'standard',      label: '◑ AFB II',  color: SCHW_FARBEN.standard },
+    { val: 'anspruchsvoll', label: '● AFB III', color: SCHW_FARBEN.anspruchsvoll },
   ], 'schwierigkeit'));
 
   bar.appendChild(sep());
@@ -1676,7 +1676,7 @@ function buildModalBody(a, editable) {
     sec(R, 'Klassifikation');
     if (editable) {
       esel(R, 'Operator', 'operator', Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; }));
-      esel(R, 'Anforderungsbereich', 'schwierigkeit', [['grundlegend','○ grundlegend (AB I)'],['standard','◑ standard (AB II)'],['anspruchsvoll','● anspruchsvoll (AB III)']]);
+      esel(R, 'Anforderungsbereich', 'schwierigkeit', [['grundlegend','○ grundlegend (AFB I)'],['standard','◑ standard (AFB II)'],['anspruchsvoll','● anspruchsvoll (AFB III)']]);
       esel(R, 'Umfang', 'umfang', [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']]);
       const loesW = mk('div', 'db-form-field');
       const loesLbl = document.createElement('label'); loesLbl.textContent = 'Mit Lösung'; loesW.appendChild(loesLbl);

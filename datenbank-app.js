@@ -1499,16 +1499,24 @@ function openEntryModal(entry, mode, onSaved) {
           } else {
             saved = await sbUpdate('inhalte', curEntry.id, data);
             if (!saved) saved = Object.assign({}, curEntry, data);
-            // aufgabenstellung auf alle Geschwister übertragen
-            if (data.aufgabenstellung != null && curEntry.buch && curEntry.seite != null) {
+            // Strukturfelder auf alle Geschwister übertragen (aufgabenstellung, kapitel, uk_titel)
+            var strukturChanged = data.aufgabenstellung != null || data.kapitel_titel != null || data.uk_titel != null;
+            if (strukturChanged && curEntry.buch && curEntry.seite != null) {
               var parentNr = String(curEntry.nr || '').replace(/[a-zA-Z]+$/, '').trim();
               sbSelect('inhalte', { filters: { fach: curEntry.fach, buch: curEntry.buch, seite: curEntry.seite }, limit: 50 })
                 .then(function(siblings) {
                   siblings.forEach(function(s) {
                     if (s.id === curEntry.id) return;
                     var sParent = String(s.nr || '').replace(/[a-zA-Z]+$/, '').trim();
-                    if (sParent === parentNr && s.aufgabenstellung !== data.aufgabenstellung)
-                      sbUpdate('inhalte', s.id, { aufgabenstellung: data.aufgabenstellung });
+                    if (sParent !== parentNr) return;
+                    var patch = {};
+                    if (data.aufgabenstellung != null && s.aufgabenstellung !== data.aufgabenstellung)
+                      patch.aufgabenstellung = data.aufgabenstellung;
+                    if (data.kapitel_titel != null && s.kapitel_titel !== data.kapitel_titel)
+                      patch.kapitel_titel = data.kapitel_titel;
+                    if (data.uk_titel != null && s.uk_titel !== data.uk_titel)
+                      patch.uk_titel = data.uk_titel;
+                    if (Object.keys(patch).length) sbUpdate('inhalte', s.id, patch);
                   });
                 });
             }

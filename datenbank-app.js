@@ -1420,11 +1420,11 @@ function openEntryModal(entry, mode, onSaved) {
     modal.appendChild(hdr);
 
     // Body
-    if (curMode === 'view') {
-      modal.appendChild(buildModalViewBody(curEntry));
-    } else {
-      const result = buildModalForm(curEntry || {}, curMode);
-      modal.appendChild(result.formEl);
+    const bodyResult = buildModalBody(curEntry || {}, curMode !== 'view');
+    modal.appendChild(bodyResult.bodyEl);
+
+    if (curMode !== 'view') {
+      const result = bodyResult; // getData() ist in bodyResult
 
       // Footer
       const footer = mk('div', 'db-modal-footer');
@@ -1501,7 +1501,208 @@ function openEntryModal(entry, mode, onSaved) {
   document.addEventListener('keydown', onEsc);
 }
 
-// ── Modal: Ansichts-Body (3 Reiter) ─────────────────────────────
+// ── Modal: kombinierter Ansichts-/Bearbeitungs-Body ──────────────
+// editable=false → Lesemodus  |  editable=true → Eingabefelder inline
+function buildModalBody(a, editable) {
+  const wrap = mk('div', 'db-modal-tabwrap');
+
+  const tabbar = mk('div', 'db-modal-tabbar');
+  const tabs = [], panes = [];
+  ['📋 Grunddaten', '📚 Unterrichtsdaten', '✏️ Prüfungsdaten'].forEach(function(label, idx) {
+    const tab = document.createElement('button');
+    tab.className = 'db-modal-tab' + (idx === 0 ? ' active' : '');
+    tab.textContent = label;
+    tab.onclick = function() {
+      tabs.forEach(function(t, i) { t.classList.toggle('active', i === idx); });
+      panes.forEach(function(p, i) { p.classList.toggle('active', i === idx); });
+    };
+    tabs.push(tab); tabbar.appendChild(tab);
+  });
+  wrap.appendChild(tabbar);
+  const tabBody = mk('div', 'db-modal-tab-body');
+  wrap.appendChild(tabBody);
+
+  // Layout-Helfer
+  function mkL() { return mk('div', 'db-modal-left'); }
+  function mkR() { return mk('div', 'db-modal-right'); }
+  function sec(parent, title) { parent.appendChild(tx('div', 'db-modal-section-title', title)); }
+
+  // Lesemodus-Felder
+  function vfld(parent, label, val, chip) {
+    const f = mk('div', 'db-modal-field');
+    f.appendChild(tx('div', 'db-modal-field-label', label));
+    if (chip) f.appendChild(chip);
+    else f.appendChild(tx('div', 'db-modal-field-value', val != null ? String(val) : '–'));
+    parent.appendChild(f);
+  }
+  function vempty(parent, text) {
+    const d = tx('div', 'db-modal-text', text); d.style.color = 'var(--tx3)'; parent.appendChild(d);
+  }
+
+  // Eingabefelder
+  function efld(parent, label, key, type, placeholder) {
+    const f = mk('div', 'db-form-field');
+    if (label) { const lbl = document.createElement('label'); lbl.textContent = label; f.appendChild(lbl); }
+    const inp = document.createElement('input');
+    inp.className = 'db-form-inp'; inp.type = type || 'text';
+    inp.placeholder = placeholder || ''; inp.value = a[key] != null ? String(a[key]) : '';
+    inp.dataset.key = key; f.appendChild(inp); parent.appendChild(f); return f;
+  }
+  function etarea(parent, label, key, rows, placeholder) {
+    const f = mk('div', 'db-form-field');
+    if (label) { const lbl = document.createElement('label'); lbl.textContent = label; f.appendChild(lbl); }
+    const ta = document.createElement('textarea');
+    ta.className = 'db-form-textarea'; ta.rows = rows || 4;
+    ta.placeholder = placeholder || ''; ta.value = a[key] || '';
+    ta.dataset.key = key; f.appendChild(ta); parent.appendChild(f); return f;
+  }
+  function esel(parent, label, key, opts) {
+    const f = mk('div', 'db-form-field');
+    if (label) { const lbl = document.createElement('label'); lbl.textContent = label; f.appendChild(lbl); }
+    const sel = document.createElement('select');
+    sel.className = 'db-form-sel'; sel.dataset.key = key;
+    [['', '–']].concat(opts).forEach(function(opt) {
+      const o = document.createElement('option');
+      o.value = opt[0]; o.textContent = opt[1];
+      if (String(a[key] || '') === opt[0]) o.selected = true;
+      sel.appendChild(o);
+    });
+    f.appendChild(sel); parent.appendChild(f); return f;
+  }
+
+  // ── Pane 0: Grunddaten ────────────────────────────────────────
+  var p0 = mk('div', 'db-modal-tab-pane split active');
+  panes.push(p0);
+  {
+    const R = mkR(); // linke Spalte 300px – Metadaten
+    sec(R, 'Quelle');
+    if (editable) {
+      esel(R, 'Herkunft', 'herkunft', [['schulbuch','📖 Schulbuch'],['eigenmaterial','📄 Eigenmaterial']]);
+      efld(R, 'Buch / Titel', 'buch', 'text', 'z.B. Lambacher Schweizer 7');
+      efld(R, 'Kapitel', 'kapitel_titel', 'text', 'z.B. Lineare Gleichungssysteme');
+      const seiteNr = mk('div', 'db-form-row');
+      efld(seiteNr, 'Seite', 'seite', 'number', ''); efld(seiteNr, 'Nr.', 'nr', 'text', 'z.B. 7a');
+      R.appendChild(seiteNr);
+    } else {
+      vfld(R, 'Herkunft', (!a.herkunft || a.herkunft === 'schulbuch') ? '📖 Schulbuch' : '📄 Eigenmaterial');
+      if (a.buch)                        vfld(R, 'Buch', a.buch);
+      if (a.uk_titel || a.kapitel_titel) vfld(R, 'Kapitel', a.uk_titel || a.kapitel_titel);
+      if (a.seite != null)               vfld(R, 'Seite', a.seite);
+      if (a.nr)                          vfld(R, 'Nr.', a.nr);
+    }
+    sec(R, 'Einordnung');
+    if (editable) {
+      esel(R, 'Fach', 'fach', FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
+      efld(R, 'Jahrgang', 'jahrgang', 'number', '5–10');
+    } else {
+      var fi = fachInfo(a.fach);
+      vfld(R, 'Fach', fi.icon + ' ' + fi.label);
+      if (a.jahrgang) vfld(R, 'Jahrgang', 'Klasse ' + a.jahrgang);
+      if (a.typ)      vfld(R, 'Typ', a.typ);
+    }
+    p0.appendChild(R);
+
+    const L = mkL(); // rechte Spalte 1fr – Aufgabentext
+    if (editable) {
+      sec(L, 'Aufgabe');
+      etarea(L, 'Aufgabenstellung (gemeinsamer Obersatz)', 'aufgabenstellung', 2, 'Gemeinsamer Text aller Teilaufgaben — leer lassen bei Einzelaufgaben');
+      etarea(L, 'Inhalt / Teilaufgabe', 'inhalt', 6, 'Was steht in der Aufgabe?');
+    } else {
+      if (a.aufgabenstellung) {
+        sec(L, 'Aufgabenstellung');
+        L.appendChild(tx('div', 'db-modal-text', a.aufgabenstellung));
+      }
+      sec(L, a.aufgabenstellung ? 'Teilaufgabe' : 'Inhalt / Aufgabe');
+      if (a.inhalt) L.appendChild(tx('div', 'db-modal-text', a.inhalt));
+      else vempty(L, '(Kein Inhalt hinterlegt)');
+    }
+    p0.appendChild(L);
+  }
+  tabBody.appendChild(p0);
+
+  // ── Pane 1: Unterrichtsdaten ──────────────────────────────────
+  var p1 = mk('div', 'db-modal-tab-pane split');
+  panes.push(p1);
+  {
+    const L = mkL();
+    sec(L, 'Anforderung');
+    if (editable) {
+      etarea(L, '', 'anforderung', 5, 'Was sollen Schülerinnen konkret tun?');
+      efld(L, 'Thema', 'thema', 'text', 'z.B. Gleichsetzungsverfahren');
+    } else {
+      if (a.anforderung) L.appendChild(tx('div', 'db-modal-text db-modal-anforderung', a.anforderung));
+      else vempty(L, '(Noch keine Anforderung hinterlegt)');
+      if (a.thema) { sec(L, 'Thema'); L.appendChild(tx('div', 'db-modal-text', a.thema)); }
+    }
+    p1.appendChild(L);
+
+    const R = mkR();
+    if (!editable) {
+      var hasKomp = a.kompetenzen && a.kompetenzen.length;
+      if (hasKomp) {
+        sec(R, 'Kompetenzen');
+        const chips = mk('div', ''); chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
+        (Array.isArray(a.kompetenzen) ? a.kompetenzen : [a.kompetenzen]).forEach(function(k) { chips.appendChild(mkChip(k, '#6d28d9')); });
+        R.appendChild(chips);
+      }
+      if (a.inhaltsfeld) { sec(R, 'Inhaltsfeld'); vfld(R, 'Inhaltsfeld', a.inhaltsfeld); }
+      if (!hasKomp && !a.inhaltsfeld) vempty(R, '(Noch keine Unterrichtsdaten hinterlegt)');
+    }
+    p1.appendChild(R);
+  }
+  tabBody.appendChild(p1);
+
+  // ── Pane 2: Prüfungsdaten ─────────────────────────────────────
+  var p2 = mk('div', 'db-modal-tab-pane split');
+  panes.push(p2);
+  {
+    const L = mkL();
+    if (a.inhalt || a.thema) {
+      sec(L, 'Aufgabe (Referenz)');
+      var refText = tx('div', 'db-modal-text', (a.inhalt || a.thema || '').slice(0, 400) + ((a.inhalt || '').length > 400 ? ' …' : ''));
+      refText.style.color = 'var(--tx2)'; L.appendChild(refText);
+    }
+    p2.appendChild(L);
+
+    const R = mkR();
+    sec(R, 'Klassifikation');
+    if (editable) {
+      esel(R, 'Operator', 'operator', Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; }));
+      esel(R, 'Schwierigkeit', 'schwierigkeit', [['grundlegend','○ grundlegend'],['standard','◑ standard'],['anspruchsvoll','● anspruchsvoll']]);
+      esel(R, 'Umfang', 'umfang', [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']]);
+      const loesW = mk('div', 'db-form-field');
+      const loesLbl = document.createElement('label'); loesLbl.textContent = 'Mit Lösung'; loesW.appendChild(loesLbl);
+      const loesChk = document.createElement('input');
+      loesChk.type = 'checkbox'; loesChk.dataset.key = 'hat_loesung';
+      loesChk.checked = !!a.hat_loesung;
+      loesChk.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:var(--pri);margin-top:4px;';
+      loesW.appendChild(loesChk); R.appendChild(loesW);
+    } else {
+      if (a.operator)      vfld(R, 'Operator',      null, mkChip(a.operator, opColor(a.operator)));
+      if (a.schwierigkeit) vfld(R, 'Schwierigkeit', null, mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit]));
+      if (a.umfang)        vfld(R, 'Umfang', a.umfang);
+      if (a.hat_loesung != null) vfld(R, 'Lösung', a.hat_loesung ? '✓ vorhanden' : '✗ ohne');
+      if (!a.operator && !a.schwierigkeit && !a.umfang && a.hat_loesung == null) vempty(R, '(Noch keine Prüfungsdaten hinterlegt)');
+    }
+    p2.appendChild(R);
+  }
+  tabBody.appendChild(p2);
+
+  function getData() {
+    const data = {};
+    wrap.querySelectorAll('[data-key]').forEach(function(el) {
+      const k = el.dataset.key;
+      if (el.type === 'checkbox') data[k] = el.checked;
+      else if (el.type === 'number') data[k] = el.value !== '' ? Number(el.value) : null;
+      else data[k] = el.value.trim() || null;
+    });
+    return data;
+  }
+
+  return { bodyEl: wrap, getData };
+}
+
+// ── (buildModalViewBody – ersetzt durch buildModalBody oben) ──────
 function buildModalViewBody(a) {
   const wrap = mk('div', 'db-modal-tabwrap');
 

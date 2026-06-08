@@ -376,6 +376,27 @@ function buildLanding(container) {
   buildBuecherregal(container);
 }
 
+// ── Nr-Parsing für natürliche Sortierung ─────────────────────────
+// Gibt [zahl, buchstaben] zurück, versteht alle Formate:
+//   "8a"  → [8,  "a"]    "10bc" → [10, "bc"]
+//   "8"   → [8,  ""]     "a"    → [0,  "a"]   (Teilaufgabe ohne Elternnummer)
+//   "B1"  → [1,  "b"]    "B"    → [0,  "b"]   (Beispiel-Nummerierung)
+function parseNr(s) {
+  s = String(s || '').trim().toLowerCase();
+  var m;
+  m = s.match(/^(\d+)([a-z]*)$/);   if (m) return [parseInt(m[1], 10), m[2]];
+  m = s.match(/^([a-z]+)(\d+)$/);   if (m) return [parseInt(m[2], 10), m[1]];
+  m = s.match(/^([a-z]+)$/);        if (m) return [0, m[1]];
+  return [0, s];
+}
+
+function cmpNr(aNr, bNr) {
+  var pa = parseNr(aNr), pb = parseNr(bNr);
+  var nd = pa[0] - pb[0];
+  if (nd !== 0) return nd;
+  return pa[1] < pb[1] ? -1 : pa[1] > pb[1] ? 1 : 0;
+}
+
 // ── Aufgaben-Gruppierung ──────────────────────────────────────────
 // Gruppiert Zeilen nach führender Nummer: "8a","8b" → Gruppe "8"; "9" → Gruppe "9"
 function dbGroupByParent(rows) {
@@ -1182,11 +1203,7 @@ async function buildFachView(container) {
         // Server hat sortiert; nur innerhalb gleicher buch+seite nr-sortieren
         if (a.buch !== b.buch || a.seite !== b.seite) return 0;
       }
-      var pa = String(a.nr || '').match(/^(\d+)([a-z]*)$/i) || ['', '0', ''];
-      var pb = String(b.nr || '').match(/^(\d+)([a-z]*)$/i) || ['', '0', ''];
-      var nd = parseInt(pa[1], 10) - parseInt(pb[1], 10);
-      if (nd !== 0) return nd;
-      return pa[2] < pb[2] ? -1 : pa[2] > pb[2] ? 1 : 0;
+      return cmpNr(a.nr, b.nr);
     });
 
     wrap.innerHTML = '';
@@ -1888,12 +1905,12 @@ function openEntryModal(entry, mode, onSaved) {
             // Strukturfelder auf alle Geschwister übertragen (aufgabenstellung, kapitel, uk_titel)
             var strukturChanged = data.aufgabenstellung != null || data.kapitel_titel != null || data.uk_titel != null;
             if (strukturChanged && curEntry.buch && curEntry.seite != null) {
-              var parentNr = String(curEntry.nr || '').replace(/[a-zA-Z]+$/, '').trim();
+              var parentNr = parseNr(curEntry.nr)[0];
               sbSelect('inhalte', { filters: { fach: curEntry.fach, buch: curEntry.buch, seite: curEntry.seite }, limit: 50 })
                 .then(function(siblings) {
                   siblings.forEach(function(s) {
                     if (s.id === curEntry.id) return;
-                    var sParent = String(s.nr || '').replace(/[a-zA-Z]+$/, '').trim();
+                    var sParent = parseNr(s.nr)[0];
                     if (sParent !== parentNr) return;
                     var patch = {};
                     if (data.aufgabenstellung != null && s.aufgabenstellung !== data.aufgabenstellung)

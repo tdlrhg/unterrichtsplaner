@@ -511,13 +511,12 @@ function buildImportView(container) {
   wrap.appendChild(metaCard);
 
   var buchInp = finp('z.B. Lambacher Schweizer 8');
-  var buchList = document.createElement('datalist');
-  buchList.id = 'imp-buch-list-' + Date.now();
-  buchInp.setAttribute('list', buchList.id);
-  document.body.appendChild(buchList);
-  sbSelect('inhalte', { limit: 500, order: 'buch' }).then(function(rows) {
-    var seen = {};
-    rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; var o = document.createElement('option'); o.value = r.buch; buchList.appendChild(o); } });
+  attachAutocomplete(buchInp, function() {
+    return sbSelect('inhalte', { select: 'buch', limit: 5000, order: 'buch' }).then(function(rows) {
+      var seen = {}, books = [];
+      rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; books.push(r.buch); } });
+      return books.sort();
+    });
   });
   var typSel  = fsel([['schulbuch','📖 Schulbuch'],['aufgabenpool','🗃 Aufgabenpool'],['sammlung','📋 Sammlung'],['eigenmaterial','📄 Eigenmaterial']]);
   var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
@@ -534,9 +533,9 @@ function buildImportView(container) {
   attachAutocomplete(kapInp, function() {
     var buch = buchInp.value.trim();
     if (!buch) return Promise.resolve([]);
-    return sbSelect('inhalte', { select: 'kapitel', filters: { buch: buch }, limit: 1000 }).then(function(rows) {
+    return sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { buch: buch }, limit: 1000 }).then(function(rows) {
       var seen = {}, kaps = [];
-      rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
+      rows.forEach(function(r) { var k = r.kapitel || r.kapitel_titel; if (k && !seen[k]) { seen[k] = true; kaps.push(k); } });
       return kaps.sort();
     });
   });
@@ -928,7 +927,8 @@ function attachAutocomplete(inp, fetchFn) {
 
   inp.removeAttribute('list');
 
-  inp.addEventListener('focus', function() { trigger(''); });          // alle Optionen
+  inp.addEventListener('focus', function() { trigger(inp.value); });   // alle / gefiltert
+  inp.addEventListener('click', function() { if (!dropdown) trigger(inp.value); }); // erneuter Klick auf fokussiertes Feld
   inp.addEventListener('input', function() { trigger(inp.value); });   // gefiltert
   inp.addEventListener('blur',  function() {
     clearTimeout(_timer);
@@ -1700,9 +1700,9 @@ function openGroupModal(group, onRefresh) {
   var kapInp = kapF.querySelector('input');
   if (ref.buch) {
     attachAutocomplete(kapInp, function() {
-      return sbSelect('inhalte', { select: 'kapitel', filters: { buch: ref.buch }, limit: 1000 }).then(function(rows) {
+      return sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { buch: ref.buch }, limit: 1000 }).then(function(rows) {
         var seen = {}, kaps = [];
-        rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
+        rows.forEach(function(r) { var k = r.kapitel || r.kapitel_titel; if (k && !seen[k]) { seen[k] = true; kaps.push(k); } });
         return kaps.sort();
       });
     });
@@ -2065,10 +2065,10 @@ function buildModalBody(a, editable) {
       var kapResult = efldSuggest(R, 'Kapitel', 'kapitel_titel', 'z.B. IV Lineare Gleichungssysteme',
         function() {
           if (!a.buch) return Promise.resolve([]);
-          return sbSelect('inhalte', { select: 'kapitel', filters: { buch: a.buch }, limit: 1000 })
+          return sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { buch: a.buch }, limit: 1000 })
             .then(function(rows) {
               var seen = {}, kaps = [];
-              rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
+              rows.forEach(function(r) { var k = r.kapitel || r.kapitel_titel; if (k && !seen[k]) { seen[k] = true; kaps.push(k); } });
               return kaps.sort();
             });
         });

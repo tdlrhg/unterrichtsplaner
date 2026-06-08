@@ -672,6 +672,7 @@ function buildImportView(container) {
 
     try {
       await sbInsert('inhalte', rows);
+      _buchCache = {}; // Cache leeren damit neues Buch im Filter erscheint
       _aufgaben = [];
 
       // ── Ende-Screen ───────────────────────────────────────────
@@ -1070,6 +1071,8 @@ function renderRow(a, onSaved, compact) {
 }
 
 // ── Filter-Leiste ─────────────────────────────────────────────────
+var _buchCache = {}; // fach → [buchtitel]
+
 function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   containerEl.innerHTML = '';
   const bar = mk('div', 'db-filter-bar');
@@ -1134,21 +1137,29 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     }
     DB.offset = 0; refresh();
   };
-  // Bücher asynchron laden — ohne herkunft-Filter, da herkunft oft null ist
+  // Bücher laden (gecacht pro Fach)
+  function populateBuchSel(books) {
+    books.forEach(function(b) {
+      var o = document.createElement('option');
+      o.value = b; o.textContent = b;
+      if (DB.buch === b) o.selected = true;
+      buchSel.appendChild(o);
+    });
+    if (DB.buch) buchSel.value = DB.buch;
+  }
   if (fach) {
-    sbSelect('inhalte', { filters: { fach: fach }, limit: 500, order: 'buch' })
-      .then(function(rows) {
-        var seen = {}, books = [];
-        rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; books.push(r.buch); } });
-        books.sort();
-        books.forEach(function(b) {
-          var o = document.createElement('option');
-          o.value = b; o.textContent = b;
-          if (DB.buch === b) o.selected = true;
-          buchSel.appendChild(o);
+    if (_buchCache[fach]) {
+      populateBuchSel(_buchCache[fach]);
+    } else {
+      sbSelect('inhalte', { filters: { fach: fach }, limit: 500, order: 'buch' })
+        .then(function(rows) {
+          var seen = {}, books = [];
+          rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; books.push(r.buch); } });
+          books.sort();
+          _buchCache[fach] = books;
+          populateBuchSel(books);
         });
-        if (DB.buch) buchSel.value = DB.buch;
-      });
+    }
   }
   bar.appendChild(buchSel);
 

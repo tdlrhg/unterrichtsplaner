@@ -483,12 +483,34 @@ function buildImportView(container) {
   var typSel  = fsel([['schulbuch','📖 Schulbuch'],['aufgabenpool','🗃 Aufgabenpool'],['sammlung','📋 Sammlung'],['eigenmaterial','📄 Eigenmaterial']]);
   var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
   var jgInp   = finp('z.B. 8'); jgInp.style.maxWidth = '80px';
-  var kapInp  = finp('z.B. 8.3 Flächen (optional)');
+  var kapInp   = finp('z.B. IV Flächen (optional)');
+  var ukInp    = finp('z.B. Flächeninhalt berechnen (optional)');
   var seiteInp = finp('z.B. 142', 'number'); seiteInp.style.maxWidth = '110px';
 
   metaCard.appendChild(row2(fg('Buchtitel / Quelle', buchInp), fg('Typ', typSel)));
   metaCard.appendChild(row2(fg('Fach', fachSel), fg('Jahrgang', jgInp)));
-  metaCard.appendChild(row2(fg('Kapitel', kapInp), fg('Erste Seite', seiteInp)));
+  metaCard.appendChild(row2(fg('Kapitel', kapInp), fg('Unterkapitel', ukInp), fg('Erste Seite', seiteInp)));
+
+  // Autocomplete für Kapitel und Unterkapitel (abhängig vom eingetragenen Buch)
+  attachAutocomplete(kapInp, function() {
+    var buch = buchInp.value.trim();
+    if (!buch) return Promise.resolve([]);
+    return sbSelect('inhalte', { select: 'kapitel', filters: { buch: buch }, limit: 1000 }).then(function(rows) {
+      var seen = {}, kaps = [];
+      rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
+      return kaps.sort();
+    });
+  });
+  attachAutocomplete(ukInp, function() {
+    var buch = buchInp.value.trim();
+    if (!buch) return Promise.resolve([]);
+    var kap = kapInp.value.trim();
+    return sbSelect('inhalte', { select: 'uk_titel', filters: Object.assign({ buch: buch }, kap ? { kapitel: kap } : {}), limit: 500 }).then(function(rows) {
+      var seen = {}, uks = [];
+      rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
+      return uks.sort();
+    });
+  });
 
   // ── Datei-Upload ──────────────────────────────────────────────
   var fileCard = mk('div', '');
@@ -655,6 +677,7 @@ function buildImportView(container) {
     var fach     = fachSel.value;
     var jg       = jgInp.value.trim() || null;
     var kap      = kapInp.value.trim() || null;
+    var uk       = ukInp.value.trim() || null;
     var seite    = seiteInp.value ? Number(seiteInp.value) : null;
     var herkunft = typSel.value === 'eigenmaterial' ? 'eigenmaterial' : 'schulbuch';
     var ts       = Date.now();
@@ -666,6 +689,7 @@ function buildImportView(container) {
         herkunft:     herkunft,
         buch:         buch || null,
         kapitel:      kap,
+        uk_titel:     uk,
         seite:        seite,
         nr:           String(a.nr || (i + 1)),
         aufgabenstellung: a.aufgabenstellung || null,

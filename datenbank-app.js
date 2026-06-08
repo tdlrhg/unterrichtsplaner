@@ -62,6 +62,7 @@ const DB = {
   jahrgang: null,
   kapitel: null,
   seite: null,
+  ohneSeite: false,
   suchtext: '',
   offset: 0,
 };
@@ -921,11 +922,12 @@ async function buildFachView(container) {
     if (DB.umfang)        filters.umfang        = DB.umfang;
     if (DB.jahrgang)      filters.jahrgang      = DB.jahrgang;
     if (DB.kapitel)       filters.kapitel       = DB.kapitel;
-    if (DB.seite != null) filters.seite         = DB.seite;
+    if (!DB.ohneSeite && DB.seite != null) filters.seite = DB.seite;
 
     var rows = await sbSelect('inhalte', {
       fts: DB.suchtext || null,
       filters,
+      nullFilters: DB.ohneSeite ? ['seite'] : [],
       limit: LIMIT,
       offset: DB.offset,
       order: 'herkunft,buch,seite',
@@ -1089,7 +1091,9 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   seiteInp.type = 'number'; seiteInp.placeholder = 'S.';
   seiteInp.title = 'Nach Seite filtern';
   seiteInp.value = DB.seite != null ? DB.seite : '';
+  seiteInp.disabled = DB.ohneSeite;
   seiteInp.style.cssText = 'width:52px;flex-shrink:0;font-size:12px;padding:3px 6px;height:28px;border:1px solid var(--bord);border-radius:6px;background:var(--surf);color:var(--tx1);';
+  if (DB.ohneSeite) seiteInp.style.opacity = '0.35';
   var _seiteDebounce;
   seiteInp.oninput = function() {
     clearTimeout(_seiteDebounce);
@@ -1101,6 +1105,18 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     }, 400);
   };
   bar.appendChild(seiteInp);
+
+  // Chip: "Ohne Seite"
+  var ohneSeiteActive = DB.ohneSeite;
+  var ohneSeiteChip = tx('div', 'db-fchip' + (ohneSeiteActive ? ' on' : ''), 'Ohne Seite');
+  if (ohneSeiteActive) ohneSeiteChip.style.cssText = 'background:#f59e0b18;color:#b45309;border-color:#f59e0b60;';
+  ohneSeiteChip.title = 'Nur Einträge ohne Seitenzahl anzeigen';
+  ohneSeiteChip.onclick = function() {
+    DB.ohneSeite = !DB.ohneSeite;
+    if (DB.ohneSeite) DB.seite = null;
+    DB.offset = 0; refresh();
+  };
+  bar.appendChild(ohneSeiteChip);
   bar.appendChild(mk('div', 'db-filter-sep'));
 
   function fchipGroup(opts, dbKey) {
@@ -1231,13 +1247,13 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   ], 'umfang'));
 
   // Filter löschen (nur wenn aktiv)
-  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang || DB.kapitel || DB.seite != null;
+  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang || DB.kapitel || DB.seite != null || DB.ohneSeite;
   if (anyActive) {
     bar.appendChild(sep());
     const clrBtn = btn('✕ Filter', 'btn btn-ghost btn-sm');
     clrBtn.style.cssText += 'font-size:10.5px;padding:2px 8px;color:var(--tx3);';
     clrBtn.onclick = function() {
-      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.seite = null; DB.offset = 0;
+      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.seite = null; DB.ohneSeite = false; DB.offset = 0;
       refresh();
     };
     bar.appendChild(clrBtn);
@@ -1511,18 +1527,6 @@ function buildModalViewBody(a) {
   var p0 = mk('div', 'db-modal-tab-pane split active');
   panes.push(p0);
   {
-    const L = mkL();
-    if (a.inhalt) {
-      sec(L, 'Inhalt / Aufgabe');
-      L.appendChild(tx('div', 'db-modal-text', a.inhalt));
-    }
-    if (a.thema && a.thema !== a.inhalt) {
-      sec(L, 'Thema');
-      L.appendChild(tx('div', 'db-modal-text', a.thema));
-    }
-    if (!a.inhalt && !a.thema) empty(L, '(Kein Inhalt hinterlegt)');
-    p0.appendChild(L);
-
     const R = mkR();
     sec(R, 'Quelle');
     fld(R, 'Herkunft', (!a.herkunft || a.herkunft === 'schulbuch') ? '📖 Schulbuch' : '📄 Eigenmaterial');
@@ -1537,6 +1541,18 @@ function buildModalViewBody(a) {
     if (a.jahrgang) fld(R, 'Jahrgang', 'Klasse ' + a.jahrgang);
     if (a.typ)      fld(R, 'Typ', a.typ);
     p0.appendChild(R);
+
+    const L = mkL();
+    if (a.inhalt) {
+      sec(L, 'Inhalt / Aufgabe');
+      L.appendChild(tx('div', 'db-modal-text', a.inhalt));
+    }
+    if (a.thema && a.thema !== a.inhalt) {
+      sec(L, 'Thema');
+      L.appendChild(tx('div', 'db-modal-text', a.thema));
+    }
+    if (!a.inhalt && !a.thema) empty(L, '(Kein Inhalt hinterlegt)');
+    p0.appendChild(L);
   }
   tabBody.appendChild(p0);
 
@@ -1639,9 +1655,8 @@ function buildModalForm(a, mode) {
   left.appendChild(fldTextarea('Inhalt / Teilaufgabe', 'inhalt', 'Was steht in der Aufgabe?', 5));
   left.appendChild(fldTextarea('Anforderung', 'anforderung', 'Was sollen Schülerinnen konkret tun?', 3));
   left.appendChild(fldInp('Thema', 'thema', 'z.B. Gleichsetzungsverfahren'));
-  body.appendChild(left);
 
-  // Rechts: Metadaten
+  // Rechts: Metadaten (wird zuerst ins DOM eingefügt → linke Spalte in 300px|1fr Grid)
   const right = mk('div', 'db-modal-right');
 
   function fldSel(label, key, opts) {
@@ -1689,7 +1704,9 @@ function buildModalForm(a, mode) {
   loesW.appendChild(loesChk);
   right.appendChild(loesW);
 
+  // Reihenfolge: right (Metadaten, 300px) zuerst, left (Aufgabe, 1fr) zweite Spalte
   body.appendChild(right);
+  body.appendChild(left);
 
   function getData() {
     const data = {};

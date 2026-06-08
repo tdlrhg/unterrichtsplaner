@@ -1220,8 +1220,15 @@ async function buildFachView(container) {
     if (DB.typ)           parts.push(TYP_LABELS[DB.typ] || DB.typ);
     if (DB.seite != null) parts.push('S. ' + DB.seite);
     if (DB.suchtext)      parts.push('„' + DB.suchtext + '"');
-    subT.textContent = rows.length + (rows.length >= LIMIT ? '+' : '') + ' Einträge'
-      + (parts.length ? ' · ' + parts.join(' · ') : '');
+    var suffix = parts.length ? ' · ' + parts.join(' · ') : '';
+    if (rows.length >= LIMIT) {
+      subT.textContent = 'Einträge werden gezählt…' + suffix;
+      sbCount('inhalte', { filters }).then(function(total) {
+        subT.textContent = (total != null ? total : rows.length + '+') + ' Einträge' + suffix;
+      });
+    } else {
+      subT.textContent = rows.length + ' Einträge' + suffix;
+    }
 
     if (!rows.length) {
       const e = tx('div', '', 'Keine Einträge gefunden.');

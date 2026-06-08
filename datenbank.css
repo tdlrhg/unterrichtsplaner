@@ -92,6 +92,25 @@
 .db-col-umfang { display: flex; justify-content: center; }
 
 .db-col-hdr-umfang { background: rgba(15,118,110,.07); color: #0f766e; }
+.db-col-hdr-kap    { background: rgba(15,118,110,.07); color: #0f766e; text-align: left; }
+.db-col-hdr-uk     { background: rgba(15,118,110,.05); color: #0f766e; text-align: left; }
+
+.db-col-kap,
+.db-col-uk {
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.db-col-kap-text {
+  font-size: 11px;
+  color: var(--tx3);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
 
 .db-herkunft-badge {
   font-size: 9px;

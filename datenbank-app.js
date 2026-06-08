@@ -24,14 +24,16 @@ const COLS = [
   { key: 'schw',     label: 'AFB / Niveau', hCls: 'db-col-hdr-schw',   cCls: 'db-col-schw',   sortField: 'schwierigkeit'                   },
   { key: 'operator', label: 'Operator',     hCls: 'db-col-hdr-op',     cCls: 'db-col-op',     sortField: 'operator',      defaultOff: true },
   { key: 'umfang',   label: 'Umfang',       hCls: 'db-col-hdr-umfang', cCls: 'db-col-umfang', sortField: null,            defaultOff: true },
+  { key: 'kapitel',  label: 'Kapitel',      hCls: 'db-col-hdr-kap',    cCls: 'db-col-kap',    sortField: 'kapitel'                         },
+  { key: 'uk_titel', label: 'Unterkapitel', hCls: 'db-col-hdr-uk',     cCls: 'db-col-uk',     sortField: 'uk_titel'                        },
 ];
 
 var COL_CONFIG = (function() {
   try {
     var s = JSON.parse(localStorage.getItem('db_col_config') || 'null');
-    if (s && s.v === 4 && Array.isArray(s.order) && Array.isArray(s.widths) && Array.isArray(s.hidden)) return s;
+    if (s && s.v === 5 && Array.isArray(s.order) && Array.isArray(s.widths) && Array.isArray(s.hidden)) return s;
   } catch(e) {}
-  return { v: 4, order: [0,1,2,3,4], widths: [210, null, 160, 110, 80], hidden: [3,4] };
+  return { v: 5, order: [0,1,2,3,4,5,6], widths: [210, null, 160, 110, 80, 130, 120], hidden: [3,4] };
 })();
 
 function saveColConfig() {
@@ -1226,9 +1228,9 @@ async function buildFachView(container) {
           var pageHdr = mk('div', '');
           pageHdr.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px 2px;';
           var pagePill = tx('span', '', 'Seite ' + ref0.seite);
-          pagePill.style.cssText = 'font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;'
-            + 'color:var(--pri);background:rgba(15,118,110,.08);border:1px solid rgba(15,118,110,.18);'
-            + 'border-radius:20px;padding:2px 9px;';
+          pagePill.style.cssText = 'font-size:13px;font-weight:800;letter-spacing:.04em;'
+            + 'color:var(--pri);background:rgba(15,118,110,.10);border:1px solid rgba(15,118,110,.22);'
+            + 'border-radius:20px;padding:4px 14px;';
           pageHdr.appendChild(pagePill);
           if (!DB.buch && ref0.buch) {
             var buchLabel = tx('span', '', ref0.buch);
@@ -1369,6 +1371,25 @@ function renderRow(a, onSaved, compact) {
     umfCol.appendChild(umfEl);
   }
   cells[4] = umfCol;
+
+  // Zelle 5: Kapitel
+  var kapCol = mk('div', 'db-col-kap'); kapCol.dataset.colIdx = 5;
+  var kapText = a.kapitel || a.kapitel_titel || '';
+  if (kapText) {
+    var kapEl = tx('div', 'db-col-kap-text', kapText);
+    kapEl.title = kapText;
+    kapCol.appendChild(kapEl);
+  }
+  cells[5] = kapCol;
+
+  // Zelle 6: Unterkapitel
+  var ukCol = mk('div', 'db-col-uk'); ukCol.dataset.colIdx = 6;
+  if (a.uk_titel) {
+    var ukEl = tx('div', 'db-col-kap-text', a.uk_titel);
+    ukEl.title = a.uk_titel;
+    ukCol.appendChild(ukEl);
+  }
+  cells[6] = ukCol;
 
   // Nur sichtbare Spalten in konfigurierter Reihenfolge einhängen
   visibleCols().forEach(function(i) { row.appendChild(cells[i]); });

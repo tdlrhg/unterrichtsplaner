@@ -175,6 +175,13 @@ function viewAufgabenDB() {
     card.style.cssText = 'border:1px solid var(--bord);border-left:3px solid #16a34a;border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;gap:5px;cursor:pointer;transition:background .1s;';
     card.onmouseenter = () => { card.style.background = 'var(--surf2)'; };
     card.onmouseleave = () => { card.style.background = ''; };
+    const fachArr = Array.isArray(m.fach) ? m.fach : (m.fach ? [m.fach] : []);
+    const jgArr = Array.isArray(m.jahrgang) ? m.jahrgang : (m.jahrgang ? [m.jahrgang] : []);
+    const themen = Array.isArray(m.themen) ? m.themen : [];
+    const phasen = Array.isArray(m.unterrichtsphase) ? m.unterrichtsphase : (m.unterrichtsphase ? [m.unterrichtsphase] : []);
+    const rolle = m.rolle || m.rolleImKontext || '';
+    const beanspruchung = m.kognitive_beanspruchung || m.kognitiveBeanspruchung || '';
+    const hatLoesung = m.hat_loesung ?? m.hatLoesung;
 
     // Titel + Dateiname
     const titleRow = mk('div', '');
@@ -200,13 +207,11 @@ function viewAufgabenDB() {
     // Chips: Themen, Rolle, Unterrichtsphase, Fach, Jahrgang
     const chips = mk('div', '');
     chips.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:2px;';
-    if (m.fach)             chips.appendChild(smallChip(m.fach, '#94a3b8'));
-    const jgArr = Array.isArray(m.jahrgang) ? m.jahrgang : (m.jahrgang ? [m.jahrgang] : []);
+    if (fachArr.length)     chips.appendChild(smallChip(fachArr.join('/'), '#94a3b8'));
     if (jgArr.length)       chips.appendChild(smallChip('Jg. ' + jgArr.join('/'), '#94a3b8'));
-    if (m.rolle)            chips.appendChild(smallChip(m.rolle, '#2563eb'));
-    if (m.unterrichtsphase) chips.appendChild(smallChip(m.unterrichtsphase, '#7c3aed'));
-    if (m.kognitive_beanspruchung) chips.appendChild(smallChip(m.kognitive_beanspruchung, '#d97706'));
-    const themen = Array.isArray(m.themen) ? m.themen : [];
+    if (rolle)              chips.appendChild(smallChip(rolle, '#2563eb'));
+    if (phasen.length)      chips.appendChild(smallChip(phasen.join('/'), '#7c3aed'));
+    if (beanspruchung)      chips.appendChild(smallChip(beanspruchung, '#d97706'));
     themen.slice(0, 4).forEach(t => chips.appendChild(smallChip(t, '#0891b2')));
     if (chips.children.length) card.appendChild(chips);
 
@@ -216,7 +221,7 @@ function viewAufgabenDB() {
       if (existing) { existing.remove(); return; }
       const detail = mk('div', 'card-detail');
       detail.style.cssText = 'margin-top:6px;padding-top:8px;border-top:1px solid var(--bord);display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--tx2);';
-      if (m.hat_loesung != null) detail.appendChild(tx('div', '', 'Mit Lösung: ' + (m.hat_loesung ? 'ja' : 'nein')));
+      if (hatLoesung != null) detail.appendChild(tx('div', '', 'Mit Lösung: ' + (hatLoesung ? 'ja' : 'nein')));
       if (m.r2_pfad) {
         const link = document.createElement('a');
         link.href = '#'; link.textContent = '↗ Datei öffnen';
@@ -270,8 +275,11 @@ function viewAufgabenDB() {
         promises.push(Promise.resolve(null));
       }
 
-      // materialien-Tabelle existiert nicht mehr (→ inhalte mit herkunft='eigenmaterial')
-      promises.push(Promise.resolve(null));
+      if (quelleMat && moreMat) {
+        promises.push(sbSelect('materialien', { fts: suchText, limit: LIMIT, offset: offsetMat, order: 'titel.asc' }));
+      } else {
+        promises.push(Promise.resolve(null));
+      }
 
       const [sbRows, matRows] = await Promise.all(promises);
       loadingEl.remove();
@@ -293,17 +301,25 @@ function viewAufgabenDB() {
         moreSB = false;
       }
 
-      if (matRows && matRows.length) {
-        if (filterQuelle === '' && matRows.length) {
+      const filteredMatRows = (matRows || []).filter(m => {
+        if (!filterFach) return true;
+        const fachArr = Array.isArray(m.fach) ? m.fach : (m.fach ? [m.fach] : []);
+        return fachArr.map(f => String(f).toLowerCase()).includes(filterFach);
+      });
+
+      if (filteredMatRows.length) {
+        if (filterQuelle === '' && filteredMatRows.length) {
           const sep2 = tx('div', '', '📄 Materialien');
           sep2.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px;padding:4px 0 2px;border-top:1px solid var(--bord);margin-top:4px;';
           if (offsetMat === 0) resultsWrap.appendChild(sep2);
         }
-        matRows.forEach(m => resultsWrap.appendChild(renderMaterialKarte(m)));
+        filteredMatRows.forEach(m => resultsWrap.appendChild(renderMaterialKarte(m)));
+        total += filteredMatRows.length;
+      }
+      if (matRows) {
         offsetMat += matRows.length;
         moreMat = matRows.length === LIMIT;
-        total += matRows.length;
-      } else if (matRows) {
+      } else {
         moreMat = false;
       }
 

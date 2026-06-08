@@ -19,9 +19,9 @@ const FAECHER = [
 
 // ── Spalten-Konfiguration ──────────────────────────────────────────
 const COLS = [
-  { key: 'src',    label: 'Aufgabe',       hCls: 'db-col-hdr-src',    cCls: 'db-col-src'    },
-  { key: 'inhalt', label: 'Inhalt',        hCls: 'db-col-hdr-inhalt', cCls: 'db-col-inhalt' },
-  { key: 'schw',   label: 'Schwierigkeit', hCls: 'db-col-hdr-schw',   cCls: 'db-col-schw'   },
+  { key: 'src',    label: 'Aufgabe',       hCls: 'db-col-hdr-src',    cCls: 'db-col-src',    sortField: 'seite'          },
+  { key: 'inhalt', label: 'Inhalt',        hCls: 'db-col-hdr-inhalt', cCls: 'db-col-inhalt', sortField: 'inhalt'         },
+  { key: 'schw',   label: 'Schwierigkeit', hCls: 'db-col-hdr-schw',   cCls: 'db-col-schw',   sortField: 'schwierigkeit'  },
 ];
 
 var COL_CONFIG = (function() {
@@ -62,7 +62,8 @@ const DB = {
   jahrgang: null,
   kapitel: null,
   seite: null,
-  ohneSeite: false,
+  sortCol: null,   // null | 'seite' | 'inhalt' | 'schwierigkeit'
+  sortDir: 'asc',  // 'asc' | 'desc'
   suchtext: '',
   offset: 0,
 };
@@ -757,7 +758,7 @@ function buildImportView(container) {
 // ── Tabellen-Header mit Resize + Drag-Reorder ─────────────────────
 var _colDragFromPos = null;
 
-function buildTableHead() {
+function buildTableHead(onSortChange) {
   const head = mk('div', 'db-table-head');
   head.style.gridTemplateColumns = colTemplate();
 
@@ -768,10 +769,25 @@ function buildTableHead() {
     hCell.dataset.vpos = visualPos;
     hCell.draggable = true;
 
-    // Label (kein eigener Pointer-Event, damit Drag auf der Zelle selbst anläuft)
-    const lbl = tx('span', '', col.label);
+    // Label mit Sort-Pfeil
+    var sortArrow = '';
+    if (col.sortField && DB.sortCol === col.sortField) {
+      sortArrow = DB.sortDir === 'asc' ? ' ▲' : ' ▼';
+      hCell.style.cssText += 'cursor:pointer;';
+    } else if (col.sortField) {
+      hCell.style.cssText += 'cursor:pointer;';
+    }
+    const lbl = tx('span', '', col.label + sortArrow);
     lbl.style.pointerEvents = 'none';
     hCell.appendChild(lbl);
+
+    // Sort-Klick (nur wenn kein Drag läuft)
+    if (onSortChange && col.sortField) {
+      hCell.addEventListener('click', function() {
+        if (_colDragFromPos !== null) return;
+        onSortChange(col.sortField);
+      });
+    }
 
     // ── Resize-Handle (nicht nach der letzten Spalte) ──────────────
     if (visualPos < COLS.length - 1) {
@@ -849,7 +865,7 @@ function buildTableHead() {
       saveColConfig();
 
       // Header neu aufbauen (selbe Position im DOM)
-      head.replaceWith(buildTableHead());
+      head.replaceWith(buildTableHead(onSortChange));
       // Zeilen-Zellen in allen sichtbaren Rows neu ordnen
       document.querySelectorAll('.db-row').forEach(reorderRowCells);
     });
@@ -904,7 +920,21 @@ async function buildFachView(container) {
   tableWrap.style.cssText = 'padding:8px 16px 16px;';
   container.appendChild(tableWrap);
 
-  tableWrap.appendChild(buildTableHead());
+  // Sort-Callback: Klick auf Spaltenheader → Auf/Absteigend wechseln
+  function onSortChange(field) {
+    if (DB.sortCol === field) {
+      if (DB.sortDir === 'asc') { DB.sortDir = 'desc'; }
+      else { DB.sortCol = null; DB.sortDir = 'asc'; } // dritter Klick → kein Sort
+    } else {
+      DB.sortCol = field; DB.sortDir = 'asc';
+    }
+    DB.offset = 0;
+    var oldHead = tableWrap.querySelector('.db-table-head');
+    if (oldHead) oldHead.replaceWith(buildTableHead(onSortChange));
+    load();
+  }
+
+  tableWrap.appendChild(buildTableHead(onSortChange));
 
   const wrap = mk('div', '');
   wrap.style.cssText = 'display:flex;flex-direction:column;gap:2px;margin-top:4px;';
@@ -922,21 +952,37 @@ async function buildFachView(container) {
     if (DB.umfang)        filters.umfang        = DB.umfang;
     if (DB.jahrgang)      filters.jahrgang      = DB.jahrgang;
     if (DB.kapitel)       filters.kapitel       = DB.kapitel;
-    if (!DB.ohneSeite && DB.seite != null) filters.seite = DB.seite;
+    if (DB.seite != null) filters.seite         = DB.seite;
+
+    // Sortier-Reihenfolge aufbauen
+    var orderStr;
+    if (DB.sortCol) {
+      var nulls = DB.sortDir === 'asc' ? 'nullslast' : 'nullsfirst';
+      orderStr = DB.sortCol + '.' + DB.sortDir + '.' + nulls;
+      if (DB.sortCol === 'seite') orderStr = 'buch.asc,' + orderStr;
+    } else {
+      orderStr = 'herkunft,buch,seite';
+    }
 
     var rows = await sbSelect('inhalte', {
       fts: DB.suchtext || null,
       filters,
-      nullFilters: DB.ohneSeite ? ['seite'] : [],
+      nullFilters: [],
       limit: LIMIT,
       offset: DB.offset,
-      order: 'herkunft,buch,seite',
+      order: orderStr,
     }).catch(function() { return []; });
 
-    // nr natürlich sortieren: numerischer Teil, dann Buchstabe (8 < 8a < 8b < 9 < 10)
+    // nr natürlich sortieren: 8 < 8a < 8b < 9 < 10
+    // Bei Custom-Sort: Server-Reihenfolge beibehalten, nur innerhalb gleicher Seite nr-sortieren
     rows.sort(function(a, b) {
-      if (a.buch   !== b.buch)   return (a.buch   || '') < (b.buch   || '') ? -1 : 1;
-      if (a.seite  !== b.seite)  return (a.seite  || 0)  - (b.seite  || 0);
+      if (!DB.sortCol) {
+        if (a.buch  !== b.buch)  return (a.buch  || '') < (b.buch  || '') ? -1 : 1;
+        if (a.seite !== b.seite) return (a.seite || 0)  - (b.seite || 0);
+      } else {
+        // Server hat sortiert; nur innerhalb gleicher buch+seite nr-sortieren
+        if (a.buch !== b.buch || a.seite !== b.seite) return 0;
+      }
       var pa = String(a.nr || '').match(/^(\d+)([a-z]*)$/i) || ['', '0', ''];
       var pb = String(b.nr || '').match(/^(\d+)([a-z]*)$/i) || ['', '0', ''];
       var nd = parseInt(pa[1], 10) - parseInt(pb[1], 10);
@@ -1091,9 +1137,7 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   seiteInp.type = 'number'; seiteInp.placeholder = 'S.';
   seiteInp.title = 'Nach Seite filtern';
   seiteInp.value = DB.seite != null ? DB.seite : '';
-  seiteInp.disabled = DB.ohneSeite;
   seiteInp.style.cssText = 'width:52px;flex-shrink:0;font-size:12px;padding:3px 6px;height:28px;border:1px solid var(--bord);border-radius:6px;background:var(--surf);color:var(--tx1);';
-  if (DB.ohneSeite) seiteInp.style.opacity = '0.35';
   var _seiteDebounce;
   seiteInp.oninput = function() {
     clearTimeout(_seiteDebounce);
@@ -1105,18 +1149,6 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     }, 400);
   };
   bar.appendChild(seiteInp);
-
-  // Chip: "Ohne Seite"
-  var ohneSeiteActive = DB.ohneSeite;
-  var ohneSeiteChip = tx('div', 'db-fchip' + (ohneSeiteActive ? ' on' : ''), 'Ohne Seite');
-  if (ohneSeiteActive) ohneSeiteChip.style.cssText = 'background:#f59e0b18;color:#b45309;border-color:#f59e0b60;';
-  ohneSeiteChip.title = 'Nur Einträge ohne Seitenzahl anzeigen';
-  ohneSeiteChip.onclick = function() {
-    DB.ohneSeite = !DB.ohneSeite;
-    if (DB.ohneSeite) DB.seite = null;
-    DB.offset = 0; refresh();
-  };
-  bar.appendChild(ohneSeiteChip);
   bar.appendChild(mk('div', 'db-filter-sep'));
 
   function fchipGroup(opts, dbKey) {
@@ -1247,13 +1279,13 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   ], 'umfang'));
 
   // Filter löschen (nur wenn aktiv)
-  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang || DB.kapitel || DB.seite != null || DB.ohneSeite;
+  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.operator || DB.umfang || DB.jahrgang || DB.kapitel || DB.seite != null;
   if (anyActive) {
     bar.appendChild(sep());
     const clrBtn = btn('✕ Filter', 'btn btn-ghost btn-sm');
     clrBtn.style.cssText += 'font-size:10.5px;padding:2px 8px;color:var(--tx3);';
     clrBtn.onclick = function() {
-      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.seite = null; DB.ohneSeite = false; DB.offset = 0;
+      DB.buch = null; DB.herkunft = null; DB.schwierigkeit = null; DB.operator = null; DB.umfang = null; DB.jahrgang = null; DB.kapitel = null; DB.seite = null; DB.offset = 0;
       refresh();
     };
     bar.appendChild(clrBtn);

@@ -1323,7 +1323,7 @@ async function buildFachView(container) {
       wrap.appendChild(mehr);
     }
 
-    if (_savedScroll !== null) container.scrollTop = _savedScroll;
+    if (_savedScroll !== null) requestAnimationFrame(function() { container.scrollTop = _savedScroll; });
   }
 
   // Suche: Debounce

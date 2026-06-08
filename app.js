@@ -96,6 +96,60 @@ function buildSetup() {
   render();
   let _ghDate = null;
 
+  function normalizeArray(value) {
+    if (Array.isArray(value)) return value.filter(v => v !== null && v !== undefined && v !== '').map(v => String(v));
+    if (value === null || value === undefined || value === '') return [];
+    return [String(value)];
+  }
+
+  function materialFromSupabaseRow(row, legacy = {}) {
+    const mapped = {
+      id: row.id,
+      dateiname: row.dateiname || legacy.dateiname || '',
+      dateipfad: row.r2_pfad || legacy.dateipfad || null,
+      r2key: row.r2_pfad || legacy.r2key || null,
+      fach: normalizeArray(row.fach),
+      titel: row.titel || legacy.titel || row.dateiname || '',
+      themen: normalizeArray(row.themen),
+      jahrgang: normalizeArray(row.jahrgang),
+      beschreibung: row.beschreibung || '',
+      rolleImKontext: row.rolle || '',
+      unterrichtsphase: normalizeArray(row.unterrichtsphase),
+      kognitiveBeanspruchung: row.kognitive_beanspruchung || '',
+      hatLoesung: row.hat_loesung ?? legacy.hatLoesung ?? false,
+    };
+    return {
+      ...legacy,
+      ...mapped,
+      fach: mapped.fach.length ? mapped.fach : normalizeArray(legacy.fach),
+      themen: mapped.themen.length ? mapped.themen : normalizeArray(legacy.themen),
+      jahrgang: mapped.jahrgang.length ? mapped.jahrgang : normalizeArray(legacy.jahrgang),
+      unterrichtsphase: mapped.unterrichtsphase.length ? mapped.unterrichtsphase : normalizeArray(legacy.unterrichtsphase),
+      beschreibung: mapped.beschreibung || legacy.beschreibung || '',
+      rolleImKontext: mapped.rolleImKontext || legacy.rolleImKontext || '',
+      kognitiveBeanspruchung: mapped.kognitiveBeanspruchung || legacy.kognitiveBeanspruchung || '',
+    };
+  }
+
+  async function loadMaterialDB() {
+    const [tableRows, legacyJson] = await Promise.all([
+      sbSelectAll('materialien', { order: 'titel.asc' }).catch(() => null),
+      sbDownload('materialien.json').catch(() => []),
+    ]);
+
+    const legacy = Array.isArray(legacyJson) ? legacyJson : [];
+    const legacyById = new Map(legacy.filter(m => m && m.id).map(m => [m.id, m]));
+
+    if (!Array.isArray(tableRows) || tableRows.length === 0) {
+      return legacy;
+    }
+
+    const merged = tableRows.map(row => materialFromSupabaseRow(row, legacyById.get(row.id) || {}));
+    const seenIds = new Set(merged.map(m => m.id));
+    const jsonOnly = legacy.filter(m => m?.id && !seenIds.has(m.id));
+    return merged.concat(jsonOnly);
+  }
+
   // Zeitpunkt, zu dem die App gestartet wurde (für Auto-Reload-Erkennung)
   const _appStarted = Date.now();
 
@@ -128,7 +182,7 @@ function buildSetup() {
 
   const [loaded, matdb, klpdb, didaktik, methdb, didart, schulbuecher] = await Promise.all([
     sbDownload('data.json').catch(() => null),
-    sbDownload('materialien.json').catch(() => []),
+    loadMaterialDB(),
     fetch('klp.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
     sbDownload('didaktik.json').catch(() => ({})),
     sbDownload('methoden.json').catch(() => []),

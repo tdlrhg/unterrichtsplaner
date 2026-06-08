@@ -93,6 +93,22 @@ async function sbSelect(table, { select = '*', filters = {}, nullFilters = [], f
   return await res.json();
 }
 
+// Alle Zeilen einer Tabelle paginiert laden.
+// Nutzt sbSelect in 1000er Schritten, bis keine weiteren Zeilen mehr kommen.
+async function sbSelectAll(table, opts = {}) {
+  const pageSize = opts.limit && opts.limit > 0 ? opts.limit : 1000;
+  let offset = 0;
+  let all = [];
+  for (;;) {
+    const rows = await sbSelect(table, { ...opts, limit: pageSize, offset });
+    if (!Array.isArray(rows) || !rows.length) break;
+    all = all.concat(rows);
+    if (rows.length < pageSize) break;
+    offset += rows.length;
+  }
+  return all;
+}
+
 // Anzahl der Einträge (ohne Daten zu laden) – gibt total count zurück
 async function sbCount(table, { filters = {}, fts = null } = {}) {
   const params = ['select=id'];
@@ -132,18 +148,4 @@ async function sbDelete(table, id) {
   const url = _URL + '/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id);
   const res = await fetch(url, { method: 'DELETE', headers: _H() });
   if (!res.ok) throw new Error(await res.text());
-}
-
-// Anzahl Zeilen in einer Tabelle (optional mit eq-Filtern)
-async function sbCount(table, filters = {}) {
-  let url = _URL + '/rest/v1/' + table + '?select=id';
-  Object.entries(filters).forEach(([k, v]) => {
-    if (v !== null && v !== undefined && v !== '') {
-      url += '&' + k + '=eq.' + encodeURIComponent(v);
-    }
-  });
-  const res = await fetch(url, { headers: { ..._H(), 'Prefer': 'count=exact', 'Range': '0-0' } });
-  if (!res.ok) return null;
-  const range = res.headers.get('content-range'); // z.B. "0-9/212"
-  return range ? parseInt(range.split('/')[1]) : null;
 }

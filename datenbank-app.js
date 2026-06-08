@@ -531,7 +531,7 @@ function buildImportView(container) {
         if (i < resized.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
       });
       blocks.push({ type: 'text', text: IMP_KI_PROMPT });
-      var raw = await callKI(blocks, { maxTokens: 8000 });
+      var raw = await callKI(blocks, { maxTokens: 16000 });
       // Markdown-Codeblock ``` entfernen falls vorhanden
       var cleaned = raw.trim().replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
       var parsed;

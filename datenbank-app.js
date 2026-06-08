@@ -2590,23 +2590,28 @@ function dbRender() {
     if (Array.isArray(res[0])) SCHULBUCHDB = res[0];
     if (Array.isArray(res[1])) METHDB      = res[1];
     if (Array.isArray(res[2])) DIDARTDB    = res[2];
-    reloadLanding();
-    // Zusätzlich: Bücher aus der DB ins Regal laden (Aufgabenpools etc.)
-    sbSelect('inhalte', { select: 'fach,buch,herkunft', limit: 5000 }).then(function(rows) {
-      var changed = false;
-      var seen = {};
+    // Regal: DB als einzige Wahrheitsquelle — nur Bücher MIT Einträgen anzeigen
+    sbSelect('inhalte', { select: 'fach,buch', limit: 5000 }).then(function(rows) {
+      // Alle (fach, buch)-Paare die wirklich Einträge haben
+      var dbSet = {};
       rows.forEach(function(r) {
-        if (!r.buch || !r.fach) return;
-        var key = r.fach + '::' + r.buch;
-        if (seen[key]) return;
-        seen[key] = true;
-        var exists = SCHULBUCHDB.some(function(b) { return b.fach === r.fach && b.titel === r.buch; });
-        if (!exists) {
-          SCHULBUCHDB.push({ fach: r.fach, titel: r.buch, typ: 'aufgabenpool', kapitel: [], jahrgang: null });
-          changed = true;
-        }
+        if (r.buch && r.fach) dbSet[r.fach + '::' + r.buch] = { fach: r.fach, buch: r.buch };
       });
-      if (changed) reloadLanding();
+
+      // schulbuecher.json-Einträge: nur behalten wenn DB-Einträge vorhanden
+      var merged = SCHULBUCHDB.filter(function(b) {
+        return dbSet[b.fach + '::' + b.titel];
+      });
+
+      // DB-Bücher die nicht in schulbuecher.json sind → als Aufgabenpool hinzufügen
+      Object.keys(dbSet).forEach(function(key) {
+        var d = dbSet[key];
+        var inJson = SCHULBUCHDB.some(function(b) { return b.fach === d.fach && b.titel === d.buch; });
+        if (!inJson) merged.push({ fach: d.fach, titel: d.buch, typ: 'aufgabenpool', kapitel: [], jahrgang: null });
+      });
+
+      SCHULBUCHDB = merged;
+      reloadLanding();
     }).catch(function() {});
   });
 })();

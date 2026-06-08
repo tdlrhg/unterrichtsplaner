@@ -1329,7 +1329,7 @@ async function buildFachView(container) {
       ;(function(grp, sub) {
         ghdr.onclick = function() {
           if (sub) openGroupModal(grp, function() { load({ keepScroll: true }); });
-          else openEntryModal(grp.items[0], 'view', function() { load({ keepScroll: true }); });
+          else openEntryModal(grp.items[0], 'edit', function() { load({ keepScroll: true }); });
         };
       })(g, hasSubtasks);
       wrap.appendChild(ghdr);
@@ -1472,7 +1472,7 @@ function renderRow(a, onSaved, compact) {
   visibleCols().forEach(function(i) { row.appendChild(cells[i]); });
 
   // Klick → Vollbild-Modal
-  row.onclick = function() { openEntryModal(a, 'view', onSaved); };
+  row.onclick = function() { openEntryModal(a, 'edit', onSaved); };
   return row;
 }
 
@@ -1897,11 +1897,13 @@ function openEntryModal(entry, mode, onSaved) {
   function renderModal(curMode, curEntry) {
     modal.innerHTML = '';
 
-    // Header
+    // Header — immer mit Buch/Seite/Nr wenn vorhanden
     const hdr = mk('div', 'db-modal-hdr');
     const hdrLeft = mk('div', '');
     hdrLeft.style.cssText = 'display:flex;align-items:center;gap:10px;flex:1;min-width:0;';
-    if (curMode === 'view' && curEntry) {
+    if (curMode === 'create') {
+      hdrLeft.appendChild(tx('div', 'db-modal-title', 'Neuer Eintrag'));
+    } else if (curEntry) {
       const fi = fachInfo(curEntry.fach);
       hdrLeft.appendChild(tx('span', '', fi.icon));
       var tp = [];
@@ -1909,18 +1911,10 @@ function openEntryModal(entry, mode, onSaved) {
       if (curEntry.seite) tp.push('S. ' + curEntry.seite);
       if (curEntry.nr)    tp.push('Nr. ' + curEntry.nr);
       hdrLeft.appendChild(tx('div', 'db-modal-title', tp.join(' · ') || (curEntry.inhalt || '').slice(0, 70) || 'Eintrag'));
-    } else {
-      hdrLeft.appendChild(tx('div', 'db-modal-title', curMode === 'create' ? 'Neuer Eintrag' : 'Eintrag bearbeiten'));
     }
     hdr.appendChild(hdrLeft);
-
     const hdrRight = mk('div', '');
     hdrRight.style.cssText = 'display:flex;align-items:center;gap:6px;flex-shrink:0;';
-    if (curMode === 'view' && curEntry) {
-      const editBtn = btn('✏️ Bearbeiten', 'btn btn-sm');
-      editBtn.onclick = function() { renderModal('edit', curEntry); };
-      hdrRight.appendChild(editBtn);
-    }
     const closeBtn = btn('✕', 'btn btn-ghost btn-sm');
     closeBtn.style.cssText += 'font-size:13px;padding:3px 8px;';
     closeBtn.onclick = closeEntryModal;
@@ -1928,87 +1922,79 @@ function openEntryModal(entry, mode, onSaved) {
     hdr.appendChild(hdrRight);
     modal.appendChild(hdr);
 
-    // Body
-    const bodyResult = buildModalBody(curEntry || {}, curMode !== 'view');
-    modal.appendChild(bodyResult.bodyEl);
+    // Body — immer bearbeitbar
+    const result = buildModalBody(curEntry || {}, true);
+    modal.appendChild(result.bodyEl);
 
-    if (curMode !== 'view') {
-      const result = bodyResult; // getData() ist in bodyResult
-
-      // Footer
-      const footer = mk('div', 'db-modal-footer');
-      if (curMode === 'edit' && curEntry && curEntry.id) {
-        const delBtn = btn('🗑 Löschen', 'btn btn-ghost btn-sm');
-        delBtn.style.color = '#ef4444';
-        delBtn.onclick = async function() {
-          if (!confirm('Eintrag wirklich löschen?')) return;
-          delBtn.disabled = true; delBtn.textContent = '⏳';
-          try {
-            await sbDelete('inhalte', curEntry.id);
-            closeEntryModal();
-            if (onSaved) onSaved();
-          } catch(e) {
-            alert('Fehler: ' + e.message);
-            delBtn.disabled = false; delBtn.textContent = '🗑 Löschen';
-          }
-        };
-        footer.appendChild(delBtn);
-      }
-      const right = mk('div', '');
-      right.style.cssText = 'display:flex;gap:8px;margin-left:auto;';
-      const cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm');
-      cancelBtn.onclick = function() {
-        if (curMode === 'create') closeEntryModal();
-        else renderModal('view', curEntry);
-      };
-      right.appendChild(cancelBtn);
-      const saveBtn = btn('✓ Speichern', 'btn btn-sm');
-      saveBtn.onclick = async function() {
-        const data = result.getData();
-        if (!data.inhalt && !data.thema) { alert('Inhalt oder Thema ist erforderlich.'); return; }
-        saveBtn.disabled = true; saveBtn.textContent = '⏳ Speichert…';
+    // Footer
+    const footer = mk('div', 'db-modal-footer');
+    if (curMode !== 'create' && curEntry && curEntry.id) {
+      const delBtn = btn('🗑 Löschen', 'btn btn-ghost btn-sm');
+      delBtn.style.color = '#ef4444';
+      delBtn.onclick = async function() {
+        if (!confirm('Eintrag wirklich löschen?')) return;
+        delBtn.disabled = true; delBtn.textContent = '⏳';
         try {
-          let saved;
-          if (curMode === 'create') {
-            const newRow = Object.assign({ id: 'db_' + Date.now() + '_' + Math.random().toString(36).slice(2), fach: DB.fach }, data);
-            await sbInsert('inhalte', [newRow]);
-            saved = newRow;
-          } else {
-            saved = await sbUpdate('inhalte', curEntry.id, data);
-            if (!saved) saved = Object.assign({}, curEntry, data);
-            // Strukturfelder auf alle Geschwister übertragen (aufgabenstellung, kapitel, uk_titel)
-            var strukturChanged = data.aufgabenstellung != null || data.kapitel_titel != null || data.uk_titel != null;
-            if (strukturChanged && curEntry.buch && curEntry.seite != null) {
-              var parentNr = parseNr(curEntry.nr)[0];
-              sbSelect('inhalte', { filters: { fach: curEntry.fach, buch: curEntry.buch, seite: curEntry.seite }, limit: 50 })
-                .then(function(siblings) {
-                  siblings.forEach(function(s) {
-                    if (s.id === curEntry.id) return;
-                    var sParent = parseNr(s.nr)[0];
-                    if (sParent !== parentNr) return;
-                    var patch = {};
-                    if (data.aufgabenstellung != null && s.aufgabenstellung !== data.aufgabenstellung)
-                      patch.aufgabenstellung = data.aufgabenstellung;
-                    if (data.kapitel_titel != null && s.kapitel_titel !== data.kapitel_titel)
-                      patch.kapitel_titel = data.kapitel_titel;
-                    if (data.uk_titel != null && s.uk_titel !== data.uk_titel)
-                      patch.uk_titel = data.uk_titel;
-                    if (Object.keys(patch).length) sbUpdate('inhalte', s.id, patch);
-                  });
-                });
-            }
-          }
+          await sbDelete('inhalte', curEntry.id);
           closeEntryModal();
-          if (onSaved) onSaved(saved);
+          if (onSaved) onSaved();
         } catch(e) {
-          alert('Fehler beim Speichern: ' + e.message);
-          saveBtn.disabled = false; saveBtn.textContent = '✓ Speichern';
+          alert('Fehler: ' + e.message);
+          delBtn.disabled = false; delBtn.textContent = '🗑 Löschen';
         }
       };
-      right.appendChild(saveBtn);
-      footer.appendChild(right);
-      modal.appendChild(footer);
+      footer.appendChild(delBtn);
     }
+    const right = mk('div', '');
+    right.style.cssText = 'display:flex;gap:8px;margin-left:auto;';
+    const cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm');
+    cancelBtn.onclick = closeEntryModal;
+    right.appendChild(cancelBtn);
+    const saveBtn = btn('✓ Speichern', 'btn btn-sm');
+    saveBtn.onclick = async function() {
+      const data = result.getData();
+      if (!data.inhalt && !data.thema) { alert('Inhalt oder Thema ist erforderlich.'); return; }
+      saveBtn.disabled = true; saveBtn.textContent = '⏳ Speichert…';
+      try {
+        let saved;
+        if (curMode === 'create') {
+          const newRow = Object.assign({ id: 'db_' + Date.now() + '_' + Math.random().toString(36).slice(2), fach: DB.fach }, data);
+          await sbInsert('inhalte', [newRow]);
+          saved = newRow;
+        } else {
+          saved = await sbUpdate('inhalte', curEntry.id, data);
+          if (!saved) saved = Object.assign({}, curEntry, data);
+          // Strukturfelder auf alle Geschwister übertragen
+          var strukturChanged = data.aufgabenstellung != null || data.kapitel_titel != null || data.uk_titel != null;
+          if (strukturChanged && curEntry.buch && curEntry.seite != null) {
+            var parentNr = parseNr(curEntry.nr)[0];
+            sbSelect('inhalte', { filters: { fach: curEntry.fach, buch: curEntry.buch, seite: curEntry.seite }, limit: 50 })
+              .then(function(siblings) {
+                siblings.forEach(function(s) {
+                  if (s.id === curEntry.id) return;
+                  if (parseNr(s.nr)[0] !== parentNr) return;
+                  var patch = {};
+                  if (data.aufgabenstellung != null && s.aufgabenstellung !== data.aufgabenstellung)
+                    patch.aufgabenstellung = data.aufgabenstellung;
+                  if (data.kapitel_titel != null && s.kapitel_titel !== data.kapitel_titel)
+                    patch.kapitel_titel = data.kapitel_titel;
+                  if (data.uk_titel != null && s.uk_titel !== data.uk_titel)
+                    patch.uk_titel = data.uk_titel;
+                  if (Object.keys(patch).length) sbUpdate('inhalte', s.id, patch);
+                });
+              });
+          }
+        }
+        closeEntryModal();
+        if (onSaved) onSaved(saved);
+      } catch(e) {
+        alert('Fehler beim Speichern: ' + e.message);
+        saveBtn.disabled = false; saveBtn.textContent = '✓ Speichern';
+      }
+    };
+    right.appendChild(saveBtn);
+    footer.appendChild(right);
+    modal.appendChild(footer);
   }
 
   renderModal(mode, entry);

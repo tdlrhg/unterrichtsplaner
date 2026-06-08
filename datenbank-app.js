@@ -534,6 +534,10 @@ function buildImportView(container) {
       var raw = await callKI(blocks, { maxTokens: 16000 });
       // Markdown-Codeblock ``` entfernen falls vorhanden
       var cleaned = raw.trim().replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
+      // Literal-Newlines/Tabs innerhalb von JSON-Strings escapen
+      cleaned = cleaned.replace(/"((?:[^"\\]|\\.)*)"/g, function(m, inner) {
+        return '"' + inner.replace(/\n/g, '\\n').replace(/\r/g, '').replace(/\t/g, '\\t') + '"';
+      });
       var parsed;
       try { parsed = robustJsonParsePr(cleaned); } catch(e) {
         try { parsed = JSON.parse(cleaned); } catch(e2) {

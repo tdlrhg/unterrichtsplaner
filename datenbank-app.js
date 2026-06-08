@@ -909,7 +909,7 @@ async function buildFachView(container) {
   wrap.style.cssText = 'display:flex;flex-direction:column;gap:2px;margin-top:4px;';
   tableWrap.appendChild(wrap);
 
-  const LIMIT = 50;
+  const LIMIT = 500;
 
   async function load() {
     wrap.innerHTML = '<div style="padding:20px;color:var(--tx3);text-align:center">⏳ Lädt…</div>';
@@ -923,16 +923,13 @@ async function buildFachView(container) {
     if (DB.kapitel)       filters.kapitel       = DB.kapitel;
     if (DB.seite != null) filters.seite         = DB.seite;
 
-    var [rows, totalCount] = await Promise.all([
-      sbSelect('inhalte', {
-        fts: DB.suchtext || null,
-        filters,
-        limit: LIMIT,
-        offset: DB.offset,
-        order: 'herkunft,buch,seite',
-      }).catch(function() { return []; }),
-      sbCount('inhalte', { fts: DB.suchtext || null, filters }).catch(function() { return null; }),
-    ]);
+    var rows = await sbSelect('inhalte', {
+      fts: DB.suchtext || null,
+      filters,
+      limit: LIMIT,
+      offset: DB.offset,
+      order: 'herkunft,buch,seite',
+    }).catch(function() { return []; });
 
     // nr natürlich sortieren: numerischer Teil, dann Buchstabe (8 < 8a < 8b < 9 < 10)
     rows.sort(function(a, b) {
@@ -956,8 +953,7 @@ async function buildFachView(container) {
     if (DB.kapitel)       parts.push(DB.kapitel);
     if (DB.seite != null) parts.push('S. ' + DB.seite);
     if (DB.suchtext)      parts.push('„' + DB.suchtext + '"');
-    var countStr = totalCount != null ? totalCount : (rows.length === LIMIT ? '50+' : rows.length);
-    subT.textContent = countStr + ' Einträge'
+    subT.textContent = rows.length + (rows.length >= LIMIT ? '+' : '') + ' Einträge'
       + (parts.length ? ' · ' + parts.join(' · ') : '');
 
     if (!rows.length) {
@@ -1138,6 +1134,7 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   buchSel.appendChild(buchOptDefault);
   buchSel.onchange = function() {
     DB.buch = buchSel.value || null;
+    DB.herkunft = null;   // Eigenmaterial-Filter beim Buch-Wechsel immer löschen
     DB.kapitel = null;
     DB.offset = 0; refresh();
   };

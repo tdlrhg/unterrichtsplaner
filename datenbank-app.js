@@ -1288,16 +1288,21 @@ async function buildFachView(container) {
     if (DB.kapitel)       parts.push(DB.kapitel);
     if (DB.uk_titel)      parts.push(DB.uk_titel);
     if (DB.typ)           parts.push(TYP_LABELS[DB.typ] || DB.typ);
-    if (DB.seite != null) parts.push('S. ' + DB.seite);
+    if (DB.seite != null) parts.push('S.\xa0' + DB.seite);
     if (DB.suchtext)      parts.push('„' + DB.suchtext + '"');
     var suffix = parts.length ? ' · ' + parts.join(' · ') : '';
+
+    // Gruppen jetzt berechnen — für korrekte Aufgaben-Zählung
+    var groups = dbGroupByParent(rows);
     if (rows.length >= LIMIT) {
-      subT.textContent = 'Einträge werden gezählt…' + suffix;
-      sbCount('inhalte', { filters, fts: DB.suchtext || null, rawParams }).then(function(total) {
-        subT.textContent = (total != null ? total : rows.length + '+') + ' Einträge' + suffix;
-      });
+      subT.textContent = 'Aufgaben werden gezählt…' + suffix;
+      sbSelect('inhalte', { select: 'gruppen_key', filters, fts: DB.suchtext || null, rawParams, limit: 10000 })
+        .then(function(allRows) {
+          var distinct = new Set(allRows.map(function(r) { return r.gruppen_key || r.id; })).size;
+          subT.textContent = distinct + ' Aufgaben' + suffix;
+        });
     } else {
-      subT.textContent = rows.length + ' Einträge' + suffix;
+      subT.textContent = groups.length + ' Aufgaben' + suffix;
     }
 
     if (!rows.length) {
@@ -1307,7 +1312,6 @@ async function buildFachView(container) {
       return;
     }
 
-    var groups = dbGroupByParent(rows);
     var _lastSeiteBuch = null; // für Seiten-Trenner
     groups.forEach(function(g) {
       var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);

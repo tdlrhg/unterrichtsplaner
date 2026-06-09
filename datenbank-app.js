@@ -1716,7 +1716,7 @@ function openGroupModal(group, onRefresh) {
   var modal = mk('div', 'db-modal');
   overlay.appendChild(modal);
 
-  // Header
+  // ── Header ────────────────────────────────────────────────────
   var hdr = mk('div', 'db-modal-hdr');
   var hdrLeft = mk('div', '');
   hdrLeft.style.cssText = 'display:flex;align-items:center;gap:10px;flex:1;min-width:0;';
@@ -1724,13 +1724,11 @@ function openGroupModal(group, onRefresh) {
   hdrLeft.appendChild(tx('span', '', fi.icon));
   var tp = [grpTypLabel(group)];
   if (ref.buch)  tp.push(ref.buch);
-  if (ref.seite) tp.push('S. ' + ref.seite);
+  if (ref.seite) tp.push('S. ' + ref.seite);
   hdrLeft.appendChild(tx('div', 'db-modal-title', tp.join(' · ')));
   hdr.appendChild(hdrLeft);
   var hdrRight = mk('div', '');
   hdrRight.style.cssText = 'display:flex;align-items:center;gap:6px;flex-shrink:0;';
-  var editAufgBtn = btn('✏️ Aufgabe bearbeiten', 'btn btn-sm');
-  hdrRight.appendChild(editAufgBtn);
   var closeBtn = btn('✕', 'btn btn-ghost btn-sm');
   closeBtn.style.cssText += 'font-size:13px;padding:3px 8px;';
   closeBtn.onclick = closeEntryModal;
@@ -1738,150 +1736,170 @@ function openGroupModal(group, onRefresh) {
   hdr.appendChild(hdrRight);
   modal.appendChild(hdr);
 
-  // Gemeinsames Edit-Panel (zunächst versteckt)
-  var sharedPanel = mk('div', '');
-  sharedPanel.style.cssText = 'display:none;padding:16px 20px;border-bottom:1px solid var(--bord);background:var(--surf2);gap:12px;flex-direction:column;';
+  // ── Tab-Struktur ──────────────────────────────────────────────
+  var tabWrap = mk('div', 'db-modal-tabwrap');
+  var tabBar = mk('div', 'db-modal-tabbar');
+  var tabBodyEl = mk('div', 'db-modal-tab-body');
+  var tabs = [], panes = [];
 
-  function mkInp(labelTxt, key, placeholder) {
+  ['📋 Grunddaten', '📚 Unterrichtsdaten', '✏️ Prüfungsdaten'].forEach(function(label, idx) {
+    var tab = document.createElement('button');
+    tab.className = 'db-modal-tab' + (idx === 0 ? ' active' : '');
+    tab.textContent = label;
+    tab.onclick = function() {
+      tabs.forEach(function(t, i) { t.classList.toggle('active', i === idx); });
+      panes.forEach(function(p, i) { p.classList.toggle('active', i === idx); });
+    };
+    tabs.push(tab); tabBar.appendChild(tab);
+  });
+  tabWrap.appendChild(tabBar);
+  tabWrap.appendChild(tabBodyEl);
+
+  // Layout-Helfer
+  function mkL() { return mk('div', 'db-modal-left'); }
+  function mkR() { return mk('div', 'db-modal-right'); }
+  function sec(parent, title) { parent.appendChild(tx('div', 'db-modal-section-title', title)); }
+
+  // Eingabefelder mit ref-Werten als Startwert
+  function gfld(parent, label, key, type, placeholder) {
     var f = mk('div', 'db-form-field');
-    var lbl = document.createElement('label'); lbl.textContent = labelTxt; f.appendChild(lbl);
+    if (label) { var lbl = document.createElement('label'); lbl.textContent = label; f.appendChild(lbl); }
+    var inp = document.createElement('input');
+    inp.className = 'db-form-inp'; inp.type = type || 'text';
+    inp.placeholder = placeholder || ''; inp.value = ref[key] != null ? String(ref[key]) : '';
+    inp.dataset.key = key; f.appendChild(inp); parent.appendChild(f); return f;
+  }
+  function gtarea(parent, label, key, rows, placeholder) {
+    var f = mk('div', 'db-form-field');
+    if (label) { var lbl = document.createElement('label'); lbl.textContent = label; f.appendChild(lbl); }
+    var ta = document.createElement('textarea');
+    ta.className = 'db-form-textarea'; ta.rows = rows || 4;
+    ta.placeholder = placeholder || ''; ta.value = (ref[key] || '').replace(/ \| /g, '\n');
+    ta.dataset.key = key; f.appendChild(ta); parent.appendChild(f); return f;
+  }
+  function gfldSuggest(parent, label, key, placeholder, fetchFn) {
+    var f = mk('div', 'db-form-field');
+    if (label) { var lbl = document.createElement('label'); lbl.textContent = label; f.appendChild(lbl); }
     var inp = document.createElement('input');
     inp.className = 'db-form-inp'; inp.type = 'text';
-    inp.placeholder = placeholder || ''; inp.value = ref[key] || '';
-    inp.dataset.key = key; f.appendChild(inp); return f;
+    inp.placeholder = placeholder || ''; inp.value = ref[key] != null ? String(ref[key]) : '';
+    inp.dataset.key = key;
+    f.appendChild(inp); parent.appendChild(f);
+    if (fetchFn) attachAutocomplete(inp, fetchFn);
+    return { f: f, inp: inp };
   }
-  function mkTA(labelTxt, key, placeholder) {
+  function gsel(parent, label, key, opts) {
     var f = mk('div', 'db-form-field');
-    var lbl = document.createElement('label'); lbl.textContent = labelTxt; f.appendChild(lbl);
-    var ta = document.createElement('textarea');
-    ta.className = 'db-form-textarea'; ta.rows = 3;
-    ta.placeholder = placeholder || ''; ta.value = ref[key] || '';
-    ta.dataset.key = key; f.appendChild(ta); return f;
-  }
-
-  // Kapitel-Felder mit Autocomplete
-  var kapF = mkInp('Kapitel', 'kapitel_titel', 'z.B. IV Lineare Gleichungssysteme');
-  var kapInp = kapF.querySelector('input');
-  if (ref.buch) {
-    attachAutocomplete(kapInp, function() { return suggestKapitel(ref.buch); });
-  }
-
-  var ukF = mkInp('Unterkapitel', 'uk_titel', 'z.B. Gleichungssysteme grafisch lösen');
-  var ukInp = ukF.querySelector('input');
-  if (ref.buch) {
-    attachAutocomplete(ukInp, function() { return suggestUnterkapitel(ref.buch, kapInp.value.trim()); });
-  }
-
-  var aufgF = mkTA('Aufgabenstellung', 'aufgabenstellung', 'Gemeinsamer Text aller Teilaufgaben');
-
-  sharedPanel.appendChild(kapF);
-  sharedPanel.appendChild(ukF);
-  sharedPanel.appendChild(aufgF);
-
-  // Speichern-Zeile
-  var panelFooter = mk('div', '');
-  panelFooter.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;margin-top:4px;';
-  var cancelPanelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm');
-  cancelPanelBtn.onclick = function() { sharedPanel.style.display = 'none'; editAufgBtn.textContent = '✏️ Aufgabe bearbeiten'; };
-  var savePanelBtn = btn('✓ Für alle speichern', 'btn btn-sm');
-  savePanelBtn.onclick = async function() {
-    var patch = {};
-    sharedPanel.querySelectorAll('[data-key]').forEach(function(el) {
-      patch[el.dataset.key] = el.value.trim() || null;
+    if (label) { var lbl = document.createElement('label'); lbl.textContent = label; f.appendChild(lbl); }
+    var sel = document.createElement('select');
+    sel.className = 'db-form-sel'; sel.dataset.key = key;
+    [['', '–']].concat(opts).forEach(function(opt) {
+      var o = document.createElement('option');
+      o.value = opt[0]; o.textContent = opt[1];
+      if (String(ref[key] || '') === opt[0]) o.selected = true;
+      sel.appendChild(o);
     });
-    savePanelBtn.disabled = true; savePanelBtn.textContent = '⏳';
-    try {
-      await Promise.all(group.items.map(function(item) { return sbUpdate('inhalte', item.id, patch); }));
-      group.items.forEach(function(item) { Object.assign(item, patch); });
-      // Anzeige aktualisieren
-      closeEntryModal();
-      if (onRefresh) onRefresh();
-    } catch(e) {
-      alert('Fehler: ' + e.message);
-      savePanelBtn.disabled = false; savePanelBtn.textContent = '✓ Für alle speichern';
-    }
-  };
-  panelFooter.appendChild(cancelPanelBtn);
-  panelFooter.appendChild(savePanelBtn);
-  sharedPanel.appendChild(panelFooter);
-  modal.appendChild(sharedPanel);
-
-  editAufgBtn.onclick = function() {
-    var open = sharedPanel.style.display !== 'none';
-    sharedPanel.style.display = open ? 'none' : 'flex';
-    editAufgBtn.textContent = open ? '✏️ Aufgabe bearbeiten' : '✕ Abbrechen';
-  };
-
-  // Body
-  var body = mk('div', 'db-modal-body');
-  body.style.cssText = 'padding:0;display:block;overflow-y:auto;';
-
-  // Aufgabenstellung (Lesemodus)
-  var aufgst = group.aufgabenstellung || ref.aufgabenstellung;
-  if (aufgst) {
-    var stBlock = mk('div', '');
-    stBlock.style.cssText = 'padding:16px 20px 12px;border-bottom:1px solid var(--sep);';
-    stBlock.appendChild(tx('div', 'db-modal-section-title', 'Aufgabenstellung'));
-    stBlock.appendChild(tx('div', 'db-modal-text', aufgst));
-    body.appendChild(stBlock);
-  }
-  // Kapitel-Info (falls vorhanden)
-  var kapInfo = ref.kapitel || ref.kapitel_titel;
-  if (kapInfo || ref.uk_titel) {
-    var kapBlock = mk('div', '');
-    kapBlock.style.cssText = 'padding:8px 20px 10px;border-bottom:1px solid var(--sep);display:flex;gap:16px;flex-wrap:wrap;';
-    if (kapInfo) {
-      var ki = mk('div', '');
-      ki.appendChild(tx('div', 'db-modal-field-label', 'Kapitel'));
-      ki.appendChild(tx('div', 'db-modal-field-value', kapInfo));
-      kapBlock.appendChild(ki);
-    }
-    if (ref.uk_titel) {
-      var ui = mk('div', '');
-      ui.appendChild(tx('div', 'db-modal-field-label', 'Unterkapitel'));
-      ui.appendChild(tx('div', 'db-modal-field-value', ref.uk_titel));
-      kapBlock.appendChild(ui);
-    }
-    body.appendChild(kapBlock);
+    f.appendChild(sel); parent.appendChild(f); return f;
   }
 
-  // Teilaufgaben-Liste
-  var list = mk('div', '');
-  list.style.cssText = 'display:flex;flex-direction:column;gap:0;';
-  group.items.forEach(function(item, idx) {
-    var letter = String(item.nr || '').match(/[a-zA-Z]+$/) ? String(item.nr).match(/[a-zA-Z]+$/)[0] : (item.nr || '?');
-    var card = mk('div', '');
-    card.style.cssText = 'display:flex;align-items:flex-start;gap:12px;padding:12px 20px;'
-      + (idx < group.items.length - 1 ? 'border-bottom:1px solid var(--sep);' : '');
-    var letterEl = tx('div', '', letter);
-    letterEl.style.cssText = 'font-weight:800;font-size:15px;color:var(--acc,#2563eb);min-width:20px;padding-top:1px;flex-shrink:0;';
-    card.appendChild(letterEl);
-    var cardMain = mk('div', '');
-    cardMain.style.cssText = 'flex:1;min-width:0;';
-    if (item.inhalt) {
-      var inhEl = tx('div', '', item.inhalt);
-      inhEl.style.cssText = 'font-size:13px;color:var(--tx1);line-height:1.5;';
-      cardMain.appendChild(inhEl);
-    }
-    var chips = mk('div', '');
-    chips.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;';
-    if (item.operator)      chips.appendChild(tx('span', 'db-chip db-chip-op', item.operator));
-    if (item.schwierigkeit) chips.appendChild(tx('span', 'db-chip db-chip-' + item.schwierigkeit, item.schwierigkeit));
-    if (item.umfang)        chips.appendChild(tx('span', 'db-chip', item.umfang));
-    if (chips.children.length) cardMain.appendChild(chips);
-    card.appendChild(cardMain);
-    var editBtn = btn('✏️', 'btn btn-ghost btn-sm');
-    editBtn.title = 'Teilaufgabe ' + item.nr + ' bearbeiten';
-    editBtn.style.cssText += 'flex-shrink:0;font-size:12px;padding:3px 7px;';
-    editBtn.onclick = function() { openEntryModal(item, 'edit', onRefresh); };
-    card.appendChild(editBtn);
-    list.appendChild(card);
-  });
-  body.appendChild(list);
-  modal.appendChild(body);
+  // ── Pane 0: Grunddaten ────────────────────────────────────────
+  var p0 = mk('div', 'db-modal-tab-pane split active');
+  panes.push(p0);
+  {
+    var R0 = mkR();
+    sec(R0, 'Quelle');
+    gsel(R0, 'Herkunft', 'herkunft', [['schulbuch','📖 Schulbuch'],['eigenmaterial','📄 Eigenmaterial']]);
+    var buchFld   = gfld(R0, 'Buch / Titel', 'buch', 'text', 'z.B. Lambacher Schweizer 7');
+    var buchInpEl = buchFld.querySelector('input');
+    attachAutocomplete(buchInpEl, function() { return suggestBooks(); });
+    var kapResult = gfldSuggest(R0, 'Kapitel', 'kapitel_titel', 'z.B. IV Lineare Gleichungssysteme',
+      function() { return suggestKapitel(buchInpEl.value.trim()); });
+    gfldSuggest(R0, 'Unterkapitel', 'uk_titel', 'z.B. Gleichungssysteme grafisch lösen',
+      function() { return suggestUnterkapitel(buchInpEl.value.trim(), kapResult.inp.value.trim()); });
+    var seiteRow = mk('div', 'db-form-row');
+    gfld(seiteRow, 'Seite', 'seite', 'number', '');
+    R0.appendChild(seiteRow);
+    sec(R0, 'Einordnung');
+    gsel(R0, 'Fach', 'fach', FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
+    gfld(R0, 'Jahrgang', 'jahrgang', 'number', '5–10');
+    gsel(R0, 'Inhaltstyp', 'typ', [['aufgabe','📝 Aufgabe'],['beispiel','📐 Beispiel'],['lehrtext','📖 Lehrtext']]);
+    p0.appendChild(R0);
 
-  // Footer mit Gruppe-Löschen
+    var L0 = mkL();
+    sec(L0, 'Aufgabe');
+    gtarea(L0, 'Aufgabenstellung (gemeinsamer Obersatz)', 'aufgabenstellung', 2, 'Gemeinsamer Text aller Teilaufgaben');
+    sec(L0, 'Teilaufgaben');
+    var itemInputs = [];
+    group.items.forEach(function(item) {
+      var letter = String(item.nr || '').match(/[a-zA-Z]+$/)
+        ? String(item.nr).match(/[a-zA-Z]+$/)[0] : String(item.nr || '?');
+      var f = mk('div', 'db-form-field');
+      var lbl = document.createElement('label');
+      lbl.textContent = letter + ')';
+      lbl.style.cssText = 'font-weight:700;color:var(--acc,#2563eb);';
+      f.appendChild(lbl);
+      var ta = document.createElement('textarea');
+      ta.className = 'db-form-textarea'; ta.rows = 2;
+      ta.placeholder = 'Inhalt Teilaufgabe ' + letter;
+      ta.value = (item.inhalt || '').replace(/ \| /g, '\n');
+      f.appendChild(ta);
+      L0.appendChild(f);
+      itemInputs.push({ item: item, ta: ta });
+    });
+    p0.appendChild(L0);
+  }
+  tabBodyEl.appendChild(p0);
+
+  // ── Pane 1: Unterrichtsdaten ──────────────────────────────────
+  var p1 = mk('div', 'db-modal-tab-pane split');
+  panes.push(p1);
+  {
+    var L1 = mkL();
+    sec(L1, 'Anforderung');
+    gtarea(L1, '', 'anforderung', 5, 'Was sollen Schülerinnen konkret tun?');
+    gfld(L1, 'Thema', 'thema', 'text', 'z.B. Gleichsetzungsverfahren');
+    p1.appendChild(L1);
+
+    var R1 = mkR();
+    sec(R1, 'Aufgabenniveau');
+    gsel(R1, '', 'niveau', [['leicht','▽ leicht'],['mittel','▾ mittel'],['schwer','▼ schwer']]);
+    p1.appendChild(R1);
+  }
+  tabBodyEl.appendChild(p1);
+
+  // ── Pane 2: Prüfungsdaten ─────────────────────────────────────
+  var p2 = mk('div', 'db-modal-tab-pane split');
+  panes.push(p2);
+  {
+    var L2 = mkL();
+    if (ref.aufgabenstellung) {
+      sec(L2, 'Aufgabenstellung (Referenz)');
+      var refText = tx('div', 'db-modal-text', ref.aufgabenstellung.slice(0, 400) + (ref.aufgabenstellung.length > 400 ? ' …' : ''));
+      refText.style.color = 'var(--tx2)'; L2.appendChild(refText);
+    }
+    p2.appendChild(L2);
+
+    var R2 = mkR();
+    sec(R2, 'Klassifikation');
+    gsel(R2, 'Operator', 'operator', Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; }));
+    gsel(R2, 'Anforderungsbereich', 'schwierigkeit', [['grundlegend','○ grundlegend (AFB I)'],['standard','◑ standard (AFB II)'],['anspruchsvoll','● anspruchsvoll (AFB III)']]);
+    gsel(R2, 'Umfang', 'umfang', [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']]);
+    var loesW = mk('div', 'db-form-field');
+    var loesLbl = document.createElement('label'); loesLbl.textContent = 'Mit Lösung'; loesW.appendChild(loesLbl);
+    var loesChk = document.createElement('input');
+    loesChk.type = 'checkbox'; loesChk.dataset.key = 'hat_loesung';
+    loesChk.checked = !!ref.hat_loesung;
+    loesChk.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:var(--pri);margin-top:4px;';
+    loesW.appendChild(loesChk); R2.appendChild(loesW);
+    p2.appendChild(R2);
+  }
+  tabBodyEl.appendChild(p2);
+
+  modal.appendChild(tabWrap);
+
+  // ── Footer ────────────────────────────────────────────────────
   var footer = mk('div', 'db-modal-footer');
+
   var delGrpBtn = btn('🗑 ' + grpTypLabel(group) + ' komplett löschen', 'btn btn-ghost btn-sm');
   delGrpBtn.style.color = '#ef4444';
   delGrpBtn.onclick = async function() {
@@ -1897,9 +1915,47 @@ function openGroupModal(group, onRefresh) {
     }
   };
   footer.appendChild(delGrpBtn);
+
+  var footerRight = mk('div', '');
+  footerRight.style.cssText = 'display:flex;gap:8px;';
+  var cancelBtn2 = btn('Abbrechen', 'btn btn-ghost btn-sm');
+  cancelBtn2.onclick = closeEntryModal;
+  var saveGrpBtn = btn('✓ Speichern', 'btn btn-sm');
+  saveGrpBtn.onclick = async function() {
+    // Gemeinsame Felder (alles mit data-key) aus den Tabs sammeln
+    var sharedPatch = {};
+    tabWrap.querySelectorAll('[data-key]').forEach(function(el) {
+      var k = el.dataset.key;
+      if (el.type === 'checkbox') sharedPatch[k] = el.checked;
+      else if (el.type === 'number') sharedPatch[k] = el.value !== '' ? Number(el.value) : null;
+      else if (el.tagName === 'TEXTAREA') sharedPatch[k] = el.value.replace(/\r?\n/g, ' | ').replace(/ \|  \| /g, ' | ').trim() || null;
+      else sharedPatch[k] = el.value.trim() || null;
+    });
+    saveGrpBtn.disabled = true; saveGrpBtn.textContent = '⏳';
+    try {
+      // Gemeinsame Felder für alle Einträge speichern
+      await Promise.all(group.items.map(function(item) { return sbUpdate('inhalte', item.id, sharedPatch); }));
+      // Individuellen Inhalt je Teilaufgabe speichern
+      await Promise.all(itemInputs.map(function(x) {
+        var val = x.ta.value.replace(/\r?\n/g, ' | ').replace(/ \|  \| /g, ' | ').trim() || null;
+        return sbUpdate('inhalte', x.item.id, { inhalt: val });
+      }));
+      closeEntryModal();
+      if (onRefresh) onRefresh();
+    } catch(e) {
+      alert('Fehler: ' + e.message);
+      saveGrpBtn.disabled = false; saveGrpBtn.textContent = '✓ Speichern';
+    }
+  };
+  footerRight.appendChild(cancelBtn2);
+  footerRight.appendChild(saveGrpBtn);
+  footer.appendChild(footerRight);
   modal.appendChild(footer);
 
   document.body.appendChild(overlay);
+
+  function onEsc(e) { if (e.key === 'Escape') { closeEntryModal(); document.removeEventListener('keydown', onEsc); } }
+  document.addEventListener('keydown', onEsc);
 }
 
 // ── Entry-Modal ───────────────────────────────────────────────────

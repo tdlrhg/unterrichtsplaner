@@ -1708,7 +1708,9 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
 // ── Gruppen-Modal (alle Teilaufgaben einer Aufgabe) ───────────────
 function openGroupModal(group, onRefresh) {
   closeEntryModal();
-  var ref = group.items[0] || {};
+  var ref = Object.assign({}, group.items[0] || {});
+  // Aufgabenstellung aus dem Gruppen-Objekt bevorzugen (item[0] könnte leer sein)
+  if (group.aufgabenstellung) ref.aufgabenstellung = group.aufgabenstellung;
   var overlay = mk('div', 'db-modal-overlay');
   overlay.onclick = function(e) { if (e.target === overlay) closeEntryModal(); };
   _modalOverlay = overlay;

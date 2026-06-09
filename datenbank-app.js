@@ -1935,12 +1935,10 @@ function openGroupModal(group, onRefresh) {
     });
     saveGrpBtn.disabled = true; saveGrpBtn.textContent = '⏳';
     try {
-      // Gemeinsame Felder für alle Einträge speichern
-      await Promise.all(group.items.map(function(item) { return sbUpdate('inhalte', item.id, sharedPatch); }));
-      // Individuellen Inhalt je Teilaufgabe speichern
+      // Gemeinsame Felder + individueller Inhalt in einem einzigen Batch
       await Promise.all(itemInputs.map(function(x) {
         var val = x.ta.value.replace(/\r?\n/g, ' | ').replace(/ \|  \| /g, ' | ').trim() || null;
-        return sbUpdate('inhalte', x.item.id, { inhalt: val });
+        return sbUpdate('inhalte', x.item.id, Object.assign({}, sharedPatch, { inhalt: val }));
       }));
       closeEntryModal();
       if (onRefresh) onRefresh();

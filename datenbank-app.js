@@ -102,6 +102,37 @@ function resetFilters() {
   DB.offset       = 0;
 }
 
+// ── Zentrale Autocomplete-Suggest-Funktionen ─────────────────────
+// Immer aus aktuellem Inputwert lesen, nie aus altem Datensatz-State.
+// kapitel/kapitel_titel werden konsistent per OR behandelt.
+function suggestBooks(fach) {
+  return sbSelect('inhalte', { select: 'buch', filters: fach ? { fach: fach } : {}, limit: 5000, order: 'buch' })
+    .then(function(rows) {
+      var seen = {}, books = [];
+      rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; books.push(r.buch); } });
+      return books.sort();
+    });
+}
+function suggestKapitel(buch) {
+  if (!buch) return Promise.resolve([]);
+  return sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { buch: buch }, limit: 1000 })
+    .then(function(rows) {
+      var seen = {}, kaps = [];
+      rows.forEach(function(r) { var k = r.kapitel || r.kapitel_titel; if (k && !seen[k]) { seen[k] = true; kaps.push(k); } });
+      return kaps.sort();
+    });
+}
+function suggestUnterkapitel(buch, kapitel) {
+  if (!buch) return Promise.resolve([]);
+  var raw = kapitel ? ['or=(kapitel.eq.' + encodeURIComponent(kapitel) + ',kapitel_titel.eq.' + encodeURIComponent(kapitel) + ')'] : [];
+  return sbSelect('inhalte', { select: 'uk_titel', filters: { buch: buch }, rawParams: raw, limit: 500 })
+    .then(function(rows) {
+      var seen = {}, uks = [];
+      rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
+      return uks.sort();
+    });
+}
+
 // ── Chip ──────────────────────────────────────────────────────────
 function mkChip(text, color, icon) {
   const c = tx('span', '', (icon ? icon + ' ' : '') + text);
@@ -532,13 +563,7 @@ function buildImportView(container) {
   wrap.appendChild(metaCard);
 
   var buchInp = finp('z.B. Lambacher Schweizer 8');
-  attachAutocomplete(buchInp, function() {
-    return sbSelect('inhalte', { select: 'buch', limit: 5000, order: 'buch' }).then(function(rows) {
-      var seen = {}, books = [];
-      rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; books.push(r.buch); } });
-      return books.sort();
-    });
-  });
+  attachAutocomplete(buchInp, function() { return suggestBooks(); });
   var typSel  = fsel([['schulbuch','📖 Schulbuch'],['aufgabenpool','🗃 Aufgabenpool'],['sammlung','📋 Sammlung'],['eigenmaterial','📄 Eigenmaterial']]);
   var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
   var jgInp   = finp('z.B. 8'); jgInp.style.maxWidth = '80px';
@@ -551,25 +576,8 @@ function buildImportView(container) {
   metaCard.appendChild(row2(fg('Kapitel', kapInp), fg('Unterkapitel', ukInp), fg('Erste Seite', seiteInp)));
 
   // Autocomplete für Kapitel und Unterkapitel (abhängig vom eingetragenen Buch)
-  attachAutocomplete(kapInp, function() {
-    var buch = buchInp.value.trim();
-    if (!buch) return Promise.resolve([]);
-    return sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { buch: buch }, limit: 1000 }).then(function(rows) {
-      var seen = {}, kaps = [];
-      rows.forEach(function(r) { var k = r.kapitel || r.kapitel_titel; if (k && !seen[k]) { seen[k] = true; kaps.push(k); } });
-      return kaps.sort();
-    });
-  });
-  attachAutocomplete(ukInp, function() {
-    var buch = buchInp.value.trim();
-    if (!buch) return Promise.resolve([]);
-    var kap = kapInp.value.trim();
-    return sbSelect('inhalte', { select: 'uk_titel', filters: Object.assign({ buch: buch }, kap ? { kapitel: kap } : {}), limit: 500 }).then(function(rows) {
-      var seen = {}, uks = [];
-      rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
-      return uks.sort();
-    });
-  });
+  attachAutocomplete(kapInp, function() { return suggestKapitel(buchInp.value.trim()); });
+  attachAutocomplete(ukInp,  function() { return suggestUnterkapitel(buchInp.value.trim(), kapInp.value.trim()); });
 
   // ── Datei-Upload ──────────────────────────────────────────────
   var fileCard = mk('div', '');
@@ -1755,26 +1763,13 @@ function openGroupModal(group, onRefresh) {
   var kapF = mkInp('Kapitel', 'kapitel_titel', 'z.B. IV Lineare Gleichungssysteme');
   var kapInp = kapF.querySelector('input');
   if (ref.buch) {
-    attachAutocomplete(kapInp, function() {
-      return sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { buch: ref.buch }, limit: 1000 }).then(function(rows) {
-        var seen = {}, kaps = [];
-        rows.forEach(function(r) { var k = r.kapitel || r.kapitel_titel; if (k && !seen[k]) { seen[k] = true; kaps.push(k); } });
-        return kaps.sort();
-      });
-    });
+    attachAutocomplete(kapInp, function() { return suggestKapitel(ref.buch); });
   }
 
   var ukF = mkInp('Unterkapitel', 'uk_titel', 'z.B. Gleichungssysteme grafisch lösen');
   var ukInp = ukF.querySelector('input');
   if (ref.buch) {
-    attachAutocomplete(ukInp, function() {
-      var kapVal = kapInp.value || ref.kapitel || ref.kapitel_titel;
-      return sbSelect('inhalte', { select: 'uk_titel', filters: Object.assign({ buch: ref.buch }, kapVal ? { kapitel: kapVal } : {}), limit: 500 }).then(function(rows) {
-        var seen = {}, uks = [];
-        rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
-        return uks.sort();
-      });
-    });
+    attachAutocomplete(ukInp, function() { return suggestUnterkapitel(ref.buch, kapInp.value.trim()); });
   }
 
   var aufgF = mkTA('Aufgabenstellung', 'aufgabenstellung', 'Gemeinsamer Text aller Teilaufgaben');
@@ -2121,28 +2116,13 @@ function buildModalBody(a, editable) {
     sec(R, 'Quelle');
     if (editable) {
       esel(R, 'Herkunft', 'herkunft', [['schulbuch','📖 Schulbuch'],['eigenmaterial','📄 Eigenmaterial']]);
-      efld(R, 'Buch / Titel', 'buch', 'text', 'z.B. Lambacher Schweizer 7');
+      var buchFld   = efld(R, 'Buch / Titel', 'buch', 'text', 'z.B. Lambacher Schweizer 7');
+      var buchInpEl = buchFld.querySelector('input');
+      attachAutocomplete(buchInpEl, function() { return suggestBooks(); });
       var kapResult = efldSuggest(R, 'Kapitel', 'kapitel_titel', 'z.B. IV Lineare Gleichungssysteme',
-        function() {
-          if (!a.buch) return Promise.resolve([]);
-          return sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { buch: a.buch }, limit: 1000 })
-            .then(function(rows) {
-              var seen = {}, kaps = [];
-              rows.forEach(function(r) { var k = r.kapitel || r.kapitel_titel; if (k && !seen[k]) { seen[k] = true; kaps.push(k); } });
-              return kaps.sort();
-            });
-        });
+        function() { return suggestKapitel(buchInpEl.value.trim()); });
       efldSuggest(R, 'Unterkapitel', 'uk_titel', 'z.B. Gleichungssysteme grafisch lösen',
-        function() {
-          if (!a.buch) return Promise.resolve([]);
-          var kapVal = kapResult.inp.value || a.kapitel || a.kapitel_titel;
-          return sbSelect('inhalte', { select: 'uk_titel', filters: Object.assign({ buch: a.buch }, kapVal ? { kapitel: kapVal } : {}), limit: 500 })
-            .then(function(rows) {
-              var seen = {}, uks = [];
-              rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
-              return uks.sort();
-            });
-        });
+        function() { return suggestUnterkapitel(buchInpEl.value.trim(), kapResult.inp.value.trim()); });
       const seiteNr = mk('div', 'db-form-row');
       efld(seiteNr, 'Seite', 'seite', 'number', ''); efld(seiteNr, 'Nr.', 'nr', 'text', 'z.B. 7a');
       R.appendChild(seiteNr);

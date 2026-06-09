@@ -1831,6 +1831,12 @@ function openGroupModal(group, onRefresh) {
     sec(L0, 'Aufgabe');
     gtarea(L0, 'Aufgabenstellung (gemeinsamer Obersatz)', 'aufgabenstellung', 2, 'Gemeinsamer Text aller Teilaufgaben');
     sec(L0, 'Teilaufgaben');
+
+    function autoResize(ta) {
+      ta.style.height = 'auto';
+      ta.style.height = (ta.scrollHeight + 2) + 'px';
+    }
+
     var itemInputs = [];
     group.items.forEach(function(item) {
       var letter = String(item.nr || '').match(/[a-zA-Z]+$/)
@@ -1841,12 +1847,18 @@ function openGroupModal(group, onRefresh) {
       lbl.style.cssText = 'font-weight:700;color:var(--acc,#2563eb);';
       f.appendChild(lbl);
       var ta = document.createElement('textarea');
-      ta.className = 'db-form-textarea'; ta.rows = 2;
+      ta.className = 'db-form-textarea'; ta.rows = 1;
+      ta.style.resize = 'none'; ta.style.overflowY = 'hidden';
       ta.placeholder = 'Inhalt Teilaufgabe ' + letter;
       ta.value = (item.inhalt || '').replace(/ \| /g, '\n');
+      ta.addEventListener('input', function() { autoResize(ta); });
       f.appendChild(ta);
       L0.appendChild(f);
       itemInputs.push({ item: item, ta: ta });
+    });
+    // Höhe nach dem Einhängen ins DOM setzen (scrollHeight ist erst dann bekannt)
+    requestAnimationFrame(function() {
+      itemInputs.forEach(function(x) { autoResize(x.ta); });
     });
     p0.appendChild(L0);
   }

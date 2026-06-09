@@ -1374,7 +1374,7 @@ async function buildFachView(container) {
         var rowEl = renderRow(row, function() { load({ keepScroll: true }); }, true);
         rowEl.style.marginLeft = '16px';
         if (hasSubtasks) {
-          rowEl.onclick = function() { openGroupModal(g, function() { DB.offset = 0; load(); }); };
+          rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }); };
         }
         wrap.appendChild(rowEl);
       });

@@ -1848,7 +1848,7 @@ function openGroupModal(group, onRefresh) {
       f.appendChild(lbl);
       var ta = document.createElement('textarea');
       ta.className = 'db-form-textarea'; ta.rows = 1;
-      ta.style.resize = 'none'; ta.style.overflowY = 'hidden';
+      ta.style.resize = 'none'; ta.style.overflowY = 'hidden'; ta.style.minHeight = '0';
       ta.placeholder = 'Inhalt Teilaufgabe ' + letter;
       ta.value = (item.inhalt || '').replace(/ \| /g, '\n');
       ta.addEventListener('input', function() { autoResize(ta); });

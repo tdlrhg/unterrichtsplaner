@@ -1751,6 +1751,11 @@ function openGroupModal(group, onRefresh) {
     tab.onclick = function() {
       tabs.forEach(function(t, i) { t.classList.toggle('active', i === idx); });
       panes.forEach(function(p, i) { p.classList.toggle('active', i === idx); });
+      // Auto-Resize-Textareas der jetzt sichtbaren Pane nachziehen
+      // (scrollHeight ist 0, solange die Pane display:none war)
+      panes[idx].querySelectorAll('textarea').forEach(function(t) {
+        if (_autoTas.indexOf(t) !== -1) autoResize(t);
+      });
     };
     tabs.push(tab); tabBar.appendChild(tab);
   });
@@ -1804,6 +1809,74 @@ function openGroupModal(group, onRefresh) {
     f.appendChild(sel); parent.appendChild(f); return f;
   }
 
+  // ── Individuelle Felder je Teilaufgabe ────────────────────────
+  // Bewusst OHNE data-key: der Shared-Save liest nur [data-key]-Felder.
+  function itemLetter(it) {
+    var m = String(it.nr || '').match(/[a-zA-Z]+$/);
+    return m ? m[0] : String(it.nr || '?');
+  }
+  function autoResize(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = (ta.scrollHeight + 2) + 'px';
+  }
+  var _autoTas = [];
+  function mkAutoTA(value, placeholder) {
+    var ta = document.createElement('textarea');
+    ta.className = 'db-form-textarea'; ta.rows = 1;
+    ta.style.resize = 'none'; ta.style.overflowY = 'hidden'; ta.style.minHeight = '0';
+    ta.placeholder = placeholder || '';
+    ta.value = (value || '').replace(/ \| /g, '\n');
+    ta.addEventListener('input', function() { autoResize(ta); });
+    _autoTas.push(ta);
+    return ta;
+  }
+  function mkItemSel(value, opts) {
+    var sel = document.createElement('select');
+    sel.className = 'db-form-sel';
+    [['', '–']].concat(opts).forEach(function(opt) {
+      var o = document.createElement('option');
+      o.value = opt[0]; o.textContent = opt[1];
+      if (String(value || '') === opt[0]) o.selected = true;
+      sel.appendChild(o);
+    });
+    return sel;
+  }
+  var NIVEAU_OPTS = [['leicht','▽ leicht'],['mittel','▾ mittel'],['schwer','▼ schwer']];
+  var SCHW_OPTS   = [['grundlegend','○ grundlegend (AFB I)'],['standard','◑ standard (AFB II)'],['anspruchsvoll','● anspruchsvoll (AFB III)']];
+  var UMFANG_OPTS = [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']];
+  var OP_OPTS     = Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; });
+
+  var itemFields = {};
+  group.items.forEach(function(it) {
+    var inp = document.createElement('input');
+    inp.className = 'db-form-inp'; inp.type = 'text';
+    inp.placeholder = 'z.B. Gleichsetzungsverfahren';
+    inp.value = it.thema || '';
+    var chk = document.createElement('input');
+    chk.type = 'checkbox'; chk.checked = !!it.hat_loesung;
+    chk.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:var(--pri);margin-top:8px;';
+    itemFields[it.id] = {
+      inhalt:        mkAutoTA(it.inhalt, 'Inhalt Teilaufgabe ' + itemLetter(it)),
+      anforderung:   mkAutoTA(it.anforderung, 'Was sollen Schülerinnen konkret tun?'),
+      thema:         inp,
+      niveau:        mkItemSel(it.niveau, NIVEAU_OPTS),
+      operator:      mkItemSel(it.operator, OP_OPTS),
+      schwierigkeit: mkItemSel(it.schwierigkeit, SCHW_OPTS),
+      umfang:        mkItemSel(it.umfang, UMFANG_OPTS),
+      hat_loesung:   chk
+    };
+  });
+
+  // Block mit Buchstaben-Überschrift für die Pro-Teilaufgabe-Panes
+  function itemBlock(pane, it) {
+    var blk = mk('div', 'db-group-item-block');
+    var head = tx('div', '', itemLetter(it) + ')');
+    head.style.cssText = 'font-weight:800;font-size:14px;color:var(--acc,#2563eb);margin-bottom:6px;';
+    blk.appendChild(head);
+    pane.appendChild(blk);
+    return blk;
+  }
+
   // ── Pane 0: Grunddaten ────────────────────────────────────────
   var p0 = mk('div', 'db-modal-tab-pane split active');
   panes.push(p0);
@@ -1831,83 +1904,63 @@ function openGroupModal(group, onRefresh) {
     sec(L0, 'Aufgabe');
     gtarea(L0, 'Aufgabenstellung (gemeinsamer Obersatz)', 'aufgabenstellung', 2, 'Gemeinsamer Text aller Teilaufgaben');
     sec(L0, 'Teilaufgaben');
-
-    function autoResize(ta) {
-      ta.style.height = 'auto';
-      ta.style.height = (ta.scrollHeight + 2) + 'px';
-    }
-
-    var itemInputs = [];
-    group.items.forEach(function(item) {
-      var letter = String(item.nr || '').match(/[a-zA-Z]+$/)
-        ? String(item.nr).match(/[a-zA-Z]+$/)[0] : String(item.nr || '?');
+    group.items.forEach(function(it) {
       var f = mk('div', 'db-form-field');
       var lbl = document.createElement('label');
-      lbl.textContent = letter + ')';
+      lbl.textContent = itemLetter(it) + ')';
       lbl.style.cssText = 'font-weight:700;color:var(--acc,#2563eb);';
       f.appendChild(lbl);
-      var ta = document.createElement('textarea');
-      ta.className = 'db-form-textarea'; ta.rows = 1;
-      ta.style.resize = 'none'; ta.style.overflowY = 'hidden'; ta.style.minHeight = '0';
-      ta.placeholder = 'Inhalt Teilaufgabe ' + letter;
-      ta.value = (item.inhalt || '').replace(/ \| /g, '\n');
-      ta.addEventListener('input', function() { autoResize(ta); });
-      f.appendChild(ta);
+      f.appendChild(itemFields[it.id].inhalt);
       L0.appendChild(f);
-      itemInputs.push({ item: item, ta: ta });
-    });
-    // Höhe nach dem Einhängen ins DOM setzen (scrollHeight ist erst dann bekannt)
-    requestAnimationFrame(function() {
-      itemInputs.forEach(function(x) { autoResize(x.ta); });
     });
     p0.appendChild(L0);
   }
   tabBodyEl.appendChild(p0);
 
-  // ── Pane 1: Unterrichtsdaten ──────────────────────────────────
-  var p1 = mk('div', 'db-modal-tab-pane split');
+  // ── Pane 1: Unterrichtsdaten (je Teilaufgabe) ─────────────────
+  var p1 = mk('div', 'db-modal-tab-pane scroll');
   panes.push(p1);
-  {
-    var L1 = mkL();
-    sec(L1, 'Anforderung');
-    gtarea(L1, '', 'anforderung', 5, 'Was sollen Schülerinnen konkret tun?');
-    gfld(L1, 'Thema', 'thema', 'text', 'z.B. Gleichsetzungsverfahren');
-    p1.appendChild(L1);
-
-    var R1 = mkR();
-    sec(R1, 'Aufgabenniveau');
-    gsel(R1, '', 'niveau', [['leicht','▽ leicht'],['mittel','▾ mittel'],['schwer','▼ schwer']]);
-    p1.appendChild(R1);
-  }
+  group.items.forEach(function(it) {
+    var blk = itemBlock(p1, it);
+    var f = mk('div', 'db-form-field');
+    var lbl = document.createElement('label'); lbl.textContent = 'Anforderung'; f.appendChild(lbl);
+    f.appendChild(itemFields[it.id].anforderung);
+    blk.appendChild(f);
+    var row = mk('div', 'db-form-row');
+    var f2 = mk('div', 'db-form-field');
+    var lbl2 = document.createElement('label'); lbl2.textContent = 'Thema'; f2.appendChild(lbl2);
+    f2.appendChild(itemFields[it.id].thema);
+    row.appendChild(f2);
+    var f3 = mk('div', 'db-form-field');
+    var lbl3 = document.createElement('label'); lbl3.textContent = 'Niveau'; f3.appendChild(lbl3);
+    f3.appendChild(itemFields[it.id].niveau);
+    row.appendChild(f3);
+    blk.appendChild(row);
+  });
   tabBodyEl.appendChild(p1);
 
-  // ── Pane 2: Prüfungsdaten ─────────────────────────────────────
-  var p2 = mk('div', 'db-modal-tab-pane split');
+  // ── Pane 2: Prüfungsdaten (je Teilaufgabe) ────────────────────
+  var p2 = mk('div', 'db-modal-tab-pane scroll');
   panes.push(p2);
-  {
-    var L2 = mkL();
-    if (ref.aufgabenstellung) {
-      sec(L2, 'Aufgabenstellung (Referenz)');
-      var refText = tx('div', 'db-modal-text', ref.aufgabenstellung.slice(0, 400) + (ref.aufgabenstellung.length > 400 ? ' …' : ''));
-      refText.style.color = 'var(--tx2)'; L2.appendChild(refText);
-    }
-    p2.appendChild(L2);
-
-    var R2 = mkR();
-    sec(R2, 'Klassifikation');
-    gsel(R2, 'Operator', 'operator', Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; }));
-    gsel(R2, 'Anforderungsbereich', 'schwierigkeit', [['grundlegend','○ grundlegend (AFB I)'],['standard','◑ standard (AFB II)'],['anspruchsvoll','● anspruchsvoll (AFB III)']]);
-    gsel(R2, 'Umfang', 'umfang', [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']]);
-    var loesW = mk('div', 'db-form-field');
-    var loesLbl = document.createElement('label'); loesLbl.textContent = 'Mit Lösung'; loesW.appendChild(loesLbl);
-    var loesChk = document.createElement('input');
-    loesChk.type = 'checkbox'; loesChk.dataset.key = 'hat_loesung';
-    loesChk.checked = !!ref.hat_loesung;
-    loesChk.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:var(--pri);margin-top:4px;';
-    loesW.appendChild(loesChk); R2.appendChild(loesW);
-    p2.appendChild(R2);
-  }
+  group.items.forEach(function(it) {
+    var blk = itemBlock(p2, it);
+    var row = mk('div', 'db-form-row');
+    [['Operator', 'operator'], ['Anforderungsbereich', 'schwierigkeit'], ['Umfang', 'umfang']].forEach(function(def) {
+      var f = mk('div', 'db-form-field');
+      var lbl = document.createElement('label'); lbl.textContent = def[0]; f.appendChild(lbl);
+      f.appendChild(itemFields[it.id][def[1]]);
+      row.appendChild(f);
+    });
+    var fL = mk('div', 'db-form-field');
+    var lblL = document.createElement('label'); lblL.textContent = 'Mit Lösung'; fL.appendChild(lblL);
+    fL.appendChild(itemFields[it.id].hat_loesung);
+    row.appendChild(fL);
+    blk.appendChild(row);
+  });
   tabBodyEl.appendChild(p2);
+
+  // Höhe der Auto-Resize-Textareas nach dem Einhängen ins DOM setzen
+  requestAnimationFrame(function() { _autoTas.forEach(autoResize); });
 
   modal.appendChild(tabWrap);
 
@@ -1936,21 +1989,30 @@ function openGroupModal(group, onRefresh) {
   cancelBtn2.onclick = closeEntryModal;
   var saveGrpBtn = btn('✓ Speichern', 'btn btn-sm');
   saveGrpBtn.onclick = async function() {
-    // Gemeinsame Felder (alles mit data-key) aus den Tabs sammeln
+    function taVal(ta) { return ta.value.replace(/\r?\n/g, ' | ').replace(/ \|  \| /g, ' | ').trim() || null; }
+    // Gemeinsame Felder: nur Pane-0-Felder tragen data-key
     var sharedPatch = {};
     tabWrap.querySelectorAll('[data-key]').forEach(function(el) {
       var k = el.dataset.key;
-      if (el.type === 'checkbox') sharedPatch[k] = el.checked;
-      else if (el.type === 'number') sharedPatch[k] = el.value !== '' ? Number(el.value) : null;
-      else if (el.tagName === 'TEXTAREA') sharedPatch[k] = el.value.replace(/\r?\n/g, ' | ').replace(/ \|  \| /g, ' | ').trim() || null;
+      if (el.type === 'number') sharedPatch[k] = el.value !== '' ? Number(el.value) : null;
+      else if (el.tagName === 'TEXTAREA') sharedPatch[k] = taVal(el);
       else sharedPatch[k] = el.value.trim() || null;
     });
     saveGrpBtn.disabled = true; saveGrpBtn.textContent = '⏳';
     try {
-      // Gemeinsame Felder + individueller Inhalt in einem einzigen Batch
-      await Promise.all(itemInputs.map(function(x) {
-        var val = x.ta.value.replace(/\r?\n/g, ' | ').replace(/ \|  \| /g, ' | ').trim() || null;
-        return sbUpdate('inhalte', x.item.id, Object.assign({}, sharedPatch, { inhalt: val }));
+      // Gemeinsame + individuelle Felder je Teilaufgabe in einem PATCH
+      await Promise.all(group.items.map(function(item) {
+        var f = itemFields[item.id];
+        return sbUpdate('inhalte', item.id, Object.assign({}, sharedPatch, {
+          inhalt:        taVal(f.inhalt),
+          anforderung:   taVal(f.anforderung),
+          thema:         f.thema.value.trim() || null,
+          niveau:        f.niveau.value || null,
+          operator:      f.operator.value || null,
+          schwierigkeit: f.schwierigkeit.value || null,
+          umfang:        f.umfang.value || null,
+          hat_loesung:   f.hat_loesung.checked
+        }));
       }));
       closeEntryModal();
       if (onRefresh) onRefresh();
@@ -1966,15 +2028,18 @@ function openGroupModal(group, onRefresh) {
 
   document.body.appendChild(overlay);
 
-  function onEsc(e) { if (e.key === 'Escape') { closeEntryModal(); document.removeEventListener('keydown', onEsc); } }
+  function onEsc(e) { if (e.key === 'Escape') closeEntryModal(); }
+  _modalEsc = onEsc;
   document.addEventListener('keydown', onEsc);
 }
 
 // ── Entry-Modal ───────────────────────────────────────────────────
 var _modalOverlay = null;
+var _modalEsc = null;
 
 function closeEntryModal() {
   if (_modalOverlay) { _modalOverlay.remove(); _modalOverlay = null; }
+  if (_modalEsc) { document.removeEventListener('keydown', _modalEsc); _modalEsc = null; }
 }
 
 function openEntryModal(entry, mode, onSaved) {
@@ -2090,7 +2155,8 @@ function openEntryModal(entry, mode, onSaved) {
   renderModal(mode, entry);
   document.body.appendChild(overlay);
 
-  function onEsc(e) { if (e.key === 'Escape') { closeEntryModal(); document.removeEventListener('keydown', onEsc); } }
+  function onEsc(e) { if (e.key === 'Escape') closeEntryModal(); }
+  _modalEsc = onEsc;
   document.addEventListener('keydown', onEsc);
 }
 

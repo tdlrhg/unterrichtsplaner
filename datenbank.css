@@ -478,6 +478,20 @@
   grid-template-rows: 1fr;
   overflow: hidden;
 }
+/* Einspaltig scrollende Pane (Gruppen-Modal: Unterrichts-/Prüfungsdaten je Teilaufgabe) */
+.db-modal-tab-pane.scroll.active {
+  display: block;
+  overflow-y: auto;
+  padding: 20px 24px;
+}
+.db-group-item-block {
+  padding: 12px 0 16px;
+  border-bottom: 1px solid var(--sep);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.db-group-item-block:last-child { border-bottom: none; }
 
 /* ── Spalten-Resize + Drag-Reorder ──────────────────────────────── */
 .db-col-hdr {

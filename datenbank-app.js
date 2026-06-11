@@ -252,6 +252,15 @@ const REGAL_FARBEN = {
 };
 const TYP_SYMBOL = { schulbuch: '📚', sammlung: '📂', aufgabenpool: '🗃' };
 const TYP_ORDER  = { schulbuch: 0, sammlung: 1, aufgabenpool: 2 };
+// Herkunft (Quelle) – zentrale Definition für Modal, Badge, Filter, Import
+const HERKUNFT = {
+  schulbuch:     { label: 'Schulbuch',     icon: '📖', color: '#0f766e', hasBuch: true  },
+  aufgabenpool:  { label: 'Aufgabenpool',  icon: '🗃', color: '#7c3aed', hasBuch: true  },
+  sammlung:      { label: 'Sammlung',      icon: '📋', color: '#b45309', hasBuch: true  },
+  eigenmaterial: { label: 'Eigenmaterial', icon: '📄', color: '#16a34a', hasBuch: false },
+};
+const HERKUNFT_OPTS = Object.keys(HERKUNFT).map(function(k) { return [k, HERKUNFT[k].icon + ' ' + HERKUNFT[k].label]; });
+function herkunftMeta(h) { return HERKUNFT[h] || HERKUNFT.schulbuch; }
 const SHELF_H = 155; // Regalhöhe (px)
 
 function jgNorm(val) {
@@ -564,7 +573,7 @@ function buildImportView(container) {
 
   var buchInp = finp('z.B. Lambacher Schweizer 8');
   attachAutocomplete(buchInp, function() { return suggestBooks(); });
-  var typSel  = fsel([['schulbuch','📖 Schulbuch'],['aufgabenpool','🗃 Aufgabenpool'],['sammlung','📋 Sammlung'],['eigenmaterial','📄 Eigenmaterial']]);
+  var typSel  = fsel(HERKUNFT_OPTS);
   var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
   var jgInp   = finp('z.B. 8'); jgInp.style.maxWidth = '80px';
   var kapInp   = finp('z.B. IV Flächen (optional)');
@@ -777,7 +786,8 @@ function buildImportView(container) {
     var kap      = kapInp.value.trim() || null;
     var uk       = ukInp.value.trim() || null;
     var seite    = seiteInp.value ? Number(seiteInp.value) : null;
-    var herkunft = typSel.value === 'eigenmaterial' ? 'eigenmaterial' : 'schulbuch';
+    // typSel-Wert direkt als Herkunft speichern (schulbuch/aufgabenpool/sammlung/eigenmaterial)
+    var herkunft = HERKUNFT[typSel.value] ? typSel.value : 'schulbuch';
     var ts       = Date.now();
 
     var rows = _aufgaben.map(function(a, i) {
@@ -1287,8 +1297,7 @@ async function buildFachView(container) {
     wrap.innerHTML = '';
     var parts = [];
     if (DB.buch)          parts.push('📖 ' + DB.buch);
-    else if (DB.herkunft === 'schulbuch') parts.push('Schulbuch');
-    else if (DB.herkunft === 'eigenmaterial') parts.push('Eigenmaterial');
+    else if (DB.herkunft && HERKUNFT[DB.herkunft]) parts.push(HERKUNFT[DB.herkunft].label);
     if (DB.operator)      parts.push(DB.operator);
     if (DB.schwierigkeit) parts.push(DB.schwierigkeit);
     if (DB.niveau)        parts.push(DB.niveau);
@@ -1408,8 +1417,9 @@ async function buildFachView(container) {
 
 // ── Eintrag-Zeile (Tabellen-Grid) ────────────────────────────────
 function renderRow(a, onSaved, compact) {
-  const isSchulbuch = !a.herkunft || a.herkunft === 'schulbuch';
-  const accentColor = isSchulbuch ? '#0f766e' : '#16a34a';
+  const hMeta = herkunftMeta(a.herkunft);
+  const hasBuch = hMeta.hasBuch;          // schulbuch/aufgabenpool/sammlung zeigen Buchtitel
+  const accentColor = hMeta.color;
 
   const row = mk('div', 'db-row');
   row.style.background = SCHW_BG[a.schwierigkeit] || 'transparent';
@@ -1426,16 +1436,16 @@ function renderRow(a, onSaved, compact) {
       nrEl.style.cssText = 'font-weight:700;font-size:13px;color:var(--tx2);padding:2px 0;';
       src.appendChild(nrEl);
     }
-  } else if (DB.buch && isSchulbuch) {
+  } else if (DB.buch && hasBuch) {
     // Buch ist bereits gefiltert — nur Seite zeigen
     var seiteEl = tx('div', 'db-kap-name', a.seite ? 'S. ' + a.seite : '–');
     seiteEl.style.fontSize = '13px';
     src.appendChild(seiteEl);
   } else {
-    var hBadge = tx('div', 'db-herkunft-badge', isSchulbuch ? '📖 Schulbuch' : '📄 Eigenmaterial');
+    var hBadge = tx('div', 'db-herkunft-badge', hMeta.icon + ' ' + hMeta.label);
     hBadge.style.color = accentColor;
     src.appendChild(hBadge);
-    if (isSchulbuch) {
+    if (hasBuch) {
       src.appendChild(tx('div', 'db-buch-name', a.buch || '–'));
       var sub = (a.uk_titel || a.kapitel || a.kapitel_titel || '') + (a.seite ? ' · S. ' + a.seite : '');
       if (sub.trim()) src.appendChild(tx('div', 'db-kap-name', sub));
@@ -1651,16 +1661,21 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     bar.appendChild(ukSel);
   }
 
-  // Eigenmaterial-Chip
-  var emActive = DB.herkunft === 'eigenmaterial';
-  var emChip = tx('div', 'db-fchip' + (emActive ? ' on' : ''), '📄 Eigenmaterial');
-  if (emActive) emChip.style.cssText = 'background:#16a34a18;color:#16a34a;border-color:#16a34a60;';
-  emChip.onclick = function() {
-    DB.herkunft = emActive ? null : 'eigenmaterial';
-    DB.buch = null;
-    DB.offset = 0; refresh();
-  };
-  bar.appendChild(emChip);
+  // Herkunft-Chips (Schulbuch ist die Standardansicht → kein eigener Chip)
+  var herkGroup = mk('div', 'db-filter-group');
+  ['aufgabenpool', 'sammlung', 'eigenmaterial'].forEach(function(hk) {
+    var meta = HERKUNFT[hk];
+    var active = DB.herkunft === hk;
+    var chip = tx('div', 'db-fchip' + (active ? ' on' : ''), meta.icon + ' ' + meta.label);
+    if (active) chip.style.cssText = 'background:' + meta.color + '18;color:' + meta.color + ';border-color:' + meta.color + '60;';
+    chip.onclick = function() {
+      DB.herkunft = active ? null : hk;
+      DB.buch = null;            // Buchfilter beim Herkunftswechsel zurücksetzen
+      DB.offset = 0; refresh();
+    };
+    herkGroup.appendChild(chip);
+  });
+  bar.appendChild(herkGroup);
 
   bar.appendChild(sep());
 
@@ -1893,7 +1908,7 @@ function openTaskModal(group, opts) {
   var p0 = mk('div', 'db-modal-tab-pane split active'); panes.push(p0);
   var R0 = mkR();
   sec(R0, 'Quelle');
-  ssel(R0, 'Herkunft', 'herkunft', [['schulbuch','📖 Schulbuch'],['eigenmaterial','📄 Eigenmaterial']]);
+  ssel(R0, 'Herkunft', 'herkunft', HERKUNFT_OPTS);
   var buchInp = ssuggest(R0, 'Buch / Titel', 'buch', 'z.B. Lambacher Schweizer 7', function() { return suggestBooks(); });
   var kapInp  = ssuggest(R0, 'Kapitel', 'kapitel_titel', 'z.B. IV Lineare Gleichungssysteme', function() { return suggestKapitel(buchInp.value.trim()); });
   ssuggest(R0, 'Unterkapitel', 'uk_titel', 'z.B. Gleichungssysteme grafisch lösen', function() { return suggestUnterkapitel(buchInp.value.trim(), kapInp.value.trim()); });

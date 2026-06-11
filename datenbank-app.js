@@ -1368,12 +1368,9 @@ async function buildFachView(container) {
       var seitePrefix = (showSeiteInHdr && ref0 && ref0.seite != null ? 'S. ' + ref0.seite + ' · ' : '');
 
       if (hasSubtasks) {
-        // Gruppe: eigener Header + eingerückte Teilaufgaben-Zeilen
-        var ghdr = mk('div', '');
-        ghdr.style.cssText = 'padding:4px 12px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;cursor:pointer;';
-        var hText = seitePrefix + grpTypLabel(g);
-        if (g.aufgabenstellung) hText += ' · ' + g.aufgabenstellung.slice(0, 90);
-        ghdr.textContent = hText;
+        // Gruppe: Header wie Einzelaufgaben-Row (gleiche Grid-Struktur), ohne Chips
+        var gHdrItem = { inhalt: g.aufgabenstellung || '', typ: ref0.typ || 'aufgabe' };
+        var ghdr = renderRow(gHdrItem, null, true, seitePrefix + grpTypLabel(g));
         ghdr.title = 'Alle Teilaufgaben ansehen';
         ghdr.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }); };
         wrap.appendChild(ghdr);

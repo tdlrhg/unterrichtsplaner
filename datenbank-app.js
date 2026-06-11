@@ -1782,7 +1782,13 @@ function openTaskModal(group, opts) {
   function sec(parent, title) { parent.appendChild(tx('div', 'db-modal-section-title', title)); }
   function decode(v) { return (v || '').replace(/ \| /g, '\n'); }
   function encode(v) { return v.replace(/\r?\n/g, ' | ').replace(/ \|  \| /g, ' | ').trim() || null; }
-  function itemLetter(it) { var m = String(it.nr || '').match(/[a-zA-Z]+$/); return m ? m[0] : String(it.nr || '?'); }
+  // Anzeige-Beschriftung der Teilaufgaben: fortlaufend a) b) c) nach Position
+  // (die gespeicherte nr bleibt unberührt). Ab 26 → aa, ab, …
+  function posLetter(i) {
+    var s = '';
+    do { s = String.fromCharCode(97 + (i % 26)) + s; i = Math.floor(i / 26) - 1; } while (i >= 0);
+    return s;
+  }
   function autoResize(ta) { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; }
   var _autoTas = [];
 
@@ -1836,14 +1842,15 @@ function openTaskModal(group, opts) {
   var OP_OPTS     = Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; });
 
   // Pro-Teilaufgabe-Felder, parallel zu items (kein data-key)
-  var itemFields = items.map(function(it) {
+  var itemFields = items.map(function(it, i) {
     var themaInp = document.createElement('input');
     themaInp.className = 'db-form-inp'; themaInp.type = 'text';
     themaInp.placeholder = 'z.B. Gleichsetzungsverfahren'; themaInp.value = it.thema || '';
     var chk = document.createElement('input'); chk.type = 'checkbox'; chk.checked = !!it.hat_loesung;
     chk.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:var(--pri);margin-top:8px;';
     return {
-      inhalt:        mkAutoTA(it.inhalt, isMulti ? 'Inhalt Teilaufgabe ' + itemLetter(it) : 'Was steht in der Aufgabe?'),
+      inhalt:        mkAutoTA(it.inhalt, isMulti ? 'Inhalt Teilaufgabe ' + posLetter(i) : 'Was steht in der Aufgabe?'),
+      abbildung:     mkAutoTA(it.abbildung, 'Beschreibung der Abbildung (falls vorhanden)'),
       anforderung:   mkAutoTA(it.anforderung, 'Was sollen Schülerinnen konkret tun?'),
       thema:         themaInp,
       niveau:        mkSelect(it.niveau, NIVEAU_OPTS),
@@ -1853,8 +1860,8 @@ function openTaskModal(group, opts) {
       hat_loesung:   chk
     };
   });
-  function itemHeader(it) {
-    var h = tx('div', '', itemLetter(it) + ')');
+  function itemHeader(i) {
+    var h = tx('div', '', posLetter(i) + ')');
     h.style.cssText = 'font-weight:800;font-size:14px;color:var(--acc,#2563eb);margin-bottom:6px;';
     return h;
   }
@@ -1865,10 +1872,10 @@ function openTaskModal(group, opts) {
   var removed   = items.map(function() { return false; });
   function delItemBtn(i) {
     var b = btn('🗑', 'btn btn-ghost btn-sm');
-    b.title = 'Teilaufgabe ' + itemLetter(items[i]) + ' löschen';
+    b.title = 'Teilaufgabe ' + posLetter(i) + ' löschen';
     b.style.cssText += 'color:#ef4444;flex-shrink:0;padding:3px 7px;font-size:12px;';
     b.onclick = async function() {
-      if (!confirm('Teilaufgabe ' + itemLetter(items[i]) + ') löschen?')) return;
+      if (!confirm('Teilaufgabe ' + posLetter(i) + ') löschen?')) return;
       b.disabled = true;
       try {
         if (items[i].id) await sbDelete('inhalte', items[i].id);
@@ -1908,17 +1915,22 @@ function openTaskModal(group, opts) {
   if (isMulti) {
     sec(L0, 'Teilaufgaben');
     items.forEach(function(it, i) {
-      var fieldEl = labeled(itemLetter(it) + ')', itemFields[i].inhalt);
+      var blk = mk('div', '');
+      blk.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+      var fieldEl = labeled(posLetter(i) + ')', itemFields[i].inhalt);
       fieldEl.style.flex = '1'; fieldEl.style.minWidth = '0';
-      var rowWrap = mk('div', '');
-      rowWrap.style.cssText = 'display:flex;align-items:flex-end;gap:8px;';
-      rowWrap.appendChild(fieldEl);
-      rowWrap.appendChild(delItemBtn(i));
-      L0.appendChild(rowWrap);
-      itemNodes[i].push(rowWrap);
+      var topRow = mk('div', '');
+      topRow.style.cssText = 'display:flex;align-items:flex-end;gap:8px;';
+      topRow.appendChild(fieldEl);
+      topRow.appendChild(delItemBtn(i));
+      blk.appendChild(topRow);
+      blk.appendChild(labeled('📷 Abbildung', itemFields[i].abbildung));
+      L0.appendChild(blk);
+      itemNodes[i].push(blk);
     });
   } else {
     L0.appendChild(labeled('Inhalt / Aufgabe', itemFields[0].inhalt));
+    L0.appendChild(labeled('📷 Abbildung', itemFields[0].abbildung));
   }
   p0.appendChild(L0);
   tabBodyEl.appendChild(p0);
@@ -1927,7 +1939,7 @@ function openTaskModal(group, opts) {
   var p1 = mk('div', 'db-modal-tab-pane ' + (isMulti ? 'scroll' : 'split')); panes.push(p1);
   if (isMulti) {
     items.forEach(function(it, i) {
-      var blk = mk('div', 'db-group-item-block'); blk.appendChild(itemHeader(it));
+      var blk = mk('div', 'db-group-item-block'); blk.appendChild(itemHeader(i));
       blk.appendChild(labeled('Anforderung', itemFields[i].anforderung));
       var row = fieldRow();
       row.appendChild(labeled('Thema', itemFields[i].thema));
@@ -1953,7 +1965,7 @@ function openTaskModal(group, opts) {
   var p2 = mk('div', 'db-modal-tab-pane ' + (isMulti ? 'scroll' : 'split')); panes.push(p2);
   if (isMulti) {
     items.forEach(function(it, i) {
-      var blk = mk('div', 'db-group-item-block'); blk.appendChild(itemHeader(it));
+      var blk = mk('div', 'db-group-item-block'); blk.appendChild(itemHeader(i));
       var row = fieldRow();
       row.appendChild(labeled('Operator', itemFields[i].operator));
       row.appendChild(labeled('Anforderungsbereich', itemFields[i].schwierigkeit));
@@ -2004,6 +2016,7 @@ function openTaskModal(group, opts) {
       var f = itemFields[i];
       return {
         inhalt:        encode(f.inhalt.value),
+        abbildung:     encode(f.abbildung.value),
         anforderung:   encode(f.anforderung.value),
         thema:         f.thema.value.trim() || null,
         niveau:        f.niveau.value || null,

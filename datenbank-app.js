@@ -1872,7 +1872,15 @@ function openTaskModal(group, opts) {
     themaInp.placeholder = 'z.B. Gleichsetzungsverfahren'; themaInp.value = it.thema || '';
     var chk = document.createElement('input'); chk.type = 'checkbox'; chk.checked = !!it.hat_loesung;
     chk.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:var(--pri);margin-top:8px;';
+    var nrInp = null;
+    if (isMulti) {
+      nrInp = document.createElement('input');
+      nrInp.className = 'db-form-inp'; nrInp.type = 'text';
+      nrInp.placeholder = 'z.B. 7a'; nrInp.value = it.nr || '';
+      nrInp.style.maxWidth = '90px';
+    }
     return {
+      nr:            nrInp,
       inhalt:        mkAutoTA(it.inhalt, isMulti ? 'Inhalt Teilaufgabe ' + posLetter(i) : 'Was steht in der Aufgabe?'),
       abbildung:     mkAutoTA(it.abbildung, 'Beschreibung der Abbildung (falls vorhanden)'),
       anforderung:   mkAutoTA(it.anforderung, 'Was sollen Schülerinnen konkret tun?'),
@@ -1941,6 +1949,12 @@ function openTaskModal(group, opts) {
     items.forEach(function(it, i) {
       var blk = mk('div', '');
       blk.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+      if (itemFields[i].nr) {
+        var nrRow = mk('div', '');
+        nrRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+        nrRow.appendChild(labeled('Nr.', itemFields[i].nr));
+        blk.appendChild(nrRow);
+      }
       var fieldEl = labeled(posLetter(i) + ')', itemFields[i].inhalt);
       fieldEl.style.flex = '1'; fieldEl.style.minWidth = '0';
       var topRow = mk('div', '');
@@ -1987,6 +2001,8 @@ function openTaskModal(group, opts) {
         else if (el.tagName === 'TEXTAREA') sharedSnap[k] = encode(el.value);
         else                                sharedSnap[k] = el.value.trim() || null;
       });
+      // nr wird im Multi-Modus per Teilaufgabe gesetzt, nicht geteilt
+      delete sharedSnap.nr;
       snap = snap.map(function(it) { return Object.assign({}, it, sharedSnap); });
       // Leere neue Teilaufgabe anhängen (kein id → wird beim Speichern eingefügt)
       snap.push({ gruppen_key: ref.gruppen_key });
@@ -2080,7 +2096,7 @@ function openTaskModal(group, opts) {
     });
     function itemPatch(i) {
       var f = itemFields[i];
-      return {
+      var p = {
         inhalt:        encode(f.inhalt.value),
         abbildung:     encode(f.abbildung.value),
         anforderung:   encode(f.anforderung.value),
@@ -2091,6 +2107,8 @@ function openTaskModal(group, opts) {
         umfang:        f.umfang.value || null,
         hat_loesung:   f.hat_loesung.checked
       };
+      if (isMulti && f.nr) p.nr = f.nr.value.trim() || null;
+      return p;
     }
     if (!isMulti) {
       var probe = Object.assign({}, shared, itemPatch(0));
@@ -2166,8 +2184,9 @@ function closeEntryModal() {
 
 function openEntryModal(entry, mode, onSaved) {
   var item = entry || {};
+  var parentNr = item.nr ? String(item.nr).replace(/[a-zA-Z]+$/, '').trim() || String(item.nr) : '';
   openTaskModal(
-    { items: [item], aufgabenstellung: item.aufgabenstellung },
+    { key: parentNr, gruppen_key: item.gruppen_key, items: [item], aufgabenstellung: item.aufgabenstellung },
     { mode: mode || 'edit', onRefresh: onSaved }
   );
 }

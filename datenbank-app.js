@@ -1364,30 +1364,30 @@ async function buildFachView(container) {
         }
       }
 
-      // Gruppenheader (klickbar → Gruppen-Modal)
-      var ghdr = mk('div', '');
-      ghdr.style.cssText = 'padding:4px 12px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;cursor:pointer;';
-      // Wenn kein Seiten-Trenner aktiv (weil seite gefiltert oder null): Seite in Header anzeigen
       var showSeiteInHdr = DB.seite || !ref0 || ref0.seite == null;
-      var hText = (showSeiteInHdr && ref0 && ref0.seite != null ? 'S. ' + ref0.seite + ' · ' : '') + grpTypLabel(g);
-      if (g.aufgabenstellung) hText += ' · ' + g.aufgabenstellung.slice(0, 90);
-      ghdr.textContent = hText;
-      ghdr.title = hasSubtasks ? 'Alle Teilaufgaben ansehen' : 'Aufgabe ansehen';
-      ;(function(grp, sub) {
-        ghdr.onclick = function() {
-          if (sub) openGroupModal(grp, function() { load({ keepScroll: true }); });
-          else openEntryModal(grp.items[0], 'edit', function() { load({ keepScroll: true }); });
-        };
-      })(g, hasSubtasks);
-      wrap.appendChild(ghdr);
-      g.items.forEach(function(row) {
-        var rowEl = renderRow(row, function() { load({ keepScroll: true }); }, true);
-        rowEl.style.marginLeft = '16px';
-        if (hasSubtasks) {
+      var seitePrefix = (showSeiteInHdr && ref0 && ref0.seite != null ? 'S. ' + ref0.seite + ' · ' : '');
+
+      if (hasSubtasks) {
+        // Gruppe: eigener Header + eingerückte Teilaufgaben-Zeilen
+        var ghdr = mk('div', '');
+        ghdr.style.cssText = 'padding:4px 12px 2px;font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;cursor:pointer;';
+        var hText = seitePrefix + grpTypLabel(g);
+        if (g.aufgabenstellung) hText += ' · ' + g.aufgabenstellung.slice(0, 90);
+        ghdr.textContent = hText;
+        ghdr.title = 'Alle Teilaufgaben ansehen';
+        ghdr.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }); };
+        wrap.appendChild(ghdr);
+        g.items.forEach(function(row) {
+          var rowEl = renderRow(row, function() { load({ keepScroll: true }); }, true);
+          rowEl.style.marginLeft = '16px';
           rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }); };
-        }
+          wrap.appendChild(rowEl);
+        });
+      } else {
+        // Einzelaufgabe: „Aufgabe N" + Text in einer Zeile (kein separater Header)
+        var rowEl = renderRow(g.items[0], function() { load({ keepScroll: true }); }, true, seitePrefix + grpTypLabel(g));
         wrap.appendChild(rowEl);
-      });
+      }
     });
 
     if (rows.length === LIMIT) {
@@ -1417,7 +1417,9 @@ async function buildFachView(container) {
 }
 
 // ── Eintrag-Zeile (Tabellen-Grid) ────────────────────────────────
-function renderRow(a, onSaved, compact) {
+// groupLabel (optional): bei Einzelaufgaben „Aufgabe N" in Spalte 0,
+// damit Nr. und Aufgabentext in einer Zeile stehen (Text bricht um).
+function renderRow(a, onSaved, compact, groupLabel) {
   const hMeta = herkunftMeta(a.herkunft);
   const hasBuch = hMeta.hasBuch;          // schulbuch/aufgabenpool/sammlung zeigen Buchtitel
   const accentColor = hMeta.color;
@@ -1431,11 +1433,18 @@ function renderRow(a, onSaved, compact) {
   // Zelle 0: Quelle — im compact-Modus nur die Nr
   var src = mk('div', 'db-col-src'); src.dataset.colIdx = 0;
   if (compact) {
-    var nrMatch = String(a.nr || '').match(/[a-zA-Z]+$/);
-    if (nrMatch) {
-      var nrEl = tx('div', '', nrMatch[0]);
-      nrEl.style.cssText = 'font-weight:700;font-size:13px;color:var(--tx2);padding:2px 0;';
-      src.appendChild(nrEl);
+    if (groupLabel) {
+      // Einzelaufgabe: „Aufgabe N" als Zeilenlabel in Spalte 0
+      var glEl = tx('div', '', groupLabel);
+      glEl.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;padding:2px 0;';
+      src.appendChild(glEl);
+    } else {
+      var nrMatch = String(a.nr || '').match(/[a-zA-Z]+$/);
+      if (nrMatch) {
+        var nrEl = tx('div', '', nrMatch[0]);
+        nrEl.style.cssText = 'font-weight:700;font-size:13px;color:var(--tx2);padding:2px 0;';
+        src.appendChild(nrEl);
+      }
     }
   } else if (DB.buch && hasBuch) {
     // Buch ist bereits gefiltert — nur Seite zeigen
@@ -1471,7 +1480,9 @@ function renderRow(a, onSaved, compact) {
   var inhaltText = compact
     ? (a.inhalt || '–')
     : (a.inhalt || a.thema || a.beschreibung || '–');
-  mid.appendChild(tx('div', 'db-inhalt-text', inhaltText.replace(/ \| /g, ' · ').slice(0, 150)));
+  // Einzelaufgaben (groupLabel) dürfen umbrechen und zeigen mehr Text
+  var inhaltCls = 'db-inhalt-text' + (compact && groupLabel ? ' wrap' : '');
+  mid.appendChild(tx('div', inhaltCls, inhaltText.replace(/ \| /g, ' · ').slice(0, groupLabel ? 400 : 150)));
   if (!compact && a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
   cells[1] = mid;
 

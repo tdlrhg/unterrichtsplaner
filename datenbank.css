@@ -143,6 +143,13 @@
   white-space: nowrap;
   line-height: 1.4;
 }
+/* Einzelaufgaben: Text darf umbrechen (max. 3 Zeilen, dann …) */
+.db-inhalt-text.wrap {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
 .db-anf-text {
   font-size: 11px;
   color: var(--tx3);

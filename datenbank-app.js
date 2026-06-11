@@ -254,10 +254,11 @@ const TYP_SYMBOL = { schulbuch: '📚', sammlung: '📂', aufgabenpool: '🗃' }
 const TYP_ORDER  = { schulbuch: 0, sammlung: 1, aufgabenpool: 2 };
 // Herkunft (Quelle) – zentrale Definition für Modal, Badge, Filter, Import
 const HERKUNFT = {
-  schulbuch:     { label: 'Schulbuch',     icon: '📖', color: '#0f766e', hasBuch: true  },
-  aufgabenpool:  { label: 'Aufgabenpool',  icon: '🗃', color: '#7c3aed', hasBuch: true  },
-  sammlung:      { label: 'Sammlung',      icon: '📋', color: '#b45309', hasBuch: true  },
-  eigenmaterial: { label: 'Eigenmaterial', icon: '📄', color: '#16a34a', hasBuch: false },
+  schulbuch:     { label: 'Schulbuch',          icon: '📖', color: '#0f766e', hasBuch: true  },
+  handreichung:  { label: 'Lehrerhandreichung', icon: '🧑‍🏫', color: '#0369a1', hasBuch: true  },
+  aufgabenpool:  { label: 'Aufgabenpool',       icon: '🗃', color: '#7c3aed', hasBuch: true  },
+  sammlung:      { label: 'Sammlung',           icon: '📋', color: '#b45309', hasBuch: true  },
+  eigenmaterial: { label: 'Eigenmaterial',      icon: '📄', color: '#16a34a', hasBuch: false },
 };
 const HERKUNFT_OPTS = Object.keys(HERKUNFT).map(function(k) { return [k, HERKUNFT[k].icon + ' ' + HERKUNFT[k].label]; });
 function herkunftMeta(h) { return HERKUNFT[h] || HERKUNFT.schulbuch; }
@@ -1663,7 +1664,7 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
 
   // Herkunft-Chips (Schulbuch ist die Standardansicht → kein eigener Chip)
   var herkGroup = mk('div', 'db-filter-group');
-  ['aufgabenpool', 'sammlung', 'eigenmaterial'].forEach(function(hk) {
+  ['handreichung', 'aufgabenpool', 'sammlung', 'eigenmaterial'].forEach(function(hk) {
     var meta = HERKUNFT[hk];
     var active = DB.herkunft === hk;
     var chip = tx('div', 'db-fchip' + (active ? ' on' : ''), meta.icon + ' ' + meta.label);

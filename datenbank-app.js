@@ -1959,6 +1959,48 @@ function openTaskModal(group, opts) {
     L0.appendChild(labeled('Inhalt / Aufgabe', itemFields[0].inhalt));
     L0.appendChild(labeled('📷 Abbildung', itemFields[0].abbildung));
   }
+  // „+ Teilaufgabe"-Button (nur im Edit-Modus): aktuellen Stand in items[] sichern,
+  // leere Teilaufgabe anhängen, Modal mit neuem items[] neu öffnen. Single wird so
+  // zur Gruppe mit a/b. Speichern erkennt id-lose Items und insert sie als Sibling.
+  if (mode !== 'create') {
+    var addItemBtn = btn('+ Teilaufgabe hinzufügen', 'btn btn-ghost btn-sm');
+    addItemBtn.style.cssText += 'align-self:flex-start;margin-top:4px;font-size:12px;';
+    addItemBtn.onclick = function() {
+      // Form-State je Teilaufgabe einsammeln (gelöschte überspringen)
+      var snap = items.map(function(it, i) {
+        if (removed[i]) return null;
+        var f = itemFields[i];
+        return Object.assign({}, it, {
+          inhalt:        encode(f.inhalt.value),
+          abbildung:     encode(f.abbildung.value),
+          anforderung:   encode(f.anforderung.value),
+          thema:         f.thema.value.trim() || null,
+          niveau:        f.niveau.value || null,
+          operator:      f.operator.value || null,
+          schwierigkeit: f.schwierigkeit.value || null,
+          umfang:        f.umfang.value || null,
+          hat_loesung:   f.hat_loesung.checked
+        });
+      }).filter(Boolean);
+      // Gemeinsame data-key-Felder einsammeln und auf alle Items anwenden
+      var sharedSnap = {};
+      tabWrap.querySelectorAll('[data-key]').forEach(function(el) {
+        var k = el.dataset.key;
+        if (el.type === 'number')          sharedSnap[k] = el.value !== '' ? Number(el.value) : null;
+        else if (el.tagName === 'TEXTAREA') sharedSnap[k] = encode(el.value);
+        else                                sharedSnap[k] = el.value.trim() || null;
+      });
+      snap = snap.map(function(it) { return Object.assign({}, it, sharedSnap); });
+      // Leere neue Teilaufgabe anhängen (kein id → wird beim Speichern eingefügt)
+      snap.push({ gruppen_key: ref.gruppen_key });
+      var newGroup = Object.assign({}, group, {
+        items: snap,
+        aufgabenstellung: sharedSnap.aufgabenstellung || group.aufgabenstellung
+      });
+      openTaskModal(newGroup, opts);
+    };
+    L0.appendChild(addItemBtn);
+  }
   p0.appendChild(L0);
   tabBodyEl.appendChild(p0);
 
@@ -2066,7 +2108,16 @@ function openTaskModal(group, opts) {
       } else {
         await Promise.all(items.map(function(it, i) {
           if (removed[i]) return null;   // bereits gelöschte Teilaufgabe überspringen
-          return sbUpdate('inhalte', it.id, Object.assign({}, shared, itemPatch(i)));
+          var patch = Object.assign({}, shared, itemPatch(i));
+          if (it.id) return sbUpdate('inhalte', it.id, patch);
+          // Neu hinzugefügte Teilaufgabe → Insert mit gruppen_key der Gruppe
+          var newId = 'db_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 6);
+          var row = Object.assign({
+            id: newId,
+            fach: shared.fach || ref.fach || DB.fach,
+            gruppen_key: it.gruppen_key || ref.gruppen_key
+          }, patch);
+          return sbInsert('inhalte', [row]);
         }));
         closeEntryModal(); if (onDone) onDone();
       }

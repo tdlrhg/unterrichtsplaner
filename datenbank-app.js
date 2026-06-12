@@ -1872,15 +1872,7 @@ function openTaskModal(group, opts) {
     themaInp.placeholder = 'z.B. Gleichsetzungsverfahren'; themaInp.value = it.thema || '';
     var chk = document.createElement('input'); chk.type = 'checkbox'; chk.checked = !!it.hat_loesung;
     chk.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:var(--pri);margin-top:8px;';
-    var nrInp = null;
-    if (isMulti) {
-      nrInp = document.createElement('input');
-      nrInp.className = 'db-form-inp'; nrInp.type = 'text';
-      nrInp.placeholder = 'z.B. 7a'; nrInp.value = it.nr || '';
-      nrInp.style.maxWidth = '90px';
-    }
     return {
-      nr:            nrInp,
       inhalt:        mkAutoTA(it.inhalt, isMulti ? 'Inhalt Teilaufgabe ' + posLetter(i) : 'Was steht in der Aufgabe?'),
       abbildung:     mkAutoTA(it.abbildung, 'Beschreibung der Abbildung (falls vorhanden)'),
       anforderung:   mkAutoTA(it.anforderung, 'Was sollen Schülerinnen konkret tun?'),
@@ -1931,7 +1923,17 @@ function openTaskModal(group, opts) {
   ssuggest(R0, 'Unterkapitel', 'uk_titel', 'z.B. Gleichungssysteme grafisch lösen', function() { return suggestUnterkapitel(buchInp.value.trim(), kapInp.value.trim()); });
   var seiteRow = fieldRow();
   sfld(seiteRow, 'Seite', 'seite', 'number', '');
-  if (!isMulti) sfld(seiteRow, 'Nr.', 'nr', 'text', 'z.B. 7a');
+  // Einzelaufgabe: Nr. direkt (data-key 'nr'). Gruppe: Oberaufgabennummer,
+  // aus der beim Speichern je Teilaufgabe nr = Obernummer + Buchstabe wird.
+  var parentNrInp = null;
+  if (!isMulti) {
+    sfld(seiteRow, 'Nr.', 'nr', 'text', 'z.B. 7a');
+  } else {
+    parentNrInp = document.createElement('input');
+    parentNrInp.className = 'db-form-inp'; parentNrInp.type = 'text';
+    parentNrInp.placeholder = 'z.B. 7'; parentNrInp.value = group.key || '';
+    seiteRow.appendChild(labeled('Nr.', parentNrInp));
+  }
   R0.appendChild(seiteRow);
   sec(R0, 'Einordnung');
   ssel(R0, 'Fach', 'fach', FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
@@ -1951,21 +1953,13 @@ function openTaskModal(group, opts) {
       blk.style.cssText = 'display:flex;flex-direction:column;gap:6px;'
         + 'padding:8px 0 12px;border-bottom:1px solid var(--bord);';
 
-      // Kopfzeile: prominenter Buchstabe + kompaktes Nr-Feld + Löschen
+      // Kopfzeile: prominenter Buchstabe + Löschen (Nummer steht oben in den Grunddaten)
       var head = mk('div', '');
       head.style.cssText = 'display:flex;align-items:center;gap:10px;';
       var letter = tx('div', '', posLetter(i) + ')');
       letter.style.cssText = 'font-weight:800;font-size:19px;color:var(--pri);'
         + 'line-height:1;min-width:22px;flex-shrink:0;';
       head.appendChild(letter);
-      if (itemFields[i].nr) {
-        var nrLbl = tx('span', '', 'Nr.');
-        nrLbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);'
-          + 'text-transform:uppercase;letter-spacing:.06em;';
-        itemFields[i].nr.style.cssText += 'max-width:74px;padding:3px 7px;font-size:12px;';
-        head.appendChild(nrLbl);
-        head.appendChild(itemFields[i].nr);
-      }
       var spacer = mk('div', ''); spacer.style.flex = '1'; head.appendChild(spacer);
       head.appendChild(delItemBtn(i));
       blk.appendChild(head);
@@ -2018,12 +2012,16 @@ function openTaskModal(group, opts) {
         else if (el.tagName === 'TEXTAREA') sharedSnap[k] = encode(el.value);
         else                                sharedSnap[k] = el.value.trim() || null;
       });
-      // nr wird im Multi-Modus per Teilaufgabe gesetzt, nicht geteilt
+      // Oberaufgabennummer ermitteln: aus dem Gruppen-Feld (Multi) oder dem
+      // nr-Feld (Single→Multi). Sie landet im Gruppen-Key, nicht auf den Items.
+      var parentNrVal = parentNrInp ? parentNrInp.value.trim()
+                      : (sharedSnap.nr != null ? String(sharedSnap.nr).trim() : (group.key || ''));
       delete sharedSnap.nr;
       snap = snap.map(function(it) { return Object.assign({}, it, sharedSnap); });
       // Leere neue Teilaufgabe anhängen (kein id → wird beim Speichern eingefügt)
       snap.push({ gruppen_key: ref.gruppen_key });
       var newGroup = Object.assign({}, group, {
+        key: parentNrVal,
         items: snap,
         aufgabenstellung: sharedSnap.aufgabenstellung || group.aufgabenstellung
       });
@@ -2124,7 +2122,11 @@ function openTaskModal(group, opts) {
         umfang:        f.umfang.value || null,
         hat_loesung:   f.hat_loesung.checked
       };
-      if (isMulti && f.nr) p.nr = f.nr.value.trim() || null;
+      // Teilaufgaben-Nr = Oberaufgabennummer + fortlaufender Buchstabe (1 + a → 1a)
+      if (isMulti) {
+        var pn = parentNrInp ? parentNrInp.value.trim() : '';
+        p.nr = pn ? (pn + posLetter(i)) : null;
+      }
       return p;
     }
     if (!isMulti) {

@@ -2017,27 +2017,25 @@ function openTaskModal(group, opts) {
   if (isMulti) {
     sec(L0, 'Teilaufgaben');
     items.forEach(function(it, i) {
+      // Eine Zeile: Buchstabe · Inhaltsfeld (nimmt Restbreite) · 📷 · 🗑
       var blk = mk('div', '');
-      blk.style.cssText = 'display:flex;flex-direction:column;gap:6px;'
+      blk.style.cssText = 'display:flex;align-items:flex-start;gap:10px;'
         + 'padding:8px 0 12px;border-bottom:1px solid var(--bord);';
 
-      // Kopfzeile: prominenter Buchstabe + Löschen (Nummer steht oben in den Grunddaten)
-      var head = mk('div', '');
-      head.style.cssText = 'display:flex;align-items:center;gap:10px;';
       var letter = tx('div', '', posLetter(i) + ')');
       letter.style.cssText = 'font-weight:800;font-size:19px;color:var(--pri);'
-        + 'line-height:1;min-width:22px;flex-shrink:0;';
-      head.appendChild(letter);
-      var spacer = mk('div', ''); spacer.style.flex = '1'; head.appendChild(spacer);
-      head.appendChild(abbBtn(i));        // 📷 Abbildung (ausgelagert ins Overlay)
-      head.appendChild(delItemBtn(i));
-      blk.appendChild(head);
+        + 'line-height:1;min-width:22px;flex-shrink:0;padding-top:7px;';
+      blk.appendChild(letter);
 
-      // Eingerückter Inhalt unter dem Buchstaben (Abbildung steckt hinter dem 📷-Symbol)
-      var body = mk('div', '');
-      body.style.cssText = 'display:flex;flex-direction:column;gap:5px;padding-left:32px;';
-      body.appendChild(itemFields[i].inhalt);
-      blk.appendChild(body);
+      var ta = itemFields[i].inhalt;
+      ta.style.flex = '1'; ta.style.minWidth = '0';
+      blk.appendChild(ta);
+
+      var icons = mk('div', '');
+      icons.style.cssText = 'display:flex;gap:6px;flex-shrink:0;padding-top:4px;';
+      icons.appendChild(abbBtn(i));       // 📷 Abbildung (ausgelagert ins Overlay)
+      icons.appendChild(delItemBtn(i));
+      blk.appendChild(icons);
 
       L0.appendChild(blk);
       itemNodes[i].push(blk);

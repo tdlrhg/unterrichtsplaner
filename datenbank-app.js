@@ -1913,6 +1913,74 @@ function openTaskModal(group, opts) {
     return b;
   }
 
+  // Abbildungsbeschreibung pro Teilaufgabe: hinter einem 📷-Symbol ausgelagert,
+  // damit die Teilaufgaben kompakt bleiben. Klick öffnet ein kleines Overlay
+  // ÜBER dem Aufgaben-Modal (Overlay im Overlay).
+  function openAbbOverlay(i, onClose) {
+    var ta = itemFields[i].abbildung;
+    var ov = mk('div', 'db-modal-overlay');
+    ov.style.zIndex = '9500';   // über dem Aufgaben-Modal (9000)
+    ov.onclick = function(e) { if (e.target === ov) close(); };
+
+    var box = mk('div', 'db-modal');
+    box.style.cssText = 'max-width:600px;height:auto;max-height:80vh;';
+
+    var h = mk('div', 'db-modal-hdr');
+    h.appendChild(tx('div', 'db-modal-title', '📷 Abbildung — Teilaufgabe ' + posLetter(i) + ')'));
+    var x = btn('✕', 'btn btn-ghost btn-sm');
+    x.style.cssText += 'margin-left:auto;font-size:13px;padding:3px 8px;';
+    x.onclick = close;
+    h.appendChild(x);
+    box.appendChild(h);
+
+    var bodyWrap = mk('div', '');
+    bodyWrap.style.cssText = 'padding:18px 22px;overflow-y:auto;';
+    ta.placeholder = 'Beschreibe die Abbildung dieser Teilaufgabe — z.B. „Zahlenstrahl von -5 bis 5, Punkt bei -3 markiert".';
+    ta.style.fontSize = '13px'; ta.style.opacity = '1'; ta.style.minHeight = '120px';
+    bodyWrap.appendChild(labeled('Beschreibung der Abbildung (optional)', ta));
+    box.appendChild(bodyWrap);
+
+    var f = mk('div', 'db-modal-footer');
+    var done = btn('✓ Fertig', 'btn btn-sm'); done.onclick = close;
+    f.appendChild(done);
+    box.appendChild(f);
+    ov.appendChild(box);
+
+    // Escape-Stapelung: äußeren Esc-Handler kurz deaktivieren, eigenen setzen
+    var outerEsc = _modalEsc;
+    if (outerEsc) document.removeEventListener('keydown', outerEsc);
+    function innerEsc(e) { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); } }
+    document.addEventListener('keydown', innerEsc);
+
+    var closed = false;
+    function close() {
+      if (closed) return; closed = true;
+      document.removeEventListener('keydown', innerEsc);
+      if (outerEsc) document.addEventListener('keydown', outerEsc);  // äußeren wieder aktiv
+      ov.remove();
+      if (onClose) onClose();
+    }
+
+    document.body.appendChild(ov);
+    requestAnimationFrame(function() { autoResize(ta); ta.focus(); });
+  }
+
+  function abbBtn(i) {
+    var b = btn('📷', 'btn btn-ghost btn-sm');
+    b.style.cssText += 'flex-shrink:0;padding:3px 8px;font-size:13px;border-radius:7px;';
+    function sync() {
+      var v = itemFields[i].abbildung.value.trim();
+      b.style.opacity = v ? '1' : '.4';
+      b.style.background = v ? 'rgba(15,118,110,.12)' : '';
+      b.style.boxShadow  = v ? 'inset 0 0 0 1px var(--pri)' : '';
+      b.title = v ? 'Abbildung: ' + v.replace(/ \| /g, ' ').slice(0, 80)
+                  : 'Abbildung beschreiben (optional)';
+    }
+    b.onclick = function() { openAbbOverlay(i, sync); };
+    sync();
+    return b;
+  }
+
   // ── Pane 0: Grunddaten (gemeinsam) ────────────────────────────
   var p0 = mk('div', 'db-modal-tab-pane split active'); panes.push(p0);
   var R0 = mkR();
@@ -1961,17 +2029,14 @@ function openTaskModal(group, opts) {
         + 'line-height:1;min-width:22px;flex-shrink:0;';
       head.appendChild(letter);
       var spacer = mk('div', ''); spacer.style.flex = '1'; head.appendChild(spacer);
+      head.appendChild(abbBtn(i));        // 📷 Abbildung (ausgelagert ins Overlay)
       head.appendChild(delItemBtn(i));
       blk.appendChild(head);
 
-      // Eingerückter Inhalt unter dem Buchstaben
+      // Eingerückter Inhalt unter dem Buchstaben (Abbildung steckt hinter dem 📷-Symbol)
       var body = mk('div', '');
       body.style.cssText = 'display:flex;flex-direction:column;gap:5px;padding-left:32px;';
       body.appendChild(itemFields[i].inhalt);
-      // Kompaktes Abbildungs-Feld (kein eigenes Label, kleinere Schrift)
-      itemFields[i].abbildung.placeholder = '📷 Abbildung (optional)';
-      itemFields[i].abbildung.style.cssText += 'font-size:12px;opacity:.85;';
-      body.appendChild(itemFields[i].abbildung);
       blk.appendChild(body);
 
       L0.appendChild(blk);

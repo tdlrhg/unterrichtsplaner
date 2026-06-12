@@ -306,7 +306,7 @@ function buildBuecherregal(container) {
           buch.titel || '–', w, h,
           'linear-gradient(to right,' + farbe.spine[0] + ',' + farbe.spine[1] + ')',
           farbe.text, TYP_SYMBOL[buch.typ] || '📖',
-          jgA.length ? 'Jg.' + jgA.join('/') : null,
+          jgA.length ? 'Jg.' + jgA.join('/') : '–',
           function() { DB.view = 'fach'; DB.fach = buch.fach || fach; DB.buch = buch.titel; DB.herkunft = 'schulbuch'; DB.suchtext = ''; DB.offset = 0; dbRender(); },
           buch.titel + (buch.verlag ? ' · ' + buch.verlag : '') + '\n' + kap + ' Kapitel · ' + aufg + ' Aufg.'
         ));

@@ -973,6 +973,7 @@ function attachAutocomplete(inp, fetchFn) {
         if (_active) showDropdown(opts || [], filter);
       }).catch(function(err) {
         console.warn('[Autocomplete] Vorschläge konnten nicht geladen werden:', err);
+        removeDropdown();
       });
     }, 80);
   }

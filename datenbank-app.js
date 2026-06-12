@@ -4,7 +4,7 @@
 var METHDB     = [];
 var DIDARTDB   = [];
 var DIDAKTIKDB = {};
-var SCHULBUCHDB = [];
+var REGALDB = [];
 var S = null; // wird nach DB-Init gesetzt
 function render() { dbRender(); }
 
@@ -328,7 +328,7 @@ function mkRegalRow(pillCfg, booksFn, hasSep) {
 function buildBuecherregal(container) {
   var fachOrder = FAECHER.map(function(f) { return f.key; });
   var byFach = {};
-  SCHULBUCHDB.forEach(function(b) {
+  REGALDB.forEach(function(b) {
     var f = b.fach || 'sonstige';
     if (!byFach[f]) byFach[f] = [];
     byFach[f].push(b);
@@ -345,7 +345,7 @@ function buildBuecherregal(container) {
   faecher.forEach(function(fach, idx) {
     var farbe  = REGAL_FARBEN[fach] || { spine: ['#374151','#6b7280'], text: '#f3f4f6' };
     var fInfo  = fachInfo(fach);
-    var buecher = (byFach[fach] || []).slice().sort(function(a, b) { return (TYP_ORDER[a.typ] || 1) - (TYP_ORDER[b.typ] || 1); });
+    var buecher = (byFach[fach] || []).slice().sort(function(a, b) { return (TYP_ORDER[a.quelle_typ] || 1) - (TYP_ORDER[b.quelle_typ] || 1); });
 
     var pill = { icon: fInfo.icon, label: fInfo.label, color: fInfo.color,
       onclick: function() { DB.view = 'fach'; DB.fach = fach; DB.quelle_name = null; DB.quelle_typ = null; DB.suchtext = ''; DB.offset = 0; dbRender(); } };
@@ -361,12 +361,12 @@ function buildBuecherregal(container) {
         var h    = Math.min(SHELF_H - 16, Math.max(85, 80 + kap * 3));
         var jgA  = jgNorm(buch.jahrgang);
         area.appendChild(mkSpine(
-          buch.titel || '–', w, h,
+          buch.quelle_name || '–', w, h,
           'linear-gradient(to right,' + farbe.spine[0] + ',' + farbe.spine[1] + ')',
-          farbe.text, TYP_SYMBOL[buch.typ] || '📖',
+          farbe.text, TYP_SYMBOL[buch.quelle_typ] || '📖',
           jgA.length ? 'Jg.' + jgA.join('/') : '–',
-          function() { DB.view = 'fach'; DB.fach = buch.fach || fach; DB.quelle_name = buch.titel; DB.quelle_typ = null; DB.suchtext = ''; DB.offset = 0; dbRender(); },
-          buch.titel + '\n' + kap + ' Kapitel · ' + aufg + ' Aufg.'
+          function() { DB.view = 'fach'; DB.fach = buch.fach || fach; DB.quelle_name = buch.quelle_name; DB.quelle_typ = null; DB.suchtext = ''; DB.offset = 0; dbRender(); },
+          buch.quelle_name + '\n' + kap + ' Kapitel · ' + aufg + ' Aufg.'
         ));
       });
     }, idx < faecher.length - 1 || hasExtra);
@@ -2436,14 +2436,14 @@ function dbRender() {
         d.count++;
       });
 
-      SCHULBUCHDB = Object.keys(dbSet).map(function(key) {
+      REGALDB = Object.keys(dbSet).map(function(key) {
         var d = dbSet[key];
         var jgs = Object.keys(d.jgSet).map(Number).filter(Boolean).sort(function(a, b) { return a - b; });
-        var typ = Object.keys(d.quelleTypCount).reduce(function(best, h) {
+        var dominantTyp = Object.keys(d.quelleTypCount).reduce(function(best, h) {
           return (d.quelleTypCount[h] > (d.quelleTypCount[best] || 0)) ? h : best;
         }, 'aufgabenpool');
         return {
-          fach: d.fach, titel: d.quelle_name, typ: typ,
+          fach: d.fach, quelle_name: d.quelle_name, quelle_typ: dominantTyp,
           kapitel: Object.keys(d.kapSet),
           jahrgang: jgs.length === 1 ? jgs[0] : (jgs.length ? jgs : null),
           aufgabenCount: d.count,

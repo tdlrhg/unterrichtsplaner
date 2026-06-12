@@ -271,10 +271,7 @@ function jgNorm(val) {
 }
 
 function countBuchAufgaben(buch) {
-  return (buch.kapitel || []).reduce(function(n, k) {
-    return n + (k.aufgaben || []).length +
-      (k.unterkapitel || []).reduce(function(m, u) { return m + (u.aufgaben || []).length; }, 0);
-  }, 0);
+  return buch.aufgabenCount || 0;
 }
 
 // Buchrücken generisch
@@ -369,7 +366,7 @@ function buildBuecherregal(container) {
           farbe.text, TYP_SYMBOL[buch.typ] || '📖',
           jgA.length ? 'Jg.' + jgA.join('/') : '–',
           function() { DB.view = 'fach'; DB.fach = buch.fach || fach; DB.buch = buch.titel; DB.herkunft = null; DB.suchtext = ''; DB.offset = 0; dbRender(); },
-          buch.titel + (buch.verlag ? ' · ' + buch.verlag : '') + '\n' + kap + ' Kapitel · ' + aufg + ' Aufg.'
+          buch.titel + '\n' + kap + ' Kapitel · ' + aufg + ' Aufg.'
         ));
       });
     }, idx < faecher.length - 1 || hasExtra);
@@ -2385,42 +2382,40 @@ function dbRender() {
     });
   }
   Promise.all([
-    dl('schulbuecher.json'),
     dl('methoden.json'),
     dl('didaktik-artikel.json'),
   ]).then(function(res) {
-    if (Array.isArray(res[0])) SCHULBUCHDB = res[0];
-    if (Array.isArray(res[1])) METHDB      = res[1];
-    if (Array.isArray(res[2])) DIDARTDB    = res[2];
-    // Regal: DB als einzige Wahrheitsquelle — nur Bücher MIT Einträgen anzeigen
-    sbSelect('inhalte', { select: 'fach,buch,jahrgang', limit: 5000 }).then(function(rows) {
-      // Alle (fach, buch)-Paare die wirklich Einträge haben, inkl. Jahrgänge
+    if (Array.isArray(res[0])) METHDB   = res[0];
+    if (Array.isArray(res[1])) DIDARTDB = res[1];
+    // Regal: vollständig aus inhalte-DB ableiten
+    sbSelect('inhalte', { select: 'fach,buch,jahrgang,herkunft,kapitel,kapitel_titel', limit: 5000 }).then(function(rows) {
       var dbSet = {};
       rows.forEach(function(r) {
         if (!r.buch || !r.fach) return;
         var key = r.fach + '::' + r.buch;
-        if (!dbSet[key]) dbSet[key] = { fach: r.fach, buch: r.buch, jgSet: {} };
-        if (r.jahrgang) dbSet[key].jgSet[r.jahrgang] = true;
-      });
-
-      // schulbuecher.json-Einträge: nur behalten wenn DB-Einträge vorhanden
-      var merged = SCHULBUCHDB.filter(function(b) {
-        return dbSet[b.fach + '::' + b.titel];
-      });
-
-      // DB-Bücher die nicht in schulbuecher.json sind → als Aufgabenpool hinzufügen
-      // Jahrgang wird aus den tatsächlichen Einträgen abgeleitet
-      Object.keys(dbSet).forEach(function(key) {
+        if (!dbSet[key]) dbSet[key] = { fach: r.fach, buch: r.buch, jgSet: {}, herkunftCount: {}, kapSet: {}, count: 0 };
         var d = dbSet[key];
-        var inJson = SCHULBUCHDB.some(function(b) { return b.fach === d.fach && b.titel === d.buch; });
-        if (!inJson) {
-          var jgs = Object.keys(d.jgSet).map(Number).sort(function(a, b) { return a - b; });
-          merged.push({ fach: d.fach, titel: d.buch, typ: 'aufgabenpool', kapitel: [],
-            jahrgang: jgs.length === 1 ? jgs[0] : (jgs.length ? jgs : null) });
-        }
+        if (r.jahrgang) d.jgSet[r.jahrgang] = true;
+        if (r.herkunft) d.herkunftCount[r.herkunft] = (d.herkunftCount[r.herkunft] || 0) + 1;
+        var kap = r.kapitel || r.kapitel_titel;
+        if (kap) d.kapSet[kap] = true;
+        d.count++;
       });
 
-      SCHULBUCHDB = merged;
+      SCHULBUCHDB = Object.keys(dbSet).map(function(key) {
+        var d = dbSet[key];
+        var jgs = Object.keys(d.jgSet).map(Number).filter(Boolean).sort(function(a, b) { return a - b; });
+        var typ = Object.keys(d.herkunftCount).reduce(function(best, h) {
+          return (d.herkunftCount[h] > (d.herkunftCount[best] || 0)) ? h : best;
+        }, 'aufgabenpool');
+        return {
+          fach: d.fach, titel: d.buch, typ: typ,
+          kapitel: Object.keys(d.kapSet),
+          jahrgang: jgs.length === 1 ? jgs[0] : (jgs.length ? jgs : null),
+          aufgabenCount: d.count,
+        };
+      });
+
       reloadLanding();
     }).catch(function() {});
   });

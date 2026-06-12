@@ -974,7 +974,9 @@ function attachAutocomplete(inp, fetchFn) {
       fetchFn().then(function(opts) {
         if (id !== _fetchId) return;  // veralteter Fetch verwerfen
         if (_active) showDropdown(opts || [], filter);
-      }).catch(function() {});
+      }).catch(function(err) {
+        console.warn('[Autocomplete] Vorschläge konnten nicht geladen werden:', err);
+      });
     }, 80);
   }
 
@@ -1272,6 +1274,7 @@ async function buildFachView(container) {
       orderStr = 'herkunft,buch,seite';
     }
 
+    var loadFailed = false;
     var rows = await sbSelect('inhalte', {
       fts: DB.suchtext || null,
       filters,
@@ -1280,7 +1283,11 @@ async function buildFachView(container) {
       limit: LIMIT,
       offset: DB.offset,
       order: orderStr,
-    }).catch(function() { return []; });
+    }).catch(function(err) {
+      console.error('[Datenbank] Laden fehlgeschlagen (inhalte):', err, { filters: filters, fts: DB.suchtext || null });
+      loadFailed = true;
+      return [];
+    });
 
     // nr natürlich sortieren: 8 < 8a < 8b < 9 < 10
     // Bei Custom-Sort: Server-Reihenfolge beibehalten, nur innerhalb gleicher Seite nr-sortieren
@@ -1312,15 +1319,37 @@ async function buildFachView(container) {
 
     // Gruppen jetzt berechnen — für korrekte Aufgaben-Zählung
     var groups = dbGroupByParent(rows);
-    if (rows.length >= LIMIT) {
+    if (loadFailed) {
+      subT.textContent = 'Fehler beim Laden' + suffix;
+    } else if (rows.length >= LIMIT) {
       subT.textContent = 'Aufgaben werden gezählt…' + suffix;
       sbSelect('inhalte', { select: 'gruppen_key', filters, fts: DB.suchtext || null, rawParams, limit: 10000 })
         .then(function(allRows) {
           var distinct = new Set(allRows.map(function(r) { return r.gruppen_key || r.id; })).size;
           subT.textContent = distinct + ' Aufgaben' + suffix;
+        })
+        .catch(function(err) {
+          console.warn('[Datenbank] Zählung fehlgeschlagen:', err);
+          subT.textContent = groups.length + '+ Aufgaben' + suffix;  // wenigstens die geladenen
         });
     } else {
       subT.textContent = groups.length + ' Aufgaben' + suffix;
+    }
+
+    // Fehler ≠ „leer": getrennt anzeigen, damit ein Ausfall nicht wie eine
+    // leere Datenbank aussieht. Mit „Erneut versuchen" für transiente Aussetzer.
+    if (loadFailed) {
+      var ebox = mk('div', '');
+      ebox.style.cssText = 'padding:36px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;';
+      var emsg = tx('div', '', '⚠ Konnte nicht laden — Supabase nicht erreichbar?');
+      emsg.style.cssText = 'color:#b91c1c;font-size:14px;font-weight:600;';
+      var ehint = tx('div', '', 'Prüfe die Internetverbindung. Details stehen in der Browser-Konsole.');
+      ehint.style.cssText = 'color:var(--tx3);font-size:12px;';
+      var retry = btn('↻ Erneut versuchen', 'btn btn-sm');
+      retry.onclick = function() { load({ keepScroll: true }); };
+      ebox.appendChild(emsg); ebox.appendChild(ehint); ebox.appendChild(retry);
+      wrap.appendChild(ebox);
+      return;
     }
 
     if (!rows.length) {
@@ -2347,10 +2376,16 @@ function dbRender() {
       if (c) { c.innerHTML = ''; buildLanding(c); }
     }
   }
+  function dl(name) {
+    return sbDownload(name).catch(function(err) {
+      console.warn('[Datenbank] Regal-Daten konnten nicht geladen werden (' + name + '):', err);
+      return null;
+    });
+  }
   Promise.all([
-    sbDownload('schulbuecher.json').catch(function() { return null; }),
-    sbDownload('methoden.json').catch(function() { return null; }),
-    sbDownload('didaktik-artikel.json').catch(function() { return null; }),
+    dl('schulbuecher.json'),
+    dl('methoden.json'),
+    dl('didaktik-artikel.json'),
   ]).then(function(res) {
     if (Array.isArray(res[0])) SCHULBUCHDB = res[0];
     if (Array.isArray(res[1])) METHDB      = res[1];

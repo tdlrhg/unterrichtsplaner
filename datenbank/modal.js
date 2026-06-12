@@ -279,8 +279,8 @@ function openTaskModal(group, opts) {
   var p0 = mk('div', 'db-modal-tab-pane split active'); panes.push(p0);
   var R0 = mkR();
   sec(R0, 'Quelle');
-  ssel(R0, 'Herkunft', 'herkunft', HERKUNFT_OPTS);
-  var buchInp = ssuggest(R0, 'Buch / Titel', 'buch', 'z.B. Lambacher Schweizer 7', function() { return suggestBooks(); });
+  ssel(R0, 'Herkunft', 'quelle_typ', HERKUNFT_OPTS);
+  var buchInp = ssuggest(R0, 'Buch / Titel', 'quelle_name', 'z.B. Lambacher Schweizer 7', function() { return suggestBooks(); });
   var kapInp  = ssuggest(R0, 'Kapitel', 'kapitel_titel', 'z.B. IV Lineare Gleichungssysteme', function() { return suggestKapitel(buchInp.value.trim()); });
   ssuggest(R0, 'Unterkapitel', 'uk_titel', 'z.B. Gleichungssysteme grafisch lösen', function() { return suggestUnterkapitel(buchInp.value.trim(), kapInp.value.trim()); });
   var seiteRow = fieldRow();

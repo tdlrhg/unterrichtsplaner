@@ -4,7 +4,7 @@
 var METHDB     = [];
 var DIDARTDB   = [];
 var DIDAKTIKDB = {};
-var REGALDB = [];
+var _regalGen = 0;
 var S = null; // wird nach DB-Init gesetzt
 function render() { dbRender(); }
 
@@ -326,94 +326,126 @@ function mkRegalRow(pillCfg, booksFn, hasSep) {
 }
 
 function buildBuecherregal(container) {
-  var fachOrder = FAECHER.map(function(f) { return f.key; });
-  var byFach = {};
-  REGALDB.forEach(function(b) {
-    var f = b.fach || 'sonstige';
-    if (!byFach[f]) byFach[f] = [];
-    byFach[f].push(b);
-  });
-  var faecher = fachOrder.filter(function(f) { return byFach[f] && byFach[f].length; });
-  var hasExtra = METHDB.length > 0 || DIDARTDB.length > 0;
-  if (!faecher.length && !hasExtra) return;
+  var gen = ++_regalGen;
+  sbSelect('inhalte', { select: 'fach,quelle_name,jahrgang,quelle_typ,kapitel,kapitel_titel', limit: 5000 })
+    .then(function(rows) {
+      if (gen !== _regalGen || !container.isConnected) return;
 
-  var wand = mk('div', '');
-  wand.style.cssText = 'background:#0f0f12;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);margin:0 28px 28px;';
-  container.appendChild(wand);
-
-  // ── Fach-Zeilen ───────────────────────────────────────────────
-  faecher.forEach(function(fach, idx) {
-    var farbe  = REGAL_FARBEN[fach] || { spine: ['#374151','#6b7280'], text: '#f3f4f6' };
-    var fInfo  = fachInfo(fach);
-    var buecher = (byFach[fach] || []).slice().sort(function(a, b) { return (TYP_ORDER[a.quelle_typ] || 1) - (TYP_ORDER[b.quelle_typ] || 1); });
-
-    var pill = { icon: fInfo.icon, label: fInfo.label, color: fInfo.color,
-      onclick: function() { DB.view = 'fach'; DB.fach = fach; DB.quelle_name = null; DB.quelle_typ = null; DB.suchtext = ''; DB.offset = 0; dbRender(); } };
-
-    var row = mkRegalRow(pill, function(area) {
-      var wt = tx('div', '', fInfo.label.toUpperCase());
-      wt.style.cssText = 'position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:44px;font-weight:900;letter-spacing:.14em;color:' + farbe.spine[1] + ';opacity:.13;white-space:nowrap;pointer-events:none;user-select:none;';
-      area.appendChild(wt);
-      buecher.forEach(function(buch) {
-        var kap  = Math.max(1, (buch.kapitel || []).length);
-        var aufg = countBuchAufgaben(buch);
-        var w    = Math.min(60, Math.max(28, 24 + kap * 3));
-        var h    = Math.min(SHELF_H - 16, Math.max(85, 80 + kap * 3));
-        var jgA  = jgNorm(buch.jahrgang);
-        area.appendChild(mkSpine(
-          buch.quelle_name || '–', w, h,
-          'linear-gradient(to right,' + farbe.spine[0] + ',' + farbe.spine[1] + ')',
-          farbe.text, TYP_SYMBOL[buch.quelle_typ] || '📖',
-          jgA.length ? 'Jg.' + jgA.join('/') : '–',
-          function() { DB.view = 'fach'; DB.fach = buch.fach || fach; DB.quelle_name = buch.quelle_name; DB.quelle_typ = null; DB.suchtext = ''; DB.offset = 0; dbRender(); },
-          buch.quelle_name + '\n' + kap + ' Kapitel · ' + aufg + ' Aufg.'
-        ));
+      // Aggregieren: ein Eintrag pro fach+quelle_name
+      var dbSet = {};
+      rows.forEach(function(r) {
+        if (!r.quelle_name || !r.fach) return;
+        var key = r.fach + '::' + r.quelle_name;
+        if (!dbSet[key]) dbSet[key] = { fach: r.fach, quelle_name: r.quelle_name, jgSet: {}, quelleTypCount: {}, kapSet: {}, count: 0 };
+        var d = dbSet[key];
+        if (r.jahrgang) d.jgSet[r.jahrgang] = true;
+        if (r.quelle_typ) d.quelleTypCount[r.quelle_typ] = (d.quelleTypCount[r.quelle_typ] || 0) + 1;
+        var kap = r.kapitel || r.kapitel_titel;
+        if (kap) d.kapSet[kap] = true;
+        d.count++;
       });
-    }, idx < faecher.length - 1 || hasExtra);
 
-    wand.appendChild(row);
-  });
+      var fachOrder = FAECHER.map(function(f) { return f.key; });
+      var byFach = {};
+      Object.keys(dbSet).forEach(function(key) {
+        var d = dbSet[key];
+        var jgs = Object.keys(d.jgSet).map(Number).filter(Boolean).sort(function(a, b) { return a - b; });
+        var dominantTyp = Object.keys(d.quelleTypCount).reduce(function(best, h) {
+          return (d.quelleTypCount[h] > (d.quelleTypCount[best] || 0)) ? h : best;
+        }, 'aufgabenpool');
+        var b = {
+          fach: d.fach, quelle_name: d.quelle_name, quelle_typ: dominantTyp,
+          kapitel: Object.keys(d.kapSet),
+          jahrgang: jgs.length === 1 ? jgs[0] : (jgs.length ? jgs : null),
+          aufgabenCount: d.count,
+        };
+        var f = b.fach || 'sonstige';
+        if (!byFach[f]) byFach[f] = [];
+        byFach[f].push(b);
+      });
 
-  // ── Methoden + Didaktik nebeneinander ─────────────────────────
-  if (hasExtra) {
-    var extraRow = mk('div', ''); extraRow.style.cssText = 'display:flex;align-items:stretch;';
-    var defs = [
-      { key:'methoden', icon:'🛠️', label:'Methoden', color:'#7c3aed', spine:['#3b0764','#6d28d9'], text:'#e9d5ff',
-        items: METHDB,   getT: function(m) { return m.name || m.titel || '–'; } },
-      { key:'didaktik', icon:'🗺️', label:'Didaktik', color:'#0891b2', spine:['#0c4a6e','#0369a1'], text:'#bae6fd',
-        items: DIDARTDB, getT: function(d) { return d.titel || d.name || '–'; } },
-    ];
-    defs.forEach(function(t, ti) {
-      var half = mk('div', '');
-      half.style.cssText = 'flex:1;display:flex;flex-direction:column;min-width:0;' + (ti === 0 ? 'border-right:1px solid rgba(255,255,255,.05);' : '');
-      var pill2 = { icon: t.icon, label: t.label, color: t.color,
-        sub: t.items.length + ' Eintr.',
-        onclick: function() { DB.view = t.key; DB.fach = null; dbRender(); } };
-      var innerRow = mkRegalRow(pill2, function(area) {
-        var wt2 = tx('div', '', t.label.toUpperCase());
-        wt2.style.cssText = 'position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:32px;font-weight:900;letter-spacing:.14em;color:' + t.spine[1] + ';opacity:.13;white-space:nowrap;pointer-events:none;user-select:none;';
-        area.appendChild(wt2);
-        t.items.slice(0, 22).forEach(function(item) {
-          var titel = t.getT(item);
-          area.appendChild(mkSpine(
-            titel, 26, Math.min(SHELF_H - 16, 100),
-            'linear-gradient(to right,' + t.spine[0] + ',' + t.spine[1] + ')',
-            t.text, null, null,
-            function() { DB.view = t.key; DB.fach = null; dbRender(); },
-            titel
-          ));
+      var faecher = fachOrder.filter(function(f) { return byFach[f] && byFach[f].length; });
+      var hasExtra = METHDB.length > 0 || DIDARTDB.length > 0;
+      if (!faecher.length && !hasExtra) return;
+
+      var wand = mk('div', '');
+      wand.style.cssText = 'background:#0f0f12;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);margin:0 28px 28px;';
+      container.appendChild(wand);
+
+      // ── Fach-Zeilen ───────────────────────────────────────────────
+      faecher.forEach(function(fach, idx) {
+        var farbe  = REGAL_FARBEN[fach] || { spine: ['#374151','#6b7280'], text: '#f3f4f6' };
+        var fInfo  = fachInfo(fach);
+        var buecher = (byFach[fach] || []).slice().sort(function(a, b) { return (TYP_ORDER[a.quelle_typ] || 1) - (TYP_ORDER[b.quelle_typ] || 1); });
+
+        var pill = { icon: fInfo.icon, label: fInfo.label, color: fInfo.color,
+          onclick: function() { DB.view = 'fach'; DB.fach = fach; DB.quelle_name = null; DB.quelle_typ = null; DB.suchtext = ''; DB.offset = 0; dbRender(); } };
+
+        var row = mkRegalRow(pill, function(area) {
+          var wt = tx('div', '', fInfo.label.toUpperCase());
+          wt.style.cssText = 'position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:44px;font-weight:900;letter-spacing:.14em;color:' + farbe.spine[1] + ';opacity:.13;white-space:nowrap;pointer-events:none;user-select:none;';
+          area.appendChild(wt);
+          buecher.forEach(function(buch) {
+            var kap  = Math.max(1, (buch.kapitel || []).length);
+            var aufg = countBuchAufgaben(buch);
+            var w    = Math.min(60, Math.max(28, 24 + kap * 3));
+            var h    = Math.min(SHELF_H - 16, Math.max(85, 80 + kap * 3));
+            var jgA  = jgNorm(buch.jahrgang);
+            area.appendChild(mkSpine(
+              buch.quelle_name || '–', w, h,
+              'linear-gradient(to right,' + farbe.spine[0] + ',' + farbe.spine[1] + ')',
+              farbe.text, TYP_SYMBOL[buch.quelle_typ] || '📖',
+              jgA.length ? 'Jg.' + jgA.join('/') : '–',
+              function() { DB.view = 'fach'; DB.fach = buch.fach || fach; DB.quelle_name = buch.quelle_name; DB.quelle_typ = null; DB.suchtext = ''; DB.offset = 0; dbRender(); },
+              buch.quelle_name + '\n' + kap + ' Kapitel · ' + aufg + ' Aufg.'
+            ));
+          });
+        }, idx < faecher.length - 1 || hasExtra);
+
+        wand.appendChild(row);
+      });
+
+      // ── Methoden + Didaktik nebeneinander ─────────────────────────
+      if (hasExtra) {
+        var extraRow = mk('div', ''); extraRow.style.cssText = 'display:flex;align-items:stretch;';
+        var defs = [
+          { key:'methoden', icon:'🛠️', label:'Methoden', color:'#7c3aed', spine:['#3b0764','#6d28d9'], text:'#e9d5ff',
+            items: METHDB,   getT: function(m) { return m.name || m.titel || '–'; } },
+          { key:'didaktik', icon:'🗺️', label:'Didaktik', color:'#0891b2', spine:['#0c4a6e','#0369a1'], text:'#bae6fd',
+            items: DIDARTDB, getT: function(d) { return d.titel || d.name || '–'; } },
+        ];
+        defs.forEach(function(t, ti) {
+          var half = mk('div', '');
+          half.style.cssText = 'flex:1;display:flex;flex-direction:column;min-width:0;' + (ti === 0 ? 'border-right:1px solid rgba(255,255,255,.05);' : '');
+          var pill2 = { icon: t.icon, label: t.label, color: t.color,
+            sub: t.items.length + ' Eintr.',
+            onclick: function() { DB.view = t.key; DB.fach = null; dbRender(); } };
+          var innerRow = mkRegalRow(pill2, function(area) {
+            var wt2 = tx('div', '', t.label.toUpperCase());
+            wt2.style.cssText = 'position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:32px;font-weight:900;letter-spacing:.14em;color:' + t.spine[1] + ';opacity:.13;white-space:nowrap;pointer-events:none;user-select:none;';
+            area.appendChild(wt2);
+            t.items.slice(0, 22).forEach(function(item) {
+              var titel = t.getT(item);
+              area.appendChild(mkSpine(
+                titel, 26, Math.min(SHELF_H - 16, 100),
+                'linear-gradient(to right,' + t.spine[0] + ',' + t.spine[1] + ')',
+                t.text, null, null,
+                function() { DB.view = t.key; DB.fach = null; dbRender(); },
+                titel
+              ));
+            });
+            if (!t.items.length) {
+              var emp = tx('div', '', 'Noch keine Einträge');
+              emp.style.cssText = 'position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.2);white-space:nowrap;';
+              area.appendChild(emp);
+            }
+          }, false);
+          half.appendChild(innerRow);
+          extraRow.appendChild(half);
         });
-        if (!t.items.length) {
-          var emp = tx('div', '', 'Noch keine Einträge');
-          emp.style.cssText = 'position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,.2);white-space:nowrap;';
-          area.appendChild(emp);
-        }
-      }, false);
-      half.appendChild(innerRow);
-      extraRow.appendChild(half);
-    });
-    wand.appendChild(extraRow);
-  }
+        wand.appendChild(extraRow);
+      }
+    }).catch(function() {});
 }
 
 // ── Landing Page ──────────────────────────────────────────────────
@@ -2421,36 +2453,6 @@ function dbRender() {
   ]).then(function(res) {
     if (Array.isArray(res[0])) METHDB   = res[0];
     if (Array.isArray(res[1])) DIDARTDB = res[1];
-    // Regal: vollständig aus inhalte-DB ableiten
-    sbSelect('inhalte', { select: 'fach,quelle_name,jahrgang,quelle_typ,kapitel,kapitel_titel', limit: 5000 }).then(function(rows) {
-      var dbSet = {};
-      rows.forEach(function(r) {
-        if (!r.quelle_name || !r.fach) return;
-        var key = r.fach + '::' + r.quelle_name;
-        if (!dbSet[key]) dbSet[key] = { fach: r.fach, quelle_name: r.quelle_name, jgSet: {}, quelleTypCount: {}, kapSet: {}, count: 0 };
-        var d = dbSet[key];
-        if (r.jahrgang) d.jgSet[r.jahrgang] = true;
-        if (r.quelle_typ) d.quelleTypCount[r.quelle_typ] = (d.quelleTypCount[r.quelle_typ] || 0) + 1;
-        var kap = r.kapitel || r.kapitel_titel;
-        if (kap) d.kapSet[kap] = true;
-        d.count++;
-      });
-
-      REGALDB = Object.keys(dbSet).map(function(key) {
-        var d = dbSet[key];
-        var jgs = Object.keys(d.jgSet).map(Number).filter(Boolean).sort(function(a, b) { return a - b; });
-        var dominantTyp = Object.keys(d.quelleTypCount).reduce(function(best, h) {
-          return (d.quelleTypCount[h] > (d.quelleTypCount[best] || 0)) ? h : best;
-        }, 'aufgabenpool');
-        return {
-          fach: d.fach, quelle_name: d.quelle_name, quelle_typ: dominantTyp,
-          kapitel: Object.keys(d.kapSet),
-          jahrgang: jgs.length === 1 ? jgs[0] : (jgs.length ? jgs : null),
-          aufgabenCount: d.count,
-        };
-      });
-
-      reloadLanding();
-    }).catch(function() {});
+    reloadLanding();
   });
 })();

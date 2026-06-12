@@ -462,10 +462,8 @@ function buildImportView(container) {
   }
 }
 
-// Gibt den typgerechten Label für eine Gruppe zurück, z.B. "Lehrtext 3"
 function grpTypLabel(g) {
-  var typ = g && g.items && g.items[0] && g.items[0].inhaltstyp;
-  return (TYP_LABELS[typ] || 'Aufgabe') + ' ' + (g ? g.key : '');
+  return g ? g.key : '';
 }
 
 // ── Autocomplete-Dropdown für Eingabefelder ───────────────────────

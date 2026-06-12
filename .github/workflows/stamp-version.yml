@@ -1,0 +1,45 @@
+name: Stamp version.json
+
+# Setzt version.json bei jedem Push auf main automatisch auf die aktuelle
+# Build-Zeit. Das sorgt fuer korrektes Cache-Busting (der Loader haengt
+# ?v=<built> an alle Scripts). Laeuft in der GitHub-Cloud, voellig
+# unabhaengig vom lokalen Rechner oder externen Laufwerk.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'version.json'   # eigener Stamp-Commit loest keinen neuen Lauf aus
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stamp-version
+  cancel-in-progress: false
+
+jobs:
+  stamp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: version.json mit Build-Zeit setzen
+        run: |
+          ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          echo "{\"built\":\"$ts\"}" > version.json
+          echo "Gestempelt: $ts"
+
+      - name: Zurueck nach main committen
+        run: |
+          if git diff --quiet version.json; then
+            echo "Keine Aenderung — uebersprungen"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add version.json
+          git commit -m "chore: version.json stempeln [skip ci]"
+          git push origin HEAD:main

@@ -1358,7 +1358,7 @@ async function buildFachView(container) {
     }
 
     var _lastSeiteBuch = null; // für Seiten-Trenner
-    groups.forEach(function(g) {
+    groups.forEach(function(g, i) {
       var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);
       var ref0 = g.items[0];
 
@@ -1399,19 +1399,20 @@ async function buildFachView(container) {
         var gHdrItem = { inhalt: g.aufgabenstellung || '', typ: ref0.typ || 'aufgabe' };
         var ghdr = renderRow(gHdrItem, null, true, seitePrefix + grpTypLabel(g));
         ghdr.title = 'Alle Teilaufgaben ansehen';
-        ghdr.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }); };
+        ghdr.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
         wrap.appendChild(ghdr);
         g.items.forEach(function(row) {
           var rowEl = renderRow(row, function() { load({ keepScroll: true }); }, true);
           // Nur die erste Spalte einrücken (zeigt Zugehörigkeit zur Gruppe),
           // NICHT die ganze Zeile — sonst verrutschen alle anderen Spalten.
           if (rowEl.firstChild) rowEl.firstChild.style.paddingLeft = '18px';
-          rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }); };
+          rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
           wrap.appendChild(rowEl);
         });
       } else {
         // Einzelaufgabe: „Aufgabe N" + Text in einer Zeile (kein separater Header)
         var rowEl = renderRow(g.items[0], function() { load({ keepScroll: true }); }, true, seitePrefix + grpTypLabel(g));
+        rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
         wrap.appendChild(rowEl);
       }
     });
@@ -1768,6 +1769,11 @@ function openTaskModal(group, opts) {
   opts = opts || {};
   var mode    = opts.mode || 'edit';
   var onDone  = opts.onRefresh;
+  var navList = opts.navList || null;
+  var navIdx  = opts.navIdx  != null ? opts.navIdx : -1;
+  function navTo(idx) {
+    openTaskModal(navList[idx], { mode: 'edit', onRefresh: onDone, navList: navList, navIdx: idx });
+  }
   var items   = (group.items && group.items.length) ? group.items : [{}];
   var isMulti = items.length > 1;
   var ref = Object.assign({}, items[0] || {});
@@ -1799,7 +1805,27 @@ function openTaskModal(group, opts) {
   }
   hdr.appendChild(hdrLeft);
   var hdrRight = mk('div', '');
-  hdrRight.style.cssText = 'display:flex;align-items:center;gap:6px;flex-shrink:0;';
+  hdrRight.style.cssText = 'display:flex;align-items:center;gap:4px;flex-shrink:0;';
+  if (navList && navList.length > 1) {
+    var prevBtn = btn('←', 'btn btn-ghost btn-sm');
+    prevBtn.title = 'Vorherige (←)';
+    prevBtn.style.cssText += 'padding:3px 9px;';
+    if (navIdx <= 0) prevBtn.disabled = true;
+    prevBtn.onclick = function() { if (navIdx > 0) navTo(navIdx - 1); };
+    var navInfo = tx('span', '', (navIdx + 1) + ' / ' + navList.length);
+    navInfo.style.cssText = 'font-size:11px;color:var(--tx3);min-width:32px;text-align:center;';
+    var nextBtn = btn('→', 'btn btn-ghost btn-sm');
+    nextBtn.title = 'Nächste (→)';
+    nextBtn.style.cssText += 'padding:3px 9px;';
+    if (navIdx >= navList.length - 1) nextBtn.disabled = true;
+    nextBtn.onclick = function() { if (navIdx < navList.length - 1) navTo(navIdx + 1); };
+    hdrRight.appendChild(prevBtn);
+    hdrRight.appendChild(navInfo);
+    hdrRight.appendChild(nextBtn);
+    var divider = mk('div', '');
+    divider.style.cssText = 'width:1px;height:16px;background:var(--border);margin:0 4px;';
+    hdrRight.appendChild(divider);
+  }
   var closeBtn = btn('✕', 'btn btn-ghost btn-sm');
   closeBtn.style.cssText += 'font-size:13px;padding:3px 8px;';
   closeBtn.onclick = closeEntryModal;
@@ -2274,14 +2300,22 @@ function openTaskModal(group, opts) {
   modal.appendChild(footer);
 
   document.body.appendChild(overlay);
-  function onEsc(e) { if (e.key === 'Escape') closeEntryModal(); }
+  function onEsc(e) {
+    if (e.key === 'Escape') { closeEntryModal(); return; }
+    if (navList && navList.length > 1) {
+      var el = document.activeElement;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) return;
+      if (e.key === 'ArrowLeft'  && navIdx > 0)                  { e.preventDefault(); navTo(navIdx - 1); }
+      if (e.key === 'ArrowRight' && navIdx < navList.length - 1) { e.preventDefault(); navTo(navIdx + 1); }
+    }
+  }
   _modalEsc = onEsc;
   document.addEventListener('keydown', onEsc);
 }
 
 // ── Gruppen-Modal (alle Teilaufgaben einer Aufgabe) ───────────────
-function openGroupModal(group, onRefresh) {
-  openTaskModal(group, { mode: 'edit', onRefresh: onRefresh });
+function openGroupModal(group, onRefresh, navList, navIdx) {
+  openTaskModal(group, { mode: 'edit', onRefresh: onRefresh, navList: navList, navIdx: navIdx });
 }
 
 // ── Entry-Modal ───────────────────────────────────────────────────

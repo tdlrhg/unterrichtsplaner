@@ -2393,11 +2393,14 @@ function dbRender() {
     if (Array.isArray(res[1])) METHDB      = res[1];
     if (Array.isArray(res[2])) DIDARTDB    = res[2];
     // Regal: DB als einzige Wahrheitsquelle — nur Bücher MIT Einträgen anzeigen
-    sbSelect('inhalte', { select: 'fach,buch', limit: 5000 }).then(function(rows) {
-      // Alle (fach, buch)-Paare die wirklich Einträge haben
+    sbSelect('inhalte', { select: 'fach,buch,jahrgang', limit: 5000 }).then(function(rows) {
+      // Alle (fach, buch)-Paare die wirklich Einträge haben, inkl. Jahrgänge
       var dbSet = {};
       rows.forEach(function(r) {
-        if (r.buch && r.fach) dbSet[r.fach + '::' + r.buch] = { fach: r.fach, buch: r.buch };
+        if (!r.buch || !r.fach) return;
+        var key = r.fach + '::' + r.buch;
+        if (!dbSet[key]) dbSet[key] = { fach: r.fach, buch: r.buch, jgSet: {} };
+        if (r.jahrgang) dbSet[key].jgSet[r.jahrgang] = true;
       });
 
       // schulbuecher.json-Einträge: nur behalten wenn DB-Einträge vorhanden
@@ -2406,10 +2409,15 @@ function dbRender() {
       });
 
       // DB-Bücher die nicht in schulbuecher.json sind → als Aufgabenpool hinzufügen
+      // Jahrgang wird aus den tatsächlichen Einträgen abgeleitet
       Object.keys(dbSet).forEach(function(key) {
         var d = dbSet[key];
         var inJson = SCHULBUCHDB.some(function(b) { return b.fach === d.fach && b.titel === d.buch; });
-        if (!inJson) merged.push({ fach: d.fach, titel: d.buch, typ: 'aufgabenpool', kapitel: [], jahrgang: null });
+        if (!inJson) {
+          var jgs = Object.keys(d.jgSet).map(Number).sort(function(a, b) { return a - b; });
+          merged.push({ fach: d.fach, titel: d.buch, typ: 'aufgabenpool', kapitel: [],
+            jahrgang: jgs.length === 1 ? jgs[0] : (jgs.length ? jgs : null) });
+        }
       });
 
       SCHULBUCHDB = merged;

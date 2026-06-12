@@ -1,0 +1,575 @@
+// ── Nr-Parsing für natürliche Sortierung ─────────────────────────
+// Gibt [zahl, buchstaben] zurück, versteht alle Formate:
+//   "8a"  → [8,  "a"]    "10bc" → [10, "bc"]
+//   "8"   → [8,  ""]     "a"    → [0,  "a"]   (Teilaufgabe ohne Elternnummer)
+//   "B1"  → [1,  "b"]    "B"    → [0,  "b"]   (Beispiel-Nummerierung)
+function parseNr(s) {
+  s = String(s || '').trim().toLowerCase();
+  var m;
+  m = s.match(/^(\d+)([a-z]*)$/);   if (m) return [parseInt(m[1], 10), m[2]];
+  m = s.match(/^([a-z]+)(\d+)$/);   if (m) return [parseInt(m[2], 10), m[1]];
+  m = s.match(/^([a-z]+)$/);        if (m) return [0, m[1]];
+  return [0, s];
+}
+
+function cmpNr(aNr, bNr) {
+  var pa = parseNr(aNr), pb = parseNr(bNr);
+  var nd = pa[0] - pb[0];
+  if (nd !== 0) return nd;
+  return pa[1] < pb[1] ? -1 : pa[1] > pb[1] ? 1 : 0;
+}
+
+// ── Aufgaben-Gruppierung ──────────────────────────────────────────
+// Gruppiert Zeilen nach führender Nummer: "8a","8b" → Gruppe "8"; "9" → Gruppe "9"
+function dbGroupByParent(rows) {
+  var groups = {}, order = [];
+  rows.forEach(function(r) {
+    var parentNr = String(r.nr || '').replace(/[a-zA-Z]+$/, '').trim() || String(r.nr || '?');
+    // gruppen_key aus DB bevorzugen, Fallback auf Frontend-Berechnung
+    var key = r.gruppen_key || ((r.quelle_name || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr);
+    if (!groups[key]) { groups[key] = { key: parentNr, gruppen_key: key, aufgabenstellung: null, items: [] }; order.push(key); }
+    if (!groups[key].aufgabenstellung && r.aufgabenstellung) groups[key].aufgabenstellung = r.aufgabenstellung;
+    groups[key].items.push(r);
+  });
+  return order.map(function(k) { return groups[k]; });
+}
+
+// ── Import-View ───────────────────────────────────────────────────
+
+const IMP_KI_PROMPT = `Du analysierst eine Seite aus einem Schulbuch oder Unterrichtsmaterial (Gymnasium, Mathematik oder Naturwissenschaften).
+
+Erfasse ALLE Inhalte der Seite: Aufgaben, Beispiele UND Lehrtexte.
+
+VERBATIM-REGEL (gilt für ALLE Typen):
+Gib jeden Text EXAKT so wieder, wie er im Buch steht — Wort für Wort, Zeichen für Zeichen. Kürze NICHTS, lasse NICHTS weg, formuliere NICHTS um. Auch kurze Sätze, Einschübe oder Fußnoten müssen vollständig erfasst werden.
+
+WICHTIG — Aufgaben: Teilaufgaben immer einzeln erfassen:
+Hat eine Aufgabe Teilaufgaben (a, b, c, d …) — egal ob als Absätze ODER als Spalten in einer Tabelle — erstelle für jede Teilaufgabe einen eigenen Eintrag mit nr "8a", "8b" usw. Nie eine Aufgabe mit Teilaufgaben als einzelnen Eintrag erfassen.
+
+WICHTIG — Lehrtexte: Absätze als separate Einträge erfassen:
+Hat ein Lehrtext mehrere klar getrennte Abschnitte (z.B. Einführung + Definition + Merksatz), erstelle für jeden Abschnitt einen eigenen Eintrag. Zusammengehörende Sätze desselben Abschnitts bleiben in einem Eintrag.
+
+Für jeden Eintrag:
+- typ: genau eines von: aufgabe|beispiel|lehrtext
+  · aufgabe = Übungsaufgabe, die Schüler selbst lösen sollen
+  · beispiel = Musteraufgabe oder Musterrechnung mit vorgegebener Lösung
+  · lehrtext = Erklärung, Definition, Merksatz, Fließtext, Einführung
+- nr: Aufgaben-/Beispielnummer inkl. Teilaufgabe (z.B. "8a", "B2") — bei Lehrtexten die Überschrift oder Typ (z.B. "Definition", "Merksatz", "1.1 Terme")
+- aufgabenstellung: gemeinsamer Obersatz der Hauptaufgabe, VERBATIM — nur wenn er für alle Teilaufgaben gilt; bei Lehrtexten und Beispielen null
+- text: der vollständige Text des Eintrags, VERBATIM und VOLLSTÄNDIG aus dem Buch. Zeilenumbrüche innerhalb des Textes durch " | " ersetzen. Bei Aufgaben NIEMALS aufgabenstellung wiederholen.
+- anforderung: Ein Satz was Schüler konkret tun müssen — bei Lehrtexten null
+- operator: genau eines von: berechnen|begründen|erklären|zeichnen|messen|konstruieren|beschreiben|vergleichen|ausfüllen|MC — bei Lehrtexten/Beispielen null
+- umfang: genau eines von: kurz|mittel|lang — bei Lehrtexten null
+- schwierigkeit: genau eines von: grundlegend|standard|anspruchsvoll — bei Lehrtexten null
+
+JSON-FORMAT — sehr wichtig:
+- Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
+- Alle Stringwerte einzeilig (keine Zeilenumbrüche — stattdessen " | " verwenden)
+- Keine Anführungszeichen innerhalb von Stringwerten
+- Keine LaTeX-Notation (schreibe z.B. "x^2" statt "\frac{x}{2}")
+- Keine Backslashes in Stringwerten
+
+{"aufgaben": [
+  {"typ":"lehrtext","nr":"Merksatz","aufgabenstellung":null,"text":"Der Flächeninhalt eines Rechtecks mit den Seiten a und b berechnet sich mit der Formel A = a · b. | Die Einheit des Flächeninhalts ist cm², m² oder mm².","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
+  {"typ":"beispiel","nr":"B1","aufgabenstellung":null,"text":"Berechne den Flächeninhalt des Rechtecks mit a = 6 cm und b = 4 cm. | Lösung: A = a · b = 6 cm · 4 cm = 24 cm²","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
+  {"typ":"aufgabe","nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Berechne den Flächeninhalt der Fig. 1.","anforderung":"Schüler berechnen den Flächeninhalt einer Figur.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"},
+  {"typ":"aufgabe","nr":"8b","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Schätze den Flächeninhalt der Fig. 2. Bestimme den Flächeninhalt in mm2, indem du die benötigten Längen misst.","anforderung":"Schüler schätzen und messen den Flächeninhalt einer Figur.","operator":"messen","umfang":"mittel","schwierigkeit":"standard"}
+]}`;
+
+function _impResizeImg(dataUrl, maxW, q) {
+  return new Promise(function(res, rej) {
+    var img = new Image();
+    img.onload = function() {
+      var scale = img.width > maxW ? maxW / img.width : 1;
+      var c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      res(c.toDataURL('image/jpeg', q));
+    };
+    img.onerror = rej; img.src = dataUrl;
+  });
+}
+
+function buildImportView(container) {
+  // ── Header ────────────────────────────────────────────────────
+  var hdr = mk('div', 'c-hdr');
+  var hLeft = mk('div', '');
+  var backBtn = btn('← Übersicht', 'btn btn-ghost btn-sm');
+  backBtn.onclick = function() { DB.view = 'landing'; dbRender(); };
+  hLeft.appendChild(backBtn);
+  hLeft.appendChild(tx('div', 'c-title', 'Material importieren'));
+  hdr.appendChild(hLeft);
+  container.appendChild(hdr);
+
+  var wrap = mk('div', '');
+  wrap.style.cssText = 'padding:0 28px 40px;max-width:860px;display:flex;flex-direction:column;gap:20px;';
+  container.appendChild(wrap);
+
+  // ── Hilfsfunktionen ───────────────────────────────────────────
+  function row2() {
+    var r = mk('div', ''); r.style.cssText = 'display:flex;gap:10px;';
+    Array.from(arguments).forEach(function(e) { r.appendChild(e); }); return r;
+  }
+  function fg(label, el) {
+    var g = mk('div', 'fg'); g.style.flex = '1';
+    g.appendChild(tx('label', 'fl', label)); g.appendChild(el); return g;
+  }
+  function finp(ph, type) {
+    var i = document.createElement('input'); i.className = 'finp';
+    i.placeholder = ph; if (type) i.type = type; return i;
+  }
+  function fsel(opts) {
+    var s = document.createElement('select'); s.className = 'finp';
+    opts.forEach(function(o) {
+      var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; s.appendChild(op);
+    }); return s;
+  }
+
+  // ── Metadaten-Karte ───────────────────────────────────────────
+  var metaCard = mk('div', '');
+  metaCard.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px;';
+  var metaTitle = tx('div', '', 'Quelle');
+  metaTitle.style.cssText = 'font-weight:600;font-size:13px;color:var(--tx2);';
+  metaCard.appendChild(metaTitle);
+  wrap.appendChild(metaCard);
+
+  var buchInp = finp('z.B. Lambacher Schweizer 8');
+  attachAutocomplete(buchInp, function() { return suggestBooks(); });
+  var typSel  = fsel(HERKUNFT_OPTS);
+  var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
+  var jgInp   = finp('z.B. 8'); jgInp.style.maxWidth = '80px';
+  var kapInp   = finp('z.B. IV Flächen (optional)');
+  var ukInp    = finp('z.B. Flächeninhalt berechnen (optional)');
+  var seiteInp = finp('z.B. 142', 'number'); seiteInp.style.maxWidth = '110px';
+
+  metaCard.appendChild(row2(fg('Buchtitel / Quelle', buchInp), fg('Typ', typSel)));
+  metaCard.appendChild(row2(fg('Fach', fachSel), fg('Jahrgang', jgInp)));
+  metaCard.appendChild(row2(fg('Kapitel', kapInp), fg('Unterkapitel', ukInp), fg('Erste Seite', seiteInp)));
+
+  // Autocomplete für Kapitel und Unterkapitel (abhängig vom eingetragenen Buch)
+  attachAutocomplete(kapInp, function() { return suggestKapitel(buchInp.value.trim()); });
+  attachAutocomplete(ukInp,  function() { return suggestUnterkapitel(buchInp.value.trim(), kapInp.value.trim()); });
+
+  // ── Datei-Upload ──────────────────────────────────────────────
+  var fileCard = mk('div', '');
+  fileCard.style.cssText = 'background:var(--card);border:2px dashed var(--border);border-radius:12px;padding:36px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;';
+  wrap.appendChild(fileCard);
+  var fileLabel = tx('div', '', '📄 PDF oder Bild hierher ziehen — oder klicken zum Auswählen');
+  fileLabel.style.cssText = 'font-size:14px;color:var(--tx2);';
+  fileCard.appendChild(fileLabel);
+  var fileInput = document.createElement('input');
+  fileInput.type = 'file'; fileInput.accept = '.pdf,image/*'; fileInput.style.display = 'none';
+  fileCard.appendChild(fileInput);
+
+  var _file = null;
+  fileCard.onclick = function() { fileInput.click(); };
+  fileCard.ondragover = function(e) { e.preventDefault(); fileCard.style.borderColor = 'var(--acc)'; };
+  fileCard.ondragleave = function() { fileCard.style.borderColor = ''; };
+  fileCard.ondrop = function(e) {
+    e.preventDefault(); fileCard.style.borderColor = '';
+    var f = e.dataTransfer.files[0]; if (f) setFile(f);
+  };
+  fileInput.onchange = function() { if (fileInput.files[0]) setFile(fileInput.files[0]); };
+  function setFile(f) {
+    _file = f;
+    fileLabel.textContent = '✓ ' + f.name;
+    fileLabel.style.color = 'var(--acc)';
+  }
+
+  // ── Analyse-Button + Status ───────────────────────────────────
+  var bottomRow = mk('div', ''); bottomRow.style.cssText = 'display:flex;align-items:center;gap:14px;';
+  var analyseBtn = btn('⚡ Seite analysieren', 'btn btn-pri');
+  var statusEl = tx('div', '', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);';
+  bottomRow.appendChild(analyseBtn);
+  bottomRow.appendChild(statusEl);
+  wrap.appendChild(bottomRow);
+
+  // ── Ergebnis-Bereich ──────────────────────────────────────────
+  var resultsWrap = mk('div', '');
+  resultsWrap.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
+  wrap.appendChild(resultsWrap);
+
+  var _aufgaben = [];
+
+  // ── KI-Analyse ────────────────────────────────────────────────
+  analyseBtn.onclick = async function() {
+    if (!_file) { statusEl.textContent = '⚠️ Bitte zuerst eine Datei auswählen.'; return; }
+    if (!buchInp.value.trim()) { statusEl.textContent = '⚠️ Bitte Buchtitel eingeben.'; return; }
+    analyseBtn.disabled = true; analyseBtn.textContent = '⏳ Analysiere…';
+    statusEl.textContent = ''; statusEl.style.color = 'var(--tx2)';
+    resultsWrap.innerHTML = ''; _aufgaben = [];
+    try {
+      statusEl.textContent = '⏳ Datei wird gelesen…';
+      var imgs = await fileToDataURLs(_file, { longEdge: 1568, quality: 0.88 });
+      statusEl.textContent = '⏳ KI analysiert ' + imgs.length + ' Seite(n)…';
+      var resized = await Promise.all(imgs.map(function(u) { return _impResizeImg(u, 1200, 0.82); }));
+      var blocks = [];
+      resized.forEach(function(r, i) {
+        blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } });
+        if (i < resized.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
+      });
+      blocks.push({ type: 'text', text: IMP_KI_PROMPT });
+      var raw = await callKI(blocks, { maxTokens: 16000 });
+      // Markdown-Codeblock ``` entfernen falls vorhanden
+      var cleaned = raw.trim().replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
+      // Literal-Newlines/Tabs innerhalb von JSON-Strings escapen
+      cleaned = cleaned.replace(/"((?:[^"\\]|\\.)*)"/g, function(m, inner) {
+        return '"' + inner.replace(/\n/g, '\\n').replace(/\r/g, '').replace(/\t/g, '\\t') + '"';
+      });
+      // Doppeltes Anführungszeichen am Stringende (KI-Fehler: "text"" → "text")
+      cleaned = cleaned.replace(/"",/g, '",')
+                       .replace(/""\s*\n\s*"/g, '",\n  "')
+                       .replace(/""\s*}/g, '"}')
+                       .replace(/""\s*]/g, '"]');
+      // Ungültige Backslashes escapen (z.B. LaTeX \frac, \cdot → \\frac, \\cdot)
+      cleaned = cleaned.replace(/\\(?!["\\/bfnrtu0-9])/g, '\\\\');
+      var parsed;
+      try { parsed = robustJsonParsePr(cleaned); } catch(e) {
+        try { parsed = JSON.parse(cleaned); } catch(e2) {
+          var pos = parseInt((e2.message.match(/position (\d+)/i) || [])[1]) || 0;
+          console.error('[Import] Parse-Fehler:', e2.message);
+          console.error('[Import] Zeichen an Pos ' + pos + ':', JSON.stringify(cleaned.slice(Math.max(0,pos-40), pos+40)));
+          throw new Error('KI-Antwort nicht lesbar — Zeichen an Pos ' + pos + ': ' + JSON.stringify(cleaned.slice(Math.max(0,pos-20), pos+20)));
+        }
+      }
+      var aufg = parsed.aufgaben || [];
+      if (!aufg.length) { statusEl.textContent = '⚠️ Keine Einträge erkannt — bitte Bild prüfen.'; return; }
+      _aufgaben = aufg;
+      statusEl.textContent = '';
+      renderResults();
+    } catch(e) {
+      statusEl.textContent = '❌ ' + e.message;
+    } finally {
+      analyseBtn.disabled = false; analyseBtn.textContent = '⚡ Seite analysieren';
+    }
+  };
+
+  // ── Ergebnis rendern ──────────────────────────────────────────
+  function miniSel(opts, current, onChange) {
+    var s = document.createElement('select'); s.className = 'finp';
+    s.style.cssText = 'font-size:12px;padding:2px 8px;height:auto;width:auto;';
+    opts.forEach(function(o) {
+      var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1];
+      if (current === o[0]) op.selected = true;
+      s.appendChild(op);
+    });
+    s.onchange = function() { onChange(s.value); };
+    return s;
+  }
+
+  var TYP_CYCLE = ['aufgabe', 'lehrtext', 'hinweis'];
+
+  function buildAufgabeCard(a, indent) {
+    var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';
+    var row = mk('div', '');
+    row.style.cssText = 'display:flex;align-items:baseline;gap:8px;padding:1px 0 1px '
+      + (indent ? '20px' : '4px') + ';';
+
+    var nrLabel = tx('span', '', (a.nr || '?'));
+    nrLabel.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);flex-shrink:0;min-width:32px;';
+    row.appendChild(nrLabel);
+
+    if (aufgText) {
+      var txt = tx('span', '', aufgText.slice(0, 120) + (aufgText.length > 120 ? '…' : ''));
+      txt.style.cssText = 'font-size:12px;color:var(--tx1);line-height:1.4;';
+      row.appendChild(txt);
+    }
+    return row;
+  }
+
+  // Typ-Badge für Gruppe: zeigt aktuellen Typ, Klick → nächster Typ
+  function mkTypBadge(groupItems, onUpdate) {
+    var cur = groupItems[0].inhaltstyp || 'aufgabe';
+    var badge = document.createElement('span');
+    function render() {
+      var c = TYP_FARBEN[cur] || '#64748b';
+      badge.textContent = (TYP_ICONS[cur] ? TYP_ICONS[cur] + ' ' : '') + (TYP_LABELS[cur] || cur);
+      badge.style.cssText = 'display:inline-block;font-size:10px;font-weight:700;padding:2px 9px;'
+        + 'border-radius:20px;cursor:pointer;user-select:none;'
+        + 'background:' + c + '18;color:' + c + ';border:1px solid ' + c + '38;'
+        + 'text-transform:uppercase;letter-spacing:.06em;';
+      badge.title = 'Typ ändern (klicken)';
+    }
+    render();
+    badge.onclick = function(e) {
+      e.stopPropagation();
+      var idx = TYP_CYCLE.indexOf(cur);
+      cur = TYP_CYCLE[(idx + 1) % TYP_CYCLE.length];
+      groupItems.forEach(function(item) { item.inhaltstyp = cur; });
+      render();
+      if (onUpdate) onUpdate(cur);
+    };
+    return badge;
+  }
+
+  function renderResults() {
+    resultsWrap.innerHTML = '';
+    var rHdr = mk('div', '');
+    rHdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:4px 0;';
+    var rTitle = tx('div', '', _aufgaben.length + ' Einträge erkannt — bitte prüfen und speichern');
+    rTitle.style.cssText = 'font-weight:600;font-size:14px;';
+    rHdr.appendChild(rTitle);
+    var saveAllBtn = btn('✓ Alle ' + _aufgaben.length + ' speichern', 'btn btn-pri btn-sm');
+    saveAllBtn.onclick = saveAll;
+    rHdr.appendChild(saveAllBtn);
+    resultsWrap.appendChild(rHdr);
+
+    var groups = dbGroupByParent(_aufgaben);
+    groups.forEach(function(g) {
+      var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);
+      var groupWrap = mk('div', '');
+      groupWrap.style.cssText = 'display:flex;flex-direction:column;gap:2px;padding:4px 0;';
+
+      // Gruppenheader mit klickbarem Typ-Badge
+      var groupHdr = mk('div', '');
+      groupHdr.style.cssText = 'display:flex;align-items:center;gap:7px;padding:4px 4px 2px;';
+      var typBadge = mkTypBadge(g.items, function(newTyp) {
+        // Gruppenheader-Text ggf. aktualisieren — kein re-render nötig
+      });
+      groupHdr.appendChild(typBadge);
+      var hdrText = tx('span', '', g.key + (g.aufgabenstellung ? ' · ' + g.aufgabenstellung.slice(0, 80) : ''));
+      hdrText.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;';
+      groupHdr.appendChild(hdrText);
+      groupWrap.appendChild(groupHdr);
+
+      g.items.forEach(function(a) {
+        groupWrap.appendChild(buildAufgabeCard(a, hasSubtasks));
+      });
+
+      resultsWrap.appendChild(groupWrap);
+    });
+  }
+
+  // ── Speichern ─────────────────────────────────────────────────
+  async function saveAll() {
+    var buch     = buchInp.value.trim();
+    var fach     = fachSel.value;
+    var jg       = jgInp.value.trim() || null;
+    var kap      = kapInp.value.trim() || null;
+    var uk       = ukInp.value.trim() || null;
+    var seite    = seiteInp.value ? Number(seiteInp.value) : null;
+    // typSel-Wert direkt als Herkunft speichern (schulbuch/aufgabenpool/sammlung/eigenmaterial)
+    var herkunft = HERKUNFT[typSel.value] ? typSel.value : 'schulbuch';
+    var ts       = Date.now();
+
+    var rows = _aufgaben.map(function(a, i) {
+      var nr   = String(a.nr || (i + 1));
+      var nrBase = nr.replace(/[a-zA-Z]+$/, '').trim() || nr;
+      var gKey = buch && seite != null ? buch + '||' + seite + '||' + nrBase : 'db_' + ts + '_' + nrBase;
+      return {
+        id:           'db_' + ts + '_' + i + '_' + Math.random().toString(36).slice(2, 6),
+        fach:         fach,
+        quelle_typ:   herkunft,
+        quelle_name:  buch || null,
+        kapitel:      kap,
+        uk_titel:     uk,
+        seite:        seite,
+        nr:           nr,
+        gruppen_key:  gKey,
+        aufgabenstellung: a.aufgabenstellung || null,
+        inhalt:       a.text || a.aufgabenstellung || null,
+        anforderung:  a.anforderung || null,
+        operator:     a.operator || null,
+        schwierigkeit: a.schwierigkeit || a.schwierigkeitsstufe || null,
+        umfang:       a.umfang || null,
+        jahrgang:     jg,
+        inhaltstyp:   a.inhaltstyp || 'aufgabe',
+      };
+    });
+
+    var saveBtn = resultsWrap.querySelector('.btn-pri');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ Speichert…'; }
+    statusEl.style.color = 'var(--tx2)';
+
+    try {
+      await sbInsert('inhalte', rows);
+      _buchCache = {}; // Cache leeren damit neues Buch im Filter erscheint
+      _aufgaben = [];
+
+      // ── Ende-Screen ───────────────────────────────────────────
+      wrap.innerHTML = '';
+      var done = mk('div', '');
+      done.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:28px;padding:60px 20px;text-align:center;';
+
+      var check = tx('div', '', '✓');
+      check.style.cssText = 'font-size:48px;color:#16a34a;line-height:1;';
+      done.appendChild(check);
+
+      var msg = tx('div', '', rows.length + ' Aufgaben gespeichert');
+      msg.style.cssText = 'font-size:22px;font-weight:700;color:var(--tx1);';
+      done.appendChild(msg);
+
+      var sub = tx('div', '', buch + (seite ? ' · Seite ' + seite : ''));
+      sub.style.cssText = 'font-size:14px;color:var(--tx2);margin-top:-16px;';
+      done.appendChild(sub);
+
+      var actions = mk('div', '');
+      actions.style.cssText = 'display:flex;flex-direction:column;gap:10px;width:100%;max-width:360px;';
+
+      function actionBtn(label, desc, onclick) {
+        var b = mk('div', '');
+        b.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;cursor:pointer;text-align:left;transition:background .15s;';
+        b.onmouseenter = function() { b.style.background = 'var(--hover,#f1f5f9)'; };
+        b.onmouseleave = function() { b.style.background = 'var(--card)'; };
+        b.appendChild(tx('div', '', label)).style.cssText = 'font-weight:600;font-size:14px;';
+        b.appendChild(tx('div', '', desc)).style.cssText = 'font-size:12px;color:var(--tx2);margin-top:2px;';
+        b.onclick = onclick;
+        return b;
+      }
+
+      actions.appendChild(actionBtn(
+        '↑ Nächste Seite hochladen',
+        'Gleiche Quelle · Seite ' + (seite ? seite + 1 : '?'),
+        function() {
+          seiteInp.value = seite ? seite + 1 : '';
+          fileLabel.textContent = '📄 PDF oder Bild hierher ziehen — oder klicken zum Auswählen';
+          fileLabel.style.color = 'var(--tx2)';
+          _file = null;
+          statusEl.textContent = ''; statusEl.style.color = 'var(--tx2)';
+          wrap.innerHTML = '';
+          // Formular-Elemente wieder einbauen
+          wrap.appendChild(metaCard);
+          wrap.appendChild(fileCard);
+          wrap.appendChild(bottomRow);
+          wrap.appendChild(resultsWrap);
+        }
+      ));
+
+      actions.appendChild(actionBtn(
+        '→ Gespeicherte Einträge ansehen',
+        fachInfo(fach).icon + ' ' + fachInfo(fach).label + ' · ' + buch,
+        function() {
+          DB.view = 'fach'; DB.fach = fach; DB.quelle_name = buch || null;
+          DB.quelle_typ = herkunft; DB.suchtext = ''; DB.offset = 0;
+          dbRender();
+        }
+      ));
+
+      actions.appendChild(actionBtn(
+        '✕ Neues Material importieren',
+        'Andere Quelle, anderes Fach',
+        function() { DB.view = 'import'; dbRender(); }
+      ));
+
+      done.appendChild(actions);
+      wrap.appendChild(done);
+
+    } catch(e) {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '✓ Alle ' + rows.length + ' speichern'; }
+      statusEl.textContent = '❌ Speichern fehlgeschlagen: ' + e.message;
+      statusEl.style.color = '#dc2626';
+    }
+  }
+}
+
+// Gibt den typgerechten Label für eine Gruppe zurück, z.B. "Lehrtext 3"
+function grpTypLabel(g) {
+  var typ = g && g.items && g.items[0] && g.items[0].inhaltstyp;
+  return (TYP_LABELS[typ] || 'Aufgabe') + ' ' + (g ? g.key : '');
+}
+
+// ── Autocomplete-Dropdown für Eingabefelder ───────────────────────
+// Hängt ein Custom-Dropdown an ein <input>-Element.
+// fetchFn() → Promise<string[]>  (wird beim ersten Öffnen einmal aufgerufen)
+function attachAutocomplete(inp, fetchFn) {
+  var dropdown = null;
+  var _timer   = null;
+  var _fetchId = 0;
+  var _active  = false; // zuverlässiger als document.activeElement
+
+  function reposition() {
+    if (!dropdown) return;
+    var r = inp.getBoundingClientRect();
+    // Sicherheit: falls Input noch nicht gerendert oder nicht sichtbar
+    if (!r.width && !r.height) return;
+    dropdown.style.left  = r.left + 'px';
+    dropdown.style.top   = (r.bottom + 2) + 'px';
+    dropdown.style.width = Math.max(r.width, 180) + 'px';
+  }
+
+  function showDropdown(allOpts, filter) {
+    removeDropdown();
+    var lower    = (filter || '').toLowerCase();
+    var filtered = lower
+      ? allOpts.filter(function(o) { return o.toLowerCase().includes(lower); })
+      : allOpts;
+    if (!filtered.length) return;
+
+    dropdown = mk('div', '');
+    dropdown.style.cssText = 'position:fixed;z-index:99999;'
+      + 'background:#fff;color:#111;'
+      + 'border:1px solid #ccc;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.22);'
+      + 'max-height:220px;overflow-y:auto;font-family:inherit;';
+    filtered.forEach(function(o) {
+      var item = tx('div', '', o);
+      item.style.cssText = 'padding:8px 13px;font-size:13px;cursor:pointer;'
+        + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+      item.onmouseenter = function() { item.style.background = '#f0fdf4'; };
+      item.onmouseleave = function() { item.style.background = ''; };
+      item.onmousedown  = function(e) {
+        e.preventDefault();
+        inp.value = o;
+        inp.dispatchEvent(new Event('input',  { bubbles: true }));
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+        removeDropdown();
+      };
+      dropdown.appendChild(item);
+    });
+    document.body.appendChild(dropdown);
+    reposition();
+    window.addEventListener('scroll', reposition, { passive: true, capture: true });
+  }
+
+  function removeDropdown() {
+    if (dropdown) {
+      dropdown.remove();
+      dropdown = null;
+      window.removeEventListener('scroll', reposition, { capture: true });
+    }
+  }
+
+  function trigger(filter) {
+    clearTimeout(_timer);
+    _timer = setTimeout(function() {
+      var id = ++_fetchId;
+      fetchFn().then(function(opts) {
+        if (id !== _fetchId) return;  // veralteter Fetch verwerfen
+        if (_active) showDropdown(opts || [], filter);
+      }).catch(function(err) {
+        console.warn('[Autocomplete] Vorschläge konnten nicht geladen werden:', err);
+        removeDropdown();
+      });
+    }, 80);
+  }
+
+  inp.removeAttribute('list');
+
+  inp.addEventListener('focus', function() {
+    _active = true;
+    trigger(inp.value);
+  });
+  inp.addEventListener('click', function() {
+    // erneuter Klick auf bereits fokussiertes Feld
+    if (!dropdown) trigger(inp.value);
+  });
+  inp.addEventListener('input', function() {
+    trigger(inp.value);
+  });
+  inp.addEventListener('blur', function() {
+    _active = false;
+    clearTimeout(_timer);
+    setTimeout(removeDropdown, 200);
+  });
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { removeDropdown(); inp.blur(); }
+    if (e.key === 'ArrowDown' && dropdown) {
+      var first = dropdown.firstChild;
+      if (first) { first.style.background = '#f0fdf4'; first.focus && first.focus(); }
+    }
+    if (e.key === 'Enter' && dropdown) {
+      var active = dropdown.querySelector('[style*="f0fdf4"]');
+      if (active) { active.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); }
+    }
+  });
+}
+

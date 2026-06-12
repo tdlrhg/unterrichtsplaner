@@ -1405,7 +1405,9 @@ async function buildFachView(container) {
         wrap.appendChild(ghdr);
         g.items.forEach(function(row) {
           var rowEl = renderRow(row, function() { load({ keepScroll: true }); }, true);
-          rowEl.style.marginLeft = '16px';
+          // Nur die erste Spalte einrücken (zeigt Zugehörigkeit zur Gruppe),
+          // NICHT die ganze Zeile — sonst verrutschen alle anderen Spalten.
+          if (rowEl.firstChild) rowEl.firstChild.style.paddingLeft = '18px';
           rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }); };
           wrap.appendChild(rowEl);
         });

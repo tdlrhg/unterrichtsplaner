@@ -59,10 +59,10 @@ function applyColTemplate() {
 }
 
 const DB = {
-  view: 'landing',    // 'landing' | 'fach'
+  view: 'landing',       // 'landing' | 'fach'
   fach: null,
-  buch: null,         // null | Buchtitel-String → Filter auf eine Quelle
-  herkunft: null,     // null | 'schulbuch' | 'eigenmaterial'
+  quelle_name: null,     // null | Buchtitel-String → Filter auf eine Quelle
+  quelle_typ: null,      // null | 'schulbuch' | 'eigenmaterial'
   operator: null,
   schwierigkeit: null,
   niveau: null,
@@ -70,7 +70,7 @@ const DB = {
   jahrgang: null,
   kapitel: null,
   uk_titel: null,
-  typ: null,        // null | 'aufgabe' | 'beispiel' | 'lehrtext'
+  inhaltstyp: null,      // null | 'aufgabe' | 'lehrtext' | 'hinweis'
   seite: null,
   sortCol: null,   // null | 'seite' | 'inhalt' | 'schwierigkeit'
   sortDir: 'asc',  // 'asc' | 'desc'
@@ -85,19 +85,19 @@ function fachInfo(key) {
 // ── Zentrale Filter-Reset-Funktion ────────────────────────────────
 // Setzt alle Filter zurück — Navigation (view, fach) bleibt unberührt.
 function resetFilters() {
-  DB.buch         = null;
-  DB.herkunft     = null;
-  DB.operator     = null;
+  DB.quelle_name   = null;
+  DB.quelle_typ    = null;
+  DB.operator      = null;
   DB.schwierigkeit = null;
-  DB.niveau       = null;
-  DB.typ          = null;
-  DB.umfang       = null;
-  DB.jahrgang     = null;
-  DB.kapitel      = null;
-  DB.uk_titel     = null;
-  DB.seite        = null;
-  DB.suchtext     = '';
-  DB.sortCol      = null;
+  DB.niveau        = null;
+  DB.inhaltstyp    = null;
+  DB.umfang        = null;
+  DB.jahrgang      = null;
+  DB.kapitel       = null;
+  DB.uk_titel      = null;
+  DB.seite         = null;
+  DB.suchtext      = '';
+  DB.sortCol       = null;
   DB.sortDir      = 'asc';
   DB.offset       = 0;
 }
@@ -106,16 +106,16 @@ function resetFilters() {
 // Immer aus aktuellem Inputwert lesen, nie aus altem Datensatz-State.
 // kapitel/kapitel_titel werden konsistent per OR behandelt.
 function suggestBooks(fach) {
-  return sbSelect('inhalte', { select: 'buch', filters: fach ? { fach: fach } : {}, limit: 5000, order: 'buch' })
+  return sbSelect('inhalte', { select: 'quelle_name', filters: fach ? { fach: fach } : {}, limit: 5000, order: 'quelle_name' })
     .then(function(rows) {
       var seen = {}, books = [];
-      rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; books.push(r.buch); } });
+      rows.forEach(function(r) { if (r.quelle_name && !seen[r.quelle_name]) { seen[r.quelle_name] = true; books.push(r.quelle_name); } });
       return books.sort();
     });
 }
 function suggestKapitel(buch) {
   if (!buch) return Promise.resolve([]);
-  return sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { buch: buch }, limit: 1000 })
+  return sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { quelle_name: buch }, limit: 1000 })
     .then(function(rows) {
       var seen = {}, kaps = [];
       rows.forEach(function(r) { var k = r.kapitel || r.kapitel_titel; if (k && !seen[k]) { seen[k] = true; kaps.push(k); } });
@@ -125,7 +125,7 @@ function suggestKapitel(buch) {
 function suggestUnterkapitel(buch, kapitel) {
   if (!buch) return Promise.resolve([]);
   var raw = kapitel ? ['or=(kapitel.eq.' + encodeURIComponent(kapitel) + ',kapitel_titel.eq.' + encodeURIComponent(kapitel) + ')'] : [];
-  return sbSelect('inhalte', { select: 'uk_titel', filters: { buch: buch }, rawParams: raw, limit: 500 })
+  return sbSelect('inhalte', { select: 'uk_titel', filters: { quelle_name: buch }, rawParams: raw, limit: 500 })
     .then(function(rows) {
       var seen = {}, uks = [];
       rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
@@ -148,9 +148,9 @@ const SCHW_ICONS  = { 'grundlegend':'○', 'standard':'◑', 'anspruchsvoll':'�
 const SCHW_BG     = { 'grundlegend':'rgba(22,163,74,.05)', 'standard':'rgba(37,99,235,.05)', 'anspruchsvoll':'rgba(180,83,9,.05)' };
 const NIVEAU_FARBEN = { 'leicht':'#0891b2', 'mittel':'#7c3aed', 'schwer':'#be123c' };
 const NIVEAU_ICONS  = { 'leicht':'▽', 'mittel':'▾', 'schwer':'▼' };
-const TYP_FARBEN  = { 'aufgabe':'#0f766e', 'beispiel':'#16a34a', 'lehrtext':'#2563eb' };
-const TYP_LABELS  = { 'aufgabe':'Aufgabe', 'beispiel':'Beispiel', 'lehrtext':'Lehrtext' };
-const TYP_ICONS   = { 'aufgabe':'', 'beispiel':'📐', 'lehrtext':'📖' };
+const TYP_FARBEN  = { 'aufgabe':'#0f766e', 'lehrtext':'#2563eb', 'hinweis':'#92400e' };
+const TYP_LABELS  = { 'aufgabe':'Aufgabe', 'lehrtext':'Lehrtext', 'hinweis':'Erläuterungen/Hinweise' };
+const TYP_ICONS   = { 'aufgabe':'', 'lehrtext':'📖', 'hinweis':'ℹ️' };
 
 function opColor(op) { return OP_FARBEN2[op] || '#64748b'; }
 
@@ -250,14 +250,14 @@ const REGAL_FARBEN = {
   bio:    { spine: ['#14532d','#166534'], text: '#bbf7d0' },
   chemie: { spine: ['#7c2d12','#c2410c'], text: '#fed7aa' },
 };
-const TYP_SYMBOL = { schulbuch: '📚', sammlung: '📂', aufgabenpool: '🗃' };
-const TYP_ORDER  = { schulbuch: 0, sammlung: 1, aufgabenpool: 2 };
+const TYP_SYMBOL = { schulbuch: '📚', materialset: '📂', aufgabenpool: '🗃' };
+const TYP_ORDER  = { schulbuch: 0, materialset: 1, aufgabenpool: 2 };
 // Herkunft (Quelle) – zentrale Definition für Modal, Badge, Filter, Import
 const HERKUNFT = {
   schulbuch:     { label: 'Schulbuch',          icon: '📖', color: '#0f766e', hasBuch: true  },
   handreichung:  { label: 'Lehrerhandreichung', icon: '🧑‍🏫', color: '#0369a1', hasBuch: true  },
   aufgabenpool:  { label: 'Aufgabenpool',       icon: '🗃', color: '#7c3aed', hasBuch: true  },
-  sammlung:      { label: 'Sammlung',           icon: '📋', color: '#b45309', hasBuch: true  },
+  materialset:   { label: 'Materialset',        icon: '📋', color: '#b45309', hasBuch: true  },
   eigenmaterial: { label: 'Eigenmaterial',      icon: '📄', color: '#16a34a', hasBuch: false },
 };
 const HERKUNFT_OPTS = Object.keys(HERKUNFT).map(function(k) { return [k, HERKUNFT[k].icon + ' ' + HERKUNFT[k].label]; });
@@ -348,7 +348,7 @@ function buildBuecherregal(container) {
     var buecher = (byFach[fach] || []).slice().sort(function(a, b) { return (TYP_ORDER[a.typ] || 1) - (TYP_ORDER[b.typ] || 1); });
 
     var pill = { icon: fInfo.icon, label: fInfo.label, color: fInfo.color,
-      onclick: function() { DB.view = 'fach'; DB.fach = fach; DB.buch = null; DB.herkunft = null; DB.suchtext = ''; DB.offset = 0; dbRender(); } };
+      onclick: function() { DB.view = 'fach'; DB.fach = fach; DB.quelle_name = null; DB.quelle_typ = null; DB.suchtext = ''; DB.offset = 0; dbRender(); } };
 
     var row = mkRegalRow(pill, function(area) {
       var wt = tx('div', '', fInfo.label.toUpperCase());
@@ -365,7 +365,7 @@ function buildBuecherregal(container) {
           'linear-gradient(to right,' + farbe.spine[0] + ',' + farbe.spine[1] + ')',
           farbe.text, TYP_SYMBOL[buch.typ] || '📖',
           jgA.length ? 'Jg.' + jgA.join('/') : '–',
-          function() { DB.view = 'fach'; DB.fach = buch.fach || fach; DB.buch = buch.titel; DB.herkunft = null; DB.suchtext = ''; DB.offset = 0; dbRender(); },
+          function() { DB.view = 'fach'; DB.fach = buch.fach || fach; DB.quelle_name = buch.titel; DB.quelle_typ = null; DB.suchtext = ''; DB.offset = 0; dbRender(); },
           buch.titel + '\n' + kap + ' Kapitel · ' + aufg + ' Aufg.'
         ));
       });
@@ -462,7 +462,7 @@ function dbGroupByParent(rows) {
   rows.forEach(function(r) {
     var parentNr = String(r.nr || '').replace(/[a-zA-Z]+$/, '').trim() || String(r.nr || '?');
     // gruppen_key aus DB bevorzugen, Fallback auf Frontend-Berechnung
-    var key = r.gruppen_key || ((r.buch || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr);
+    var key = r.gruppen_key || ((r.quelle_name || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr);
     if (!groups[key]) { groups[key] = { key: parentNr, gruppen_key: key, aufgabenstellung: null, items: [] }; order.push(key); }
     if (!groups[key].aufgabenstellung && r.aufgabenstellung) groups[key].aufgabenstellung = r.aufgabenstellung;
     groups[key].items.push(r);
@@ -693,7 +693,7 @@ function buildImportView(container) {
     return s;
   }
 
-  var TYP_CYCLE = ['aufgabe', 'beispiel', 'lehrtext'];
+  var TYP_CYCLE = ['aufgabe', 'lehrtext', 'hinweis'];
 
   function buildAufgabeCard(a, indent) {
     var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';
@@ -715,7 +715,7 @@ function buildImportView(container) {
 
   // Typ-Badge für Gruppe: zeigt aktuellen Typ, Klick → nächster Typ
   function mkTypBadge(groupItems, onUpdate) {
-    var cur = groupItems[0].typ || 'aufgabe';
+    var cur = groupItems[0].inhaltstyp || 'aufgabe';
     var badge = document.createElement('span');
     function render() {
       var c = TYP_FARBEN[cur] || '#64748b';
@@ -731,7 +731,7 @@ function buildImportView(container) {
       e.stopPropagation();
       var idx = TYP_CYCLE.indexOf(cur);
       cur = TYP_CYCLE[(idx + 1) % TYP_CYCLE.length];
-      groupItems.forEach(function(item) { item.typ = cur; });
+      groupItems.forEach(function(item) { item.inhaltstyp = cur; });
       render();
       if (onUpdate) onUpdate(cur);
     };
@@ -795,8 +795,8 @@ function buildImportView(container) {
       return {
         id:           'db_' + ts + '_' + i + '_' + Math.random().toString(36).slice(2, 6),
         fach:         fach,
-        herkunft:     herkunft,
-        buch:         buch || null,
+        quelle_typ:   herkunft,
+        quelle_name:  buch || null,
         kapitel:      kap,
         uk_titel:     uk,
         seite:        seite,
@@ -809,7 +809,7 @@ function buildImportView(container) {
         schwierigkeit: a.schwierigkeit || a.schwierigkeitsstufe || null,
         umfang:       a.umfang || null,
         jahrgang:     jg,
-        typ:          a.typ || 'aufgabe',
+        inhaltstyp:   a.inhaltstyp || 'aufgabe',
       };
     });
 
@@ -875,8 +875,8 @@ function buildImportView(container) {
         '→ Gespeicherte Einträge ansehen',
         fachInfo(fach).icon + ' ' + fachInfo(fach).label + ' · ' + buch,
         function() {
-          DB.view = 'fach'; DB.fach = fach; DB.buch = buch || null;
-          DB.herkunft = herkunft; DB.suchtext = ''; DB.offset = 0;
+          DB.view = 'fach'; DB.fach = fach; DB.quelle_name = buch || null;
+          DB.quelle_typ = herkunft; DB.suchtext = ''; DB.offset = 0;
           dbRender();
         }
       ));
@@ -1246,8 +1246,8 @@ async function buildFachView(container) {
     var _savedScroll = (opts && opts.keepScroll) ? container.scrollTop : null;
     wrap.innerHTML = '<div style="padding:20px;color:var(--tx3);text-align:center">⏳ Lädt…</div>';
     const filters = { fach: f.key };
-    if (DB.herkunft)      filters.herkunft      = DB.herkunft;
-    if (DB.buch)          filters.buch          = DB.buch;
+    if (DB.quelle_typ)    filters.quelle_typ    = DB.quelle_typ;
+    if (DB.quelle_name)   filters.quelle_name   = DB.quelle_name;
     if (DB.operator)      filters.operator      = DB.operator;
     if (DB.schwierigkeit) filters.schwierigkeit = DB.schwierigkeit;
     if (DB.niveau)        filters.niveau        = DB.niveau;
@@ -1259,7 +1259,7 @@ async function buildFachView(container) {
       rawParams.push('or=(kapitel.eq.' + encodeURIComponent(DB.kapitel) + ',kapitel_titel.eq.' + encodeURIComponent(DB.kapitel) + ')');
     }
     if (DB.uk_titel)      filters.uk_titel      = DB.uk_titel;
-    if (DB.typ)           filters.typ           = DB.typ;
+    if (DB.inhaltstyp)    filters.inhaltstyp    = DB.inhaltstyp;
     if (DB.seite != null) filters.seite         = DB.seite;
 
     // Sortier-Reihenfolge aufbauen
@@ -1267,9 +1267,9 @@ async function buildFachView(container) {
     if (DB.sortCol) {
       var nulls = DB.sortDir === 'asc' ? 'nullslast' : 'nullsfirst';
       orderStr = DB.sortCol + '.' + DB.sortDir + '.' + nulls;
-      if (DB.sortCol === 'seite') orderStr = 'buch.asc,' + orderStr;
+      if (DB.sortCol === 'seite') orderStr = 'quelle_name.asc,' + orderStr;
     } else {
-      orderStr = 'herkunft,buch,seite';
+      orderStr = 'quelle_typ,quelle_name,seite';
     }
 
     var loadFailed = false;
@@ -1291,26 +1291,25 @@ async function buildFachView(container) {
     // Bei Custom-Sort: Server-Reihenfolge beibehalten, nur innerhalb gleicher Seite nr-sortieren
     rows.sort(function(a, b) {
       if (!DB.sortCol) {
-        if (a.buch  !== b.buch)  return (a.buch  || '') < (b.buch  || '') ? -1 : 1;
-        if (a.seite !== b.seite) return (a.seite || 0)  - (b.seite || 0);
+        if (a.quelle_name !== b.quelle_name) return (a.quelle_name || '') < (b.quelle_name || '') ? -1 : 1;
+        if (a.seite !== b.seite) return (a.seite || 0) - (b.seite || 0);
       } else {
-        // Server hat sortiert; nur innerhalb gleicher buch+seite nr-sortieren
-        if (a.buch !== b.buch || a.seite !== b.seite) return 0;
+        if (a.quelle_name !== b.quelle_name || a.seite !== b.seite) return 0;
       }
       return cmpNr(a.nr, b.nr);
     });
 
     wrap.innerHTML = '';
     var parts = [];
-    if (DB.buch)          parts.push('📖 ' + DB.buch);
-    else if (DB.herkunft && HERKUNFT[DB.herkunft]) parts.push(HERKUNFT[DB.herkunft].label);
+    if (DB.quelle_name)   parts.push('📖 ' + DB.quelle_name);
+    else if (DB.quelle_typ && HERKUNFT[DB.quelle_typ]) parts.push(HERKUNFT[DB.quelle_typ].label);
     if (DB.operator)      parts.push(DB.operator);
     if (DB.schwierigkeit) parts.push(DB.schwierigkeit);
     if (DB.niveau)        parts.push(DB.niveau);
     if (DB.umfang)        parts.push(DB.umfang);
     if (DB.kapitel)       parts.push(DB.kapitel);
     if (DB.uk_titel)      parts.push(DB.uk_titel);
-    if (DB.typ)           parts.push(TYP_LABELS[DB.typ] || DB.typ);
+    if (DB.inhaltstyp)    parts.push(TYP_LABELS[DB.inhaltstyp] || DB.inhaltstyp);
     if (DB.seite != null) parts.push('S.\xa0' + DB.seite);
     if (DB.suchtext)      parts.push('„' + DB.suchtext + '"');
     var suffix = parts.length ? ' · ' + parts.join(' · ') : '';
@@ -1365,7 +1364,7 @@ async function buildFachView(container) {
       // ── Seiten-Trenner ───────────────────────────────────────────
       // Nur wenn kein einzelner Seiten-Filter aktiv ist und seite bekannt
       if (!DB.seite && ref0 && ref0.seite != null) {
-        var seiteBuchKey = (ref0.buch || '') + '::' + ref0.seite;
+        var seiteBuchKey = (ref0.quelle_name || '') + '::' + ref0.seite;
         if (seiteBuchKey !== _lastSeiteBuch) {
           if (_lastSeiteBuch !== null) {
             // Trennlinie zwischen Seiten
@@ -1381,8 +1380,8 @@ async function buildFachView(container) {
             + 'color:var(--pri);background:rgba(15,118,110,.10);border:1px solid rgba(15,118,110,.22);'
             + 'border-radius:20px;padding:4px 14px;';
           pageHdr.appendChild(pagePill);
-          if (!DB.buch && ref0.buch) {
-            var buchLabel = tx('span', '', ref0.buch);
+          if (!DB.quelle_name && ref0.quelle_name) {
+            var buchLabel = tx('span', '', ref0.quelle_name);
             buchLabel.style.cssText = 'font-size:11px;color:var(--tx3);font-weight:500;';
             pageHdr.appendChild(buchLabel);
           }
@@ -1396,7 +1395,7 @@ async function buildFachView(container) {
 
       if (hasSubtasks) {
         // Gruppe: Header wie Einzelaufgaben-Row (gleiche Grid-Struktur), ohne Chips
-        var gHdrItem = { inhalt: g.aufgabenstellung || '', typ: ref0.typ || 'aufgabe' };
+        var gHdrItem = { inhalt: g.aufgabenstellung || '', inhaltstyp: ref0.inhaltstyp || 'aufgabe' };
         var ghdr = renderRow(gHdrItem, null, true, seitePrefix + grpTypLabel(g));
         ghdr.title = 'Alle Teilaufgaben ansehen';
         ghdr.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
@@ -1447,8 +1446,8 @@ async function buildFachView(container) {
 // groupLabel (optional): bei Einzelaufgaben „Aufgabe N" in Spalte 0,
 // damit Nr. und Aufgabentext in einer Zeile stehen (Text bricht um).
 function renderRow(a, onSaved, compact, groupLabel) {
-  const hMeta = herkunftMeta(a.herkunft);
-  const hasBuch = hMeta.hasBuch;          // schulbuch/aufgabenpool/sammlung zeigen Buchtitel
+  const hMeta = herkunftMeta(a.quelle_typ);
+  const hasBuch = hMeta.hasBuch;
   const accentColor = hMeta.color;
 
   const row = mk('div', 'db-row');
@@ -1473,8 +1472,8 @@ function renderRow(a, onSaved, compact, groupLabel) {
         src.appendChild(nrEl);
       }
     }
-  } else if (DB.buch && hasBuch) {
-    // Buch ist bereits gefiltert — nur Seite zeigen
+  } else if (DB.quelle_name && hasBuch) {
+    // Werk ist bereits gefiltert — nur Seite zeigen
     var seiteEl = tx('div', 'db-kap-name', a.seite ? 'S. ' + a.seite : '–');
     seiteEl.style.fontSize = '13px';
     src.appendChild(seiteEl);
@@ -1483,7 +1482,7 @@ function renderRow(a, onSaved, compact, groupLabel) {
     hBadge.style.color = accentColor;
     src.appendChild(hBadge);
     if (hasBuch) {
-      src.appendChild(tx('div', 'db-buch-name', a.buch || '–'));
+      src.appendChild(tx('div', 'db-buch-name', a.quelle_name || '–'));
       var sub = (a.uk_titel || a.kapitel || a.kapitel_titel || '') + (a.seite ? ' · S. ' + a.seite : '');
       if (sub.trim()) src.appendChild(tx('div', 'db-kap-name', sub));
     } else {
@@ -1493,9 +1492,9 @@ function renderRow(a, onSaved, compact, groupLabel) {
   cells[0] = src;
 
   // Typ-Badge (nur für Beispiele und Lehrtexte, nicht für Aufgaben / null)
-  if (a.typ && a.typ !== 'aufgabe') {
-    var typBadge = tx('span', '', (TYP_ICONS[a.typ] ? TYP_ICONS[a.typ] + ' ' : '') + (TYP_LABELS[a.typ] || a.typ));
-    var typColor = TYP_FARBEN[a.typ] || '#64748b';
+  if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe') {
+    var typBadge = tx('span', '', (TYP_ICONS[a.inhaltstyp] ? TYP_ICONS[a.inhaltstyp] + ' ' : '') + (TYP_LABELS[a.inhaltstyp] || a.inhaltstyp));
+    var typColor = TYP_FARBEN[a.inhaltstyp] || '#64748b';
     typBadge.style.cssText = 'display:inline-block;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;'
       + 'background:' + typColor + '18;color:' + typColor + ';border:1px solid ' + typColor + '38;'
       + 'text-transform:uppercase;letter-spacing:.06em;';
@@ -1619,11 +1618,11 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   var buchSel = document.createElement('select');
   buchSel.className = 'db-filter-sel';
   var buchOptDefault = document.createElement('option');
-  buchOptDefault.value = ''; buchOptDefault.textContent = '📖 Schulbuch';
+  buchOptDefault.value = ''; buchOptDefault.textContent = '📖 Werk';
   buchSel.appendChild(buchOptDefault);
   buchSel.onchange = function() {
-    DB.buch = buchSel.value || null;
-    DB.herkunft = null;   // Eigenmaterial-Filter beim Buch-Wechsel immer löschen
+    DB.quelle_name = buchSel.value || null;
+    DB.quelle_typ = null;
     DB.kapitel = null; DB.uk_titel = null;
     DB.offset = 0; refresh();
   };
@@ -1632,29 +1631,29 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     books.forEach(function(b) {
       var o = document.createElement('option');
       o.value = b; o.textContent = b;
-      if (DB.buch === b) o.selected = true;
+      if (DB.quelle_name === b) o.selected = true;
       buchSel.appendChild(o);
     });
-    if (DB.buch) buchSel.value = DB.buch;
+    if (DB.quelle_name) buchSel.value = DB.quelle_name;
   }
   if (fach) {
     if (_buchCache[fach] && _buchCache[fach].length) {
       populateBuchSel(_buchCache[fach]);
     } else {
-      sbSelect('inhalte', { select: 'buch', filters: { fach: fach }, limit: 5000, order: 'buch' })
+      sbSelect('inhalte', { select: 'quelle_name', filters: { fach: fach }, limit: 5000, order: 'quelle_name' })
         .then(function(rows) {
           var seen = {}, books = [];
-          rows.forEach(function(r) { if (r.buch && !seen[r.buch]) { seen[r.buch] = true; books.push(r.buch); } });
+          rows.forEach(function(r) { if (r.quelle_name && !seen[r.quelle_name]) { seen[r.quelle_name] = true; books.push(r.quelle_name); } });
           books.sort();
-          _buchCache[fach] = books.length ? books : null; // leere Arrays nicht cachen
+          _buchCache[fach] = books.length ? books : null;
           populateBuchSel(books);
         });
     }
   }
   bar.appendChild(buchSel);
 
-  // Kapitel-Dropdown (nur wenn Buch gewählt)
-  if (DB.buch && fach) {
+  // Kapitel-Dropdown (nur wenn Werk gewählt)
+  if (DB.quelle_name && fach) {
     var kapSel = document.createElement('select');
     kapSel.className = 'db-filter-sel';
     var kapDef = document.createElement('option'); kapDef.value = ''; kapDef.textContent = 'Kapitel';
@@ -1662,7 +1661,7 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     kapSel.onchange = function() {
       DB.kapitel = kapSel.value || null; DB.uk_titel = null; DB.seite = null; DB.offset = 0; refresh();
     };
-    sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { fach: fach, buch: DB.buch }, limit: 1000 })
+    sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { fach: fach, quelle_name: DB.quelle_name }, limit: 1000 })
       .then(function(rows) {
         var seen = {}, kaps = [];
         rows.forEach(function(r) { var k = r.kapitel || r.kapitel_titel; if (k && !seen[k]) { seen[k] = true; kaps.push(k); } });
@@ -1685,7 +1684,7 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     ukSel.onchange = function() {
       DB.uk_titel = ukSel.value || null; DB.seite = null; DB.offset = 0; refresh();
     };
-    sbSelect('inhalte', { select: 'uk_titel', filters: { fach: fach, buch: DB.buch }, rawParams: ['or=(kapitel.eq.' + encodeURIComponent(DB.kapitel) + ',kapitel_titel.eq.' + encodeURIComponent(DB.kapitel) + ')'], limit: 500 })
+    sbSelect('inhalte', { select: 'uk_titel', filters: { fach: fach, quelle_name: DB.quelle_name }, rawParams: ['or=(kapitel.eq.' + encodeURIComponent(DB.kapitel) + ',kapitel_titel.eq.' + encodeURIComponent(DB.kapitel) + ')'], limit: 500 })
       .then(function(rows) {
         var seen = {}, uks = [];
         rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });
@@ -1702,14 +1701,14 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
 
   // Herkunft-Chips (Schulbuch ist die Standardansicht → kein eigener Chip)
   var herkGroup = mk('div', 'db-filter-group');
-  ['handreichung', 'aufgabenpool', 'sammlung', 'eigenmaterial'].forEach(function(hk) {
+  ['handreichung', 'aufgabenpool', 'materialset', 'eigenmaterial'].forEach(function(hk) {
     var meta = HERKUNFT[hk];
-    var active = DB.herkunft === hk;
+    var active = DB.quelle_typ === hk;
     var chip = tx('div', 'db-fchip' + (active ? ' on' : ''), meta.icon + ' ' + meta.label);
     if (active) chip.style.cssText = 'background:' + meta.color + '18;color:' + meta.color + ';border-color:' + meta.color + '60;';
     chip.onclick = function() {
-      DB.herkunft = active ? null : hk;
-      DB.buch = null;            // Buchfilter beim Herkunftswechsel zurücksetzen
+      DB.quelle_typ = active ? null : hk;
+      DB.quelle_name = null;
       DB.offset = 0; refresh();
     };
     herkGroup.appendChild(chip);
@@ -1738,13 +1737,13 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
 
   // Inhaltstyp
   bar.appendChild(fchipGroup([
-    { val: 'aufgabe',  label: '📝 Aufgabe',   color: TYP_FARBEN.aufgabe },
-    { val: 'beispiel', label: '📐 Beispiel',  color: TYP_FARBEN.beispiel },
-    { val: 'lehrtext', label: '📖 Lehrtext',  color: TYP_FARBEN.lehrtext },
-  ], 'typ'));
+    { val: 'aufgabe',  label: '📝 Aufgabe',               color: TYP_FARBEN.aufgabe },
+    { val: 'lehrtext', label: '📖 Lehrtext',              color: TYP_FARBEN.lehrtext },
+    { val: 'hinweis',  label: 'ℹ️ Erläuterungen/Hinweise', color: TYP_FARBEN.hinweis },
+  ], 'inhaltstyp'));
 
   // Filter löschen (nur wenn aktiv)
-  var anyActive = DB.buch || DB.herkunft || DB.schwierigkeit || DB.niveau || DB.typ || DB.umfang || DB.jahrgang || DB.kapitel || DB.uk_titel || DB.seite != null;
+  var anyActive = DB.quelle_name || DB.quelle_typ || DB.schwierigkeit || DB.niveau || DB.inhaltstyp || DB.umfang || DB.jahrgang || DB.kapitel || DB.uk_titel || DB.seite != null;
   if (anyActive) {
     bar.appendChild(sep());
     const clrBtn = btn('✕ Filter', 'btn btn-ghost btn-sm');
@@ -1798,7 +1797,7 @@ function openTaskModal(group, opts) {
     hdrLeft.appendChild(tx('span', '', fiH.icon));
     var tp = [];
     if (isMulti)            tp.push(grpTypLabel(group));
-    if (ref.buch)           tp.push(ref.buch);
+    if (ref.quelle_name)    tp.push(ref.quelle_name);
     if (ref.seite != null)  tp.push('S. ' + ref.seite);
     if (!isMulti && ref.nr) tp.push('Nr. ' + ref.nr);
     hdrLeft.appendChild(tx('div', 'db-modal-title', tp.join(' · ') || (ref.inhalt || '').slice(0, 70) || 'Eintrag'));
@@ -2061,7 +2060,7 @@ function openTaskModal(group, opts) {
   sec(R0, 'Einordnung');
   ssel(R0, 'Fach', 'fach', FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
   sfld(R0, 'Jahrgang', 'jahrgang', 'number', '5–10');
-  ssel(R0, 'Inhaltstyp', 'typ', [['aufgabe','📝 Aufgabe'],['beispiel','📐 Beispiel'],['lehrtext','📖 Lehrtext']]);
+  ssel(R0, 'Inhaltstyp', 'inhaltstyp', [['aufgabe','📝 Aufgabe'],['lehrtext','📖 Lehrtext'],['hinweis','ℹ️ Erläuterungen/Hinweise']]);
   p0.appendChild(R0);
 
   var L0 = mkL();
@@ -2423,15 +2422,15 @@ function dbRender() {
     if (Array.isArray(res[0])) METHDB   = res[0];
     if (Array.isArray(res[1])) DIDARTDB = res[1];
     // Regal: vollständig aus inhalte-DB ableiten
-    sbSelect('inhalte', { select: 'fach,buch,jahrgang,herkunft,kapitel,kapitel_titel', limit: 5000 }).then(function(rows) {
+    sbSelect('inhalte', { select: 'fach,quelle_name,jahrgang,quelle_typ,kapitel,kapitel_titel', limit: 5000 }).then(function(rows) {
       var dbSet = {};
       rows.forEach(function(r) {
-        if (!r.buch || !r.fach) return;
-        var key = r.fach + '::' + r.buch;
-        if (!dbSet[key]) dbSet[key] = { fach: r.fach, buch: r.buch, jgSet: {}, herkunftCount: {}, kapSet: {}, count: 0 };
+        if (!r.quelle_name || !r.fach) return;
+        var key = r.fach + '::' + r.quelle_name;
+        if (!dbSet[key]) dbSet[key] = { fach: r.fach, quelle_name: r.quelle_name, jgSet: {}, quelleTypCount: {}, kapSet: {}, count: 0 };
         var d = dbSet[key];
         if (r.jahrgang) d.jgSet[r.jahrgang] = true;
-        if (r.herkunft) d.herkunftCount[r.herkunft] = (d.herkunftCount[r.herkunft] || 0) + 1;
+        if (r.quelle_typ) d.quelleTypCount[r.quelle_typ] = (d.quelleTypCount[r.quelle_typ] || 0) + 1;
         var kap = r.kapitel || r.kapitel_titel;
         if (kap) d.kapSet[kap] = true;
         d.count++;
@@ -2440,11 +2439,11 @@ function dbRender() {
       SCHULBUCHDB = Object.keys(dbSet).map(function(key) {
         var d = dbSet[key];
         var jgs = Object.keys(d.jgSet).map(Number).filter(Boolean).sort(function(a, b) { return a - b; });
-        var typ = Object.keys(d.herkunftCount).reduce(function(best, h) {
-          return (d.herkunftCount[h] > (d.herkunftCount[best] || 0)) ? h : best;
+        var typ = Object.keys(d.quelleTypCount).reduce(function(best, h) {
+          return (d.quelleTypCount[h] > (d.quelleTypCount[best] || 0)) ? h : best;
         }, 'aufgabenpool');
         return {
-          fach: d.fach, titel: d.buch, typ: typ,
+          fach: d.fach, titel: d.quelle_name, typ: typ,
           kapitel: Object.keys(d.kapSet),
           jahrgang: jgs.length === 1 ? jgs[0] : (jgs.length ? jgs : null),
           aufgabenCount: d.count,

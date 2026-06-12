@@ -1948,21 +1948,38 @@ function openTaskModal(group, opts) {
     sec(L0, 'Teilaufgaben');
     items.forEach(function(it, i) {
       var blk = mk('div', '');
-      blk.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+      blk.style.cssText = 'display:flex;flex-direction:column;gap:6px;'
+        + 'padding:8px 0 12px;border-bottom:1px solid var(--bord);';
+
+      // Kopfzeile: prominenter Buchstabe + kompaktes Nr-Feld + Löschen
+      var head = mk('div', '');
+      head.style.cssText = 'display:flex;align-items:center;gap:10px;';
+      var letter = tx('div', '', posLetter(i) + ')');
+      letter.style.cssText = 'font-weight:800;font-size:19px;color:var(--pri);'
+        + 'line-height:1;min-width:22px;flex-shrink:0;';
+      head.appendChild(letter);
       if (itemFields[i].nr) {
-        var nrRow = mk('div', '');
-        nrRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
-        nrRow.appendChild(labeled('Nr.', itemFields[i].nr));
-        blk.appendChild(nrRow);
+        var nrLbl = tx('span', '', 'Nr.');
+        nrLbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--tx3);'
+          + 'text-transform:uppercase;letter-spacing:.06em;';
+        itemFields[i].nr.style.cssText += 'max-width:74px;padding:3px 7px;font-size:12px;';
+        head.appendChild(nrLbl);
+        head.appendChild(itemFields[i].nr);
       }
-      var fieldEl = labeled(posLetter(i) + ')', itemFields[i].inhalt);
-      fieldEl.style.flex = '1'; fieldEl.style.minWidth = '0';
-      var topRow = mk('div', '');
-      topRow.style.cssText = 'display:flex;align-items:flex-end;gap:8px;';
-      topRow.appendChild(fieldEl);
-      topRow.appendChild(delItemBtn(i));
-      blk.appendChild(topRow);
-      blk.appendChild(labeled('📷 Abbildung', itemFields[i].abbildung));
+      var spacer = mk('div', ''); spacer.style.flex = '1'; head.appendChild(spacer);
+      head.appendChild(delItemBtn(i));
+      blk.appendChild(head);
+
+      // Eingerückter Inhalt unter dem Buchstaben
+      var body = mk('div', '');
+      body.style.cssText = 'display:flex;flex-direction:column;gap:5px;padding-left:32px;';
+      body.appendChild(itemFields[i].inhalt);
+      // Kompaktes Abbildungs-Feld (kein eigenes Label, kleinere Schrift)
+      itemFields[i].abbildung.placeholder = '📷 Abbildung (optional)';
+      itemFields[i].abbildung.style.cssText += 'font-size:12px;opacity:.85;';
+      body.appendChild(itemFields[i].abbildung);
+      blk.appendChild(body);
+
       L0.appendChild(blk);
       itemNodes[i].push(blk);
     });

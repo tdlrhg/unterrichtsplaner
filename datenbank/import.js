@@ -50,10 +50,10 @@ WICHTIG — Lehrtexte: Absätze als separate Einträge erfassen:
 Hat ein Lehrtext mehrere klar getrennte Abschnitte (z.B. Einführung + Definition + Merksatz), erstelle für jeden Abschnitt einen eigenen Eintrag. Zusammengehörende Sätze desselben Abschnitts bleiben in einem Eintrag.
 
 Für jeden Eintrag:
-- typ: genau eines von: aufgabe|beispiel|lehrtext
-  · aufgabe = Übungsaufgabe, die Schüler selbst lösen sollen
-  · beispiel = Musteraufgabe oder Musterrechnung mit vorgegebener Lösung
-  · lehrtext = Erklärung, Definition, Merksatz, Fließtext, Einführung
+- inhaltstyp: genau eines von: aufgabe|lehrtext|hinweis
+  · aufgabe  = Übungsaufgabe, die Schüler selbst lösen sollen
+  · lehrtext = Erklärung, Definition, Merksatz, Fließtext, Einführung, Musterrechnung mit Lösung
+  · hinweis  = Erläuterungen/Hinweise für die Lehrkraft (Hintergrundinformation, methodische Hinweise)
 - nr: Aufgaben-/Beispielnummer inkl. Teilaufgabe (z.B. "8a", "B2") — bei Lehrtexten die Überschrift oder Typ (z.B. "Definition", "Merksatz", "1.1 Terme")
 - aufgabenstellung: gemeinsamer Obersatz der Hauptaufgabe, VERBATIM — nur wenn er für alle Teilaufgaben gilt; bei Lehrtexten und Beispielen null
 - text: der vollständige Text des Eintrags, VERBATIM und VOLLSTÄNDIG aus dem Buch. Zeilenumbrüche innerhalb des Textes durch " | " ersetzen. Bei Aufgaben NIEMALS aufgabenstellung wiederholen.
@@ -70,10 +70,10 @@ JSON-FORMAT — sehr wichtig:
 - Keine Backslashes in Stringwerten
 
 {"aufgaben": [
-  {"typ":"lehrtext","nr":"Merksatz","aufgabenstellung":null,"text":"Der Flächeninhalt eines Rechtecks mit den Seiten a und b berechnet sich mit der Formel A = a · b. | Die Einheit des Flächeninhalts ist cm², m² oder mm².","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
-  {"typ":"beispiel","nr":"B1","aufgabenstellung":null,"text":"Berechne den Flächeninhalt des Rechtecks mit a = 6 cm und b = 4 cm. | Lösung: A = a · b = 6 cm · 4 cm = 24 cm²","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
-  {"typ":"aufgabe","nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Berechne den Flächeninhalt der Fig. 1.","anforderung":"Schüler berechnen den Flächeninhalt einer Figur.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"},
-  {"typ":"aufgabe","nr":"8b","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Schätze den Flächeninhalt der Fig. 2. Bestimme den Flächeninhalt in mm2, indem du die benötigten Längen misst.","anforderung":"Schüler schätzen und messen den Flächeninhalt einer Figur.","operator":"messen","umfang":"mittel","schwierigkeit":"standard"}
+  {"inhaltstyp":"lehrtext","nr":"Merksatz","aufgabenstellung":null,"text":"Der Flächeninhalt eines Rechtecks mit den Seiten a und b berechnet sich mit der Formel A = a · b. | Die Einheit des Flächeninhalts ist cm², m² oder mm².","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
+  {"inhaltstyp":"lehrtext","nr":"B1","aufgabenstellung":null,"text":"Berechne den Flächeninhalt des Rechtecks mit a = 6 cm und b = 4 cm. | Lösung: A = a · b = 6 cm · 4 cm = 24 cm²","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
+  {"inhaltstyp":"aufgabe","nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Berechne den Flächeninhalt der Fig. 1.","anforderung":"Schüler berechnen den Flächeninhalt einer Figur.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"},
+  {"inhaltstyp":"aufgabe","nr":"8b","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Schätze den Flächeninhalt der Fig. 2. Bestimme den Flächeninhalt in mm2, indem du die benötigten Längen misst.","anforderung":"Schüler schätzen und messen den Flächeninhalt einer Figur.","operator":"messen","umfang":"mittel","schwierigkeit":"standard"}
 ]}`;
 
 function _impResizeImg(dataUrl, maxW, q) {
@@ -142,7 +142,7 @@ function buildImportView(container) {
   var ukInp    = finp('z.B. Flächeninhalt berechnen (optional)');
   var seiteInp = finp('z.B. 142', 'number'); seiteInp.style.maxWidth = '110px';
 
-  metaCard.appendChild(row2(fg('Buchtitel / Quelle', buchInp), fg('Typ', typSel)));
+  metaCard.appendChild(row2(fg('Werk / Titel', buchInp), fg('Quellentyp', typSel)));
   metaCard.appendChild(row2(fg('Fach', fachSel), fg('Jahrgang', jgInp)));
   metaCard.appendChild(row2(fg('Kapitel', kapInp), fg('Unterkapitel', ukInp), fg('Erste Seite', seiteInp)));
 
@@ -194,7 +194,7 @@ function buildImportView(container) {
   // ── KI-Analyse ────────────────────────────────────────────────
   analyseBtn.onclick = async function() {
     if (!_file) { statusEl.textContent = '⚠️ Bitte zuerst eine Datei auswählen.'; return; }
-    if (!buchInp.value.trim()) { statusEl.textContent = '⚠️ Bitte Buchtitel eingeben.'; return; }
+    if (!buchInp.value.trim()) { statusEl.textContent = '⚠️ Bitte Werk / Titel eingeben.'; return; }
     analyseBtn.disabled = true; analyseBtn.textContent = '⏳ Analysiere…';
     statusEl.textContent = ''; statusEl.style.color = 'var(--tx2)';
     resultsWrap.innerHTML = ''; _aufgaben = [];

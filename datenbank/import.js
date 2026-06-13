@@ -161,18 +161,21 @@ function buildImportView(container) {
   fileInput.type = 'file'; fileInput.accept = '.pdf,image/*'; fileInput.style.display = 'none';
   fileCard.appendChild(fileInput);
 
-  var _file = null;
+  var _files = [];
   fileCard.onclick = function() { fileInput.click(); };
   fileCard.ondragover = function(e) { e.preventDefault(); fileCard.style.borderColor = 'var(--acc)'; };
   fileCard.ondragleave = function() { fileCard.style.borderColor = ''; };
   fileCard.ondrop = function(e) {
     e.preventDefault(); fileCard.style.borderColor = '';
-    var f = e.dataTransfer.files[0]; if (f) setFile(f);
+    if (e.dataTransfer.files.length) setFiles(e.dataTransfer.files);
   };
-  fileInput.onchange = function() { if (fileInput.files[0]) setFile(fileInput.files[0]); };
-  function setFile(f) {
-    _file = f;
-    fileLabel.textContent = '✓ ' + f.name;
+  fileInput.multiple = true;
+  fileInput.onchange = function() { if (fileInput.files.length) setFiles(fileInput.files); };
+  function setFiles(fileList) {
+    _files = Array.from(fileList);
+    fileLabel.textContent = _files.length === 1
+      ? '✓ ' + _files[0].name
+      : '✓ ' + _files.length + ' Dateien ausgewählt (' + _files.map(function(f) { return f.name; }).join(', ') + ')';
     fileLabel.style.color = 'var(--acc)';
   }
 
@@ -192,49 +195,60 @@ function buildImportView(container) {
   var _aufgaben = [];
 
   // ── KI-Analyse ────────────────────────────────────────────────
+  async function analyseFile(f, fileSeite, prefix) {
+    statusEl.textContent = prefix + '⏳ Datei wird gelesen…';
+    var imgs = await fileToDataURLs(f, { longEdge: 1568, quality: 0.88 });
+    statusEl.textContent = prefix + '⏳ KI analysiert ' + imgs.length + ' Seite(n)…';
+    var resized = await Promise.all(imgs.map(function(u) { return _impResizeImg(u, 1200, 0.82); }));
+    var blocks = [];
+    resized.forEach(function(r, i) {
+      blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } });
+      if (i < resized.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
+    });
+    blocks.push({ type: 'text', text: IMP_KI_PROMPT });
+    var raw = await callKI(blocks, { maxTokens: 16000 });
+    var cleaned = raw.trim().replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
+    cleaned = cleaned.replace(/"((?:[^"\\]|\\.)*)"/g, function(m, inner) {
+      return '"' + inner.replace(/\n/g, '\\n').replace(/\r/g, '').replace(/\t/g, '\\t') + '"';
+    });
+    cleaned = cleaned.replace(/"",/g, '",')
+                     .replace(/""\s*\n\s*"/g, '",\n  "')
+                     .replace(/""\s*}/g, '"}')
+                     .replace(/""\s*]/g, '"]');
+    cleaned = cleaned.replace(/\\(?!["\\/bfnrtu0-9])/g, '\\\\');
+    var parsed;
+    try { parsed = robustJsonParsePr(cleaned); } catch(e) {
+      try { parsed = JSON.parse(cleaned); } catch(e2) {
+        var pos = parseInt((e2.message.match(/position (\d+)/i) || [])[1]) || 0;
+        console.error('[Import] Parse-Fehler:', e2.message);
+        console.error('[Import] Zeichen an Pos ' + pos + ':', JSON.stringify(cleaned.slice(Math.max(0,pos-40), pos+40)));
+        throw new Error('KI-Antwort nicht lesbar — Zeichen an Pos ' + pos + ': ' + JSON.stringify(cleaned.slice(Math.max(0,pos-20), pos+20)));
+      }
+    }
+    var aufg = parsed.aufgaben || [];
+    aufg.forEach(function(a) { a._seite = fileSeite; });
+    return aufg;
+  }
+
   analyseBtn.onclick = async function() {
-    if (!_file) { statusEl.textContent = '⚠️ Bitte zuerst eine Datei auswählen.'; return; }
+    if (!_files.length) { statusEl.textContent = '⚠️ Bitte zuerst eine Datei auswählen.'; return; }
     if (!buchInp.value.trim()) { statusEl.textContent = '⚠️ Bitte Werk / Titel eingeben.'; return; }
-    analyseBtn.disabled = true; analyseBtn.textContent = '⏳ Analysiere…';
+    analyseBtn.disabled = true;
+    analyseBtn.textContent = _files.length > 1 ? '⏳ Analysiere ' + _files.length + ' Dateien…' : '⏳ Analysiere…';
     statusEl.textContent = ''; statusEl.style.color = 'var(--tx2)';
     resultsWrap.innerHTML = ''; _aufgaben = [];
+    var baseSeite = seiteInp.value ? Number(seiteInp.value) : null;
     try {
-      statusEl.textContent = '⏳ Datei wird gelesen…';
-      var imgs = await fileToDataURLs(_file, { longEdge: 1568, quality: 0.88 });
-      statusEl.textContent = '⏳ KI analysiert ' + imgs.length + ' Seite(n)…';
-      var resized = await Promise.all(imgs.map(function(u) { return _impResizeImg(u, 1200, 0.82); }));
-      var blocks = [];
-      resized.forEach(function(r, i) {
-        blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } });
-        if (i < resized.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
-      });
-      blocks.push({ type: 'text', text: IMP_KI_PROMPT });
-      var raw = await callKI(blocks, { maxTokens: 16000 });
-      // Markdown-Codeblock ``` entfernen falls vorhanden
-      var cleaned = raw.trim().replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
-      // Literal-Newlines/Tabs innerhalb von JSON-Strings escapen
-      cleaned = cleaned.replace(/"((?:[^"\\]|\\.)*)"/g, function(m, inner) {
-        return '"' + inner.replace(/\n/g, '\\n').replace(/\r/g, '').replace(/\t/g, '\\t') + '"';
-      });
-      // Doppeltes Anführungszeichen am Stringende (KI-Fehler: "text"" → "text")
-      cleaned = cleaned.replace(/"",/g, '",')
-                       .replace(/""\s*\n\s*"/g, '",\n  "')
-                       .replace(/""\s*}/g, '"}')
-                       .replace(/""\s*]/g, '"]');
-      // Ungültige Backslashes escapen (z.B. LaTeX \frac, \cdot → \\frac, \\cdot)
-      cleaned = cleaned.replace(/\\(?!["\\/bfnrtu0-9])/g, '\\\\');
-      var parsed;
-      try { parsed = robustJsonParsePr(cleaned); } catch(e) {
-        try { parsed = JSON.parse(cleaned); } catch(e2) {
-          var pos = parseInt((e2.message.match(/position (\d+)/i) || [])[1]) || 0;
-          console.error('[Import] Parse-Fehler:', e2.message);
-          console.error('[Import] Zeichen an Pos ' + pos + ':', JSON.stringify(cleaned.slice(Math.max(0,pos-40), pos+40)));
-          throw new Error('KI-Antwort nicht lesbar — Zeichen an Pos ' + pos + ': ' + JSON.stringify(cleaned.slice(Math.max(0,pos-20), pos+20)));
+      for (var fi = 0; fi < _files.length; fi++) {
+        var prefix = _files.length > 1 ? '(' + (fi + 1) + '/' + _files.length + ') ' : '';
+        var fileSeite = baseSeite != null ? baseSeite + fi : null;
+        var aufg = await analyseFile(_files[fi], fileSeite, prefix);
+        if (!aufg.length && _files.length === 1) {
+          statusEl.textContent = '⚠️ Keine Einträge erkannt — bitte Bild prüfen.'; return;
         }
+        _aufgaben = _aufgaben.concat(aufg);
       }
-      var aufg = parsed.aufgaben || [];
-      if (!aufg.length) { statusEl.textContent = '⚠️ Keine Einträge erkannt — bitte Bild prüfen.'; return; }
-      _aufgaben = aufg;
+      if (!_aufgaben.length) { statusEl.textContent = '⚠️ Keine Einträge erkannt — bitte Bilder prüfen.'; return; }
       statusEl.textContent = '';
       renderResults();
     } catch(e) {
@@ -347,12 +361,13 @@ function buildImportView(container) {
     var jg       = jgInp.value.trim() || null;
     var kap      = kapInp.value.trim() || null;
     var uk       = ukInp.value.trim() || null;
-    var seite    = seiteInp.value ? Number(seiteInp.value) : null;
+    var baseSeite = seiteInp.value ? Number(seiteInp.value) : null;
     // typSel-Wert direkt als Herkunft speichern (schulbuch/aufgabenpool/sammlung/eigenmaterial)
     var herkunft = HERKUNFT[typSel.value] ? typSel.value : 'schulbuch';
     var ts       = Date.now();
 
     var rows = _aufgaben.map(function(a, i) {
+      var seite = a._seite !== undefined ? a._seite : baseSeite;
       var nr   = String(a.nr || (i + 1));
       var nrBase = nr.replace(/[a-zA-Z]+$/, '').trim() || nr;
       var gKey = buch && seite != null ? buch + '||' + seite + '||' + nrBase : 'db_' + ts + '_' + nrBase;
@@ -376,6 +391,7 @@ function buildImportView(container) {
         inhaltstyp:   a.inhaltstyp || 'aufgabe',
       };
     });
+    var lastSeite = rows.length ? rows[rows.length - 1].seite : baseSeite;
 
     var saveBtn = resultsWrap.querySelector('.btn-pri');
     if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '⏳ Speichert…'; }
@@ -399,7 +415,7 @@ function buildImportView(container) {
       msg.style.cssText = 'font-size:22px;font-weight:700;color:var(--tx1);';
       done.appendChild(msg);
 
-      var sub = tx('div', '', buch + (seite ? ' · Seite ' + seite : ''));
+      var sub = tx('div', '', buch + (baseSeite ? ' · Seite ' + baseSeite + (rows.length && lastSeite !== baseSeite ? '–' + lastSeite : '') : ''));
       sub.style.cssText = 'font-size:14px;color:var(--tx2);margin-top:-16px;';
       done.appendChild(sub);
 
@@ -419,9 +435,9 @@ function buildImportView(container) {
 
       actions.appendChild(actionBtn(
         '↑ Nächste Seite hochladen',
-        'Gleiche Quelle · Seite ' + (seite ? seite + 1 : '?'),
+        'Gleiche Quelle · Seite ' + (lastSeite ? lastSeite + 1 : '?'),
         function() {
-          seiteInp.value = seite ? seite + 1 : '';
+          seiteInp.value = lastSeite ? lastSeite + 1 : '';
           fileLabel.textContent = '📄 PDF oder Bild hierher ziehen — oder klicken zum Auswählen';
           fileLabel.style.color = 'var(--tx2)';
           _file = null;

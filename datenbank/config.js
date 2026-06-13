@@ -103,8 +103,6 @@ function resetFilters() {
 }
 
 // ── Zentrale Autocomplete-Suggest-Funktionen ─────────────────────
-// Immer aus aktuellem Inputwert lesen, nie aus altem Datensatz-State.
-// kapitel/kapitel_titel werden konsistent per OR behandelt.
 function suggestBooks(fach) {
   return sbSelect('inhalte', { select: 'quelle_name', filters: fach ? { fach: fach } : {}, limit: 5000, order: 'quelle_name' })
     .then(function(rows) {
@@ -115,17 +113,18 @@ function suggestBooks(fach) {
 }
 function suggestKapitel(buch) {
   if (!buch) return Promise.resolve([]);
-  return sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { quelle_name: buch }, limit: 1000 })
+  return sbSelect('inhalte', { select: 'kapitel', filters: { quelle_name: buch }, limit: 1000 })
     .then(function(rows) {
       var seen = {}, kaps = [];
-      rows.forEach(function(r) { var k = r.kapitel || r.kapitel_titel; if (k && !seen[k]) { seen[k] = true; kaps.push(k); } });
+      rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
       return kaps.sort();
     });
 }
 function suggestUnterkapitel(buch, kapitel) {
   if (!buch) return Promise.resolve([]);
-  var raw = kapitel ? ['or=(kapitel.eq.' + encodeURIComponent(kapitel) + ',kapitel_titel.eq.' + encodeURIComponent(kapitel) + ')'] : [];
-  return sbSelect('inhalte', { select: 'uk_titel', filters: { quelle_name: buch }, rawParams: raw, limit: 500 })
+  var filters = { quelle_name: buch };
+  if (kapitel) filters.kapitel = kapitel;
+  return sbSelect('inhalte', { select: 'uk_titel', filters: filters, limit: 500 })
     .then(function(rows) {
       var seen = {}, uks = [];
       rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });

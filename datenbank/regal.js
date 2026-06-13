@@ -81,7 +81,7 @@ function mkRegalRow(pillCfg, booksFn, hasSep) {
 
 function buildBuecherregal(container) {
   var gen = ++_regalGen;
-  sbSelect('inhalte', { select: 'fach,quelle_name,jahrgang,quelle_typ,kapitel,kapitel_titel', limit: 5000 })
+  sbSelect('inhalte', { select: 'fach,quelle_name,jahrgang,quelle_typ,kapitel', limit: 5000 })
     .then(function(rows) {
       if (gen !== _regalGen || !container.isConnected) return;
 
@@ -94,8 +94,7 @@ function buildBuecherregal(container) {
         var d = dbSet[key];
         if (r.jahrgang) d.jgSet[r.jahrgang] = true;
         if (r.quelle_typ) d.quelleTypCount[r.quelle_typ] = (d.quelleTypCount[r.quelle_typ] || 0) + 1;
-        var kap = r.kapitel || r.kapitel_titel;
-        if (kap) d.kapSet[kap] = true;
+        if (r.kapitel) d.kapSet[r.kapitel] = true;
         d.count++;
       });
 

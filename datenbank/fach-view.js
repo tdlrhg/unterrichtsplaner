@@ -347,7 +347,7 @@ async function buildFachView(container) {
 
     var _lastSeiteBuch = null; // für Seiten-Trenner
     groups.forEach(function(g, i) {
-      var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);
+      var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.key !== '?' && g.items[0].nr !== g.key);
       var ref0 = g.items[0];
 
       // ── Seiten-Trenner ───────────────────────────────────────────
@@ -726,13 +726,12 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
 
   // Inhaltstyp
   bar.appendChild(fchipGroup([
-    { val: 'aufgabe',         label: '📝 Aufgabe',               color: TYP_FARBEN.aufgabe },
-    { val: 'lehrtext',        label: '📖 Lehrtext',              color: TYP_FARBEN.lehrtext },
-    { val: 'hinweis',         label: 'ℹ️ Erläuterungen/Hinweise', color: TYP_FARBEN.hinweis },
-    { val: 'arbeitsblatt',    label: '📋 Arbeitsblatt',          color: TYP_FARBEN.arbeitsblatt },
-    { val: 'loesung',         label: '✅ Lösung',                color: TYP_FARBEN.loesung },
-    { val: 'lehrerkommentar', label: '🧑‍🏫 Lehrerkommentar',      color: TYP_FARBEN.lehrerkommentar },
-    { val: 'bewertung',       label: '📊 Bewertungsbogen',       color: TYP_FARBEN.bewertung },
+    { val: 'aufgabe',         label: '📝 Aufgabe',          color: TYP_FARBEN.aufgabe },
+    { val: 'lehrtext',        label: '📖 Lehrtext',         color: TYP_FARBEN.lehrtext },
+    { val: 'arbeitsblatt',    label: '📋 Arbeitsblatt',     color: TYP_FARBEN.arbeitsblatt },
+    { val: 'loesung',         label: '✅ Lösung',           color: TYP_FARBEN.loesung },
+    { val: 'lehrerkommentar', label: '🧑‍🏫 Lehrerkommentar', color: TYP_FARBEN.lehrerkommentar },
+    { val: 'lzk',             label: '📝 Lernzielkontrolle',color: TYP_FARBEN.lzk },
   ], 'inhaltstyp'));
 
   // Filter löschen (nur wenn aktiv)

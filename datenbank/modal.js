@@ -286,7 +286,7 @@ function openTaskModal(group, opts) {
   sec(R0, 'Quelle');
   ssel(R0, 'Herkunft', 'quelle_typ', HERKUNFT_OPTS);
   var buchInp = ssuggest(R0, 'Buch / Titel', 'quelle_name', 'z.B. Lambacher Schweizer 7', function() { return suggestBooks(); });
-  var kapInp  = ssuggest(R0, 'Kapitel', 'kapitel_titel', 'z.B. IV Lineare Gleichungssysteme', function() { return suggestKapitel(buchInp.value.trim()); });
+  var kapInp  = ssuggest(R0, 'Kapitel', 'kapitel', 'z.B. IV Lineare Gleichungssysteme', function() { return suggestKapitel(buchInp.value.trim()); });
   ssuggest(R0, 'Unterkapitel', 'uk_titel', 'z.B. Gleichungssysteme grafisch lösen', function() { return suggestUnterkapitel(buchInp.value.trim(), kapInp.value.trim()); });
   var seiteRow = fieldRow();
   sfld(seiteRow, 'Seite', 'seite', 'number', '');
@@ -306,9 +306,9 @@ function openTaskModal(group, opts) {
   ssel(R0, 'Fach', 'fach', FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
   sfld(R0, 'Jahrgang', 'jahrgang', 'number', '5–10');
   ssel(R0, 'Inhaltstyp', 'inhaltstyp', [
-    ['aufgabe','📝 Aufgabe'],['lehrtext','📖 Lehrtext'],['hinweis','ℹ️ Erläuterungen/Hinweise'],
+    ['aufgabe','📝 Aufgabe'],['lehrtext','📖 Lehrtext'],
     ['arbeitsblatt','📋 Arbeitsblatt'],['loesung','✅ Lösung'],
-    ['lehrerkommentar','🧑‍🏫 Lehrerkommentar'],['bewertung','📊 Bewertungsbogen'],
+    ['lehrerkommentar','🧑‍🏫 Lehrerkommentar'],['lzk','📝 Lernzielkontrolle'],
   ]);
   p0.appendChild(R0);
 

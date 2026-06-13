@@ -50,10 +50,10 @@ WICHTIG — Lehrtexte: Absätze als separate Einträge erfassen:
 Hat ein Lehrtext mehrere klar getrennte Abschnitte (z.B. Einführung + Definition + Merksatz), erstelle für jeden Abschnitt einen eigenen Eintrag. Zusammengehörende Sätze desselben Abschnitts bleiben in einem Eintrag.
 
 Für jeden Eintrag:
-- inhaltstyp: genau eines von: aufgabe|lehrtext|hinweis
-  · aufgabe  = Übungsaufgabe, die Schüler selbst lösen sollen
-  · lehrtext = Erklärung, Definition, Merksatz, Fließtext, Einführung, Musterrechnung mit Lösung
-  · hinweis  = Erläuterungen/Hinweise für die Lehrkraft (Hintergrundinformation, methodische Hinweise)
+- inhaltstyp: genau eines von: aufgabe|lehrtext|lehrerkommentar
+  · aufgabe          = Übungsaufgabe, die Schüler selbst lösen sollen
+  · lehrtext         = Erklärung, Definition, Merksatz, Fließtext, Einführung, Musterrechnung mit Lösung
+  · lehrerkommentar  = Erläuterungen/Hinweise für die Lehrkraft (Hintergrundinformation, methodische Hinweise)
 - nr: Aufgaben-/Beispielnummer inkl. Teilaufgabe (z.B. "8a", "B2") — bei Lehrtexten die Überschrift oder Typ (z.B. "Definition", "Merksatz", "1.1 Terme")
 - aufgabenstellung: gemeinsamer Obersatz der Hauptaufgabe, VERBATIM — nur wenn er für alle Teilaufgaben gilt; bei Lehrtexten und Beispielen null
 - text: der vollständige Text des Eintrags, VERBATIM und VOLLSTÄNDIG aus dem Buch. Zeilenumbrüche innerhalb des Textes durch " | " ersetzen. Bei Aufgaben NIEMALS aufgabenstellung wiederholen.
@@ -79,20 +79,20 @@ JSON-FORMAT — sehr wichtig:
 const MAT_KI_PROMPT = `Du analysierst eine Seite aus einem Unterrichtsmaterialset oder einer Lehrerhandreichung (z.B. Raabe, Klett-Lehrerservice, eigenes Lehrermaterial).
 
 GRUNDREGEL: Erfasse JEDE SEITE als einen einzigen Eintrag. Unterteile NICHT nach einzelnen Aufgaben innerhalb einer Seite.
-Ausnahme: Enthält eine Seite mehrere klar benannte, thematisch getrennte Komponenten (z.B. "AB 1" und "AB 2" auf einer Seite), dann je einen Eintrag pro Komponente.
 
 VERBATIM-REGEL: Gib alle Texte EXAKT so wieder wie sie auf der Seite stehen — Wort für Wort, ohne Kürzungen.
 
-Für jeden Eintrag:
-- inhaltstyp: genau eines von: arbeitsblatt|loesung|lehrerkommentar|bewertung|lehrtext|hinweis
-  · arbeitsblatt   = Schülerarbeitsblatt mit Aufgaben zum Bearbeiten
-  · loesung        = Musterlösung, Erwartungshorizont, Lösungsblatt
-  · lehrerkommentar = Didaktischer Kommentar, methodische Hinweise, Sachinformation für Lehrkraft
-  · bewertung      = Bewertungsbogen, Kompetenzraster, Rubrik, Checkliste zur Beurteilung
-  · lehrtext       = Informationstext, Sachtext, Lesetext für Schülerinnen (kein Arbeitsblatt)
-  · hinweis        = Kurze Hinweise, Randnotizen, Erläuterungen
+WASSERZEICHEN IGNORIEREN: Seitenzahlen, Fußzeilen und Wasserzeichen (z.B. "www.meinunterricht.de · 3 von 22") sind NICHT Teil des Inhalts — nicht erfassen.
 
-- nr: Bezeichnung der Seite/Komponente VERBATIM aus dem Dokument (z.B. "AB 1", "Arbeitsblatt 3 – Differenzierung A", "Lösung AB 2", "Lehrerkommentar", "Bewertungsbogen", "Sachinformation")
+Für jeden Eintrag:
+- inhaltstyp: genau eines von: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext
+  · arbeitsblatt    = Schülerarbeitsblatt mit Aufgaben zum Bearbeiten
+  · loesung         = Musterlösung, Erwartungshorizont, Lösungsblatt
+  · lehrerkommentar = Didaktischer Kommentar, methodische Hinweise, Sachinformation für Lehrkraft
+  · lzk             = Lernzielkontrolle, Test, Quiz, Leistungsüberprüfung
+  · lehrtext        = Informationstext, Sachtext, Lesetext für Schülerinnen (kein Arbeitsblatt)
+
+- nr: Bezeichnung der Seite/Komponente VERBATIM aus dem Dokument (z.B. "M 1", "M 2", "AB 1", "Arbeitsblatt 3 – Differenzierung A", "Lösung AB 2", "Lehrerkommentar", "Hintergrundinformation")
   Falls keine Bezeichnung vorhanden: Typ + laufende Nummer (z.B. "Arbeitsblatt 1", "Lehrerkommentar 1")
 
 - aufgabenstellung: Überschrift oder Thema der Seite, VERBATIM — null wenn keine vorhanden
@@ -279,7 +279,20 @@ function buildImportView(container) {
           var qj = qi + 1;
           while (qj < qn && (cleaned[qj] === ' ' || cleaned[qj] === '\t' || cleaned[qj] === '\r' || cleaned[qj] === '\n')) qj++;
           var qnxt = qj < qn ? cleaned[qj] : '';
-          if (qnxt === ':' || qnxt === ',' || qnxt === '}' || qnxt === ']' || qj >= qn) { out += '"'; qi++; break; }
+          var isStructural = false;
+          if (qnxt === ':' || qnxt === '}' || qnxt === ']' || qj >= qn) {
+            isStructural = true;
+          } else if (qnxt === ',') {
+            var qk = qj + 1;
+            while (qk < qn && (cleaned[qk] === ' ' || cleaned[qk] === '\t' || cleaned[qk] === '\r' || cleaned[qk] === '\n')) qk++;
+            var qnxt2 = qk < qn ? cleaned[qk] : '';
+            if (qnxt2 === '"' || qnxt2 === '{' || qnxt2 === '[' ||
+                (qnxt2 >= '0' && qnxt2 <= '9') || qnxt2 === '-' ||
+                qnxt2 === 't' || qnxt2 === 'f' || qnxt2 === 'n') {
+              isStructural = true;
+            }
+          }
+          if (isStructural) { out += '"'; qi++; break; }
           else { out += '\\"'; qi++; }
         } else { out += qc; qi++; }
       }
@@ -375,7 +388,7 @@ function buildImportView(container) {
     return s;
   }
 
-  var TYP_CYCLE = ['aufgabe', 'lehrtext', 'hinweis', 'arbeitsblatt', 'loesung', 'lehrerkommentar', 'bewertung'];
+  var TYP_CYCLE = ['aufgabe', 'lehrtext', 'arbeitsblatt', 'loesung', 'lehrerkommentar', 'lzk'];
 
   function buildAufgabeCard(a, indent) {
     var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';
@@ -604,7 +617,7 @@ function buildImportView(container) {
 }
 
 function grpTypLabel(g) {
-  return g ? g.key : '';
+  return (g && g.key !== '?') ? g.key : '';
 }
 
 // ── Autocomplete-Dropdown für Eingabefelder ───────────────────────

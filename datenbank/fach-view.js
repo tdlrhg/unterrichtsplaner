@@ -726,13 +726,12 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
 
   // Inhaltstyp
   bar.appendChild(fchipGroup([
-    { val: 'aufgabe',         label: '📝 Aufgabe',               color: TYP_FARBEN.aufgabe },
-    { val: 'lehrtext',        label: '📖 Lehrtext',              color: TYP_FARBEN.lehrtext },
-    { val: 'hinweis',         label: 'ℹ️ Erläuterungen/Hinweise', color: TYP_FARBEN.hinweis },
-    { val: 'arbeitsblatt',    label: '📋 Arbeitsblatt',          color: TYP_FARBEN.arbeitsblatt },
-    { val: 'loesung',         label: '✅ Lösung',                color: TYP_FARBEN.loesung },
-    { val: 'lehrerkommentar', label: '🧑‍🏫 Lehrerkommentar',      color: TYP_FARBEN.lehrerkommentar },
-    { val: 'bewertung',       label: '📊 Bewertungsbogen',       color: TYP_FARBEN.bewertung },
+    { val: 'aufgabe',         label: '📝 Aufgabe',          color: TYP_FARBEN.aufgabe },
+    { val: 'lehrtext',        label: '📖 Lehrtext',         color: TYP_FARBEN.lehrtext },
+    { val: 'arbeitsblatt',    label: '📋 Arbeitsblatt',     color: TYP_FARBEN.arbeitsblatt },
+    { val: 'loesung',         label: '✅ Lösung',           color: TYP_FARBEN.loesung },
+    { val: 'lehrerkommentar', label: '🧑‍🏫 Lehrerkommentar', color: TYP_FARBEN.lehrerkommentar },
+    { val: 'lzk',             label: '📝 Lernzielkontrolle',color: TYP_FARBEN.lzk },
   ], 'inhaltstyp'));
 
   // Filter löschen (nur wenn aktiv)

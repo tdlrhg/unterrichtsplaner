@@ -50,10 +50,10 @@ WICHTIG — Lehrtexte: Absätze als separate Einträge erfassen:
 Hat ein Lehrtext mehrere klar getrennte Abschnitte (z.B. Einführung + Definition + Merksatz), erstelle für jeden Abschnitt einen eigenen Eintrag. Zusammengehörende Sätze desselben Abschnitts bleiben in einem Eintrag.
 
 Für jeden Eintrag:
-- inhaltstyp: genau eines von: aufgabe|lehrtext|hinweis
-  · aufgabe  = Übungsaufgabe, die Schüler selbst lösen sollen
-  · lehrtext = Erklärung, Definition, Merksatz, Fließtext, Einführung, Musterrechnung mit Lösung
-  · hinweis  = Erläuterungen/Hinweise für die Lehrkraft (Hintergrundinformation, methodische Hinweise)
+- inhaltstyp: genau eines von: aufgabe|lehrtext|lehrerkommentar
+  · aufgabe         = Übungsaufgabe, die Schüler selbst lösen sollen
+  · lehrtext        = Erklärung, Definition, Merksatz, Fließtext, Einführung, Musterrechnung mit Lösung
+  · lehrerkommentar = Erläuterungen/Hinweise für die Lehrkraft (Hintergrundinformation, methodische Hinweise)
 - nr: Aufgaben-/Beispielnummer inkl. Teilaufgabe (z.B. "8a", "B2") — bei Lehrtexten die Überschrift oder Typ (z.B. "Definition", "Merksatz", "1.1 Terme")
 - aufgabenstellung: gemeinsamer Obersatz der Hauptaufgabe, VERBATIM — nur wenn er für alle Teilaufgaben gilt; bei Lehrtexten und Beispielen null
 - text: der vollständige Text des Eintrags, VERBATIM und VOLLSTÄNDIG aus dem Buch. Zeilenumbrüche innerhalb des Textes durch " | " ersetzen. Bei Aufgaben NIEMALS aufgabenstellung wiederholen.
@@ -86,14 +86,13 @@ Ignoriere vollständig und erfasse NICHT im text-Feld: Verlagswebseiten (z.B. "w
 VERBATIM-REGEL: Gib alle Texte EXAKT so wieder wie sie auf der Seite stehen — Wort für Wort, ohne Kürzungen. Gilt für den eigentlichen Seiteninhalt (Kopf-/Fußzeilen und Wasserzeichen ausgenommen).
 
 Für jeden Eintrag:
-- inhaltstyp: genau eines von: arbeitsblatt|loesung|lehrerkommentar|bewertung|lehrtext|hinweis
+- inhaltstyp: genau eines von: arbeitsblatt|loesung|lehrerkommentar|lehrtext|lzk
   · arbeitsblatt    = Schülerarbeitsblatt mit Aufgaben zum Bearbeiten (Materialien M 1, M 2 … die Schülerinnen bearbeiten)
   · loesung         = Musterlösung, Erwartungshorizont, Lösungsblatt, Erläuterungen zu Materialien
   · lehrerkommentar = Seiten NUR für die Lehrkraft: Hintergrundinformation, Methodik/Didaktik, Kompetenzübersicht, Quellenangaben, Materialübersicht
-  · bewertung       = Bewertungsbogen, Kompetenzraster, Rubrik
   · lehrtext        = Informationstext oder Sachtext als Lesematerial für Schülerinnen ohne Aufgaben
-  · hinweis         = Kurze Hinweise, Randnotizen
-  FAUSTREGEL: Bearbeiten Schülerinnen diese Seite? → arbeitsblatt. Enthält sie Lösungen/Erwartungen? → loesung. Ist sie nur für die Lehrkraft? → lehrerkommentar.
+  · lzk             = Lernzielkontrolle, Test, Quiz, Leistungsüberprüfung
+  FAUSTREGEL: Bearbeiten Schülerinnen diese Seite zum Üben? → arbeitsblatt. Ist es eine Leistungsüberprüfung? → lzk. Enthält sie Lösungen/Erwartungen? → loesung. Ist sie nur für die Lehrkraft? → lehrerkommentar.
 
 - nr: Bezeichnung der Seite VERBATIM aus dem Dokument.
   Raabe-Beispiele: "M 1", "M 2", "M 3", "Lösung M 1", "Lösung M 2", "Hintergrundinformation", "Hinweise zu Methodik und Didaktik", "Kompetenzübersicht", "Quellenangaben", "Materialübersicht"
@@ -393,7 +392,7 @@ function buildImportView(container) {
     return s;
   }
 
-  var TYP_CYCLE = ['aufgabe', 'lehrtext', 'hinweis', 'arbeitsblatt', 'loesung', 'lehrerkommentar', 'bewertung'];
+  var TYP_CYCLE = ['aufgabe', 'lehrtext', 'arbeitsblatt', 'loesung', 'lehrerkommentar', 'lzk'];
 
   function buildAufgabeCard(a, indent) {
     var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';

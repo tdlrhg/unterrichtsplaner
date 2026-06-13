@@ -148,11 +148,11 @@ const SCHW_ICONS  = { 'grundlegend':'○', 'standard':'◑', 'anspruchsvoll':'�
 const SCHW_BG     = { 'grundlegend':'rgba(22,163,74,.05)', 'standard':'rgba(37,99,235,.05)', 'anspruchsvoll':'rgba(180,83,9,.05)' };
 const NIVEAU_FARBEN = { 'leicht':'#0891b2', 'mittel':'#7c3aed', 'schwer':'#be123c' };
 const NIVEAU_ICONS  = { 'leicht':'▽', 'mittel':'▾', 'schwer':'▼' };
-const TYP_FARBEN  = { 'aufgabe':'#0f766e', 'lehrtext':'#2563eb', 'hinweis':'#92400e',
-                      'arbeitsblatt':'#0f766e', 'loesung':'#7c3aed', 'lehrerkommentar':'#92400e', 'bewertung':'#b45309' };
-const TYP_LABELS  = { 'aufgabe':'Aufgabe', 'lehrtext':'Lehrtext', 'hinweis':'Erläuterungen/Hinweise',
-                      'arbeitsblatt':'Arbeitsblatt', 'loesung':'Lösung', 'lehrerkommentar':'Lehrerkommentar', 'bewertung':'Bewertungsbogen' };
-const TYP_ICONS   = { 'aufgabe':'', 'lehrtext':'📖', 'hinweis':'ℹ️',
-                      'arbeitsblatt':'📋', 'loesung':'✅', 'lehrerkommentar':'🧑‍🏫', 'bewertung':'📊' };
+const TYP_FARBEN  = { 'aufgabe':'#0f766e', 'lehrtext':'#2563eb',
+                      'arbeitsblatt':'#0f766e', 'loesung':'#7c3aed', 'lehrerkommentar':'#92400e', 'lzk':'#b45309' };
+const TYP_LABELS  = { 'aufgabe':'Aufgabe', 'lehrtext':'Lehrtext',
+                      'arbeitsblatt':'Arbeitsblatt', 'loesung':'Lösung', 'lehrerkommentar':'Lehrerkommentar', 'lzk':'Lernzielkontrolle' };
+const TYP_ICONS   = { 'aufgabe':'', 'lehrtext':'📖',
+                      'arbeitsblatt':'📋', 'loesung':'✅', 'lehrerkommentar':'🧑‍🏫', 'lzk':'📝' };
 
 function opColor(op) { return OP_FARBEN2[op] || '#64748b'; }

@@ -306,9 +306,9 @@ function openTaskModal(group, opts) {
   ssel(R0, 'Fach', 'fach', FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
   sfld(R0, 'Jahrgang', 'jahrgang', 'number', '5–10');
   ssel(R0, 'Inhaltstyp', 'inhaltstyp', [
-    ['aufgabe','📝 Aufgabe'],['lehrtext','📖 Lehrtext'],['hinweis','ℹ️ Erläuterungen/Hinweise'],
+    ['aufgabe','📝 Aufgabe'],['lehrtext','📖 Lehrtext'],
     ['arbeitsblatt','📋 Arbeitsblatt'],['loesung','✅ Lösung'],
-    ['lehrerkommentar','🧑‍🏫 Lehrerkommentar'],['bewertung','📊 Bewertungsbogen'],
+    ['lehrerkommentar','🧑‍🏫 Lehrerkommentar'],['lzk','📝 Lernzielkontrolle'],
   ]);
   p0.appendChild(R0);
 

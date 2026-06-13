@@ -194,19 +194,9 @@ function buildImportView(container) {
 
   var _aufgaben = [];
 
-  // ── KI-Analyse ────────────────────────────────────────────────
-  async function analyseFile(f, fileSeite, prefix) {
-    statusEl.textContent = prefix + '⏳ Datei wird gelesen…';
-    var imgs = await fileToDataURLs(f, { longEdge: 1568, quality: 0.88 });
-    statusEl.textContent = prefix + '⏳ KI analysiert ' + imgs.length + ' Seite(n)…';
-    var resized = await Promise.all(imgs.map(function(u) { return _impResizeImg(u, 1200, 0.82); }));
-    var blocks = [];
-    resized.forEach(function(r, i) {
-      blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } });
-      if (i < resized.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
-    });
-    blocks.push({ type: 'text', text: IMP_KI_PROMPT });
-    var raw = await callKI(blocks, { maxTokens: 16000 });
+  var IMP_BATCH_SIZE = 6; // max Seiten pro KI-Aufruf
+
+  function parseKiJson(raw) {
     var cleaned = raw.trim().replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
     cleaned = cleaned.replace(/"((?:[^"\\]|\\.)*)"/g, function(m, inner) {
       return '"' + inner.replace(/\n/g, '\\n').replace(/\r/g, '').replace(/\t/g, '\\t') + '"';
@@ -216,18 +206,45 @@ function buildImportView(container) {
                      .replace(/""\s*}/g, '"}')
                      .replace(/""\s*]/g, '"]');
     cleaned = cleaned.replace(/\\(?!["\\/bfnrtu0-9])/g, '\\\\');
-    var parsed;
-    try { parsed = robustJsonParsePr(cleaned); } catch(e) {
-      try { parsed = JSON.parse(cleaned); } catch(e2) {
-        var pos = parseInt((e2.message.match(/position (\d+)/i) || [])[1]) || 0;
-        console.error('[Import] Parse-Fehler:', e2.message);
-        console.error('[Import] Zeichen an Pos ' + pos + ':', JSON.stringify(cleaned.slice(Math.max(0,pos-40), pos+40)));
-        throw new Error('KI-Antwort nicht lesbar — Zeichen an Pos ' + pos + ': ' + JSON.stringify(cleaned.slice(Math.max(0,pos-20), pos+20)));
-      }
+    try { return robustJsonParsePr(cleaned); } catch(e) {}
+    try { return JSON.parse(cleaned); } catch(e2) {
+      var pos = parseInt((e2.message.match(/position (\d+)/i) || [])[1]) || 0;
+      console.error('[Import] Parse-Fehler:', e2.message);
+      console.error('[Import] Zeichen an Pos ' + pos + ':', JSON.stringify(cleaned.slice(Math.max(0,pos-40), pos+40)));
+      throw new Error('KI-Antwort nicht lesbar — Zeichen an Pos ' + pos + ': ' + JSON.stringify(cleaned.slice(Math.max(0,pos-20), pos+20)));
     }
-    var aufg = parsed.aufgaben || [];
-    aufg.forEach(function(a) { a._seite = fileSeite; });
-    return aufg;
+  }
+
+  // ── KI-Analyse ────────────────────────────────────────────────
+  async function analyseFile(f, fileSeite, prefix) {
+    statusEl.textContent = prefix + '⏳ Datei wird gelesen…';
+    var imgs = await fileToDataURLs(f, { longEdge: 1568, quality: 0.88 });
+    var resized = await Promise.all(imgs.map(function(u) { return _impResizeImg(u, 1200, 0.82); }));
+
+    var allAufg = [];
+    var totalBatches = Math.ceil(resized.length / IMP_BATCH_SIZE);
+
+    for (var bi = 0; bi < totalBatches; bi++) {
+      var batch = resized.slice(bi * IMP_BATCH_SIZE, (bi + 1) * IMP_BATCH_SIZE);
+      var batchLabel = totalBatches > 1
+        ? prefix + '⏳ Seiten ' + (bi * IMP_BATCH_SIZE + 1) + '–' + Math.min((bi + 1) * IMP_BATCH_SIZE, resized.length) + ' von ' + resized.length + '…'
+        : prefix + '⏳ KI analysiert ' + resized.length + ' Seite(n)…';
+      statusEl.textContent = batchLabel;
+
+      var blocks = [];
+      batch.forEach(function(r, i) {
+        blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } });
+        if (i < batch.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
+      });
+      blocks.push({ type: 'text', text: IMP_KI_PROMPT });
+
+      var raw = await callKI(blocks, { maxTokens: 16000 });
+      var parsed = parseKiJson(raw);
+      allAufg = allAufg.concat(parsed.aufgaben || []);
+    }
+
+    allAufg.forEach(function(a) { a._seite = fileSeite; });
+    return allAufg;
   }
 
   analyseBtn.onclick = async function() {

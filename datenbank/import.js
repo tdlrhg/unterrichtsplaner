@@ -71,10 +71,58 @@ JSON-FORMAT — sehr wichtig:
 
 {"aufgaben": [
   {"inhaltstyp":"lehrtext","nr":"Merksatz","aufgabenstellung":null,"text":"Der Flächeninhalt eines Rechtecks mit den Seiten a und b berechnet sich mit der Formel A = a · b. | Die Einheit des Flächeninhalts ist cm², m² oder mm².","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
-  {"inhaltstyp":"lehrtext","nr":"B1","aufgabenstellung":null,"text":"Berechne den Flächeninhalt des Rechtecks mit a = 6 cm und b = 4 cm. | Lösung: A = a · b = 6 cm · 4 cm = 24 cm²","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
-  {"inhaltstyp":"aufgabe","nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Berechne den Flächeninhalt der Fig. 1.","anforderung":"Schüler berechnen den Flächeninhalt einer Figur.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"},
-  {"inhaltstyp":"aufgabe","nr":"8b","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Schätze den Flächeninhalt der Fig. 2. Bestimme den Flächeninhalt in mm2, indem du die benötigten Längen misst.","anforderung":"Schüler schätzen und messen den Flächeninhalt einer Figur.","operator":"messen","umfang":"mittel","schwierigkeit":"standard"}
+  {"inhaltstyp":"aufgabe","nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Berechne den Flächeninhalt der Fig. 1.","anforderung":"Schüler berechnen den Flächeninhalt einer Figur.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"}
 ]}`;
+
+// ── KI-Prompt für Materialsets / Handreichungen ───────────────────
+// Jede Seite = ein Eintrag, kein Zerteilen in Teilaufgaben
+const MAT_KI_PROMPT = `Du analysierst eine Seite aus einem Unterrichtsmaterialset oder einer Lehrerhandreichung (z.B. Raabe, Klett-Lehrerservice, eigenes Lehrermaterial).
+
+GRUNDREGEL: Erfasse JEDE SEITE als einen einzigen Eintrag. Unterteile NICHT nach einzelnen Aufgaben innerhalb einer Seite.
+Ausnahme: Enthält eine Seite mehrere klar benannte, thematisch getrennte Komponenten (z.B. "AB 1" und "AB 2" auf einer Seite), dann je einen Eintrag pro Komponente.
+
+VERBATIM-REGEL: Gib alle Texte EXAKT so wieder wie sie auf der Seite stehen — Wort für Wort, ohne Kürzungen.
+
+Für jeden Eintrag:
+- inhaltstyp: genau eines von: arbeitsblatt|loesung|lehrerkommentar|bewertung|lehrtext|hinweis
+  · arbeitsblatt   = Schülerarbeitsblatt mit Aufgaben zum Bearbeiten
+  · loesung        = Musterlösung, Erwartungshorizont, Lösungsblatt
+  · lehrerkommentar = Didaktischer Kommentar, methodische Hinweise, Sachinformation für Lehrkraft
+  · bewertung      = Bewertungsbogen, Kompetenzraster, Rubrik, Checkliste zur Beurteilung
+  · lehrtext       = Informationstext, Sachtext, Lesetext für Schülerinnen (kein Arbeitsblatt)
+  · hinweis        = Kurze Hinweise, Randnotizen, Erläuterungen
+
+- nr: Bezeichnung der Seite/Komponente VERBATIM aus dem Dokument (z.B. "AB 1", "Arbeitsblatt 3 – Differenzierung A", "Lösung AB 2", "Lehrerkommentar", "Bewertungsbogen", "Sachinformation")
+  Falls keine Bezeichnung vorhanden: Typ + laufende Nummer (z.B. "Arbeitsblatt 1", "Lehrerkommentar 1")
+
+- aufgabenstellung: Überschrift oder Thema der Seite, VERBATIM — null wenn keine vorhanden
+
+- text: VOLLSTÄNDIGER Inhalt der Seite, VERBATIM und LÜCKENLOS.
+  Absätze und Zeilenumbrüche durch " | " ersetzen.
+  Aufgabenstellungen, Tabellen, Listen: alles erfassen.
+
+- anforderung: Was Schülerinnen mit diesem Material tun (ein Satz, Präsens) — bei Lehrer-, Lösungs- und Bewertungsseiten null
+
+- niveau: Differenzierungsstufe falls auf der Seite angegeben ("A", "B", "C", "Basis", "Standard", "Erweiterung") — sonst null
+
+- schwierigkeit: grundlegend|standard|anspruchsvoll — wenn aus dem Inhalt erkennbar, sonst null
+
+JSON-FORMAT:
+- Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
+- Alle Stringwerte einzeilig (Zeilenumbrüche → " | ")
+- Keine Anführungszeichen innerhalb von Stringwerten
+- Keine Backslashes in Stringwerten
+
+{"aufgaben": [
+  {"inhaltstyp":"arbeitsblatt","nr":"AB 1","aufgabenstellung":"Lesekompetenz: Texte erschließen","text":"Lies den Text aufmerksam durch. | 1. Unterstreiche alle unbekannten Wörter. | 2. Beantworte die Fragen in vollständigen Sätzen. | ...","anforderung":"Schülerinnen lesen einen Text und beantworten Verständnisfragen.","niveau":null,"schwierigkeit":"standard"},
+  {"inhaltstyp":"loesung","nr":"Lösung AB 1","aufgabenstellung":"Lesekompetenz: Texte erschließen – Lösung","text":"Erwartete Antworten: | 1. ... | 2. ...","anforderung":null,"niveau":null,"schwierigkeit":null},
+  {"inhaltstyp":"lehrerkommentar","nr":"Lehrerkommentar AB 1","aufgabenstellung":null,"text":"Zeitbedarf: ca. 20 min. | Sozialform: Einzelarbeit, anschließend Partnervergleich. | Hinweis: Schwächere Schülerinnen können AB 1A (vereinfachte Version) nutzen.","anforderung":null,"niveau":null,"schwierigkeit":null}
+]}`;
+
+// Welcher Prompt passt zum gewählten Quellentyp?
+function impPromptFor(quellentyp) {
+  return (quellentyp === 'materialset' || quellentyp === 'handreichung') ? MAT_KI_PROMPT : IMP_KI_PROMPT;
+}
 
 function _impResizeImg(dataUrl, maxW, q) {
   return new Promise(function(res, rej) {
@@ -179,6 +227,19 @@ function buildImportView(container) {
     fileLabel.style.color = 'var(--acc)';
   }
 
+  // ── Modus-Hinweis ─────────────────────────────────────────────
+  var modeHint = tx('div', '', '');
+  modeHint.style.cssText = 'font-size:12px;color:var(--tx3);padding:2px 0 4px;';
+  function updateModeHint() {
+    var isMat = typSel.value === 'materialset' || typSel.value === 'handreichung';
+    modeHint.textContent = isMat
+      ? '📋 Materialset-Modus: jede Seite wird als ganzer Eintrag erfasst'
+      : '📖 Schulbuch-Modus: Aufgaben und Lehrtexte werden einzeln erfasst';
+  }
+  updateModeHint();
+  typSel.addEventListener('change', updateModeHint);
+  wrap.appendChild(modeHint);
+
   // ── Analyse-Button + Status ───────────────────────────────────
   var bottomRow = mk('div', ''); bottomRow.style.cssText = 'display:flex;align-items:center;gap:14px;';
   var analyseBtn = btn('⚡ Seite analysieren', 'btn btn-pri');
@@ -255,7 +316,7 @@ function buildImportView(container) {
         blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } });
         if (i < batch.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
       });
-      blocks.push({ type: 'text', text: IMP_KI_PROMPT });
+      blocks.push({ type: 'text', text: impPromptFor(typSel.value) });
 
       var raw = await callKI(blocks, { maxTokens: 16000 });
       var parsed = parseKiJson(raw);
@@ -307,7 +368,7 @@ function buildImportView(container) {
     return s;
   }
 
-  var TYP_CYCLE = ['aufgabe', 'lehrtext', 'hinweis'];
+  var TYP_CYCLE = ['aufgabe', 'lehrtext', 'hinweis', 'arbeitsblatt', 'loesung', 'lehrerkommentar', 'bewertung'];
 
   function buildAufgabeCard(a, indent) {
     var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';
@@ -441,6 +502,7 @@ function buildImportView(container) {
         inhalt:       a.text || a.aufgabenstellung || null,
         anforderung:  a.anforderung || null,
         operator:     a.operator || null,
+        niveau:       a.niveau || null,
         schwierigkeit: a.schwierigkeit || a.schwierigkeitsstufe || null,
         umfang:       a.umfang || null,
         jahrgang:     jg,

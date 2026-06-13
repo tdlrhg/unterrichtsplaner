@@ -242,11 +242,8 @@ async function buildFachView(container) {
     if (DB.niveau)        filters.niveau        = DB.niveau;
     if (DB.umfang)        filters.umfang        = DB.umfang;
     if (DB.jahrgang)      filters.jahrgang      = DB.jahrgang;
-    // Kapitel: OR über beide Spalten (kapitel + kapitel_titel) für Rückwärtskompatibilität
     var rawParams = [];
-    if (DB.kapitel) {
-      rawParams.push('or=(kapitel.eq.' + encodeURIComponent(DB.kapitel) + ',kapitel_titel.eq.' + encodeURIComponent(DB.kapitel) + ')');
-    }
+    if (DB.kapitel) filters.kapitel = DB.kapitel;
     if (DB.uk_titel)      filters.uk_titel      = DB.uk_titel;
     if (DB.inhaltstyp)    filters.inhaltstyp    = DB.inhaltstyp;
     if (DB.seite != null) filters.seite         = DB.seite;
@@ -472,7 +469,7 @@ function renderRow(a, onSaved, compact, groupLabel) {
     src.appendChild(hBadge);
     if (hasBuch) {
       src.appendChild(tx('div', 'db-buch-name', a.quelle_name || '–'));
-      var sub = (a.uk_titel || a.kapitel || a.kapitel_titel || '') + (a.seite ? ' · S. ' + a.seite : '');
+      var sub = (a.uk_titel || a.kapitel || '') + (a.seite ? ' · S. ' + a.seite : '');
       if (sub.trim()) src.appendChild(tx('div', 'db-kap-name', sub));
     } else {
       src.appendChild(tx('div', 'db-buch-name', a.titel || a.dateiname || '–'));
@@ -525,7 +522,7 @@ function renderRow(a, onSaved, compact, groupLabel) {
 
   // Zelle 5: Kapitel
   var kapCol = mk('div', 'db-col-kap'); kapCol.dataset.colIdx = 5;
-  var kapText = a.kapitel || a.kapitel_titel || '';
+  var kapText = a.kapitel || '';
   if (kapText) {
     var kapEl = tx('div', 'db-col-kap-text', kapText);
     kapEl.title = kapText;
@@ -650,10 +647,10 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     kapSel.onchange = function() {
       DB.kapitel = kapSel.value || null; DB.uk_titel = null; DB.seite = null; DB.offset = 0; refresh();
     };
-    sbSelect('inhalte', { select: 'kapitel,kapitel_titel', filters: { fach: fach, quelle_name: DB.quelle_name }, limit: 1000 })
+    sbSelect('inhalte', { select: 'kapitel', filters: { fach: fach, quelle_name: DB.quelle_name }, limit: 1000 })
       .then(function(rows) {
         var seen = {}, kaps = [];
-        rows.forEach(function(r) { var k = r.kapitel || r.kapitel_titel; if (k && !seen[k]) { seen[k] = true; kaps.push(k); } });
+        rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
         kaps.sort();
         kaps.forEach(function(k) {
           var o = document.createElement('option'); o.value = k; o.textContent = k;
@@ -673,7 +670,7 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     ukSel.onchange = function() {
       DB.uk_titel = ukSel.value || null; DB.seite = null; DB.offset = 0; refresh();
     };
-    sbSelect('inhalte', { select: 'uk_titel', filters: { fach: fach, quelle_name: DB.quelle_name }, rawParams: ['or=(kapitel.eq.' + encodeURIComponent(DB.kapitel) + ',kapitel_titel.eq.' + encodeURIComponent(DB.kapitel) + ')'], limit: 500 })
+    sbSelect('inhalte', { select: 'uk_titel', filters: { fach: fach, quelle_name: DB.quelle_name, kapitel: DB.kapitel }, limit: 500 })
       .then(function(rows) {
         var seen = {}, uks = [];
         rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });

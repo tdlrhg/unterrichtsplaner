@@ -140,16 +140,6 @@ function buildSidebar() {
     false,
     () => { window.location.href = 'datenbank.html'; }
   ));
-  sb.appendChild(sbRow(
-    '📖 Bücher & Sammlungen', null,
-    S.view === 'schulbuecher',
-    () => { S.view = 'schulbuecher'; S.sel = null; render(); }
-  ));
-  sb.appendChild(sbRow(
-    '🔍 Material-Suche', null,
-    S.view === 'aufgabenDB',
-    () => { S.view = 'aufgabenDB'; S.sel = null; render(); }
-  ));
 
   // ── Einstellungen ─────────────────────────────────────────────
   sb.appendChild(mk('div', 'sb-sep'));

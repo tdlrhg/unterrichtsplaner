@@ -10,8 +10,13 @@ function openTaskModal(group, opts) {
   var onDone  = opts.onRefresh;
   var navList = opts.navList || null;
   var navIdx  = opts.navIdx  != null ? opts.navIdx : -1;
+  var doSave; // wird weiter unten zugewiesen – navTo nutzt Closure-Referenz
   function navTo(idx) {
-    openTaskModal(navList[idx], { mode: 'edit', onRefresh: onDone, navList: navList, navIdx: idx });
+    (doSave ? doSave({ noClose: true, silent: true }) : Promise.resolve())
+      .catch(function() {})
+      .then(function() {
+        openTaskModal(navList[idx], { mode: 'edit', onRefresh: onDone, navList: navList, navIdx: idx });
+      });
   }
   var items   = (group.items && group.items.length) ? group.items : [{}];
   var isMulti = items.length > 1;
@@ -457,8 +462,28 @@ function openTaskModal(group, opts) {
   var cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelBtn.onclick = closeEntryModal;
   footer.appendChild(saveBtn);
   footer.appendChild(cancelBtn);
-  saveBtn.onclick = async function() {
-    // Gemeinsame Felder (data-key) sammeln
+  function itemPatch(i) {
+    var f = itemFields[i];
+    var p = {
+      inhalt:        encode(f.inhalt.value),
+      abbildung:     encode(f.abbildung.value),
+      anforderung:   encode(f.anforderung.value),
+      thema:         f.thema.value.trim() || null,
+      niveau:        f.niveau.value || null,
+      operator:      f.operator.value || null,
+      schwierigkeit: f.schwierigkeit.value || null,
+      umfang:        f.umfang.value || null,
+      hat_loesung:   f.hat_loesung.checked
+    };
+    if (isMulti) {
+      var pn = parentNrInp ? parentNrInp.value.trim() : '';
+      p.nr = pn ? (pn + posLetter(i)) : null;
+    }
+    return p;
+  }
+  // noClose: true → Modal bleibt offen (Navigation); silent: Validierungsfehler nicht als Alert
+  doSave = async function(opts) {
+    opts = opts || {};
     var shared = {};
     tabWrap.querySelectorAll('[data-key]').forEach(function(el) {
       var k = el.dataset.key;
@@ -466,42 +491,25 @@ function openTaskModal(group, opts) {
       else if (el.tagName === 'TEXTAREA') shared[k] = encode(el.value);
       else                                shared[k] = el.value.trim() || null;
     });
-    function itemPatch(i) {
-      var f = itemFields[i];
-      var p = {
-        inhalt:        encode(f.inhalt.value),
-        abbildung:     encode(f.abbildung.value),
-        anforderung:   encode(f.anforderung.value),
-        thema:         f.thema.value.trim() || null,
-        niveau:        f.niveau.value || null,
-        operator:      f.operator.value || null,
-        schwierigkeit: f.schwierigkeit.value || null,
-        umfang:        f.umfang.value || null,
-        hat_loesung:   f.hat_loesung.checked
-      };
-      // Teilaufgaben-Nr = Oberaufgabennummer + fortlaufender Buchstabe (1 + a → 1a)
-      if (isMulti) {
-        var pn = parentNrInp ? parentNrInp.value.trim() : '';
-        p.nr = pn ? (pn + posLetter(i)) : null;
-      }
-      return p;
-    }
     if (!isMulti) {
       var probe = Object.assign({}, shared, itemPatch(0));
-      if (!probe.inhalt && !probe.thema) { alert('Inhalt oder Thema ist erforderlich.'); return; }
+      if (!probe.inhalt && !probe.thema) {
+        if (!opts.silent) alert('Inhalt oder Thema ist erforderlich.');
+        return;
+      }
     }
     saveBtn.disabled = true; saveBtn.textContent = '⏳ Speichert…';
     try {
       if (mode === 'create') {
         var newRow = Object.assign({ id: 'db_' + Date.now() + '_' + Math.random().toString(36).slice(2), fach: DB.fach }, shared, itemPatch(0));
         await sbInsert('inhalte', [newRow]);
-        closeEntryModal(); if (onDone) onDone(newRow);
+        if (!opts.noClose) { closeEntryModal(); if (onDone) onDone(newRow); }
+        else if (onDone) onDone(newRow);
       } else {
         await Promise.all(items.map(function(it, i) {
-          if (removed[i]) return null;   // bereits gelöschte Teilaufgabe überspringen
+          if (removed[i]) return null;
           var patch = Object.assign({}, shared, itemPatch(i));
           if (it.id) return sbUpdate('inhalte', it.id, patch);
-          // Neu hinzugefügte Teilaufgabe → Insert mit gruppen_key der Gruppe
           var newId = 'db_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 6);
           var row = Object.assign({
             id: newId,
@@ -510,13 +518,17 @@ function openTaskModal(group, opts) {
           }, patch);
           return sbInsert('inhalte', [row]);
         }));
-        closeEntryModal(); if (onDone) onDone();
+        if (!opts.noClose) { closeEntryModal(); if (onDone) onDone(); }
+        else if (onDone) onDone();
       }
     } catch(e) {
       alert('Fehler beim Speichern: ' + e.message);
       saveBtn.disabled = false; saveBtn.textContent = '✓ Speichern';
+      throw e;
     }
+    saveBtn.disabled = false; saveBtn.textContent = '✓ Speichern';
   };
+  saveBtn.onclick = function() { doSave({}); };
   // Löschen-Button rechts (komplette Aufgabe), nur im Edit-Modus
   if (mode !== 'create') {
     var delLabel = isMulti ? '🗑 ' + grpTypLabel(group) + ' komplett löschen' : '🗑 Löschen';

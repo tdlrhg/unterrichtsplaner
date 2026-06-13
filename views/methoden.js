@@ -310,15 +310,6 @@ function viewMethoden() {
       };
       saveBtn.textContent = 'Speichert…'; saveBtn.disabled = true;
       await saveMethod(updated, isNew);
-      // Wenn aus Material-Analyse kommend: Material verknüpfen
-      if (isNew && prefill.linkMatId) {
-        const matIdx = MATDB.findIndex(m => m.id === prefill.linkMatId);
-        if (matIdx >= 0) {
-          if (!MATDB[matIdx].methodenIds) MATDB[matIdx].methodenIds = [];
-          if (!MATDB[matIdx].methodenIds.includes(updated.id)) MATDB[matIdx].methodenIds.push(updated.id);
-          saveMatDB();
-        }
-      }
       closeOverlay();
     };
     footer.appendChild(cancelBtn);

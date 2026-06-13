@@ -279,69 +279,6 @@ function phasenTable(stunde) {
     minI.oninput = e => { phase.minuten = parseInt(e.target.value) || 0; scheduleSave(); };
     tmin.appendChild(minI); tr.appendChild(tmin);
 
-    // Material (verknüpft aus MATDB)
-    const tmat = document.createElement('td'); tmat.style.minWidth = '150px';
-    if (!phase.materialIds) phase.materialIds = [];
-
-    function renderMatCell() {
-      tmat.innerHTML = '';
-      const wrap = mk('div', 'mat-cell');
-
-      phase.materialIds.forEach(mid => {
-        const mat = MATDB.find(m => m.id === mid);
-        if (!mat) return;
-        const chip = mk('span', 'mat-chip');
-        chip.title = [mat.materialtyp, mat.beschreibung].filter(Boolean).join(' · ');
-        const lbl = tx('span', '', mat.titel);
-        const x = mk('span', 'mat-chip-x'); x.textContent = '✕';
-        x.onclick = () => {
-          phase.materialIds = phase.materialIds.filter(id => id !== mid);
-          scheduleSave(); renderMatCell();
-        };
-        chip.appendChild(lbl); chip.appendChild(x);
-        wrap.appendChild(chip);
-      });
-
-      const searchWrap = mk('div', 'mat-search-wrap');
-      const si = document.createElement('input');
-      si.type = 'text'; si.placeholder = '+ Material…';
-      si.className = 'mat-search-inp';
-
-      const dd = mk('div', 'mat-dd');
-      si.oninput = () => {
-        const q = si.value.toLowerCase().trim();
-        dd.innerHTML = ''; dd.style.display = 'none';
-        if (!q) return;
-        const hits = MATDB.filter(m =>
-          !phase.materialIds.includes(m.id) &&
-          (m.titel.toLowerCase().includes(q) ||
-           (m.themen || []).join(' ').toLowerCase().includes(q) ||
-           (m.fach || []).join(' ').toLowerCase().includes(q))
-        ).slice(0, 8);
-        if (!hits.length) return;
-        hits.forEach(m => {
-          const it = mk('div', 'mat-dd-item');
-          const top = mk('div', '');
-          top.innerHTML = '<strong>' + m.titel + '</strong>';
-          const sub = tx('div', 'mat-dd-sub', (m.fach || []).join(', ') + ' · ' + m.materialtyp);
-          it.appendChild(top); it.appendChild(sub);
-          it.onmousedown = () => {
-            phase.materialIds.push(m.id);
-            scheduleSave(); si.value = ''; renderMatCell();
-          };
-          dd.appendChild(it);
-        });
-        dd.style.display = 'block';
-      };
-      si.onblur = () => setTimeout(() => { dd.style.display = 'none'; si.value = ''; }, 150);
-
-      searchWrap.appendChild(si); searchWrap.appendChild(dd);
-      wrap.appendChild(searchWrap);
-      tmat.appendChild(wrap);
-    }
-
-    renderMatCell(); tr.appendChild(tmat);
-
     // Löschen
     const td = document.createElement('td');
     const db = btn('✕', 'btn btn-danger btn-xs');

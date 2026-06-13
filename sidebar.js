@@ -131,11 +131,6 @@ function buildSidebar() {
   sb.appendChild(mk('div', 'sb-sep'));
   sb.appendChild(sbSection('Datenbanken'));
   sb.appendChild(sbRow(
-    '📄 Material', null,
-    S.view === 'materialien',
-    () => { S.view = 'materialien'; S.sel = null; render(); }
-  ));
-  sb.appendChild(sbRow(
     '📚 → Datenbank', null,
     false,
     () => { window.location.href = 'datenbank.html'; }

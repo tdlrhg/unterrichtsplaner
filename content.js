@@ -4,11 +4,8 @@ function buildContent() {
   if (S.view === 'kalender') { c.appendChild(viewKalender()); return c; }
   if (S.view === 'einstellungen') { c.appendChild(viewEinstellungen()); return c; }
   if (S.view === 'klp') { c.appendChild(viewKlp()); return c; }
-  if (S.view === 'materialien') { c.appendChild(viewMaterialien()); return c; }
   if (S.view === 'methoden') { c.appendChild(viewMethoden()); return c; }
   if (S.view === 'didaktik') { c.appendChild(viewDidaktik()); return c; }
-  if (S.view === 'schulbuecher') { c.appendChild(viewSchulbuecher()); return c; }
-  if (S.view === 'aufgabenDB') { c.appendChild(viewAufgabenDB()); return c; }
   if (S.view === 'kursDetail' && S.aktKursDetailId) { c.appendChild(viewKursDetail(S.aktKursDetailId)); return c; }
   if (S.view === 'kursEinstellungen' && S.aktKursDetailId) { c.appendChild(viewKursEinstellungen(S.aktKursDetailId)); return c; }
   if (!S.aktFpId) { c.appendChild(viewFachplanung()); return c; }

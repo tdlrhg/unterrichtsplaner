@@ -51,9 +51,9 @@ Hat ein Lehrtext mehrere klar getrennte Abschnitte (z.B. Einführung + Definitio
 
 Für jeden Eintrag:
 - inhaltstyp: genau eines von: aufgabe|lehrtext|lehrerkommentar
-  · aufgabe          = Übungsaufgabe, die Schüler selbst lösen sollen
-  · lehrtext         = Erklärung, Definition, Merksatz, Fließtext, Einführung, Musterrechnung mit Lösung
-  · lehrerkommentar  = Erläuterungen/Hinweise für die Lehrkraft (Hintergrundinformation, methodische Hinweise)
+  · aufgabe         = Übungsaufgabe, die Schüler selbst lösen sollen
+  · lehrtext        = Erklärung, Definition, Merksatz, Fließtext, Einführung, Musterrechnung mit Lösung
+  · lehrerkommentar = Erläuterungen/Hinweise für die Lehrkraft (Hintergrundinformation, methodische Hinweise)
 - nr: Aufgaben-/Beispielnummer inkl. Teilaufgabe (z.B. "8a", "B2") — bei Lehrtexten die Überschrift oder Typ (z.B. "Definition", "Merksatz", "1.1 Terme")
 - aufgabenstellung: gemeinsamer Obersatz der Hauptaufgabe, VERBATIM — nur wenn er für alle Teilaufgaben gilt; bei Lehrtexten und Beispielen null
 - text: der vollständige Text des Eintrags, VERBATIM und VOLLSTÄNDIG aus dem Buch. Zeilenumbrüche innerhalb des Textes durch " | " ersetzen. Bei Aufgaben NIEMALS aufgabenstellung wiederholen.
@@ -75,37 +75,39 @@ JSON-FORMAT — sehr wichtig:
 ]}`;
 
 // ── KI-Prompt für Materialsets / Handreichungen ───────────────────
-// Jede Seite = ein Eintrag, kein Zerteilen in Teilaufgaben
+// Jede Seite = genau ein Eintrag, keine Ausnahmen
 const MAT_KI_PROMPT = `Du analysierst eine Seite aus einem Unterrichtsmaterialset oder einer Lehrerhandreichung (z.B. Raabe, Klett-Lehrerservice, eigenes Lehrermaterial).
 
-GRUNDREGEL: Erfasse JEDE SEITE als einen einzigen Eintrag. Unterteile NICHT nach einzelnen Aufgaben innerhalb einer Seite.
+GRUNDREGEL: Erfasse JEDE SEITE als genau EINEN Eintrag. Keine Ausnahmen.
 
-VERBATIM-REGEL: Gib alle Texte EXAKT so wieder wie sie auf der Seite stehen — Wort für Wort, ohne Kürzungen.
+WASSERZEICHEN UND KOPF-/FUSSZEILEN IGNORIEREN:
+Ignoriere vollständig und erfasse NICHT im text-Feld: Verlagswebseiten (z.B. "www.meinunterricht.de"), Seitenzähler wie "1 von 22" oder "Seite 3 von 10", Copyright- und Download-Hinweise, Logos, Kopf- und Fußzeilen mit Verlagsangaben.
 
-WASSERZEICHEN IGNORIEREN: Seitenzahlen, Fußzeilen und Wasserzeichen (z.B. "www.meinunterricht.de · 3 von 22") sind NICHT Teil des Inhalts — nicht erfassen.
+VERBATIM-REGEL: Gib alle Texte EXAKT so wieder wie sie auf der Seite stehen — Wort für Wort, ohne Kürzungen. Gilt für den eigentlichen Seiteninhalt (Kopf-/Fußzeilen und Wasserzeichen ausgenommen).
 
 Für jeden Eintrag:
-- inhaltstyp: genau eines von: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext
-  · arbeitsblatt    = Schülerarbeitsblatt mit Aufgaben zum Bearbeiten
-  · loesung         = Musterlösung, Erwartungshorizont, Lösungsblatt
-  · lehrerkommentar = Didaktischer Kommentar, methodische Hinweise, Sachinformation für Lehrkraft
+- inhaltstyp: genau eines von: arbeitsblatt|loesung|lehrerkommentar|lehrtext|lzk
+  · arbeitsblatt    = Schülerarbeitsblatt mit Aufgaben zum Bearbeiten (Materialien M 1, M 2 … die Schülerinnen bearbeiten)
+  · loesung         = Musterlösung, Erwartungshorizont, Lösungsblatt, Erläuterungen zu Materialien
+  · lehrerkommentar = Seiten NUR für die Lehrkraft: Hintergrundinformation, Methodik/Didaktik, Kompetenzübersicht, Quellenangaben, Materialübersicht
+  · lehrtext        = Informationstext oder Sachtext als Lesematerial für Schülerinnen ohne Aufgaben
   · lzk             = Lernzielkontrolle, Test, Quiz, Leistungsüberprüfung
-  · lehrtext        = Informationstext, Sachtext, Lesetext für Schülerinnen (kein Arbeitsblatt)
+  FAUSTREGEL: Bearbeiten Schülerinnen diese Seite zum Üben? → arbeitsblatt. Ist es eine Leistungsüberprüfung? → lzk. Enthält sie Lösungen/Erwartungen? → loesung. Ist sie nur für die Lehrkraft? → lehrerkommentar.
 
-- nr: Bezeichnung der Seite/Komponente VERBATIM aus dem Dokument (z.B. "M 1", "M 2", "AB 1", "Arbeitsblatt 3 – Differenzierung A", "Lösung AB 2", "Lehrerkommentar", "Hintergrundinformation")
-  Falls keine Bezeichnung vorhanden: Typ + laufende Nummer (z.B. "Arbeitsblatt 1", "Lehrerkommentar 1")
+- nr: Bezeichnung der Seite VERBATIM aus dem Dokument.
+  Raabe-Beispiele: "M 1", "M 2", "M 3", "Lösung M 1", "Lösung M 2", "Hintergrundinformation", "Hinweise zu Methodik und Didaktik", "Kompetenzübersicht", "Quellenangaben", "Materialübersicht"
+  Falls keine Bezeichnung: Typ + laufende Nummer, z.B. "Arbeitsblatt 1", "Lehrerkommentar 1"
 
-- aufgabenstellung: Überschrift oder Thema der Seite, VERBATIM — null wenn keine vorhanden
+- aufgabenstellung: Überschrift oder Titel der Seite, VERBATIM — null wenn keine vorhanden
 
-- text: VOLLSTÄNDIGER Inhalt der Seite, VERBATIM und LÜCKENLOS.
+- text: VOLLSTÄNDIGER Seiteninhalt VERBATIM (Kopf-/Fußzeilen und Wasserzeichen ausgenommen).
   Absätze und Zeilenumbrüche durch " | " ersetzen.
-  Aufgabenstellungen, Tabellen, Listen: alles erfassen.
 
 - anforderung: Was Schülerinnen mit diesem Material tun (ein Satz, Präsens) — bei Lehrer-, Lösungs- und Bewertungsseiten null
 
-- niveau: Differenzierungsstufe falls auf der Seite angegeben ("A", "B", "C", "Basis", "Standard", "Erweiterung") — sonst null
+- niveau: Differenzierungsstufe falls angegeben ("A", "B", "C", "Basis", "Standard", "Erweiterung") — sonst null
 
-- schwierigkeit: grundlegend|standard|anspruchsvoll — wenn aus dem Inhalt erkennbar, sonst null
+- schwierigkeit: grundlegend|standard|anspruchsvoll — wenn erkennbar, sonst null
 
 JSON-FORMAT:
 - Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
@@ -114,9 +116,9 @@ JSON-FORMAT:
 - Keine Backslashes in Stringwerten
 
 {"aufgaben": [
-  {"inhaltstyp":"arbeitsblatt","nr":"AB 1","aufgabenstellung":"Lesekompetenz: Texte erschließen","text":"Lies den Text aufmerksam durch. | 1. Unterstreiche alle unbekannten Wörter. | 2. Beantworte die Fragen in vollständigen Sätzen. | ...","anforderung":"Schülerinnen lesen einen Text und beantworten Verständnisfragen.","niveau":null,"schwierigkeit":"standard"},
-  {"inhaltstyp":"loesung","nr":"Lösung AB 1","aufgabenstellung":"Lesekompetenz: Texte erschließen – Lösung","text":"Erwartete Antworten: | 1. ... | 2. ...","anforderung":null,"niveau":null,"schwierigkeit":null},
-  {"inhaltstyp":"lehrerkommentar","nr":"Lehrerkommentar AB 1","aufgabenstellung":null,"text":"Zeitbedarf: ca. 20 min. | Sozialform: Einzelarbeit, anschließend Partnervergleich. | Hinweis: Schwächere Schülerinnen können AB 1A (vereinfachte Version) nutzen.","anforderung":null,"niveau":null,"schwierigkeit":null}
+  {"inhaltstyp":"lehrerkommentar","nr":"Hintergrundinformation","aufgabenstellung":null,"text":"Korrosion bezeichnet die Reaktion eines metallischen Werkstoffs mit seiner Umgebung. | Im Meerwasser wird sie durch den hohen Salzgehalt beschleunigt, da gelöste Ionen die elektrische Leitfähigkeit erhöhen und galvanische Elemente entstehen können.","anforderung":null,"niveau":null,"schwierigkeit":null},
+  {"inhaltstyp":"arbeitsblatt","nr":"M 1","aufgabenstellung":"Korrosion im Meerwasser","text":"Schiffe werden im Meerwasser besonders stark von Korrosion befallen. | 1. Erkläre, warum Salzwasser die Korrosion beschleunigt. | 2. Nenne zwei Schutzmaßnahmen gegen Korrosion an Schiffshüllen.","anforderung":"Schülerinnen erklären Korrosionsvorgänge und nennen Schutzmaßnahmen.","niveau":null,"schwierigkeit":"standard"},
+  {"inhaltstyp":"loesung","nr":"Lösung M 1","aufgabenstellung":"Korrosion im Meerwasser – Erwartungshorizont","text":"1. Salzwasser leitet Strom, da Ionen als Ladungsträger wirken. Es bilden sich galvanische Elemente. | 2. Mögliche Schutzmaßnahmen: Schutzanstrich, kathodischer Korrosionsschutz (Opferanode).","anforderung":null,"niveau":null,"schwierigkeit":null}
 ]}`;
 
 // Welcher Prompt passt zum gewählten Quellentyp?
@@ -283,9 +285,11 @@ function buildImportView(container) {
           if (qnxt === ':' || qnxt === '}' || qnxt === ']' || qj >= qn) {
             isStructural = true;
           } else if (qnxt === ',') {
+            // Komma könnte JSON-Trenner ODER Text sein — prüfe was danach kommt
             var qk = qj + 1;
             while (qk < qn && (cleaned[qk] === ' ' || cleaned[qk] === '\t' || cleaned[qk] === '\r' || cleaned[qk] === '\n')) qk++;
             var qnxt2 = qk < qn ? cleaned[qk] : '';
+            // JSON-Wert-Start: String, Objekt, Array, Zahl, true/false/null
             if (qnxt2 === '"' || qnxt2 === '{' || qnxt2 === '[' ||
                 (qnxt2 >= '0' && qnxt2 <= '9') || qnxt2 === '-' ||
                 qnxt2 === 't' || qnxt2 === 'f' || qnxt2 === 'n') {

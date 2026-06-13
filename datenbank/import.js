@@ -198,6 +198,25 @@ function buildImportView(container) {
 
   function parseKiJson(raw) {
     var cleaned = raw.trim().replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
+    // Rohe Anführungszeichen innerhalb von JSON-Strings escapen (KI nutzt sie für Betonung)
+    var out = ''; var qi = 0; var qn = cleaned.length;
+    while (qi < qn) {
+      var qch = cleaned[qi];
+      if (qch !== '"') { out += qch; qi++; continue; }
+      out += '"'; qi++;
+      while (qi < qn) {
+        var qc = cleaned[qi];
+        if (qc === '\\') { out += qc; qi++; if (qi < qn) { out += cleaned[qi]; qi++; } }
+        else if (qc === '"') {
+          var qj = qi + 1;
+          while (qj < qn && (cleaned[qj] === ' ' || cleaned[qj] === '\t' || cleaned[qj] === '\r' || cleaned[qj] === '\n')) qj++;
+          var qnxt = qj < qn ? cleaned[qj] : '';
+          if (qnxt === ':' || qnxt === ',' || qnxt === '}' || qnxt === ']' || qj >= qn) { out += '"'; qi++; break; }
+          else { out += '\\"'; qi++; }
+        } else { out += qc; qi++; }
+      }
+    }
+    cleaned = out;
     cleaned = cleaned.replace(/"((?:[^"\\]|\\.)*)"/g, function(m, inner) {
       return '"' + inner.replace(/\n/g, '\\n').replace(/\r/g, '').replace(/\t/g, '\\t') + '"';
     });

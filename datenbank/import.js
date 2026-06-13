@@ -604,7 +604,7 @@ function buildImportView(container) {
 }
 
 function grpTypLabel(g) {
-  return g ? g.key : '';
+  return (g && g.key !== '?') ? g.key : '';
 }
 
 // ── Autocomplete-Dropdown für Eingabefelder ───────────────────────

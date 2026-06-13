@@ -347,7 +347,7 @@ async function buildFachView(container) {
 
     var _lastSeiteBuch = null; // für Seiten-Trenner
     groups.forEach(function(g, i) {
-      var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);
+      var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.key !== '?' && g.items[0].nr !== g.key);
       var ref0 = g.items[0];
 
       // ── Seiten-Trenner ───────────────────────────────────────────

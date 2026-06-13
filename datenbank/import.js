@@ -282,7 +282,22 @@ function buildImportView(container) {
           var qj = qi + 1;
           while (qj < qn && (cleaned[qj] === ' ' || cleaned[qj] === '\t' || cleaned[qj] === '\r' || cleaned[qj] === '\n')) qj++;
           var qnxt = qj < qn ? cleaned[qj] : '';
-          if (qnxt === ':' || qnxt === ',' || qnxt === '}' || qnxt === ']' || qj >= qn) { out += '"'; qi++; break; }
+          var isStructural = false;
+          if (qnxt === ':' || qnxt === '}' || qnxt === ']' || qj >= qn) {
+            isStructural = true;
+          } else if (qnxt === ',') {
+            // Komma könnte JSON-Trenner ODER Text sein — prüfe was danach kommt
+            var qk = qj + 1;
+            while (qk < qn && (cleaned[qk] === ' ' || cleaned[qk] === '\t' || cleaned[qk] === '\r' || cleaned[qk] === '\n')) qk++;
+            var qnxt2 = qk < qn ? cleaned[qk] : '';
+            // JSON-Wert-Start: String, Objekt, Array, Zahl, true/false/null
+            if (qnxt2 === '"' || qnxt2 === '{' || qnxt2 === '[' ||
+                (qnxt2 >= '0' && qnxt2 <= '9') || qnxt2 === '-' ||
+                qnxt2 === 't' || qnxt2 === 'f' || qnxt2 === 'n') {
+              isStructural = true;
+            }
+          }
+          if (isStructural) { out += '"'; qi++; break; }
           else { out += '\\"'; qi++; }
         } else { out += qc; qi++; }
       }

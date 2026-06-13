@@ -364,6 +364,26 @@ function buildImportView(container) {
     rHdr.appendChild(saveAllBtn);
     resultsWrap.appendChild(rHdr);
 
+    // Metadaten-Zusammenfassung: zeigt was tatsächlich gespeichert wird
+    var metaSummary = mk('div', '');
+    metaSummary.style.cssText = 'font-size:12px;color:var(--tx2);padding:4px 2px 8px;border-bottom:1px solid var(--border);margin-bottom:4px;';
+    function metaRefresh() {
+      var hMeta = HERKUNFT[typSel.value] || HERKUNFT.schulbuch;
+      var parts = [
+        (hMeta.icon + ' ' + hMeta.label),
+        buchInp.value.trim() || '–',
+      ];
+      if (jgInp.value.trim()) parts.push('Jg. ' + jgInp.value.trim());
+      if (fachSel.value) { var fi = fachInfo(fachSel.value); parts.push(fi.icon + ' ' + fi.label); }
+      metaSummary.textContent = parts.join(' · ');
+    }
+    metaRefresh();
+    typSel.addEventListener('change', metaRefresh);
+    buchInp.addEventListener('input', metaRefresh);
+    jgInp.addEventListener('input', metaRefresh);
+    fachSel.addEventListener('change', metaRefresh);
+    resultsWrap.appendChild(metaSummary);
+
     var groups = dbGroupByParent(_aufgaben);
     groups.forEach(function(g) {
       var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);
@@ -476,7 +496,7 @@ function buildImportView(container) {
           seiteInp.value = lastSeite ? lastSeite + 1 : '';
           fileLabel.textContent = '📄 PDF oder Bild hierher ziehen — oder klicken zum Auswählen';
           fileLabel.style.color = 'var(--tx2)';
-          _file = null;
+          _files = [];
           statusEl.textContent = ''; statusEl.style.color = 'var(--tx2)';
           wrap.innerHTML = '';
           // Formular-Elemente wieder einbauen

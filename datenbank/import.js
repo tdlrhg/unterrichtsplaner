@@ -190,9 +190,29 @@ function buildImportView(container) {
   var ukInp    = finp('z.B. Flächeninhalt berechnen (optional)');
   var seiteInp = finp('z.B. 142', 'number'); seiteInp.style.maxWidth = '110px';
 
-  metaCard.appendChild(row2(fg('Werk / Titel', buchInp), fg('Quellentyp', typSel)));
-  metaCard.appendChild(row2(fg('Fach', fachSel), fg('Jahrgang', jgInp)));
-  metaCard.appendChild(row2(fg('Kapitel', kapInp), fg('Unterkapitel', ukInp), fg('Erste Seite', seiteInp)));
+  // Quellentyp als erstes, volle Breite – bestimmt den Importmodus
+  var typRow = mk('div', '');
+  typRow.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+  typSel.style.cssText += 'font-size:14px;font-weight:500;';
+  typRow.appendChild(tx('label', 'fl', 'Quellentyp'));
+  typRow.appendChild(typSel);
+  metaCard.appendChild(typRow);
+
+  // ── Modus-Hinweis ─────────────────────────────────────────────
+  var modeHint = tx('div', '', '');
+  modeHint.style.cssText = 'font-size:12px;color:var(--tx3);margin-top:-4px;';
+  function updateModeHint() {
+    var isMat = typSel.value === 'materialset' || typSel.value === 'handreichung';
+    modeHint.textContent = isMat
+      ? '📋 Materialset-Modus: jede Seite wird als ganzer Eintrag erfasst'
+      : '📖 Schulbuch-Modus: Aufgaben und Lehrtexte werden einzeln erfasst';
+  }
+  updateModeHint();
+  typSel.addEventListener('change', updateModeHint);
+  metaCard.appendChild(modeHint);
+
+  metaCard.appendChild(row2(fg('Werk / Titel', buchInp), fg('Fach', fachSel)));
+  metaCard.appendChild(row2(fg('Jahrgang', jgInp), fg('Kapitel', kapInp), fg('Unterkapitel', ukInp), fg('Erste Seite', seiteInp)));
 
   // Autocomplete für Kapitel und Unterkapitel (abhängig vom eingetragenen Buch)
   attachAutocomplete(kapInp, function() { return suggestKapitel(buchInp.value.trim()); });
@@ -226,19 +246,6 @@ function buildImportView(container) {
       : '✓ ' + _files.length + ' Dateien ausgewählt (' + _files.map(function(f) { return f.name; }).join(', ') + ')';
     fileLabel.style.color = 'var(--acc)';
   }
-
-  // ── Modus-Hinweis ─────────────────────────────────────────────
-  var modeHint = tx('div', '', '');
-  modeHint.style.cssText = 'font-size:12px;color:var(--tx3);padding:2px 0 4px;';
-  function updateModeHint() {
-    var isMat = typSel.value === 'materialset' || typSel.value === 'handreichung';
-    modeHint.textContent = isMat
-      ? '📋 Materialset-Modus: jede Seite wird als ganzer Eintrag erfasst'
-      : '📖 Schulbuch-Modus: Aufgaben und Lehrtexte werden einzeln erfasst';
-  }
-  updateModeHint();
-  typSel.addEventListener('change', updateModeHint);
-  wrap.appendChild(modeHint);
 
   // ── Analyse-Button + Status ───────────────────────────────────
   var bottomRow = mk('div', ''); bottomRow.style.cssText = 'display:flex;align-items:center;gap:14px;';

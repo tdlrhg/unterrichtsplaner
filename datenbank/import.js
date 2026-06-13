@@ -137,7 +137,7 @@ function buildImportView(container) {
   attachAutocomplete(buchInp, function() { return suggestBooks(); });
   var typSel  = fsel(HERKUNFT_OPTS);
   var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
-  var jgInp   = finp('z.B. 8'); jgInp.style.maxWidth = '80px';
+  var jgInp   = finp('z.B. 8', 'number'); jgInp.style.maxWidth = '80px';
   var kapInp   = finp('z.B. IV Flächen (optional)');
   var ukInp    = finp('z.B. Flächeninhalt berechnen (optional)');
   var seiteInp = finp('z.B. 142', 'number'); seiteInp.style.maxWidth = '110px';
@@ -394,7 +394,7 @@ function buildImportView(container) {
   async function saveAll() {
     var buch     = buchInp.value.trim();
     var fach     = fachSel.value;
-    var jg       = jgInp.value.trim() || null;
+    var jg       = jgInp.value.trim() ? (parseInt(jgInp.value, 10) || null) : null;
     var kap      = kapInp.value.trim() || null;
     var uk       = ukInp.value.trim() || null;
     var baseSeite = seiteInp.value ? Number(seiteInp.value) : null;

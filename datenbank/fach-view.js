@@ -348,8 +348,8 @@ async function buildFachView(container) {
       var ref0 = g.items[0];
 
       // ── Seiten-Trenner ───────────────────────────────────────────
-      // Nur wenn kein einzelner Seiten-Filter aktiv ist und seite bekannt
-      if (!DB.seite && ref0 && ref0.seite != null) {
+      // Nur wenn kein einzelner Seiten-Filter aktiv ist, seite bekannt, und kein Materialset
+      if (!DB.seite && ref0 && ref0.seite != null && ref0.quelle_typ !== 'materialset' && ref0.quelle_typ !== 'handreichung') {
         var seiteBuchKey = (ref0.quelle_name || '') + '::' + ref0.seite;
         if (seiteBuchKey !== _lastSeiteBuch) {
           if (_lastSeiteBuch !== null) {

@@ -24,7 +24,8 @@ function cmpNr(aNr, bNr) {
 function dbGroupByParent(rows) {
   var groups = {}, order = [];
   rows.forEach(function(r) {
-    var parentNr = String(r.nr || '').replace(/[a-zA-Z]+$/, '').trim() || String(r.nr || '?');
+    var _nr = String(r.nr || ''); var _m = _nr.match(/^(.*\d)[a-zA-Z]+$/);
+    var parentNr = (_m ? _m[1] : _nr).trim() || '?';
     // gruppen_key aus DB bevorzugen, Fallback auf Frontend-Berechnung
     var key = r.gruppen_key || ((r.quelle_name || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr);
     if (!groups[key]) { groups[key] = { key: parentNr, gruppen_key: key, aufgabenstellung: null, items: [] }; order.push(key); }

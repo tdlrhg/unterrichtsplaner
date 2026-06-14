@@ -264,9 +264,11 @@ function buildImportView(container) {
   function refreshFachBtns() {
     _fachBtns.forEach(function(t) {
       var active = fachSel.value === t.k;
-      t.b.style.background  = active ? t.f.color + '40' : t.f.color + '18';
+      t.b.style.background  = active ? t.f.color + '70' : t.f.color + '18';
       t.b.style.borderColor = active ? t.f.color : t.f.color + '60';
-      t.b.style.boxShadow   = active ? '0 0 0 2px ' + t.f.color + '50' : 'none';
+      t.b.style.borderWidth = active ? '2.5px' : '1.5px';
+      t.b.style.boxShadow   = active ? '0 0 0 4px ' + t.f.color + '35' : 'none';
+      t.b.style.transform   = active ? 'scale(1.08)' : 'scale(1)';
     });
   }
   refreshFachBtns();

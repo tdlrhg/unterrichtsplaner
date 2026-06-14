@@ -244,7 +244,7 @@ function buildImportView(container) {
 
   // ── Fach-Buttons (links) + Eingabefelder (rechts) ─────────────
   var bodyRow = mk('div', '');
-  bodyRow.style.cssText = 'display:flex;gap:18px;align-items:flex-start;';
+  bodyRow.style.cssText = 'display:flex;gap:40px;align-items:flex-start;';
 
   var fachCol = mk('div', '');
   fachCol.style.cssText = 'display:flex;flex-direction:column;gap:6px;flex-shrink:0;';

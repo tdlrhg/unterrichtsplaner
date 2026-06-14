@@ -300,12 +300,12 @@ function buildImportView(container) {
     }
   });
 
-  // ── Datei-Upload ──────────────────────────────────────────────
+  // ── Datei-Upload (rechts neben den Feldern) ───────────────────
   var fileCard = mk('div', '');
-  fileCard.style.cssText = 'background:var(--card);border:2px dashed var(--border);border-radius:12px;padding:36px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;';
-  wrap.appendChild(fileCard);
-  var fileLabel = tx('div', '', '📄 PDF oder Bild hierher ziehen — oder klicken zum Auswählen');
-  fileLabel.style.cssText = 'font-size:14px;color:var(--tx2);';
+  fileCard.style.cssText = 'border:2px dashed var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:140px;';
+  bodyRow.appendChild(fileCard);
+  var fileLabel = tx('div', '', '📄 PDF oder Bild hierher ziehen — oder klicken');
+  fileLabel.style.cssText = 'font-size:13px;color:var(--tx2);line-height:1.4;';
   fileCard.appendChild(fileLabel);
   var fileInput = document.createElement('input');
   fileInput.type = 'file'; fileInput.accept = '.pdf,image/*'; fileInput.style.display = 'none';
@@ -335,7 +335,7 @@ function buildImportView(container) {
   var statusEl = tx('div', '', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);';
   bottomRow.appendChild(analyseBtn);
   bottomRow.appendChild(statusEl);
-  wrap.appendChild(bottomRow);
+  metaCard.appendChild(bottomRow);
 
   // ── Ergebnis-Bereich ──────────────────────────────────────────
   var resultsWrap = mk('div', '');

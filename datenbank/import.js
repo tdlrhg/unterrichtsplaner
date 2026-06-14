@@ -26,8 +26,11 @@ function dbGroupByParent(rows) {
   rows.forEach(function(r) {
     var _nr = String(r.nr || ''); var _m = _nr.match(/^(.*\d)[a-zA-Z]+$/);
     var parentNr = (_m ? _m[1] : _nr).trim() || '?';
-    // gruppen_key aus DB bevorzugen, Fallback auf Frontend-Berechnung
-    var key = r.gruppen_key || ((r.quelle_name || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr);
+    var isMat = r.quelle_typ === 'materialset' || r.quelle_typ === 'handreichung';
+    // Materialset-Untereinträge (z.B. M 3a/M 3b) über verschiedene Seiten zusammenfassen
+    var key = (_m && isMat)
+      ? ((r.quelle_name || '') + '||' + (r.kapitel || '') + '||' + parentNr)
+      : (r.gruppen_key || ((r.quelle_name || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr));
     if (!groups[key]) { groups[key] = { key: parentNr, gruppen_key: key, aufgabenstellung: null, items: [] }; order.push(key); }
     if (!groups[key].aufgabenstellung && r.aufgabenstellung) groups[key].aufgabenstellung = r.aufgabenstellung;
     groups[key].items.push(r);

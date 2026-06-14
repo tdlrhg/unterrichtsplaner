@@ -437,7 +437,8 @@ function renderRow(a, onSaved, compact, groupLabel) {
   const accentColor = hMeta.color;
 
   const row = mk('div', 'db-row');
-  row.style.background = SCHW_BG[a.schwierigkeit] || 'transparent';
+  var isMat = a.quelle_typ === 'materialset' || a.quelle_typ === 'handreichung';
+  row.style.background = (!isMat && SCHW_BG[a.schwierigkeit]) || 'transparent';
   row.style.gridTemplateColumns = colTemplate();
 
   var cells = [];

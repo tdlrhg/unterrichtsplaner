@@ -244,7 +244,7 @@ function buildImportView(container) {
 
   // ── Fach-Buttons (links) + Eingabefelder (rechts) ─────────────
   var bodyRow = mk('div', '');
-  bodyRow.style.cssText = 'display:flex;gap:10px;align-items:flex-start;';
+  bodyRow.style.cssText = 'display:flex;gap:18px;align-items:flex-start;';
 
   var fachCol = mk('div', '');
   fachCol.style.cssText = 'display:flex;flex-direction:column;gap:6px;flex-shrink:0;';
@@ -253,7 +253,7 @@ function buildImportView(container) {
     var b = mk('button', '');
     b.title = f.label;
     b.textContent = f.icon;
-    b.style.cssText = 'width:44px;height:44px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:20px;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;';
+    b.style.cssText = 'width:52px;height:52px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:26px;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;';
     b.addEventListener('click', function() {
       fachSel.value = f.key;
       fachSel.dispatchEvent(new Event('change'));
@@ -282,7 +282,11 @@ function buildImportView(container) {
   metaCard.appendChild(bodyRow);
 
   // ── Jahrgang + Erste Seite ────────────────────────────────────
-  metaCard.appendChild(row2(fg('Jahrgang', jgInp), fg('Erste Seite', seiteInp)));
+  var jgRow = mk('div', ''); jgRow.style.cssText = 'display:flex;gap:10px;';
+  var _jgFg = fg('Jahrgang', jgInp); _jgFg.style.flex = '0 0 auto';
+  var _seiteFg = fg('Erste Seite', seiteInp); _seiteFg.style.flex = '0 0 auto';
+  jgRow.appendChild(_jgFg); jgRow.appendChild(_seiteFg);
+  metaCard.appendChild(jgRow);
 
   // Autocomplete
   attachAutocomplete(buchInp, function() { return suggestBooks(fachSel.value); });

@@ -490,16 +490,25 @@ function renderRow(a, onSaved, compact, groupLabel) {
     src.appendChild(typBadge);
   }
 
-  // Zelle 1: Inhalt — im compact-Modus nur den individuellen Text
-  // Materialset-Lehrerkommentare werden ohne Textvorschau angezeigt (kompakte Zeile)
+  // Zelle 1: Inhalt
   var mid = mk('div', 'db-col-inhalt'); mid.dataset.colIdx = 1;
   if (!isMatLK) {
-    var inhaltText = compact
-      ? (a.inhalt || '–')
-      : (a.inhalt || a.thema || a.beschreibung || '–');
+    var inhaltText, inhaltLimit;
+    if (isMat && a.inhaltstyp === 'arbeitsblatt') {
+      // Arbeitsblatt: Aufgabenstellung als Titel anzeigen
+      inhaltText = a.aufgabenstellung || a.inhalt || '–';
+      inhaltLimit = 80;
+    } else if (isMat) {
+      // Andere Materialset-Typen: eine Zeile Inhalt
+      inhaltText = a.inhalt || a.thema || '–';
+      inhaltLimit = 80;
+    } else {
+      inhaltText = compact ? (a.inhalt || '–') : (a.inhalt || a.thema || a.beschreibung || '–');
+      inhaltLimit = groupLabel ? 400 : 150;
+    }
     var inhaltCls = 'db-inhalt-text' + (compact && groupLabel ? ' wrap' : '');
-    mid.appendChild(tx('div', inhaltCls, inhaltText.replace(/ \| /g, ' · ').slice(0, groupLabel ? 400 : 150)));
-    if (!compact && a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
+    mid.appendChild(tx('div', inhaltCls, inhaltText.replace(/ \| /g, ' · ').slice(0, inhaltLimit)));
+    if (!compact && !isMat && a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
   }
   cells[1] = mid;
 

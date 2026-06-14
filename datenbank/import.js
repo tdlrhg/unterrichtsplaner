@@ -221,6 +221,14 @@ function buildImportView(container) {
   attachAutocomplete(kapInp, function() { return suggestKapitel(buchInp.value.trim()); });
   attachAutocomplete(ukInp,  function() { return suggestUnterkapitel(buchInp.value.trim(), kapInp.value.trim()); });
 
+  // Wenn Buch ausgefüllt wird, Kapitel/UK-Vorschläge neu auslösen (nur sichtbar wenn Feld gerade fokussiert ist)
+  buchInp.addEventListener('blur', function() {
+    if (buchInp.value.trim()) {
+      kapInp.dispatchEvent(new Event('input', { bubbles: true }));
+      ukInp.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+
   // ── Datei-Upload ──────────────────────────────────────────────
   var fileCard = mk('div', '');
   fileCard.style.cssText = 'background:var(--card);border:2px dashed var(--border);border-radius:12px;padding:36px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;';
@@ -499,13 +507,18 @@ function buildImportView(container) {
   // ── Speichern ─────────────────────────────────────────────────
   async function saveAll() {
     var buch     = buchInp.value.trim();
+    var herkunft = HERKUNFT[typSel.value] ? typSel.value : 'schulbuch';
+    if ((HERKUNFT[herkunft] || {}).hasBuch && !buch) {
+      statusEl.style.color = '#dc2626';
+      statusEl.textContent = '⚠️ Bitte Werk / Titel eingeben.';
+      buchInp.focus();
+      return;
+    }
     var fach     = fachSel.value;
     var jg       = jgInp.value.trim() ? (parseInt(jgInp.value, 10) || null) : null;
     var kap      = kapInp.value.trim() || null;
     var uk       = ukInp.value.trim() || null;
     var baseSeite = seiteInp.value ? Number(seiteInp.value) : null;
-    // typSel-Wert direkt als Herkunft speichern (schulbuch/aufgabenpool/sammlung/eigenmaterial)
-    var herkunft = HERKUNFT[typSel.value] ? typSel.value : 'schulbuch';
     var ts       = Date.now();
 
     var rows = _aufgaben.map(function(a, i) {

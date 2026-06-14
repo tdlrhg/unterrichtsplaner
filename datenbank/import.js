@@ -76,10 +76,10 @@ JSON-FORMAT — sehr wichtig:
 ]}`;
 
 // ── KI-Prompt für Materialsets / Handreichungen ───────────────────
-// Jede Seite = genau ein Eintrag, keine Ausnahmen
 const MAT_KI_PROMPT = `Du analysierst eine Seite aus einem Unterrichtsmaterialset oder einer Lehrerhandreichung (z.B. Raabe, Klett-Lehrerservice, eigenes Lehrermaterial).
 
-GRUNDREGEL: Erfasse JEDE SEITE als genau EINEN Eintrag. Keine Ausnahmen.
+GRUNDREGEL: Erfasse jede Seite als EINEN Eintrag.
+AUSNAHME ABSCHNITTSWECHSEL: Wenn auf einer Seite zwei klar voneinander getrennte Abschnitte stehen — erkennbar an einer neuen, visuell abgesetzten Überschrift — erstelle ZWEI Einträge mit je eigenem nr, inhaltstyp und text. Beide Einträge beziehen sich auf dieselbe Seite.
 
 WASSERZEICHEN UND KOPF-/FUSSZEILEN IGNORIEREN:
 Ignoriere vollständig und erfasse NICHT im text-Feld: Verlagswebseiten (z.B. "www.meinunterricht.de"), Seitenzähler wie "1 von 22" oder "Seite 3 von 10", Copyright- und Download-Hinweise, Logos, Kopf- und Fußzeilen mit Verlagsangaben.
@@ -122,9 +122,13 @@ JSON-FORMAT:
   {"inhaltstyp":"loesung","nr":"Lösung M 1","aufgabenstellung":"Korrosion im Meerwasser – Erwartungshorizont","text":"1. Salzwasser leitet Strom, da Ionen als Ladungsträger wirken. Es bilden sich galvanische Elemente. | 2. Mögliche Schutzmaßnahmen: Schutzanstrich, kathodischer Korrosionsschutz (Opferanode).","anforderung":null,"niveau":null,"schwierigkeit":null}
 ]}`;
 
-// Welcher Prompt passt zum gewählten Quellentyp?
-function impPromptFor(quellentyp) {
-  return (quellentyp === 'materialset' || quellentyp === 'handreichung') ? MAT_KI_PROMPT : IMP_KI_PROMPT;
+// Welcher Prompt passt zum gewählten Quellentyp? contextNr = nr-Wert der vorherigen Seite (für Fortsetzungserkennung)
+function impPromptFor(quellentyp, contextNr) {
+  var base = (quellentyp === 'materialset' || quellentyp === 'handreichung') ? MAT_KI_PROMPT : IMP_KI_PROMPT;
+  if (contextNr && (quellentyp === 'materialset' || quellentyp === 'handreichung')) {
+    base += '\n\nKONTEXT VORHERIGE SEITE: "' + contextNr + '" — Falls diese Seite ohne neue Überschrift beginnt und offensichtlich eine Fortsetzung davon ist, verwende denselben nr-Wert.';
+  }
+  return base;
 }
 
 function _impResizeImg(dataUrl, maxW, q) {
@@ -272,6 +276,7 @@ function buildImportView(container) {
   wrap.appendChild(resultsWrap);
 
   var _aufgaben = [];
+  var _lastSavedNr = null; // nr-Wert der zuletzt gespeicherten Seite — als Kontext für die nächste Analyse
 
   var IMP_BATCH_SIZE = 6; // max Seiten pro KI-Aufruf
 
@@ -329,7 +334,7 @@ function buildImportView(container) {
   }
 
   // ── KI-Analyse ────────────────────────────────────────────────
-  async function analyseFile(f, fileSeite, prefix) {
+  async function analyseFile(f, fileSeite, prefix, contextNr) {
     statusEl.textContent = prefix + '⏳ Datei wird gelesen…';
     var imgs = await fileToDataURLs(f, { longEdge: 1568, quality: 0.88 });
     var resized = await Promise.all(imgs.map(function(u) { return _impResizeImg(u, 1200, 0.82); }));
@@ -349,7 +354,8 @@ function buildImportView(container) {
         blocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: r.split(',')[1] } });
         if (i < batch.length - 1) blocks.push({ type: 'text', text: '--- Nächste Seite ---' });
       });
-      blocks.push({ type: 'text', text: impPromptFor(typSel.value) });
+      // Kontext nur für ersten Batch übergeben (erste Seite dieser Datei)
+      blocks.push({ type: 'text', text: impPromptFor(typSel.value, bi === 0 ? contextNr : null) });
 
       var raw = await callKI(blocks, { maxTokens: 16000 });
       var parsed = parseKiJson(raw);
@@ -369,10 +375,12 @@ function buildImportView(container) {
     resultsWrap.innerHTML = ''; _aufgaben = [];
     var baseSeite = seiteInp.value ? Number(seiteInp.value) : null;
     try {
+      var contextNr = _lastSavedNr; // Kontext aus vorheriger gespeicherter Seite
       for (var fi = 0; fi < _files.length; fi++) {
         var prefix = _files.length > 1 ? '(' + (fi + 1) + '/' + _files.length + ') ' : '';
         var fileSeite = baseSeite != null ? baseSeite + fi : null;
-        var aufg = await analyseFile(_files[fi], fileSeite, prefix);
+        var aufg = await analyseFile(_files[fi], fileSeite, prefix, contextNr);
+        if (aufg.length) contextNr = aufg[aufg.length - 1].nr || null; // für nächste Datei
         if (!aufg.length && _files.length === 1) {
           statusEl.textContent = '⚠️ Keine Einträge erkannt — bitte Bild prüfen.'; return;
         }
@@ -556,6 +564,7 @@ function buildImportView(container) {
     try {
       await sbInsert('inhalte', rows);
       _buchCache = {}; // Cache leeren damit neues Buch im Filter erscheint
+      if (rows.length) _lastSavedNr = rows[rows.length - 1].nr || null;
       _aufgaben = [];
 
       // ── Ende-Screen ───────────────────────────────────────────

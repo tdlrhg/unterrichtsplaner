@@ -477,8 +477,10 @@ function renderRow(a, onSaved, compact, groupLabel) {
   }
   cells[0] = src;
 
-  // Typ-Badge (nur für Beispiele und Lehrtexte, nicht für Aufgaben / null)
-  if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe') {
+  var isMatLK = (a.quelle_typ === 'materialset' || a.quelle_typ === 'handreichung') && a.inhaltstyp === 'lehrerkommentar';
+
+  // Typ-Badge (nicht für Aufgaben; nicht für Materialset-Lehrerkommentare — Label reicht)
+  if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe' && !isMatLK) {
     var typBadge = tx('span', '', (TYP_ICONS[a.inhaltstyp] ? TYP_ICONS[a.inhaltstyp] + ' ' : '') + (TYP_LABELS[a.inhaltstyp] || a.inhaltstyp));
     var typColor = TYP_FARBEN[a.inhaltstyp] || '#64748b';
     typBadge.style.cssText = 'display:inline-block;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;'
@@ -490,7 +492,6 @@ function renderRow(a, onSaved, compact, groupLabel) {
   // Zelle 1: Inhalt — im compact-Modus nur den individuellen Text
   // Materialset-Lehrerkommentare werden ohne Textvorschau angezeigt (kompakte Zeile)
   var mid = mk('div', 'db-col-inhalt'); mid.dataset.colIdx = 1;
-  var isMatLK = (a.quelle_typ === 'materialset' || a.quelle_typ === 'handreichung') && a.inhaltstyp === 'lehrerkommentar';
   if (!isMatLK) {
     var inhaltText = compact
       ? (a.inhalt || '–')

@@ -349,12 +349,21 @@ function buildImportView(container) {
 
   function parseKiJson(raw) {
     var cleaned = raw.trim().replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
-    // Rohe Anführungszeichen innerhalb von JSON-Strings escapen (KI nutzt sie für Betonung)
+    // Rohe Anführungszeichen innerhalb von JSON-Strings escapen (KI nutzt sie für Betonung).
+    // inValue: true wenn der letzte strukturelle Token ':' war → nächster String ist ein Wert,
+    // kein Schlüssel. Damit wird "„Inco": text" im Wert korrekt als Text erkannt (nicht als
+    // Schlüsselende), weil "key": nur strukturell ist wenn wir einen Schlüssel lesen.
     var out = ''; var qi = 0; var qn = cleaned.length;
+    var inValue = false;
     while (qi < qn) {
       var qch = cleaned[qi];
+      if (qch === ':') { out += qch; qi++; inValue = true; continue; }
+      if (qch === '{' || qch === '[' || qch === '}' || qch === ']' || qch === ',') {
+        out += qch; qi++; inValue = false; continue;
+      }
       if (qch !== '"') { out += qch; qi++; continue; }
       out += '"'; qi++;
+      var wasValue = inValue; inValue = false;
       while (qi < qn) {
         var qc = cleaned[qi];
         if (qc === '\\') { out += qc; qi++; if (qi < qn) { out += cleaned[qi]; qi++; } }
@@ -363,8 +372,10 @@ function buildImportView(container) {
           while (qj < qn && (cleaned[qj] === ' ' || cleaned[qj] === '\t' || cleaned[qj] === '\r' || cleaned[qj] === '\n')) qj++;
           var qnxt = qj < qn ? cleaned[qj] : '';
           var isStructural = false;
-          if (qnxt === ':' || qnxt === '}' || qnxt === ']' || qj >= qn) {
+          if (qnxt === '}' || qnxt === ']' || qj >= qn) {
             isStructural = true;
+          } else if (qnxt === ':') {
+            isStructural = !wasValue; // Schlüsselende nur wenn wir keinen Wert lesen
           } else if (qnxt === ',') {
             // Komma könnte JSON-Trenner ODER Text sein — prüfe was danach kommt
             var qk = qj + 1;

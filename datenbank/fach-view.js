@@ -562,7 +562,6 @@ function renderRow(a, onSaved, compact, groupLabel) {
 }
 
 // ── Filter-Leiste ─────────────────────────────────────────────────
-var _buchCache = {}; // fach → [buchtitel]
 
 function buildFilterBar(containerEl, loadFn, searchInp, fach) {
   containerEl.innerHTML = '';
@@ -637,18 +636,13 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     if (DB.quelle_name) buchSel.value = DB.quelle_name;
   }
   if (fach) {
-    if (_buchCache[fach] && _buchCache[fach].length) {
-      populateBuchSel(_buchCache[fach]);
-    } else {
-      sbSelect('inhalte', { select: 'quelle_name', filters: { fach: fach }, limit: 5000, order: 'quelle_name' })
-        .then(function(rows) {
-          var seen = {}, books = [];
-          rows.forEach(function(r) { if (r.quelle_name && !seen[r.quelle_name]) { seen[r.quelle_name] = true; books.push(r.quelle_name); } });
-          books.sort();
-          _buchCache[fach] = books.length ? books : null;
-          populateBuchSel(books);
-        });
-    }
+    sbSelect('inhalte', { select: 'quelle_name', filters: { fach: fach }, limit: 5000, order: 'quelle_name' })
+      .then(function(rows) {
+        var seen = {}, books = [];
+        rows.forEach(function(r) { if (r.quelle_name && !seen[r.quelle_name]) { seen[r.quelle_name] = true; books.push(r.quelle_name); } });
+        books.sort();
+        populateBuchSel(books);
+      });
   }
   bar.appendChild(buchSel);
 

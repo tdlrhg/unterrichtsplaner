@@ -403,7 +403,6 @@ function openTaskModal(group, opts) {
           inhalt:        encode(f.inhalt.value),
           abbildung:     encode(f.abbildung.value),
           anforderung:   encode(f.anforderung.value),
-          thema:         f.thema.value.trim() || null,
           niveau:        f.niveau.value || null,
           operator:      f.operator.value || null,
           schwierigkeit: f.schwierigkeit.value || null,

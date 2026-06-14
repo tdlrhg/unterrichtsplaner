@@ -244,7 +244,7 @@ function buildImportView(container) {
 
   // ── Fach-Buttons (links) + Eingabefelder (rechts) ─────────────
   var bodyRow = mk('div', '');
-  bodyRow.style.cssText = 'display:flex;gap:40px;align-items:flex-start;';
+  bodyRow.style.cssText = 'display:flex;gap:120px;align-items:flex-start;';
 
   var fachCol = mk('div', '');
   fachCol.style.cssText = 'display:flex;flex-direction:column;gap:6px;flex-shrink:0;';
@@ -274,7 +274,7 @@ function buildImportView(container) {
   bodyRow.appendChild(fachCol);
 
   var inputCol = mk('div', '');
-  inputCol.style.cssText = 'display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;';
+  inputCol.style.cssText = 'display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;max-width:380px;';
   inputCol.appendChild(fg('Werk / Titel', buchInp));
   inputCol.appendChild(fg('Kapitel', kapInp));
   inputCol.appendChild(fg('Unterkapitel', ukInp));

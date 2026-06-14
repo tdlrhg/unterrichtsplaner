@@ -111,7 +111,7 @@ function normalizeArray(value) {
     const prevStatus = VERSION_STATUS;
     VERSION = v.built;
     if (_ghDate) {
-      VERSION_STATUS = new Date(v.built) >= new Date(_ghDate) ? 'current' : 'deploying';
+      VERSION_STATUS = (new Date(_ghDate) - new Date(v.built)) <= 10000 ? 'current' : 'deploying';
     }
     // Auto-Reload: sobald Deployment fertig ist, Seite neu laden
     // (aber nur wenn die App länger als 10s läuft, damit kein Loop beim ersten Load)

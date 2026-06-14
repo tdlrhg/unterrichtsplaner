@@ -247,13 +247,13 @@ function buildImportView(container) {
   bodyRow.style.cssText = 'display:flex;gap:120px;align-items:flex-start;';
 
   var fachCol = mk('div', '');
-  fachCol.style.cssText = 'display:flex;flex-direction:column;gap:6px;flex-shrink:0;';
+  fachCol.style.cssText = 'display:flex;flex-direction:column;gap:14px;flex-shrink:0;margin-left:16px;margin-top:10px;';
   var _fachBtns = [];
   FAECHER.forEach(function(f) {
     var b = mk('button', '');
     b.title = f.label;
     b.textContent = f.icon;
-    b.style.cssText = 'width:52px;height:52px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:26px;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;';
+    b.style.cssText = 'width:58px;height:58px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:28px;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;';
     b.addEventListener('click', function() {
       fachSel.value = f.key;
       fachSel.dispatchEvent(new Event('change'));

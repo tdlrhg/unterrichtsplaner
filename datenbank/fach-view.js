@@ -488,14 +488,17 @@ function renderRow(a, onSaved, compact, groupLabel) {
   }
 
   // Zelle 1: Inhalt — im compact-Modus nur den individuellen Text
+  // Materialset-Lehrerkommentare werden ohne Textvorschau angezeigt (kompakte Zeile)
   var mid = mk('div', 'db-col-inhalt'); mid.dataset.colIdx = 1;
-  var inhaltText = compact
-    ? (a.inhalt || '–')
-    : (a.inhalt || a.thema || a.beschreibung || '–');
-  // Einzelaufgaben (groupLabel) dürfen umbrechen und zeigen mehr Text
-  var inhaltCls = 'db-inhalt-text' + (compact && groupLabel ? ' wrap' : '');
-  mid.appendChild(tx('div', inhaltCls, inhaltText.replace(/ \| /g, ' · ').slice(0, groupLabel ? 400 : 150)));
-  if (!compact && a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
+  var isMatLK = (a.quelle_typ === 'materialset' || a.quelle_typ === 'handreichung') && a.inhaltstyp === 'lehrerkommentar';
+  if (!isMatLK) {
+    var inhaltText = compact
+      ? (a.inhalt || '–')
+      : (a.inhalt || a.thema || a.beschreibung || '–');
+    var inhaltCls = 'db-inhalt-text' + (compact && groupLabel ? ' wrap' : '');
+    mid.appendChild(tx('div', inhaltCls, inhaltText.replace(/ \| /g, ' · ').slice(0, groupLabel ? 400 : 150)));
+    if (!compact && a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
+  }
   cells[1] = mid;
 
   // Zelle 2: Anforderungsbereich + Niveau

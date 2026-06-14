@@ -195,7 +195,7 @@ function buildImportView(container) {
   var typSel  = fsel(HERKUNFT_OPTS); typSel.style.display = 'none';
   var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; })); fachSel.style.display = 'none';
   var buchInp  = finp('z.B. Lambacher Schweizer 8');
-  var jgInp    = finp('z.B. 8', 'number'); jgInp.style.maxWidth = '80px';
+  var jgInp    = finp('z.B. 7/8'); jgInp.style.maxWidth = '80px';
   var kapInp   = finp('Kapitel (optional)');
   var ukInp    = finp('Unterkapitel (optional)');
   var seiteInp = finp('z.B. 142', 'number'); seiteInp.style.maxWidth = '110px';
@@ -601,7 +601,7 @@ function buildImportView(container) {
       return;
     }
     var fach     = fachSel.value;
-    var jg       = jgInp.value.trim() ? (parseInt(jgInp.value, 10) || null) : null;
+    var jg       = jgInp.value.trim() || null;
     var kap      = kapInp.value.trim() || null;
     var uk       = ukInp.value.trim() || null;
     var baseSeite = seiteInp.value ? Number(seiteInp.value) : null;

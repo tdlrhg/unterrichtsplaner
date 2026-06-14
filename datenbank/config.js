@@ -104,7 +104,7 @@ function resetFilters() {
 
 // ── Zentrale Autocomplete-Suggest-Funktionen ─────────────────────
 function suggestBooks(fach) {
-  return sbSelect('inhalte', { select: 'quelle_name', filters: fach ? { fach: fach } : {}, limit: 5000, order: 'quelle_name' })
+  return sbSelectAll('inhalte', { select: 'quelle_name', filters: fach ? { fach: fach } : {}, order: 'quelle_name' })
     .then(function(rows) {
       var seen = {}, books = [];
       rows.forEach(function(r) { if (r.quelle_name && !seen[r.quelle_name]) { seen[r.quelle_name] = true; books.push(r.quelle_name); } });
@@ -113,7 +113,7 @@ function suggestBooks(fach) {
 }
 function suggestKapitel(buch) {
   if (!buch) return Promise.resolve([]);
-  return sbSelect('inhalte', { select: 'kapitel', filters: { quelle_name: buch }, limit: 1000 })
+  return sbSelectAll('inhalte', { select: 'kapitel', filters: { quelle_name: buch } })
     .then(function(rows) {
       var seen = {}, kaps = [];
       rows.forEach(function(r) { if (r.kapitel && !seen[r.kapitel]) { seen[r.kapitel] = true; kaps.push(r.kapitel); } });
@@ -124,7 +124,7 @@ function suggestUnterkapitel(buch, kapitel) {
   if (!buch) return Promise.resolve([]);
   var filters = { quelle_name: buch };
   if (kapitel) filters.kapitel = kapitel;
-  return sbSelect('inhalte', { select: 'uk_titel', filters: filters, limit: 500 })
+  return sbSelectAll('inhalte', { select: 'uk_titel', filters: filters })
     .then(function(rows) {
       var seen = {}, uks = [];
       rows.forEach(function(r) { if (r.uk_titel && !seen[r.uk_titel]) { seen[r.uk_titel] = true; uks.push(r.uk_titel); } });

@@ -164,6 +164,50 @@ function openTaskModal(group, opts) {
   var UMFANG_OPTS = [['kurz','kurz (1–2 min)'],['mittel','mittel (3–7 min)'],['lang','lang (8+ min)']];
   var OP_OPTS     = Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; });
 
+  var AUFGABENART_OPTS  = [['diagnose','Diagnoseaufgabe'],['einstieg','Einstiegsaufgabe'],['lernaufgabe','Lernaufgabe'],['uebung','Übungsaufgabe'],['sicherung','Sicherungsaufgabe'],['anwendung','Anwendungsaufgabe'],['transfer','Transferaufgabe'],['reflexion','Reflexionsaufgabe'],['kontrolle','Kontrollaufgabe'],['pruefung','Prüfungsaufgabe']];
+  var ROLLE_OPTS        = [['einstieg','Einstieg in die Reihe'],['aufbauend','Aufbauend'],['vernetzend','Vernetzend'],['abschliessend','Abschließend / Sichernd'],['uebertragend','Übertragend'],['ueberleitend','Überleitend zu nächstem Schwerpunkt']];
+  var OFFENHEIT_OPTS    = [['geschlossen','Geschlossen'],['halboffen','Halboffen'],['offen','Offen']];
+  var KOG_OPTS          = [['routine','Routine'],['problemloesen','Problemlösen'],['entdecken','Entdecken']];
+  var LOESUNGSWEG_OPTS  = [['einer','Ein Lösungsweg'],['mehrere','Mehrere Lösungswege']];
+  var UNTERSTUETZ_OPTS  = [['hilfestellungen','Mit Hilfestellungen'],['teilaufgaben','Mit Teilaufgaben'],['tipps','Mit Tipps'],['ohne','Ohne Hilfen']];
+  var KONTEXT_OPTS      = [['innermathematisch','Innermathematisch'],['sachbezogen','Sachbezogen'],['realitaetsnah','Realitätsnah'],['faecheruebergreifend','Fächerübergreifend']];
+  var DID_FKT_OPTS      = [['motivation','Motivation erzeugen'],['interesse','Interesse wecken'],['vorwissen','Vorwissen aktivieren'],['diagnose','Lernvoraussetzungen diagnostizieren'],['fehlvorstellungen','Fehlvorstellungen aufdecken'],['konflikt','Kognitive Konflikte erzeugen'],['begriffsbildung','Begriffsbildung unterstützen'],['entdecken','Entdeckungen ermöglichen'],['erarbeiten','Neue Inhalte erarbeiten'],['zusammenhaenge','Zusammenhänge verdeutlichen'],['vertiefen','Verständnis vertiefen'],['strukturieren','Wissen strukturieren'],['sichern','Wissen sichern'],['ueben','Fertigkeiten üben'],['automatisieren','Fertigkeiten automatisieren'],['anwenden','Anwenden'],['transfer','Transfer ermöglichen'],['reflexion','Reflexion anregen'],['vergleichen','Lösungswege vergleichen']];
+  var FACH_KMP_OPTS     = [['begriffe','Begriffe verstehen'],['verfahren','Verfahren anwenden'],['zusammenhaenge','Zusammenhänge erkennen'],['regeln','Regeln formulieren'],['darstellen','Objekte darstellen'],['beurteilen','Aussagen beurteilen']];
+  var PROZ_KMP_OPTS     = [['argumentieren','Argumentieren'],['problemloesen','Problemlösen'],['modellieren','Modellieren'],['darstellen','Darstellen'],['kommunizieren','Kommunizieren'],['symbole','Mit Symbolen umgehen']];
+
+  function mkChipField(parent, label, key, chipOpts) {
+    var currentVals = (ref[key] || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+    var hiddenInp = document.createElement('input');
+    hiddenInp.type = 'hidden'; hiddenInp.dataset.key = key; hiddenInp.value = currentVals.join(',');
+    parent.appendChild(hiddenInp);
+    var f = mk('div', 'db-form-field');
+    var l = document.createElement('label'); l.textContent = label; f.appendChild(l);
+    var cw = mk('div', '');
+    cw.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;';
+    chipOpts.forEach(function(opt) {
+      var val = opt[0], txt = opt[1];
+      var active = currentVals.indexOf(val) !== -1;
+      var c = mk('div', '');
+      c.style.cssText = 'display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid;transition:background .1s,color .1s;user-select:none;';
+      c.textContent = txt;
+      function syncChip() {
+        c.style.background  = active ? 'var(--pri)' : 'transparent';
+        c.style.color       = active ? '#fff' : 'var(--tx2)';
+        c.style.borderColor = active ? 'var(--pri)' : 'var(--bord)';
+      }
+      syncChip();
+      c.onclick = function() {
+        active = !active;
+        if (active) { currentVals.push(val); } else { currentVals = currentVals.filter(function(v) { return v !== val; }); }
+        hiddenInp.value = currentVals.join(',');
+        syncChip();
+      };
+      cw.appendChild(c);
+    });
+    f.appendChild(cw);
+    parent.appendChild(f);
+  }
+
   // Pro-Teilaufgabe-Felder, parallel zu items (kein data-key)
   var itemFields = items.map(function(it, i) {
     var themaInp = document.createElement('input');
@@ -398,9 +442,34 @@ function openTaskModal(group, opts) {
   p0.appendChild(L0);
   tabBodyEl.appendChild(p0);
 
-  // ── Pane 1: Unterrichtsdaten (pro Teilaufgabe) ────────────────
-  var p1 = mk('div', 'db-modal-tab-pane ' + (isMulti ? 'scroll' : 'split')); panes.push(p1);
+  // ── Pane 1: Unterrichtsdaten ──────────────────────────────────────
+  var p1 = mk('div', 'db-modal-tab-pane scroll'); panes.push(p1);
+
+  // Fingerprint zuerst (gilt für die ganze Aufgabe/Gruppe)
+  sec(p1, 'Unterrichts-Fingerprint');
+  var fpR1 = fieldRow();
+  ssel(fpR1, 'Aufgabenart', 'aufgabenart', AUFGABENART_OPTS);
+  ssel(fpR1, 'Rolle in der Reihe', 'rolle_in_reihe', ROLLE_OPTS);
+  p1.appendChild(fpR1);
+  var fpR2 = fieldRow();
+  ssel(fpR2, 'Offenheit', 'offenheit', OFFENHEIT_OPTS);
+  ssel(fpR2, 'Kognitive Anforderung', 'kognitive_anforderung', KOG_OPTS);
+  ssel(fpR2, 'Lösungswege', 'loesungswege', LOESUNGSWEG_OPTS);
+  p1.appendChild(fpR2);
+  var fpR3 = fieldRow();
+  ssel(fpR3, 'Unterstützung', 'unterstuetzung', UNTERSTUETZ_OPTS);
+  ssel(fpR3, 'Kontext', 'kontext', KONTEXT_OPTS);
+  p1.appendChild(fpR3);
+  mkChipField(p1, 'Didaktische Funktion', 'didaktische_funktion', DID_FKT_OPTS);
+  mkChipField(p1, 'Fachliche Kompetenz', 'fachliche_kompetenz', FACH_KMP_OPTS);
+  mkChipField(p1, 'Prozessbezogene Kompetenz', 'prozessbezogene_kompetenz', PROZ_KMP_OPTS);
+
+  // Pro-Teilaufgabe darunter (nur bei Gruppen; bei Einzelaufgaben: kompakte Zeile)
   if (isMulti) {
+    var itemSep = mk('div', '');
+    itemSep.style.cssText = 'height:1px;background:var(--bord);margin:16px 0 12px;';
+    p1.appendChild(itemSep);
+    sec(p1, 'Teilaufgaben');
     items.forEach(function(it, i) {
       var blk = mk('div', 'db-group-item-block'); blk.appendChild(itemHeader(i));
       blk.appendChild(labeled('Anforderung', itemFields[i].anforderung));
@@ -412,16 +481,16 @@ function openTaskModal(group, opts) {
       itemNodes[i].push(blk);
     });
   } else {
-    var L1 = mkL();
-    sec(L1, 'Anforderung');
-    L1.appendChild(labeled('', itemFields[0].anforderung));
-    L1.appendChild(labeled('Thema', itemFields[0].thema));
-    p1.appendChild(L1);
-    var R1 = mkR();
-    sec(R1, 'Aufgabenniveau');
-    R1.appendChild(labeled('', itemFields[0].niveau));
-    p1.appendChild(R1);
+    var itemSep2 = mk('div', '');
+    itemSep2.style.cssText = 'height:1px;background:var(--bord);margin:16px 0 12px;';
+    p1.appendChild(itemSep2);
+    var topRow = fieldRow();
+    topRow.appendChild(labeled('Anforderung', itemFields[0].anforderung));
+    topRow.appendChild(labeled('Thema', itemFields[0].thema));
+    topRow.appendChild(labeled('Niveau', itemFields[0].niveau));
+    p1.appendChild(topRow);
   }
+
   tabBodyEl.appendChild(p1);
 
   // ── Pane 2: Prüfungsdaten (pro Teilaufgabe) ───────────────────

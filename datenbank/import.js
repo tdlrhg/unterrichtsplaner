@@ -191,22 +191,43 @@ function buildImportView(container) {
   metaCard.appendChild(metaTitle);
   wrap.appendChild(metaCard);
 
-  var buchInp = finp('z.B. Lambacher Schweizer 8');
-  attachAutocomplete(buchInp, function() { return suggestBooks(); });
-  var typSel  = fsel(HERKUNFT_OPTS);
-  var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
-  var jgInp   = finp('z.B. 8', 'number'); jgInp.style.maxWidth = '80px';
-  var kapInp   = finp('z.B. IV Flächen (optional)');
-  var ukInp    = finp('z.B. Flächeninhalt berechnen (optional)');
+  // Hidden selects — halten den Wert, werden im restlichen Code via .value gelesen
+  var typSel  = fsel(HERKUNFT_OPTS); typSel.style.display = 'none';
+  var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; })); fachSel.style.display = 'none';
+  var buchInp  = finp('z.B. Lambacher Schweizer 8');
+  var jgInp    = finp('z.B. 8', 'number'); jgInp.style.maxWidth = '80px';
+  var kapInp   = finp('Kapitel (optional)');
+  var ukInp    = finp('Unterkapitel (optional)');
   var seiteInp = finp('z.B. 142', 'number'); seiteInp.style.maxWidth = '110px';
 
-  // Quellentyp als erstes, volle Breite – bestimmt den Importmodus
-  var typRow = mk('div', '');
-  typRow.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
-  typSel.style.cssText += 'font-size:14px;font-weight:500;';
-  typRow.appendChild(tx('label', 'fl', 'Quellentyp'));
-  typRow.appendChild(typSel);
-  metaCard.appendChild(typRow);
+  // ── Quellentyp-Buttons ────────────────────────────────────────
+  var typBtnRow = mk('div', '');
+  typBtnRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+  var _typBtns = [];
+  Object.keys(HERKUNFT).forEach(function(k) {
+    var h = HERKUNFT[k];
+    var b = mk('button', '');
+    b.textContent = h.icon + ' ' + h.label;
+    b.style.cssText = 'padding:5px 11px;border-radius:7px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;cursor:pointer;transition:all .12s;white-space:nowrap;color:var(--tx2);';
+    b.addEventListener('click', function() {
+      typSel.value = k;
+      typSel.dispatchEvent(new Event('change'));
+    });
+    typBtnRow.appendChild(b);
+    _typBtns.push({ k: k, b: b, h: h });
+  });
+  function refreshTypBtns() {
+    _typBtns.forEach(function(t) {
+      var active = typSel.value === t.k;
+      t.b.style.background   = active ? t.h.color + '20' : 'transparent';
+      t.b.style.borderColor  = active ? t.h.color : 'var(--border)';
+      t.b.style.color        = active ? t.h.color : 'var(--tx2)';
+      t.b.style.fontWeight   = active ? '600' : '400';
+    });
+  }
+  refreshTypBtns();
+  typSel.addEventListener('change', refreshTypBtns);
+  metaCard.appendChild(typBtnRow);
 
   // ── Modus-Hinweis ─────────────────────────────────────────────
   var modeHint = tx('div', '', '');
@@ -221,14 +242,53 @@ function buildImportView(container) {
   typSel.addEventListener('change', updateModeHint);
   metaCard.appendChild(modeHint);
 
-  metaCard.appendChild(row2(fg('Werk / Titel', buchInp), fg('Fach', fachSel)));
-  metaCard.appendChild(row2(fg('Jahrgang', jgInp), fg('Kapitel', kapInp), fg('Unterkapitel', ukInp), fg('Erste Seite', seiteInp)));
+  // ── Fach-Buttons (links) + Eingabefelder (rechts) ─────────────
+  var bodyRow = mk('div', '');
+  bodyRow.style.cssText = 'display:flex;gap:10px;align-items:flex-start;';
 
-  // Autocomplete für Kapitel und Unterkapitel (abhängig vom eingetragenen Buch)
+  var fachCol = mk('div', '');
+  fachCol.style.cssText = 'display:flex;flex-direction:column;gap:6px;flex-shrink:0;';
+  var _fachBtns = [];
+  FAECHER.forEach(function(f) {
+    var b = mk('button', '');
+    b.title = f.label;
+    b.textContent = f.icon;
+    b.style.cssText = 'width:44px;height:44px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-size:20px;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;';
+    b.addEventListener('click', function() {
+      fachSel.value = f.key;
+      fachSel.dispatchEvent(new Event('change'));
+    });
+    fachCol.appendChild(b);
+    _fachBtns.push({ k: f.key, b: b, f: f });
+  });
+  function refreshFachBtns() {
+    _fachBtns.forEach(function(t) {
+      var active = fachSel.value === t.k;
+      t.b.style.background  = active ? t.f.color + '20' : 'transparent';
+      t.b.style.borderColor = active ? t.f.color : 'var(--border)';
+      t.b.style.boxShadow   = active ? '0 0 0 2px ' + t.f.color + '30' : 'none';
+    });
+  }
+  refreshFachBtns();
+  fachSel.addEventListener('change', refreshFachBtns);
+  bodyRow.appendChild(fachCol);
+
+  var inputCol = mk('div', '');
+  inputCol.style.cssText = 'display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;';
+  inputCol.appendChild(fg('Werk / Titel', buchInp));
+  inputCol.appendChild(fg('Kapitel', kapInp));
+  inputCol.appendChild(fg('Unterkapitel', ukInp));
+  bodyRow.appendChild(inputCol);
+  metaCard.appendChild(bodyRow);
+
+  // ── Jahrgang + Erste Seite ────────────────────────────────────
+  metaCard.appendChild(row2(fg('Jahrgang', jgInp), fg('Erste Seite', seiteInp)));
+
+  // Autocomplete
+  attachAutocomplete(buchInp, function() { return suggestBooks(fachSel.value); });
   attachAutocomplete(kapInp, function() { return suggestKapitel(buchInp.value.trim()); });
   attachAutocomplete(ukInp,  function() { return suggestUnterkapitel(buchInp.value.trim(), kapInp.value.trim()); });
 
-  // Wenn Buch ausgefüllt wird, Kapitel/UK-Vorschläge neu auslösen (nur sichtbar wenn Feld gerade fokussiert ist)
   buchInp.addEventListener('blur', function() {
     if (buchInp.value.trim()) {
       kapInp.dispatchEvent(new Event('input', { bubbles: true }));

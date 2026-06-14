@@ -210,16 +210,12 @@ function openTaskModal(group, opts) {
 
   // Pro-Teilaufgabe-Felder, parallel zu items (kein data-key)
   var itemFields = items.map(function(it, i) {
-    var themaInp = document.createElement('input');
-    themaInp.className = 'db-form-inp'; themaInp.type = 'text';
-    themaInp.placeholder = 'z.B. Gleichsetzungsverfahren'; themaInp.value = it.thema || '';
     var chk = document.createElement('input'); chk.type = 'checkbox'; chk.checked = !!it.hat_loesung;
     chk.style.cssText = 'width:16px;height:16px;cursor:pointer;accent-color:var(--pri);margin-top:8px;';
     return {
       inhalt:        mkAutoTA(it.inhalt, isMulti ? 'Inhalt Teilaufgabe ' + posLetter(i) : 'Was steht in der Aufgabe?'),
       abbildung:     mkAutoTA(it.abbildung, 'Beschreibung der Abbildung (falls vorhanden)'),
       anforderung:   mkAutoTA(it.anforderung, 'Was sollen Schülerinnen konkret tun?'),
-      thema:         themaInp,
       niveau:        mkSelect(it.niveau, NIVEAU_OPTS),
       operator:      mkSelect(it.operator, OP_OPTS),
       schwierigkeit: mkSelect(it.schwierigkeit, SCHW_OPTS),
@@ -347,6 +343,7 @@ function openTaskModal(group, opts) {
   }
   R0.appendChild(seiteRow);
   sec(R0, 'Einordnung');
+  sfld(R0, 'Thema', 'thema', 'text', 'z.B. Parallelogramm');
   ssel(R0, 'Fach', 'fach', FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
   sfld(R0, 'Jahrgang', 'jahrgang', 'number', '5–10');
   ssel(R0, 'Inhaltstyp', 'inhaltstyp', [
@@ -473,10 +470,7 @@ function openTaskModal(group, opts) {
     items.forEach(function(it, i) {
       var blk = mk('div', 'db-group-item-block'); blk.appendChild(itemHeader(i));
       blk.appendChild(labeled('Anforderung', itemFields[i].anforderung));
-      var row = fieldRow();
-      row.appendChild(labeled('Thema', itemFields[i].thema));
-      row.appendChild(labeled('Niveau', itemFields[i].niveau));
-      blk.appendChild(row);
+      blk.appendChild(labeled('Niveau', itemFields[i].niveau));
       p1.appendChild(blk);
       itemNodes[i].push(blk);
     });
@@ -486,7 +480,6 @@ function openTaskModal(group, opts) {
     p1.appendChild(itemSep2);
     var topRow = fieldRow();
     topRow.appendChild(labeled('Anforderung', itemFields[0].anforderung));
-    topRow.appendChild(labeled('Thema', itemFields[0].thema));
     topRow.appendChild(labeled('Niveau', itemFields[0].niveau));
     p1.appendChild(topRow);
   }
@@ -541,7 +534,6 @@ function openTaskModal(group, opts) {
       inhalt:        encode(f.inhalt.value),
       abbildung:     encode(f.abbildung.value),
       anforderung:   encode(f.anforderung.value),
-      thema:         f.thema.value.trim() || null,
       niveau:        f.niveau.value || null,
       operator:      f.operator.value || null,
       schwierigkeit: f.schwierigkeit.value || null,

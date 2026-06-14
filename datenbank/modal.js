@@ -533,6 +533,36 @@ function openTaskModal(group, opts) {
     saveBtn.disabled = false; saveBtn.textContent = '✓ Speichern';
   };
   saveBtn.onclick = function() { doSave({}); };
+  // Duplizieren-Button, nur im Edit-Modus
+  if (mode !== 'create') {
+    var dupBtn = btn('⎘ Duplizieren', 'btn btn-ghost btn-sm');
+    footer.appendChild(dupBtn);
+    dupBtn.onclick = async function() {
+      dupBtn.disabled = true; dupBtn.textContent = '⏳…';
+      try {
+        var dupShared = {};
+        tabWrap.querySelectorAll('[data-key]').forEach(function(el) {
+          var k = el.dataset.key;
+          if (el.type === 'number')           dupShared[k] = el.value !== '' ? Number(el.value) : null;
+          else if (el.tagName === 'TEXTAREA') dupShared[k] = encode(el.value);
+          else                                dupShared[k] = el.value.trim() || null;
+        });
+        var ts = Date.now();
+        var newRows = items.filter(function(_, i) { return !removed[i]; }).map(function(it, i) {
+          return Object.assign({
+            id: 'db_' + ts + '_dup' + i + '_' + Math.random().toString(36).slice(2, 6),
+            fach: dupShared.fach || it.fach || DB.fach,
+            gruppen_key: 'dup_' + ts + '_' + i
+          }, dupShared, itemPatch(i));
+        });
+        await sbInsert('inhalte', newRows);
+        closeEntryModal(); if (onDone) onDone();
+      } catch(e) {
+        alert('Fehler beim Duplizieren: ' + e.message);
+        dupBtn.disabled = false; dupBtn.textContent = '⎘ Duplizieren';
+      }
+    };
+  }
   // Löschen-Button rechts (komplette Aufgabe), nur im Edit-Modus
   if (mode !== 'create') {
     var delLabel = isMulti ? '🗑 ' + grpTypLabel(group) + ' komplett löschen' : '🗑 Löschen';

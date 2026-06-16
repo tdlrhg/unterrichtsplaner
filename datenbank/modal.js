@@ -517,7 +517,6 @@ function openTaskModal(group, opts) {
   }
   tabBodyEl.appendChild(p2);
 
-  requestAnimationFrame(function() { _autoTas.forEach(autoResize); });
   modal.appendChild(tabWrap);
 
   // ── Footer ────────────────────────────────────────────────────
@@ -645,6 +644,7 @@ function openTaskModal(group, opts) {
   modal.appendChild(footer);
 
   document.body.appendChild(overlay);
+  requestAnimationFrame(function() { _autoTas.forEach(autoResize); });
   function onEsc(e) {
     if (e.key === 'Escape') { closeEntryModal(); return; }
     if (navList && navList.length > 1) {

@@ -81,7 +81,7 @@ function mkRegalRow(pillCfg, booksFn, hasSep) {
 
 function buildBuecherregal(container) {
   var gen = ++_regalGen;
-  sbSelect('inhalte', { select: 'fach,quelle_name,jahrgang,quelle_typ,kapitel', limit: 5000 })
+  sbSelectAll('inhalte', { select: 'fach,quelle_name,jahrgang,quelle_typ,kapitel' })
     .then(function(rows) {
       if (gen !== _regalGen || !container.isConnected) return;
 

@@ -636,7 +636,7 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     if (DB.quelle_name) buchSel.value = DB.quelle_name;
   }
   if (fach) {
-    sbSelect('inhalte', { select: 'quelle_name', filters: { fach: fach }, limit: 5000, order: 'quelle_name' })
+    sbSelectAll('inhalte', { select: 'quelle_name', filters: { fach: fach }, order: 'quelle_name' })
       .then(function(rows) {
         var seen = {}, books = [];
         rows.forEach(function(r) { if (r.quelle_name && !seen[r.quelle_name]) { seen[r.quelle_name] = true; books.push(r.quelle_name); } });

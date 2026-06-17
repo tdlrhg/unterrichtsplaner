@@ -88,9 +88,15 @@ async function sbSelect(table, { select = '*', filters = {}, nullFilters = [], f
   params.push('limit=' + limit);
   if (offset) params.push('offset=' + offset);
   const url = _URL + '/rest/v1/' + table + '?' + params.join('&');
-  const res = await fetch(url, { headers: _H() });
-  if (!res.ok) return [];
-  return await res.json();
+  const ctrl = new AbortController();
+  const timer = setTimeout(function() { ctrl.abort(); }, 15000);
+  try {
+    const res = await fetch(url, { headers: _H(), signal: ctrl.signal });
+    if (!res.ok) return [];
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // Alle Zeilen einer Tabelle paginiert laden.

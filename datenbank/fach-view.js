@@ -232,6 +232,7 @@ async function buildFachView(container) {
   const LIMIT = 500;
 
   async function load(opts) {
+    try {
     var _savedScroll = (opts && opts.keepScroll) ? container.scrollTop : null;
     wrap.innerHTML = '<div style="padding:20px;color:var(--tx3);text-align:center">⏳ Lädt…</div>';
     const filters = { fach: f.key };
@@ -302,6 +303,29 @@ async function buildFachView(container) {
 
     // Gruppen jetzt berechnen — für korrekte Aufgaben-Zählung
     var groups = dbGroupByParent(rows);
+
+    // Materialset: alleinstehende LK-Gruppen (kein Buchstaben-Suffix) in die
+    // zugehörige AB-Gruppe eingliedern, damit der Chip-Mechanismus greift.
+    (function() {
+      var keyMap = {};
+      groups.forEach(function(g) { keyMap[g.gruppen_key] = g; });
+      var keep = [];
+      groups.forEach(function(g) {
+        var r0 = g.items[0];
+        if (!r0 || (r0.quelle_typ !== 'materialset' && r0.quelle_typ !== 'handreichung')) { keep.push(g); return; }
+        var allLK = g.items.every(function(r) { return r.inhaltstyp === 'lehrerkommentar'; });
+        if (!allLK) { keep.push(g); return; }
+        var matKey = (r0.quelle_name || '') + '||' + (r0.kapitel || '') + '||' + g.key;
+        var target = keyMap[matKey];
+        if (target && target !== g) {
+          g.items.forEach(function(lk) { target.items.push(lk); });
+        } else {
+          keep.push(g);
+        }
+      });
+      groups = keep;
+    })();
+
     if (loadFailed) {
       subT.textContent = 'Fehler beim Laden' + suffix;
     } else if (rows.length >= LIMIT) {
@@ -344,12 +368,25 @@ async function buildFachView(container) {
 
     var _lastSeiteBuch = null; // für Seiten-Trenner
     groups.forEach(function(g, i) {
-      var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.key !== '?' && g.items[0].nr !== g.key);
-      var ref0 = g.items[0];
+      // Für Materialsets: LKs vom Inhalt trennen und als Chips anhängen
+      var isMat0 = g.items[0] && (g.items[0].quelle_typ === 'materialset' || g.items[0].quelle_typ === 'handreichung');
+      var lkItems = [], contentItems = g.items;
+      if (isMat0) {
+        var _lkList = g.items.filter(function(r) { return r.inhaltstyp === 'lehrerkommentar'; });
+        if (_lkList.length) {
+          var _cList = g.items.filter(function(r) { return r.inhaltstyp !== 'lehrerkommentar'; });
+          if (_cList.length) { lkItems = _lkList; contentItems = _cList; }
+        }
+      }
+      var lkByNr = {};
+      lkItems.forEach(function(lk) { var k = String(lk.nr || ''); if (!lkByNr[k]) lkByNr[k] = []; lkByNr[k].push(lk); });
+
+      var ref0 = contentItems[0] || g.items[0];
+      var hasSubtasks = contentItems.length > 1 || (contentItems.length === 1 && g.key !== '?' && contentItems[0].nr !== g.key);
 
       // ── Seiten-Trenner ───────────────────────────────────────────
-      // Nur wenn kein einzelner Seiten-Filter aktiv ist und seite bekannt
-      if (!DB.seite && ref0 && ref0.seite != null) {
+      // Nur wenn kein einzelner Seiten-Filter aktiv ist, seite bekannt, und kein Materialset
+      if (!DB.seite && ref0 && ref0.seite != null && ref0.quelle_typ !== 'materialset' && ref0.quelle_typ !== 'handreichung') {
         var seiteBuchKey = (ref0.quelle_name || '') + '::' + ref0.seite;
         if (seiteBuchKey !== _lastSeiteBuch) {
           if (_lastSeiteBuch !== null) {
@@ -386,19 +423,41 @@ async function buildFachView(container) {
         ghdr.title = 'Alle Teilaufgaben ansehen';
         ghdr.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
         wrap.appendChild(ghdr);
-        g.items.forEach(function(row) {
+        var groupLKs = lkByNr[String(g.key)] || [];
+        if (groupLKs.length) _appendLkChip(ghdr, groupLKs, wrap);
+        contentItems.forEach(function(row) {
           var rowEl = renderRow(row, function() { load({ keepScroll: true }); }, true);
           // Nur die erste Spalte einrücken (zeigt Zugehörigkeit zur Gruppe),
           // NICHT die ganze Zeile — sonst verrutschen alle anderen Spalten.
           if (rowEl.firstChild) rowEl.firstChild.style.paddingLeft = '18px';
           rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
           wrap.appendChild(rowEl);
+          var rowLKs = lkByNr[String(row.nr || '')] || [];
+          if (rowLKs.length) _appendLkChip(rowEl, rowLKs, wrap);
+        });
+        // Ungematchte LKs als Fallback-Zeilen
+        var _matched = {};
+        contentItems.forEach(function(r) { _matched[String(r.nr || '')] = true; });
+        _matched[String(g.key)] = true;
+        lkItems.forEach(function(lk) {
+          if (!_matched[String(lk.nr || '')]) {
+            var lkEl = renderRow(lk, function() { load({ keepScroll: true }); }, true);
+            if (lkEl.firstChild) lkEl.firstChild.style.paddingLeft = '18px';
+            lkEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
+            wrap.appendChild(lkEl);
+          }
         });
       } else {
         // Einzelaufgabe: „Aufgabe N" + Text in einer Zeile (kein separater Header)
-        var rowEl = renderRow(g.items[0], function() { load({ keepScroll: true }); }, true, seitePrefix + grpTypLabel(g));
+        var singleItem = contentItems[0] || g.items[0];
+        var rowEl = renderRow(singleItem, function() { load({ keepScroll: true }); }, true, seitePrefix + grpTypLabel(g));
         rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
         wrap.appendChild(rowEl);
+        var singleLKs = [];
+        [String(g.key), String(singleItem.nr || '')].forEach(function(k) {
+          (lkByNr[k] || []).forEach(function(lk) { if (singleLKs.indexOf(lk) < 0) singleLKs.push(lk); });
+        });
+        if (singleLKs.length) _appendLkChip(rowEl, singleLKs, wrap);
       }
     });
 
@@ -410,6 +469,13 @@ async function buildFachView(container) {
     }
 
     if (_savedScroll !== null) requestAnimationFrame(function() { container.scrollTop = _savedScroll; });
+    } catch (err) {
+      console.error('[Datenbank] Unerwarteter Fehler in load():', err);
+      wrap.innerHTML = '';
+      var errDiv = tx('div', '', '⚠ Fehler beim Rendern. Details in der Browser-Konsole.');
+      errDiv.style.cssText = 'padding:36px;color:#b91c1c;text-align:center;font-size:14px;';
+      wrap.appendChild(errDiv);
+    }
   }
 
   // Suche: Debounce
@@ -545,6 +611,43 @@ function renderRow(a, onSaved, compact, groupLabel) {
   // Klick → Vollbild-Modal
   row.onclick = function() { openEntryModal(a, 'edit', onSaved); };
   return row;
+}
+
+// ── Lehrerkommentar-Chip (Materialset) ───────────────────────────
+// Hängt einen aufklappbaren Chip an die Inhalt-Zelle einer Tabellenzeile.
+// expDiv wird direkt nach rowEl in wrap eingefügt.
+function _appendLkChip(rowEl, lks, wrap) {
+  var midCell = rowEl.querySelector('[data-col-idx="1"]');
+  if (!midCell || !lks.length) return;
+  var chip = mk('span', '');
+  chip.style.cssText = 'display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;'
+    + 'background:#faeeda;color:#854f0b;border-radius:4px;padding:2px 7px;cursor:pointer;flex-shrink:0;margin-left:6px;';
+  chip.textContent = (TYP_ICONS.lehrerkommentar || '🧑‍🏫') + ' ' + lks.length;
+  chip.title = 'Lehrerkommentar anzeigen';
+  midCell.style.display = 'flex';
+  midCell.style.alignItems = 'center';
+  midCell.appendChild(chip);
+  var expDiv = mk('div', '');
+  expDiv.style.cssText = 'display:none;padding:7px 12px 7px 36px;border-bottom:1px solid var(--bord);'
+    + 'background:rgba(180,83,9,.04);';
+  lks.forEach(function(lk) {
+    var line = mk('div', '');
+    line.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:3px 0;font-size:12px;';
+    var badge = tx('span', '', 'Lehrerkommentar');
+    badge.style.cssText = 'flex-shrink:0;font-size:10px;font-weight:600;background:#faeeda;color:#854f0b;'
+      + 'padding:2px 7px;border-radius:4px;white-space:nowrap;';
+    var text = tx('span', '', lk.inhalt || lk.aufgabenstellung || lk.thema || '–');
+    text.style.cssText = 'color:var(--tx1);line-height:1.4;';
+    line.appendChild(badge); line.appendChild(text);
+    expDiv.appendChild(line);
+  });
+  wrap.appendChild(expDiv);
+  chip.onclick = function(e) {
+    e.stopPropagation();
+    var open = expDiv.style.display !== 'none';
+    expDiv.style.display = open ? 'none' : 'block';
+    chip.style.background = open ? '#faeeda' : '#f5c4b3';
+  };
 }
 
 // ── Filter-Leiste ─────────────────────────────────────────────────

@@ -367,6 +367,13 @@ async function buildFachView(container) {
     }
 
     var _lastSeiteBuch = null; // für Seiten-Trenner
+    // DEBUG: zeigt wie viele Gruppen LK-Items enthalten
+    (function() {
+      var matGrps = groups.filter(function(g) { return g.items[0] && (g.items[0].quelle_typ === 'materialset' || g.items[0].quelle_typ === 'handreichung'); });
+      var lkGrps  = matGrps.filter(function(g) { return g.items.some(function(r) { return r.inhaltstyp === 'lehrerkommentar'; }); });
+      console.log('[LK-Chip Debug] Materialset-Gruppen:', matGrps.length, '| davon mit LK:', lkGrps.length);
+      if (lkGrps.length) console.log('[LK-Chip Debug] Erste LK-Gruppe:', lkGrps[0]);
+    })();
     groups.forEach(function(g, i) {
       // Für Materialsets: LKs vom Inhalt trennen und als Chips anhängen
       var isMat0 = g.items[0] && (g.items[0].quelle_typ === 'materialset' || g.items[0].quelle_typ === 'handreichung');

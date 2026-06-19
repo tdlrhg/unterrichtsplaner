@@ -479,26 +479,32 @@ async function buildFachView(container) {
     // Gruppen jetzt berechnen — für korrekte Aufgaben-Zählung
     var groups = dbGroupByParent(rows);
 
-    // Materialset: alleinstehende LK-Gruppen in die erste nicht-LK-Gruppe
-    // gleicher Quelle + Kapitel eingliedern (Matching über quelle_name+kapitel,
-    // nicht über nr — LK-nrs wie "Lehrerkommentar 1" passen nie zu AB-nrs).
+    // Materialset: alleinstehende LK-Gruppen in eine passende nicht-LK-Gruppe
+    // eingliedern. Matching zweistufig: erst quelle_name+kapitel+uk_titel+seite,
+    // dann ohne seite. Kein Match → LK bleibt eigenständige Gruppe (nie falsch anhängen).
     (function() {
+      function findTarget(g, matchSeite) {
+        var r0 = g.items[0];
+        for (var j = 0; j < groups.length; j++) {
+          var cg = groups[j]; if (cg === g) continue;
+          var cr = cg.items[0]; if (!cr) continue;
+          if ((cr.quelle_typ === 'materialset' || cr.quelle_typ === 'handreichung') &&
+              cr.quelle_name === r0.quelle_name && cr.kapitel === r0.kapitel &&
+              cr.uk_titel === r0.uk_titel &&
+              (!matchSeite || cr.seite === r0.seite) &&
+              !cg.items.every(function(r) { return r.inhaltstyp === 'lehrerkommentar'; })) {
+            return cg;
+          }
+        }
+        return null;
+      }
       var keep = [];
       groups.forEach(function(g) {
         var r0 = g.items[0];
         if (!r0 || (r0.quelle_typ !== 'materialset' && r0.quelle_typ !== 'handreichung')) { keep.push(g); return; }
         var allLK = g.items.every(function(r) { return r.inhaltstyp === 'lehrerkommentar'; });
         if (!allLK) { keep.push(g); return; }
-        var target = null;
-        for (var i = 0; i < groups.length; i++) {
-          var cg = groups[i]; if (cg === g) continue;
-          var cr = cg.items[0]; if (!cr) continue;
-          if ((cr.quelle_typ === 'materialset' || cr.quelle_typ === 'handreichung') &&
-              cr.quelle_name === r0.quelle_name && cr.kapitel === r0.kapitel &&
-              !cg.items.every(function(r) { return r.inhaltstyp === 'lehrerkommentar'; })) {
-            target = cg; break;
-          }
-        }
+        var target = findTarget(g, true) || findTarget(g, false);
         if (target) { g.items.forEach(function(lk) { target.items.push(lk); }); }
         else { keep.push(g); }
       });

@@ -1,10 +1,148 @@
 // ── Fach-Ansicht ──────────────────────────────────────────────────
+
+// ── Multi-Select State ────────────────────────────────────────────
+var _selGroups   = {};  // gruppen_key → group object
+var _selLoadGrps = [];  // groups from last load() — for select-all
+var _actionBar   = null;
+
+function _selCount() { return Object.keys(_selGroups).length; }
+
+function _clearSel() {
+  _selGroups = {};
+  _syncSel();
+}
+
+function _syncSel() {
+  var count = _selCount();
+  if (_actionBar) {
+    _actionBar.style.display = count > 0 ? 'flex' : 'none';
+    var lbl = _actionBar.querySelector('.ab-count');
+    if (lbl) lbl.textContent = count + (count === 1 ? ' ausgewählt' : ' ausgewählt');
+  }
+  document.querySelectorAll('input[data-gkey]').forEach(function(chk) {
+    chk.checked = !!_selGroups[chk.dataset.gkey];
+  });
+  var allChks = Array.from(document.querySelectorAll('input[data-gkey]'));
+  var selAllChk = document.querySelector('input[data-selall]');
+  if (selAllChk) {
+    var n = allChks.filter(function(c) { return c.checked; }).length;
+    selAllChk.indeterminate = n > 0 && n < allChks.length;
+    selAllChk.checked = allChks.length > 0 && n === allChks.length;
+  }
+}
+
+function _mkSelCell(gKey, g) {
+  var cell = mk('div', 'db-col-sel');
+  cell.dataset.selCell = '1';
+  var chk = document.createElement('input');
+  chk.type = 'checkbox';
+  chk.dataset.gkey = gKey;
+  chk.style.cssText = 'cursor:pointer;accent-color:var(--pri);width:14px;height:14px;';
+  chk.checked = !!_selGroups[gKey];
+  chk.addEventListener('change', function(e) {
+    e.stopPropagation();
+    if (chk.checked) { _selGroups[gKey] = g; } else { delete _selGroups[gKey]; }
+    _syncSel();
+  });
+  chk.addEventListener('click', function(e) { e.stopPropagation(); });
+  cell.appendChild(chk);
+  return cell;
+}
+
+async function _runFingerprint(reloadFn) {
+  var gs = Object.values(_selGroups);
+  if (!gs.length) return;
+  var progEl = _actionBar && _actionBar.querySelector('.ab-prog');
+  var total = gs.length;
+  for (var i = 0; i < gs.length; i++) {
+    if (progEl) progEl.textContent = (i + 1) + '/' + total + ' analysiert…';
+    try {
+      var fp = await _analyzeFingerprint(gs[i]);
+      for (var j = 0; j < gs[i].items.length; j++) {
+        await sbUpdate('inhalte', gs[i].items[j].id, fp);
+      }
+    } catch (e) {
+      console.error('[KI-FP] Fehler:', e);
+      if (progEl) progEl.textContent = '⚠ Fehler (' + (i + 1) + '): ' + e.message;
+    }
+  }
+  if (progEl) {
+    progEl.textContent = total + ' fertig ✓';
+    setTimeout(function() { progEl.textContent = ''; }, 3000);
+  }
+  _clearSel();
+  if (reloadFn) reloadFn({ keepScroll: true });
+}
+
+async function _analyzeFingerprint(g) {
+  var aufgabeText = g.items.map(function(it) {
+    var parts = [];
+    if (g.items.length > 1 && it.nr) parts.push('(' + it.nr + ')');
+    if (it.aufgabenstellung) parts.push(it.aufgabenstellung);
+    if (it.inhalt && it.inhalt !== it.aufgabenstellung) parts.push(it.inhalt);
+    return parts.filter(Boolean).join(' ');
+  }).join('\n');
+
+  var thema = g.items[0] && g.items[0].thema;
+  var prompt = 'Du bist Mathematikdidaktiker. Analysiere die folgende Aufgabe und gib einen JSON-Fingerprint zurück.\n\n'
+    + (thema ? 'Thema: ' + thema + '\n' : '')
+    + 'Aufgabe:\n' + aufgabeText + '\n\n'
+    + 'Gib NUR valides JSON zurück, keine Erklärungen:\n'
+    + '{"aufgabenart":"<diagnose|einstieg|lernaufgabe|uebung|sicherung|anwendung|transfer|reflexion|kontrolle|pruefung>",'
+    + '"rolle_in_reihe":"<einstieg|aufbauend|vernetzend|abschliessend|uebertragend|ueberleitend>",'
+    + '"offenheit":"<geschlossen|halboffen|offen>",'
+    + '"kognitive_anforderung":"<routine|problemloesen|entdecken>",'
+    + '"loesungswege":"<einer|mehrere>",'
+    + '"unterstuetzung":"<hilfestellungen|teilaufgaben|tipps|ohne>",'
+    + '"kontext":"<innermathematisch|sachbezogen|realitaetsnah|faecheruebergreifend>",'
+    + '"didaktische_funktion":"<kommagetrennt: motivation,interesse,vorwissen,diagnose,fehlvorstellungen,konflikt,begriffsbildung,entdecken,erarbeiten,zusammenhaenge,vertiefen,strukturieren,sichern,ueben,automatisieren,anwenden,transfer,reflexion,vergleichen>",'
+    + '"fachliche_kompetenz":"<kommagetrennt: begriffe,verfahren,zusammenhaenge,regeln,darstellen,beurteilen>",'
+    + '"prozessbezogene_kompetenz":"<kommagetrennt: argumentieren,problemloesen,modellieren,darstellen,kommunizieren,symbole>"}';
+
+  var raw = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 400 });
+  var m = raw.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('Kein JSON erhalten');
+  return JSON.parse(m[0]);
+}
+
+async function _runDelete(reloadFn) {
+  var gs = Object.values(_selGroups);
+  if (!gs.length) return;
+  var itemCount = gs.reduce(function(s, g) { return s + g.items.length; }, 0);
+  if (!confirm(gs.length + ' Aufgabe(n) mit ' + itemCount + ' Einträgen löschen?\nDiese Aktion kann nicht rückgängig gemacht werden.')) return;
+  for (var i = 0; i < gs.length; i++) {
+    for (var j = 0; j < gs[i].items.length; j++) {
+      await sbDelete('inhalte', gs[i].items[j].id);
+    }
+  }
+  _clearSel();
+  if (reloadFn) reloadFn();
+}
+
 // ── Tabellen-Header mit Resize + Drag-Reorder ─────────────────────
 var _colDragFromPos = null;
 
 function buildTableHead(onSortChange) {
   const head = mk('div', 'db-table-head');
   head.style.gridTemplateColumns = colTemplate();
+
+  // Select-all checkbox
+  var selAllHdrCell = mk('div', 'db-col-hdr db-col-sel');
+  var selAllChkEl = document.createElement('input');
+  selAllChkEl.type = 'checkbox';
+  selAllChkEl.dataset.selall = '1';
+  selAllChkEl.title = 'Alle auswählen / abwählen';
+  selAllChkEl.style.cssText = 'cursor:pointer;accent-color:var(--pri);width:14px;height:14px;';
+  selAllChkEl.addEventListener('change', function() {
+    if (selAllChkEl.checked) {
+      _selLoadGrps.forEach(function(g) { _selGroups[g.gruppen_key] = g; });
+    } else {
+      _selGroups = {};
+    }
+    _syncSel();
+  });
+  selAllHdrCell.appendChild(selAllChkEl);
+  head.appendChild(selAllHdrCell);
 
   var visCols = visibleCols();
   visCols.forEach(function(colIdx, visualPos) {
@@ -120,12 +258,14 @@ function buildTableHead(onSortChange) {
 }
 
 function reorderRowCells(rowEl) {
+  var selCell = rowEl.querySelector('[data-sel-cell]');
   var cellMap = {};
   Array.from(rowEl.children).forEach(function(cell) {
     var idx = cell.dataset.colIdx;
     if (idx !== undefined) cellMap[idx] = cell;
   });
   while (rowEl.firstChild) rowEl.removeChild(rowEl.firstChild);
+  if (selCell) rowEl.appendChild(selCell);
   visibleCols().forEach(function(colIdx) {
     if (cellMap[colIdx]) rowEl.appendChild(cellMap[colIdx]);
   });
@@ -165,6 +305,38 @@ async function buildFachView(container) {
   const tableWrap = mk('div', '');
   tableWrap.style.cssText = 'padding:8px 16px 16px;';
   container.appendChild(tableWrap);
+
+  // ── Auswahl-Aktionsleiste ─────────────────────────────────────
+  var oldAB = document.getElementById('db-sel-action-bar');
+  if (oldAB && oldAB.parentNode) oldAB.parentNode.removeChild(oldAB);
+  _selGroups   = {};
+  _selLoadGrps = [];
+  var actionBar = mk('div', '');
+  actionBar.id = 'db-sel-action-bar';
+  actionBar.style.cssText = 'display:none;position:fixed;bottom:0;left:265px;right:0;'
+    + 'background:var(--surf);border-top:2px solid var(--pri);'
+    + 'padding:9px 20px;align-items:center;gap:10px;z-index:200;'
+    + 'box-shadow:0 -4px 16px rgba(0,0,0,.12);';
+  _actionBar = actionBar;
+  var abCount = tx('span', 'ab-count', '');
+  abCount.style.cssText = 'font-size:13px;font-weight:600;color:var(--tx1);min-width:100px;';
+  actionBar.appendChild(abCount);
+  var abFpBtn = btn('🔍 KI-Fingerprint', 'btn btn-sm');
+  abFpBtn.title = 'Unterrichts-Fingerprint mit KI analysieren';
+  abFpBtn.onclick = function() { _runFingerprint(load); };
+  actionBar.appendChild(abFpBtn);
+  var abDelBtn = btn('🗑 Löschen', 'btn btn-sm');
+  abDelBtn.style.cssText += 'background:#fee2e2;color:#b91c1c;border-color:#fca5a5;';
+  abDelBtn.onclick = function() { _runDelete(load); };
+  actionBar.appendChild(abDelBtn);
+  var abProg = tx('span', 'ab-prog', '');
+  abProg.style.cssText = 'font-size:12px;color:var(--tx3);';
+  actionBar.appendChild(abProg);
+  var abClearBtn = btn('✕ Aufheben', 'btn btn-ghost btn-sm');
+  abClearBtn.style.cssText += 'margin-left:auto;font-size:11px;';
+  abClearBtn.onclick = function() { _clearSel(); };
+  actionBar.appendChild(abClearBtn);
+  document.body.appendChild(actionBar);
 
   // Sort-Callback: Klick auf Spaltenheader → Auf/Absteigend wechseln
   function onSortChange(field) {
@@ -427,11 +599,15 @@ async function buildFachView(container) {
         var ghdr = renderRow(gHdrItem, null, true, seitePrefix + grpTypLabel(g));
         ghdr.title = 'Alle Teilaufgaben ansehen';
         ghdr.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
+        ghdr.insertBefore(_mkSelCell(g.gruppen_key, g), ghdr.firstChild);
         wrap.appendChild(ghdr);
         if (lkItems.length) _appendLkChip(ghdr, lkItems, wrap);
         contentItems.forEach(function(row) {
           var rowEl = renderRow(row, function() { load({ keepScroll: true }); }, true);
-          if (rowEl.firstChild) rowEl.firstChild.style.paddingLeft = '18px';
+          // Spacer hält die Grid-Ausrichtung; Einrückung geht auf die erste Datenspalte
+          var _subSpacer = mk('div', 'db-col-sel'); _subSpacer.dataset.selCell = '1';
+          rowEl.insertBefore(_subSpacer, rowEl.firstChild);
+          if (rowEl.children[1]) rowEl.children[1].style.paddingLeft = '18px';
           rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
           wrap.appendChild(rowEl);
         });
@@ -440,10 +616,14 @@ async function buildFachView(container) {
         var singleItem = contentItems[0] || g.items[0];
         var rowEl = renderRow(singleItem, function() { load({ keepScroll: true }); }, true, seitePrefix + grpTypLabel(g));
         rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
+        rowEl.insertBefore(_mkSelCell(g.gruppen_key, g), rowEl.firstChild);
         wrap.appendChild(rowEl);
         if (lkItems.length) _appendLkChip(rowEl, lkItems, wrap);
       }
     });
+
+    _selLoadGrps = groups;
+    _syncSel();
 
     if (rows.length === LIMIT) {
       const mehr = btn('Weitere ' + LIMIT + ' laden…', 'btn btn-ghost btn-sm');

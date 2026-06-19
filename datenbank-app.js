@@ -4,6 +4,8 @@
 
 // ── Render ────────────────────────────────────────────────────────
 function dbRender() {
+  var _oldAB = document.getElementById('db-sel-action-bar');
+  if (_oldAB && _oldAB.parentNode) _oldAB.parentNode.removeChild(_oldAB);
   const oldTop = document.querySelector('.topbar');
   if (oldTop) oldTop.replaceWith(buildDBTopbar());
 

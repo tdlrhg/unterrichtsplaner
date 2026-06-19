@@ -497,7 +497,15 @@ function openTaskModal(group, opts) {
   mkChipField(qA, 'Prozessbezogene Kompetenz', 'prozessbezogene_kompetenz', PROZ_KMP_OPTS);
   qGrid.appendChild(qA);
 
-  // B. Inhalt
+  // C. Anspruch (oben rechts — ähnlich umfangreich wie A)
+  var qC = quad('C', 'Anspruch');
+  mkChipField(qC, 'Strukturtyp', 'strukturtyp', STRUKTURTYP_OPTS);
+  ssel(qC, 'Kognitive Anforderung', 'kognitive_anforderung', KOG_OPTS);
+  ssel(qC, 'Offenheit', 'offenheit', OFFENHEIT_OPTS);
+  ssel(qC, 'Differenzierung', 'unterstuetzung', UNTERSTUETZ_OPTS);
+  qGrid.appendChild(qC);
+
+  // B. Inhalt (unten links)
   var qB = quad('B', 'Inhalt');
   var themaDisp = tx('div', '', ref.thema || '—');
   themaDisp.style.cssText = 'font-size:13px;color:var(--tx2);padding:5px 8px;border:1px solid var(--bord);'
@@ -507,15 +515,7 @@ function openTaskModal(group, opts) {
   sfld(qB, 'Vorkenntnisse', 'vorkenntnisse', 'text', 'z.B. Grundrechenarten');
   qGrid.appendChild(qB);
 
-  // C. Anspruch
-  var qC = quad('C', 'Anspruch');
-  mkChipField(qC, 'Strukturtyp', 'strukturtyp', STRUKTURTYP_OPTS);
-  ssel(qC, 'Kognitive Anforderung', 'kognitive_anforderung', KOG_OPTS);
-  ssel(qC, 'Offenheit', 'offenheit', OFFENHEIT_OPTS);
-  ssel(qC, 'Differenzierung', 'unterstuetzung', UNTERSTUETZ_OPTS);
-  qGrid.appendChild(qC);
-
-  // D. Gestaltung
+  // D. Gestaltung (unten rechts)
   var qD = quad('D', 'Gestaltung');
   ssel(qD, 'Kontext', 'kontext', KONTEXT_OPTS);
   ssel(qD, 'Sozialform', 'sozialform', SOZIALFORM_OPTS);

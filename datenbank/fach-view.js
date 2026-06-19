@@ -313,24 +313,28 @@ async function buildFachView(container) {
     if (_lkRows.length) console.log('[DB] #' + _seq + ' LK-Zeilen im Ergebnis:', _lkRows.length, _lkRows.map(function(r) { return {nr: r.nr, quelle_typ: r.quelle_typ, gruppen_key: r.gruppen_key}; }));
     else console.log('[DB] #' + _seq + ' Keine lehrerkommentar-Zeilen im Ergebnis (', rows.length, 'Zeilen total)');
 
-    // Materialset: alleinstehende LK-Gruppen (kein Buchstaben-Suffix) in die
-    // zugehörige AB-Gruppe eingliedern, damit der Chip-Mechanismus greift.
+    // Materialset: alleinstehende LK-Gruppen in die erste nicht-LK-Gruppe
+    // gleicher Quelle + Kapitel eingliedern (Matching über quelle_name+kapitel,
+    // nicht über nr — LK-nrs wie "Lehrerkommentar 1" passen nie zu AB-nrs).
     (function() {
-      var keyMap = {};
-      groups.forEach(function(g) { keyMap[g.gruppen_key] = g; });
       var keep = [];
       groups.forEach(function(g) {
         var r0 = g.items[0];
         if (!r0 || (r0.quelle_typ !== 'materialset' && r0.quelle_typ !== 'handreichung')) { keep.push(g); return; }
         var allLK = g.items.every(function(r) { return r.inhaltstyp === 'lehrerkommentar'; });
         if (!allLK) { keep.push(g); return; }
-        var matKey = (r0.quelle_name || '') + '||' + (r0.kapitel || '') + '||' + g.key;
-        var target = keyMap[matKey];
-        if (target && target !== g) {
-          g.items.forEach(function(lk) { target.items.push(lk); });
-        } else {
-          keep.push(g);
+        var target = null;
+        for (var i = 0; i < groups.length; i++) {
+          var cg = groups[i]; if (cg === g) continue;
+          var cr = cg.items[0]; if (!cr) continue;
+          if ((cr.quelle_typ === 'materialset' || cr.quelle_typ === 'handreichung') &&
+              cr.quelle_name === r0.quelle_name && cr.kapitel === r0.kapitel &&
+              !cg.items.every(function(r) { return r.inhaltstyp === 'lehrerkommentar'; })) {
+            target = cg; break;
+          }
         }
+        if (target) { g.items.forEach(function(lk) { target.items.push(lk); }); }
+        else { keep.push(g); }
       });
       groups = keep;
     })();
@@ -394,8 +398,6 @@ async function buildFachView(container) {
           if (_cList.length) { lkItems = _lkList; contentItems = _cList; }
         }
       }
-      var lkByNr = {};
-      lkItems.forEach(function(lk) { var k = String(lk.nr || ''); if (!lkByNr[k]) lkByNr[k] = []; lkByNr[k].push(lk); });
 
       var ref0 = contentItems[0] || g.items[0];
       var hasSubtasks = contentItems.length > 1 || (contentItems.length === 1 && g.key !== '?' && contentItems[0].nr !== g.key);
@@ -439,29 +441,12 @@ async function buildFachView(container) {
         ghdr.title = 'Alle Teilaufgaben ansehen';
         ghdr.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
         wrap.appendChild(ghdr);
-        var groupLKs = lkByNr[String(g.key)] || [];
-        if (groupLKs.length) _appendLkChip(ghdr, groupLKs, wrap);
+        if (lkItems.length) _appendLkChip(ghdr, lkItems, wrap);
         contentItems.forEach(function(row) {
           var rowEl = renderRow(row, function() { load({ keepScroll: true }); }, true);
-          // Nur die erste Spalte einrücken (zeigt Zugehörigkeit zur Gruppe),
-          // NICHT die ganze Zeile — sonst verrutschen alle anderen Spalten.
           if (rowEl.firstChild) rowEl.firstChild.style.paddingLeft = '18px';
           rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
           wrap.appendChild(rowEl);
-          var rowLKs = lkByNr[String(row.nr || '')] || [];
-          if (rowLKs.length) _appendLkChip(rowEl, rowLKs, wrap);
-        });
-        // Ungematchte LKs als Fallback-Zeilen
-        var _matched = {};
-        contentItems.forEach(function(r) { _matched[String(r.nr || '')] = true; });
-        _matched[String(g.key)] = true;
-        lkItems.forEach(function(lk) {
-          if (!_matched[String(lk.nr || '')]) {
-            var lkEl = renderRow(lk, function() { load({ keepScroll: true }); }, true);
-            if (lkEl.firstChild) lkEl.firstChild.style.paddingLeft = '18px';
-            lkEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
-            wrap.appendChild(lkEl);
-          }
         });
       } else {
         // Einzelaufgabe: „Aufgabe N" + Text in einer Zeile (kein separater Header)
@@ -469,11 +454,7 @@ async function buildFachView(container) {
         var rowEl = renderRow(singleItem, function() { load({ keepScroll: true }); }, true, seitePrefix + grpTypLabel(g));
         rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
         wrap.appendChild(rowEl);
-        var singleLKs = [];
-        [String(g.key), String(singleItem.nr || '')].forEach(function(k) {
-          (lkByNr[k] || []).forEach(function(lk) { if (singleLKs.indexOf(lk) < 0) singleLKs.push(lk); });
-        });
-        if (singleLKs.length) _appendLkChip(rowEl, singleLKs, wrap);
+        if (lkItems.length) _appendLkChip(rowEl, lkItems, wrap);
       }
     });
 

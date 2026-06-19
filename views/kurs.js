@@ -394,6 +394,8 @@ function viewFachplanung() {
   const selBlock  = selBlockId  && (lp.blocks || []).find(b => b.id === selBlockId);
   const selReihe  = selBlock    && (selBlock.reihen || []).find(r => r.id === selReiheId);
 
+  div.appendChild(buildPlanungsChat(lp));
+
   const treePanel = mk('div', 'fp-tree-panel');
   treePanel.appendChild(buildFpTree(lp, sel));
   div.appendChild(treePanel);

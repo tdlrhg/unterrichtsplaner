@@ -1072,3 +1072,19 @@ textarea::placeholder { color: #c4cdd6; }
 .did-filter-chip.on { font-weight:600; }
 .did-themen-baustein { padding:10px 12px; border:1px solid var(--bord); border-radius:6px; margin-bottom:6px; background:var(--surf); font-size:13px; line-height:1.5; }
 .did-themen-baustein:hover { background:var(--surf2); }
+
+/* ── Planungs-Chat ── */
+.pc-wrap { margin-bottom:16px; }
+.pc-hdr-sub { font-size:11px; color:var(--tx3); margin-left:8px; font-weight:400; }
+.pc-body { display:flex; flex-direction:column; gap:10px; padding:12px; }
+.pc-messages { max-height:360px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; min-height:40px; }
+.pc-msg { max-width:90%; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.5; }
+.pc-user { align-self:flex-end; background:var(--pri); color:#fff; border-bottom-right-radius:2px; }
+.pc-assistant { align-self:flex-start; background:var(--surf2); border:1px solid var(--bord); border-bottom-left-radius:2px; }
+.pc-msg-text strong { font-weight:600; }
+.pc-tool-badge { display:inline-block; font-size:11px; color:var(--tx3); background:var(--surf); border:1px solid var(--bord); border-radius:10px; padding:2px 8px; margin-top:4px; margin-right:4px; }
+.pc-thinking { color:var(--tx3); font-size:13px; animation:pc-blink 1.2s infinite; }
+@keyframes pc-blink { 0%,100%{opacity:.3} 50%{opacity:1} }
+.pc-input-row { display:flex; gap:8px; align-items:flex-end; }
+.pc-input { flex:1; resize:vertical; min-height:60px; font-size:13px; }
+.pc-input:disabled { opacity:.5; }

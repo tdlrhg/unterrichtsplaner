@@ -117,11 +117,11 @@ async function _analyzeFingerprint(g) {
     + '"sprachliche_zugaenglichkeit":"<zugaenglich|eingeschraenkt|komplex>"'
     + '},"items":['
     + g.items.map(function() {
-        return '{"operator":"<' + opValues + '>","schwierigkeit":"<grundlegend|standard|anspruchsvoll>","umfang":"<kurz|mittel|lang>"}';
+        return '{"operator":"<' + opValues + '>","schwierigkeit":"<grundlegend|standard|anspruchsvoll>","umfang":"<kurz|mittel|lang>","niveau":"<leicht|mittel|schwer>"}';
       }).join(',')
     + ']}';
 
-  var raw = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 700 });
+  var raw = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 1000 });
   var m = raw.match(/\{[\s\S]*\}/);
   if (!m) throw new Error('Kein JSON erhalten');
   return JSON.parse(m[0]);

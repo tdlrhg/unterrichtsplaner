@@ -19,6 +19,13 @@ function openTaskModal(group, opts) {
       });
   }
   var items   = (group.items && group.items.length) ? group.items : [{}];
+  // Materialset-Gruppen: Lehrerkommentar-Items aus der Teilaufgaben-Liste herausfiltern.
+  // LK-Einträge sind über den Chip in der Fach-Ansicht zugänglich, nicht als Teilaufgaben.
+  var _isMat = items[0] && (items[0].quelle_typ === 'materialset' || items[0].quelle_typ === 'handreichung');
+  if (_isMat) {
+    var _noLk = items.filter(function(it) { return it.inhaltstyp !== 'lehrerkommentar'; });
+    if (_noLk.length) items = _noLk;
+  }
   var isMulti = items.length > 1;
   var ref = Object.assign({}, items[0] || {});
   if (group.aufgabenstellung) ref.aufgabenstellung = group.aufgabenstellung;

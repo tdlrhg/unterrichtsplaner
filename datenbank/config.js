@@ -45,7 +45,7 @@ function visibleCols() {
 }
 
 function colTemplate() {
-  return visibleCols().map(function(i) {
+  return '28px ' + visibleCols().map(function(i) {
     var w = COL_CONFIG.widths[i];
     return w ? w + 'px' : '1fr';
   }).join(' ');

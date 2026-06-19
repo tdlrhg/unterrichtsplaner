@@ -90,6 +90,7 @@
 .db-col-op     { display: flex; justify-content: center; }
 .db-col-schw   { display: flex; justify-content: center; }
 .db-col-umfang { display: flex; justify-content: center; }
+.db-col-sel    { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
 .db-col-hdr-umfang { background: rgba(15,118,110,.07); color: #0f766e; }
 .db-col-hdr-kap    { background: rgba(15,118,110,.07); color: #0f766e; text-align: left; }

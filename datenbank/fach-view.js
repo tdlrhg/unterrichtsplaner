@@ -104,7 +104,7 @@ async function _analyzeFingerprint(g) {
     + '"kognitive_anforderung":"<routine|problemloesen|entdecken>",'
     + '"loesungswege":"<einer|mehrere>",'
     + '"rechenbarkeit":"<kopf|schriftlich|nur_tr>",'
-    + '"rolle_in_reihe":"<einstieg|aufbauend|vernetzend|abschliessend|uebertragend|ueberleitend>",'
+    + '"rolle_in_reihe":"<einstieg|aufbauend|vernetzend|abschliessend|uebertragend|ueberleitend|flexibel — flexibel wenn das Material unabhängig vom Reihenkontext einsetzbar ist>",'
     + '"didaktische_funktion":"<kommagetrennt aus: motivation,interesse,vorwissen,diagnose,fehlvorstellungen,konflikt,begriffsbildung,entdecken,erarbeiten,zusammenhaenge,vertiefen,strukturieren,sichern,ueben,automatisieren,anwenden,transfer,reflexion,vergleichen>",'
     + '"strukturtyp":"<kommagetrennt aus: fermi,modellierung,problemloesen,offen,mc,beweis,konstruktion,zuordnung>",'
     + '"sozialform":"<einzel|partner|gruppe|plenum>",'

@@ -172,7 +172,7 @@ function openTaskModal(group, opts) {
   var OP_OPTS     = Object.keys(OP_FARBEN2).map(function(k) { return [k, k]; });
 
   var AUFGABENART_OPTS  = [['diagnose','Diagnoseaufgabe'],['einstieg','Einstiegsaufgabe'],['lernaufgabe','Lernaufgabe'],['uebung','Übungsaufgabe'],['sicherung','Sicherungsaufgabe'],['anwendung','Anwendungsaufgabe'],['transfer','Transferaufgabe'],['reflexion','Reflexionsaufgabe'],['kontrolle','Kontrollaufgabe'],['pruefung','Prüfungsaufgabe']];
-  var ROLLE_OPTS        = [['einstieg','Einstieg in die Reihe'],['aufbauend','Aufbauend'],['vernetzend','Vernetzend'],['abschliessend','Abschließend / Sichernd'],['uebertragend','Übertragend'],['ueberleitend','Überleitend zu nächstem Schwerpunkt']];
+  var ROLLE_OPTS        = [['einstieg','Einstieg in die Reihe'],['aufbauend','Aufbauend'],['vernetzend','Vernetzend'],['abschliessend','Abschließend / Sichernd'],['uebertragend','Übertragend'],['ueberleitend','Überleitend zu nächstem Schwerpunkt'],['flexibel','Flexibel einsetzbar']];
   var OFFENHEIT_OPTS    = [['geschlossen','Geschlossen'],['halboffen','Halboffen'],['offen','Offen']];
   var KOG_OPTS          = [['routine','Routine'],['problemloesen','Problemlösen'],['entdecken','Entdecken']];
   var LOESUNGSWEG_OPTS  = [['einer','Ein Lösungsweg'],['mehrere','Mehrere Lösungswege']];

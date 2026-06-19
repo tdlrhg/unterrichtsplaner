@@ -100,7 +100,7 @@ async function _analyzeFingerprint(g) {
     + '{"gruppe":{'
     + '"kontext":"<innermathematisch|sachbezogen|realitaetsnah|faecheruebergreifend>",'
     + '"offenheit":"<geschlossen|halboffen|offen>",'
-    + '"unterstuetzung":"<hilfestellungen|teilaufgaben|tipps|ohne>",'
+    + '"unterstuetzung":"<Differenzierungsform in der Aufgabe: hilfestellungen=Hilfekarten/Scaffolding, teilaufgaben=in Teilschritte gegliedert, tipps=Hinweise vorhanden, ohne=keine Differenzierung>",'
     + '"kognitive_anforderung":"<routine|problemloesen|entdecken>",'
     + '"loesungswege":"<einer|mehrere>",'
     + '"rechenbarkeit":"<kopf|schriftlich|nur_tr>",'

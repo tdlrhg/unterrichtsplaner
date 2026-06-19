@@ -26,6 +26,28 @@ const PC_TOOLS = [
     }
   },
   {
+    name: 'readMethoden',
+    description: 'Liest die Methodendatenbank. Gibt Methoden mit Name, Beschreibung, Unterrichtsphase und Sozialform zurück.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        phase:     { type: 'string', description: 'Filter auf Unterrichtsphase, z.B. einstieg, erarbeitung, sicherung (optional)' },
+        sozialform:{ type: 'string', description: 'Filter auf Sozialform, z.B. einzelarbeit, partnerarbeit, gruppenarbeit, plenum (optional)' }
+      }
+    }
+  },
+  {
+    name: 'readDidaktik',
+    description: 'Liest didaktische Leitlinien, Kernaussagen und Unterrichtsmuster aus der Didaktik-Wissensbasis.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        ebenen: { type: 'string', description: 'Kommagetrennte Planungsebenen: reihe, stunde, material, situation (optional)' },
+        themen: { type: 'string', description: 'Kommagetrennte didaktische Themen, z.B. differenzierung,motivation,problemlösen (optional)' }
+      }
+    }
+  },
+  {
     name: 'createBlock',
     description: 'Erstellt einen neuen Themenblock in der Fachplanung (oberste Ebene, z.B. "1. Halbjahr: Elektrochemie").',
     input_schema: {
@@ -97,6 +119,23 @@ function _pcExecTool(name, input, fp) {
         id: e.id, inhaltsfeld: e.inhaltsfeld,
         codes: e.kompetenzcodes, text: (e.beschreibung || '').slice(0, 120)
       })));
+    }
+
+    case 'readMethoden': {
+      let hits = [...METHDB];
+      if (input.phase)      hits = hits.filter(m => (m.phasen || []).some(p => p.toLowerCase().includes(input.phase.toLowerCase())));
+      if (input.sozialform) hits = hits.filter(m => (m.sozialform || []).some(s => s.toLowerCase().includes(input.sozialform.toLowerCase())));
+      return JSON.stringify(hits.slice(0, 60).map(m => ({
+        name: m.name, beschreibung: (m.beschreibung || '').slice(0, 120),
+        phasen: m.phasen, sozialform: m.sozialform, zeitbedarf: m.zeitbedarf
+      })));
+    }
+
+    case 'readDidaktik': {
+      const ebenen = input.ebenen ? input.ebenen.split(',').map(s => s.trim()) : ['reihe', 'stunde'];
+      const themen  = input.themen  ? input.themen.split(',').map(s => s.trim())  : [];
+      const text = getDIDContext(ebenen, themen);
+      return text || '(keine passenden Einträge gefunden)';
     }
 
     case 'createBlock': {

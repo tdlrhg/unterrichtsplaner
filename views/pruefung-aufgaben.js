@@ -394,25 +394,6 @@ Antworte NUR mit reinem JSON:
     const afbKey = line.slice(0, pipeIdx).trim();
     return !!AB_KEY_MAP[afbKey];
   }
-  async function reviseFeinstrukturTask(fs, instruction, label) {
-    const erlaubt = Object.keys(AB_KEY_MAP).filter(k => (fs.anforderung?.[k] || 0) > 0);
-    let p = `Du überarbeitest die Feinstruktur einer einzelnen Klassenarbeits-Aufgabe.\n\n`;
-    p += `Aufgabe ${fs.nr}: ${fs.titel}\n`;
-    p += `Zeit: ${fs.zeitMinuten ?? '?'} Min, ${fs.gesamtpunkte ?? '?'} Punkte\n`;
-    if (erlaubt.length) p += `Erlaubte Anforderungsbereiche: ${erlaubt.join(', ')}\n`;
-    p += `\nAKTUELLE FEINSTRUKTUR\n${fs.spezifikation}\n\n`;
-    p += `AUFTRAG\n${instruction}\n\n`;
-    p += `WICHTIG\n- Behalte Thema und Grundidee der Aufgabe bei\n- Überarbeite nur die Feinstruktur, nicht die ganze Klassenarbeit\n- Wenn Punkteangaben vorhanden sind, liefere weiter Punkte pro Teilaufgabe mit |Zahl\n- Verwende nur diese Anforderungsbereiche: ${erlaubt.length ? erlaubt.join(', ') : 'reproduktion, leichteAnwendung, mittlereAnwendung, transfer'}\n- Gib nur die neue Feinstruktur zurück, kein Kommentar\n\n`;
-    p += `Antworte NUR mit reinem JSON:\n{"spezifikation":"reproduktion|1a: ... → ...|2\\nleichteAnwendung|1b: ... → ...|3"}`;
-    statusEl.textContent = `⏳ Feinstruktur wird überarbeitet (${label})...`;
-    const raw = await callKI([{ type: 'text', text: p }], { maxTokens: 1800 });
-    const parsed = parseKI(raw);
-    if (!parsed.spezifikation) throw new Error('Keine neue Feinstruktur erhalten');
-    fs.spezifikation = parsed.spezifikation;
-    invalidateGeneratedTask(fs.taskId);
-    savePruefungsDB();
-  }
-
   ensureTaskMeta();
   syncDerivedOrder();
 

@@ -477,18 +477,6 @@ function buildImportView(container) {
   };
 
   // ── Ergebnis rendern ──────────────────────────────────────────
-  function miniSel(opts, current, onChange) {
-    var s = document.createElement('select'); s.className = 'finp';
-    s.style.cssText = 'font-size:12px;padding:2px 8px;height:auto;width:auto;';
-    opts.forEach(function(o) {
-      var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1];
-      if (current === o[0]) op.selected = true;
-      s.appendChild(op);
-    });
-    s.onchange = function() { onChange(s.value); };
-    return s;
-  }
-
   var TYP_CYCLE = ['aufgabe', 'lehrtext', 'arbeitsblatt', 'loesung', 'lehrerkommentar', 'lzk'];
 
   function buildAufgabeCard(a, indent) {

@@ -147,6 +147,10 @@ const SCHW_ICONS  = { 'grundlegend':'○', 'standard':'◑', 'anspruchsvoll':'�
 const SCHW_BG     = { 'grundlegend':'rgba(22,163,74,.05)', 'standard':'rgba(37,99,235,.05)', 'anspruchsvoll':'rgba(180,83,9,.05)' };
 const NIVEAU_FARBEN = { 'leicht':'#0891b2', 'mittel':'#7c3aed', 'schwer':'#be123c' };
 const NIVEAU_ICONS  = { 'leicht':'▽', 'mittel':'▾', 'schwer':'▼' };
+const KONTEXT_FARBEN = { 'innermathematisch':'#6366f1', 'sachbezogen':'#0891b2', 'realitaetsnah':'#16a34a', 'faecheruebergreifend':'#d97706' };
+const KONTEXT_LABELS = { 'innermathematisch':'inner.', 'sachbezogen':'sachbez.', 'realitaetsnah':'real.', 'faecheruebergreifend':'fächerüb.' };
+const UNTERSTUETZ_FARBEN = { 'hilfestellungen':'#8b5cf6', 'teilaufgaben':'#2563eb', 'tipps':'#0891b2', 'ohne':'#64748b' };
+const UNTERSTUETZ_LABELS = { 'hilfestellungen':'Hilfen', 'teilaufgaben':'Teilaufg.', 'tipps':'Tipps', 'ohne':'ohne Diff.' };
 const TYP_FARBEN  = { 'aufgabe':'#0f766e', 'lehrtext':'#2563eb',
                       'arbeitsblatt':'#0f766e', 'loesung':'#7c3aed', 'lehrerkommentar':'#92400e', 'lzk':'#b45309' };
 const TYP_LABELS  = { 'aufgabe':'Aufgabe', 'lehrtext':'Lehrtext',

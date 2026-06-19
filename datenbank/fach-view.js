@@ -780,6 +780,8 @@ function renderRow(a, onSaved, compact, groupLabel) {
   schwCol.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;';
   if (a.schwierigkeit) schwCol.appendChild(mkChip(a.schwierigkeit, SCHW_FARBEN[a.schwierigkeit] || '#64748b', SCHW_ICONS[a.schwierigkeit] || ''));
   if (a.niveau)        schwCol.appendChild(mkChip(a.niveau, NIVEAU_FARBEN[a.niveau] || '#64748b', NIVEAU_ICONS[a.niveau] || ''));
+  if (a.kontext)       schwCol.appendChild(mkChip(KONTEXT_LABELS[a.kontext] || a.kontext, KONTEXT_FARBEN[a.kontext] || '#64748b', ''));
+  if (a.unterstuetzung) schwCol.appendChild(mkChip(UNTERSTUETZ_LABELS[a.unterstuetzung] || a.unterstuetzung, UNTERSTUETZ_FARBEN[a.unterstuetzung] || '#64748b', ''));
   cells[2] = schwCol;
 
   // Zelle 3: Operator (optional)

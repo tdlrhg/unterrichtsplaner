@@ -234,7 +234,6 @@ async function buildFachView(container) {
   var _loadSeq = 0;
   async function load(opts) {
     var _seq = ++_loadSeq;
-    console.log('[DB] load() #' + _seq + ' gestartet', opts || '');
     try {
     var _savedScroll = (opts && opts.keepScroll) ? container.scrollTop : null;
     wrap.innerHTML = '<div style="padding:20px;color:var(--tx3);text-align:center">⏳ Lädt…</div>';
@@ -276,8 +275,7 @@ async function buildFachView(container) {
       loadFailed = true;
       return [];
     });
-    console.log('[DB] #' + _seq + ' rows erhalten:', Array.isArray(rows) ? rows.length : typeof rows, 'loadFailed:', loadFailed);
-    if (_seq !== _loadSeq) { console.warn('[DB] #' + _seq + ' veraltet (aktuell #' + _loadSeq + ') — abgebrochen'); return; }
+    if (_seq !== _loadSeq) return;
 
     // nr natürlich sortieren: 8 < 8a < 8b < 9 < 10
     // Bei Custom-Sort: Server-Reihenfolge beibehalten, nur innerhalb gleicher Seite nr-sortieren
@@ -292,7 +290,6 @@ async function buildFachView(container) {
     });
 
     wrap.innerHTML = '';
-    console.log('[DB] #' + _seq + ' Spinner gelöscht, rendere…');
     var parts = [];
     if (DB.quelle_name)   parts.push('📖 ' + DB.quelle_name);
     else if (DB.quelle_typ && HERKUNFT[DB.quelle_typ]) parts.push(HERKUNFT[DB.quelle_typ].label);
@@ -309,9 +306,6 @@ async function buildFachView(container) {
 
     // Gruppen jetzt berechnen — für korrekte Aufgaben-Zählung
     var groups = dbGroupByParent(rows);
-    var _lkRows = rows.filter(function(r) { return r.inhaltstyp === 'lehrerkommentar'; });
-    if (_lkRows.length) console.log('[DB] #' + _seq + ' LK-Zeilen im Ergebnis:', _lkRows.length, _lkRows.map(function(r) { return {nr: r.nr, quelle_typ: r.quelle_typ, gruppen_key: r.gruppen_key}; }));
-    else console.log('[DB] #' + _seq + ' Keine lehrerkommentar-Zeilen im Ergebnis (', rows.length, 'Zeilen total)');
 
     // Materialset: alleinstehende LK-Gruppen in die erste nicht-LK-Gruppe
     // gleicher Quelle + Kapitel eingliedern (Matching über quelle_name+kapitel,
@@ -380,13 +374,6 @@ async function buildFachView(container) {
     }
 
     var _lastSeiteBuch = null; // für Seiten-Trenner
-    // DEBUG: zeigt wie viele Gruppen LK-Items enthalten
-    (function() {
-      var matGrps = groups.filter(function(g) { return g.items[0] && (g.items[0].quelle_typ === 'materialset' || g.items[0].quelle_typ === 'handreichung'); });
-      var lkGrps  = matGrps.filter(function(g) { return g.items.some(function(r) { return r.inhaltstyp === 'lehrerkommentar'; }); });
-      console.log('[LK-Chip Debug] Materialset-Gruppen:', matGrps.length, '| davon mit LK:', lkGrps.length);
-      if (lkGrps.length) console.log('[LK-Chip Debug] Erste LK-Gruppe:', lkGrps[0]);
-    })();
     groups.forEach(function(g, i) {
       // Für Materialsets: LKs vom Inhalt trennen und als Chips anhängen
       var isMat0 = g.items[0] && (g.items[0].quelle_typ === 'materialset' || g.items[0].quelle_typ === 'handreichung');
@@ -465,7 +452,6 @@ async function buildFachView(container) {
       wrap.appendChild(mehr);
     }
 
-    console.log('[DB] #' + _seq + ' Rendern fertig ✓');
     if (_savedScroll !== null) requestAnimationFrame(function() { container.scrollTop = _savedScroll; });
     } catch (err) {
       console.error('[Datenbank] Unerwarteter Fehler in load() #' + _seq + ':', err);

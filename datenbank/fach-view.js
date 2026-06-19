@@ -98,30 +98,30 @@ async function _analyzeFingerprint(g) {
     + 'Aufgabe:\n' + aufgabeText + '\n\n'
     + 'Gib NUR valides JSON zurück:\n'
     + '{"gruppe":{'
-    + '"klp_kompetenz":"<konkretisierte Kompetenzerwartung aus dem Lehrplan, 1 Satz>",'
-    + '"mathematische_objekte":"<kommagetrennt, z.B. Brüche,Verhältnisse>",'
-    + '"vorkenntnisse":"<kommagetrennt, z.B. Grundrechenarten>",'
-    + '"strukturtyp":"<kommagetrennt aus: fermi,modellierung,problemloesen,offen,mc,beweis,konstruktion,zuordnung>",'
-    + '"sozialform":"<einzel|partner|gruppe|plenum>",'
-    + '"didaktische_funktion":"<kommagetrennt aus: motivation,interesse,vorwissen,diagnose,fehlvorstellungen,konflikt,begriffsbildung,entdecken,erarbeiten,zusammenhaenge,vertiefen,strukturieren,sichern,ueben,automatisieren,anwenden,transfer,reflexion,vergleichen>",'
-    + '"rolle_in_reihe":"<einstieg|aufbauend|vernetzend|abschliessend|uebertragend|ueberleitend>",'
+    + '"kontext":"<innermathematisch|sachbezogen|realitaetsnah|faecheruebergreifend>",'
     + '"offenheit":"<geschlossen|halboffen|offen>",'
+    + '"unterstuetzung":"<hilfestellungen|teilaufgaben|tipps|ohne>",'
     + '"kognitive_anforderung":"<routine|problemloesen|entdecken>",'
     + '"loesungswege":"<einer|mehrere>",'
-    + '"unterstuetzung":"<hilfestellungen|teilaufgaben|tipps|ohne>",'
-    + '"kontext":"<innermathematisch|sachbezogen|realitaetsnah|faecheruebergreifend>",'
+    + '"rechenbarkeit":"<kopf|schriftlich|nur_tr>",'
+    + '"rolle_in_reihe":"<einstieg|aufbauend|vernetzend|abschliessend|uebertragend|ueberleitend>",'
+    + '"didaktische_funktion":"<kommagetrennt aus: motivation,interesse,vorwissen,diagnose,fehlvorstellungen,konflikt,begriffsbildung,entdecken,erarbeiten,zusammenhaenge,vertiefen,strukturieren,sichern,ueben,automatisieren,anwenden,transfer,reflexion,vergleichen>",'
+    + '"strukturtyp":"<kommagetrennt aus: fermi,modellierung,problemloesen,offen,mc,beweis,konstruktion,zuordnung>",'
+    + '"sozialform":"<einzel|partner|gruppe|plenum>",'
     + '"prozessbezogene_kompetenz":"<kommagetrennt aus: argumentieren,problemloesen,modellieren,darstellen,kommunizieren,symbole>",'
     + '"hilfsmittel":"<ohne|tr|geodreieck|formelsammlung|alle>",'
-    + '"rechenbarkeit":"<kopf|schriftlich|nur_tr>",'
     + '"differenzierungspotenzial":"<niedrig|mittel|hoch>",'
-    + '"sprachliche_zugaenglichkeit":"<zugaenglich|eingeschraenkt|komplex>"'
+    + '"sprachliche_zugaenglichkeit":"<zugaenglich|eingeschraenkt|komplex>",'
+    + '"mathematische_objekte":"<kommagetrennt>",'
+    + '"vorkenntnisse":"<kommagetrennt>",'
+    + '"klp_kompetenz":"<konkretisierte Kompetenzerwartung, 1 Satz>"'
     + '},"items":['
     + g.items.map(function() {
         return '{"operator":"<' + opValues + '>","schwierigkeit":"<grundlegend|standard|anspruchsvoll>","umfang":"<kurz|mittel|lang>","niveau":"<leicht|mittel|schwer>"}';
       }).join(',')
     + ']}';
 
-  var raw = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 1000 });
+  var raw = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 1200 });
   var m = raw.match(/\{[\s\S]*\}/);
   if (!m) throw new Error('Kein JSON erhalten');
   return JSON.parse(m[0]);

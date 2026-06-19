@@ -357,7 +357,6 @@ function openTaskModal(group, opts) {
   R0.appendChild(seiteRow);
   sec(R0, 'Einordnung');
   sfld(R0, 'Thema', 'thema', 'text', 'z.B. Parallelogramm');
-  ssel(R0, 'Fach', 'fach', FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; }));
   sfld(R0, 'Jahrgang', 'jahrgang', 'number', '5–10');
   ssel(R0, 'Inhaltstyp', 'inhaltstyp', [
     ['aufgabe','📝 Aufgabe'],['lehrtext','📖 Lehrtext'],

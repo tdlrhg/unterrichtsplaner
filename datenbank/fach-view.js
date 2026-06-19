@@ -701,18 +701,38 @@ function renderRow(a, onSaved, compact, groupLabel) {
 
   var cells = [];
 
+  var isMatLK = isMat && a.inhaltstyp === 'lehrerkommentar';
+
   // Zelle 0: Quelle — im compact-Modus nur die Nr
   var src = mk('div', 'db-col-src'); src.dataset.colIdx = 0;
   if (compact) {
     if (groupLabel) {
-      // Einzelaufgabe: „Aufgabe N" als Zeilenlabel in Spalte 0
-      var glEl = tx('div', '', groupLabel);
-      glEl.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;padding:2px 0;';
-      src.appendChild(glEl);
-      if (isMat && a.thema) {
-        var themaEl = tx('div', '', a.thema);
-        themaEl.style.cssText = 'font-size:11px;color:var(--tx3);padding:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-        src.appendChild(themaEl);
+      if (isMat) {
+        // Materialset: [Chip] [Nr] in einer Zeile, Thema darunter
+        var matTop = mk('div', '');
+        matTop.style.cssText = 'display:flex;align-items:center;gap:5px;padding:2px 0;';
+        if (a.inhaltstyp && !isMatLK) {
+          var matTypColor = TYP_FARBEN[a.inhaltstyp] || '#64748b';
+          var matChip = tx('span', '', (TYP_ICONS[a.inhaltstyp] ? TYP_ICONS[a.inhaltstyp] + ' ' : '') + (TYP_LABELS[a.inhaltstyp] || a.inhaltstyp));
+          matChip.style.cssText = 'flex-shrink:0;font-size:9px;font-weight:700;padding:1px 6px;border-radius:20px;'
+            + 'background:' + matTypColor + '18;color:' + matTypColor + ';border:1px solid ' + matTypColor + '38;'
+            + 'text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;';
+          matTop.appendChild(matChip);
+        }
+        var matNr = tx('span', '', groupLabel);
+        matNr.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;';
+        matTop.appendChild(matNr);
+        src.appendChild(matTop);
+        if (a.thema) {
+          var themaEl = tx('div', '', a.thema);
+          themaEl.style.cssText = 'font-size:11px;color:var(--tx3);padding:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+          src.appendChild(themaEl);
+        }
+      } else {
+        // Aufgabe: „Aufgabe N" als Zeilenlabel in Spalte 0
+        var glEl = tx('div', '', groupLabel);
+        glEl.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;padding:2px 0;';
+        src.appendChild(glEl);
       }
     } else {
       var nrMatch = String(a.nr || '').match(/[a-zA-Z]+$/);
@@ -741,10 +761,8 @@ function renderRow(a, onSaved, compact, groupLabel) {
   }
   cells[0] = src;
 
-  var isMatLK = (a.quelle_typ === 'materialset' || a.quelle_typ === 'handreichung') && a.inhaltstyp === 'lehrerkommentar';
-
-  // Typ-Badge (nicht für Aufgaben; nicht für Materialset-Lehrerkommentare — Label reicht)
-  if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe' && !isMatLK) {
+  // Typ-Badge — nicht für Aufgaben, nicht für MatLK, nicht für Materialsets im compact-Modus (dort inline)
+  if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe' && !isMatLK && !(isMat && compact && groupLabel)) {
     var typBadge = tx('span', '', (TYP_ICONS[a.inhaltstyp] ? TYP_ICONS[a.inhaltstyp] + ' ' : '') + (TYP_LABELS[a.inhaltstyp] || a.inhaltstyp));
     var typColor = TYP_FARBEN[a.inhaltstyp] || '#64748b';
     typBadge.style.cssText = 'display:inline-block;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;'

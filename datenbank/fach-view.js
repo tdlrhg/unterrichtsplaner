@@ -709,6 +709,11 @@ function renderRow(a, onSaved, compact, groupLabel) {
       var glEl = tx('div', '', groupLabel);
       glEl.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;padding:2px 0;';
       src.appendChild(glEl);
+      if (isMat && a.thema) {
+        var themaEl = tx('div', '', a.thema);
+        themaEl.style.cssText = 'font-size:11px;color:var(--tx3);padding:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        src.appendChild(themaEl);
+      }
     } else {
       var nrMatch = String(a.nr || '').match(/[a-zA-Z]+$/);
       if (nrMatch) {

@@ -113,6 +113,8 @@ Für jeden Eintrag:
 
 - schwierigkeit: grundlegend|standard|anspruchsvoll — wenn erkennbar, sonst null
 
+- thema: Fachliches Kernthema dieser Seite, max. 5 Wörter (z.B. "Bruchrechnung", "Textaufgaben – Verhältnisse", "Korrosion – Grundlagen")
+
 JSON-FORMAT:
 - Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
 - Alle Stringwerte einzeilig (Zeilenumbrüche → " | ")
@@ -120,9 +122,9 @@ JSON-FORMAT:
 - Keine Backslashes in Stringwerten
 
 {"aufgaben": [
-  {"inhaltstyp":"lehrerkommentar","nr":"Hintergrundinformation","aufgabenstellung":null,"text":"Korrosion bezeichnet die Reaktion eines metallischen Werkstoffs mit seiner Umgebung. | Im Meerwasser wird sie durch den hohen Salzgehalt beschleunigt, da gelöste Ionen die elektrische Leitfähigkeit erhöhen und galvanische Elemente entstehen können.","anforderung":null,"niveau":null,"schwierigkeit":null},
-  {"inhaltstyp":"arbeitsblatt","nr":"M 1","aufgabenstellung":"Korrosion im Meerwasser","text":"Schiffe werden im Meerwasser besonders stark von Korrosion befallen. | 1. Erkläre, warum Salzwasser die Korrosion beschleunigt. | 2. Nenne zwei Schutzmaßnahmen gegen Korrosion an Schiffshüllen.","anforderung":"Schülerinnen erklären Korrosionsvorgänge und nennen Schutzmaßnahmen.","niveau":null,"schwierigkeit":"standard"},
-  {"inhaltstyp":"loesung","nr":"Lösung M 1","aufgabenstellung":"Korrosion im Meerwasser – Erwartungshorizont","text":"1. Salzwasser leitet Strom, da Ionen als Ladungsträger wirken. Es bilden sich galvanische Elemente. | 2. Mögliche Schutzmaßnahmen: Schutzanstrich, kathodischer Korrosionsschutz (Opferanode).","anforderung":null,"niveau":null,"schwierigkeit":null}
+  {"inhaltstyp":"lehrerkommentar","nr":"Hintergrundinformation","aufgabenstellung":null,"text":"Korrosion bezeichnet die Reaktion eines metallischen Werkstoffs mit seiner Umgebung. | Im Meerwasser wird sie durch den hohen Salzgehalt beschleunigt, da gelöste Ionen die elektrische Leitfähigkeit erhöhen und galvanische Elemente entstehen können.","anforderung":null,"niveau":null,"schwierigkeit":null,"thema":"Korrosion – Grundlagen"},
+  {"inhaltstyp":"arbeitsblatt","nr":"M 1","aufgabenstellung":"Korrosion im Meerwasser","text":"Schiffe werden im Meerwasser besonders stark von Korrosion befallen. | 1. Erkläre, warum Salzwasser die Korrosion beschleunigt. | 2. Nenne zwei Schutzmaßnahmen gegen Korrosion an Schiffshüllen.","anforderung":"Schülerinnen erklären Korrosionsvorgänge und nennen Schutzmaßnahmen.","niveau":null,"schwierigkeit":"standard","thema":"Korrosion im Meerwasser"},
+  {"inhaltstyp":"loesung","nr":"Lösung M 1","aufgabenstellung":"Korrosion im Meerwasser – Erwartungshorizont","text":"1. Salzwasser leitet Strom, da Ionen als Ladungsträger wirken. Es bilden sich galvanische Elemente. | 2. Mögliche Schutzmaßnahmen: Schutzanstrich, kathodischer Korrosionsschutz (Opferanode).","anforderung":null,"niveau":null,"schwierigkeit":null,"thema":"Korrosion im Meerwasser"}
 ]}`;
 
 // Welcher Prompt passt zum gewählten Quellentyp? contextNr = nr-Wert der vorherigen Seite (für Fortsetzungserkennung)
@@ -620,6 +622,7 @@ function buildImportView(container) {
         schwierigkeit: a.schwierigkeit || a.schwierigkeitsstufe || null,
         umfang:       a.umfang || null,
         jahrgang:     jg,
+        thema:        a.thema || null,
         inhaltstyp:   a.inhaltstyp || 'aufgabe',
       };
     });

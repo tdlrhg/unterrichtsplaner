@@ -91,11 +91,6 @@ function buildSetup() {
   return w;
 }
 
-function normalizeArray(value) {
-  if (Array.isArray(value)) return value.filter(v => v !== null && v !== undefined && v !== '').map(v => String(v));
-  if (value === null || value === undefined || value === '') return [];
-  return [String(value)];
-}
 
 // ── Init ─────────────────────────────────────────────────────────
 (async () => {

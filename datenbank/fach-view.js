@@ -91,7 +91,7 @@ async function _analyzeFingerprint(g) {
   }).join('\n');
 
   var opValues = Object.keys(OP_FARBEN2).join('|');
-  var prompt = 'Du bist Fachdidaktiker. Analysiere diese Aufgabe (Fach: ' + fachLabel
+  var prompt = 'Du bist Fachdidaktiker. Antworte auf Standarddeutsch (ß, nicht ss). Analysiere diese Aufgabe (Fach: ' + fachLabel
     + (first.jahrgang ? ', Jg. ' + first.jahrgang : '') + ') und gib einen JSON-Fingerprint zurück.\n\n'
     + (first.kapitel ? 'Kapitel: ' + first.kapitel + '\n' : '')
     + (first.thema ? 'Thema: ' + first.thema + '\n' : '')

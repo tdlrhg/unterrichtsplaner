@@ -181,6 +181,12 @@ function openTaskModal(group, opts) {
   var DID_FKT_OPTS      = [['motivation','Motivation erzeugen'],['interesse','Interesse wecken'],['vorwissen','Vorwissen aktivieren'],['diagnose','Lernvoraussetzungen diagnostizieren'],['fehlvorstellungen','Fehlvorstellungen aufdecken'],['konflikt','Kognitive Konflikte erzeugen'],['begriffsbildung','Begriffsbildung unterstützen'],['entdecken','Entdeckungen ermöglichen'],['erarbeiten','Neue Inhalte erarbeiten'],['zusammenhaenge','Zusammenhänge verdeutlichen'],['vertiefen','Verständnis vertiefen'],['strukturieren','Wissen strukturieren'],['sichern','Wissen sichern'],['ueben','Fertigkeiten üben'],['automatisieren','Fertigkeiten automatisieren'],['anwenden','Anwenden'],['transfer','Transfer ermöglichen'],['reflexion','Reflexion anregen'],['vergleichen','Lösungswege vergleichen']];
   var FACH_KMP_OPTS     = [['begriffe','Begriffe verstehen'],['verfahren','Verfahren anwenden'],['zusammenhaenge','Zusammenhänge erkennen'],['regeln','Regeln formulieren'],['darstellen','Objekte darstellen'],['beurteilen','Aussagen beurteilen']];
   var PROZ_KMP_OPTS     = [['argumentieren','Argumentieren'],['problemloesen','Problemlösen'],['modellieren','Modellieren'],['darstellen','Darstellen'],['kommunizieren','Kommunizieren'],['symbole','Mit Symbolen umgehen']];
+  var STRUKTURTYP_OPTS  = [['fermi','Fermi-Aufgabe'],['modellierung','Modellierungsaufgabe'],['problemloesen','Problemlöseaufgabe'],['offen','Offene Aufgabe'],['mc','Multiple-Choice'],['beweis','Beweisaufgabe'],['konstruktion','Konstruktionsaufgabe'],['zuordnung','Zuordnungsaufgabe']];
+  var SOZIALFORM_OPTS   = [['einzel','Einzelarbeit'],['partner','Partnerarbeit'],['gruppe','Gruppenarbeit'],['plenum','Plenum']];
+  var HILFSMITTEL_OPTS  = [['ohne','Ohne Hilfsmittel'],['tr','Taschenrechner'],['geodreieck','Geodreieck'],['formelsammlung','Formelsammlung'],['alle','Alle erlaubt']];
+  var RECHENBARKEIT_OPTS = [['kopf','Im Kopf'],['schriftlich','Schriftlich'],['nur_tr','Nur mit TR']];
+  var DIFFPOT_OPTS      = [['niedrig','Niedrig'],['mittel','Mittel'],['hoch','Hoch']];
+  var SPRACH_ZUG_OPTS   = [['zugaenglich','Zugänglich'],['eingeschraenkt','Eingeschränkt'],['komplex','Sprachlich komplex']];
 
   function mkChipField(parent, label, key, chipOpts) {
     var currentVals = (ref[key] || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
@@ -448,31 +454,9 @@ function openTaskModal(group, opts) {
   // ── Pane 1: Unterrichtsdaten ──────────────────────────────────────
   var p1 = mk('div', 'db-modal-tab-pane scroll'); panes.push(p1);
 
-  // Fingerprint zuerst (gilt für die ganze Aufgabe/Gruppe)
-  sec(p1, 'Unterrichts-Fingerprint');
-  var fpR1 = fieldRow();
-  ssel(fpR1, 'Aufgabenart', 'aufgabenart', AUFGABENART_OPTS);
-  ssel(fpR1, 'Rolle in der Reihe', 'rolle_in_reihe', ROLLE_OPTS);
-  p1.appendChild(fpR1);
-  var fpR2 = fieldRow();
-  ssel(fpR2, 'Offenheit', 'offenheit', OFFENHEIT_OPTS);
-  ssel(fpR2, 'Kognitive Anforderung', 'kognitive_anforderung', KOG_OPTS);
-  ssel(fpR2, 'Lösungswege', 'loesungswege', LOESUNGSWEG_OPTS);
-  p1.appendChild(fpR2);
-  var fpR3 = fieldRow();
-  ssel(fpR3, 'Unterstützung', 'unterstuetzung', UNTERSTUETZ_OPTS);
-  ssel(fpR3, 'Kontext', 'kontext', KONTEXT_OPTS);
-  p1.appendChild(fpR3);
-  mkChipField(p1, 'Didaktische Funktion', 'didaktische_funktion', DID_FKT_OPTS);
-  mkChipField(p1, 'Fachliche Kompetenz', 'fachliche_kompetenz', FACH_KMP_OPTS);
-  mkChipField(p1, 'Prozessbezogene Kompetenz', 'prozessbezogene_kompetenz', PROZ_KMP_OPTS);
-
-  // Pro-Teilaufgabe darunter (nur bei Gruppen; bei Einzelaufgaben: kompakte Zeile)
+  // Anforderung + Niveau oben (pro Teilaufgabe)
   if (isMulti) {
-    var itemSep = mk('div', '');
-    itemSep.style.cssText = 'height:1px;background:var(--bord);margin:16px 0 12px;';
-    p1.appendChild(itemSep);
-    sec(p1, 'Teilaufgaben');
+    sec(p1, 'Anforderung & Niveau');
     items.forEach(function(it, i) {
       var blk = mk('div', 'db-group-item-block'); blk.appendChild(itemHeader(i));
       blk.appendChild(labeled('Anforderung', itemFields[i].anforderung));
@@ -481,20 +465,82 @@ function openTaskModal(group, opts) {
       itemNodes[i].push(blk);
     });
   } else {
-    var itemSep2 = mk('div', '');
-    itemSep2.style.cssText = 'height:1px;background:var(--bord);margin:16px 0 12px;';
-    p1.appendChild(itemSep2);
     var topRow = fieldRow();
     topRow.appendChild(labeled('Anforderung', itemFields[0].anforderung));
     topRow.appendChild(labeled('Niveau', itemFields[0].niveau));
     p1.appendChild(topRow);
   }
+  var fpSep = mk('div', '');
+  fpSep.style.cssText = 'height:1px;background:var(--bord);margin:14px 0;';
+  p1.appendChild(fpSep);
 
+  // 2×2 Quadranten-Fingerprint
+  function quad(letter, title) {
+    var q = mk('div', '');
+    q.style.cssText = 'border:1px solid var(--bord);border-radius:8px;padding:12px 14px;';
+    var qlbl = tx('div', '', letter + ' · ' + title);
+    qlbl.style.cssText = 'font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;'
+      + 'color:var(--tx3);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--bord);';
+    q.appendChild(qlbl);
+    return q;
+  }
+  var qGrid = mk('div', '');
+  qGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;';
+
+  // A. Zweck
+  var qA = quad('A', 'Zweck');
+  mkChipField(qA, 'Funktion im Unterricht', 'didaktische_funktion', DID_FKT_OPTS);
+  ssel(qA, 'Rolle in der Reihe', 'rolle_in_reihe', ROLLE_OPTS);
+  var klpTA = mkAutoTA(ref.klp_kompetenz || '', 'Konkretisierte Kompetenzerwartung aus dem Lehrplan');
+  klpTA.dataset.key = 'klp_kompetenz';
+  qA.appendChild(labeled('KLP-Kompetenz (inhaltsbezogen)', klpTA));
+  mkChipField(qA, 'Prozessbezogene Kompetenz', 'prozessbezogene_kompetenz', PROZ_KMP_OPTS);
+  qGrid.appendChild(qA);
+
+  // B. Inhalt
+  var qB = quad('B', 'Inhalt');
+  var themaDisp = tx('div', '', ref.thema || '—');
+  themaDisp.style.cssText = 'font-size:13px;color:var(--tx2);padding:5px 8px;border:1px solid var(--bord);'
+    + 'border-radius:6px;min-height:28px;background:var(--bg2,rgba(0,0,0,.02));';
+  qB.appendChild(labeled('Thema', themaDisp));
+  sfld(qB, 'Mathematische Objekte', 'mathematische_objekte', 'text', 'z.B. Brüche, Verhältnisse');
+  sfld(qB, 'Vorkenntnisse', 'vorkenntnisse', 'text', 'z.B. Grundrechenarten');
+  qGrid.appendChild(qB);
+
+  // C. Anspruch
+  var qC = quad('C', 'Anspruch');
+  mkChipField(qC, 'Strukturtyp', 'strukturtyp', STRUKTURTYP_OPTS);
+  ssel(qC, 'Kognitive Anforderung', 'kognitive_anforderung', KOG_OPTS);
+  ssel(qC, 'Offenheit', 'offenheit', OFFENHEIT_OPTS);
+  ssel(qC, 'Differenzierung', 'unterstuetzung', UNTERSTUETZ_OPTS);
+  qGrid.appendChild(qC);
+
+  // D. Gestaltung
+  var qD = quad('D', 'Gestaltung');
+  ssel(qD, 'Kontext', 'kontext', KONTEXT_OPTS);
+  ssel(qD, 'Sozialform', 'sozialform', SOZIALFORM_OPTS);
+  ssel(qD, 'Lösungswege', 'loesungswege', LOESUNGSWEG_OPTS);
+  qGrid.appendChild(qD);
+
+  p1.appendChild(qGrid);
   tabBodyEl.appendChild(p1);
 
-  // ── Pane 2: Prüfungsdaten (pro Teilaufgabe) ───────────────────
+  // ── Pane 2: Prüfungsdaten ─────────────────────────────────────
   var p2 = mk('div', 'db-modal-tab-pane ' + (isMulti ? 'scroll' : 'split')); panes.push(p2);
   if (isMulti) {
+    sec(p2, 'Prüfungskontext');
+    var p2r1 = fieldRow(); p2r1.style.gridTemplateColumns = 'repeat(2,1fr)';
+    ssel(p2r1, 'Hilfsmittel', 'hilfsmittel', HILFSMITTEL_OPTS);
+    ssel(p2r1, 'Rechenbarkeit', 'rechenbarkeit', RECHENBARKEIT_OPTS);
+    p2.appendChild(p2r1);
+    var p2r2 = fieldRow(); p2r2.style.gridTemplateColumns = 'repeat(2,1fr)';
+    ssel(p2r2, 'Differenzierungspotenzial', 'differenzierungspotenzial', DIFFPOT_OPTS);
+    ssel(p2r2, 'Sprachliche Zugänglichkeit', 'sprachliche_zugaenglichkeit', SPRACH_ZUG_OPTS);
+    p2.appendChild(p2r2);
+    var p2sep = mk('div', '');
+    p2sep.style.cssText = 'height:1px;background:var(--bord);margin:14px 0 10px;';
+    p2.appendChild(p2sep);
+    sec(p2, 'Klassifikation pro Teilaufgabe');
     items.forEach(function(it, i) {
       var blk = mk('div', 'db-group-item-block'); blk.appendChild(itemHeader(i));
       var row = fieldRow();
@@ -515,6 +561,14 @@ function openTaskModal(group, opts) {
     }
     p2.appendChild(L2);
     var R2 = mkR();
+    sec(R2, 'Prüfungskontext');
+    ssel(R2, 'Hilfsmittel', 'hilfsmittel', HILFSMITTEL_OPTS);
+    ssel(R2, 'Rechenbarkeit', 'rechenbarkeit', RECHENBARKEIT_OPTS);
+    ssel(R2, 'Differenzierungspotenzial', 'differenzierungspotenzial', DIFFPOT_OPTS);
+    ssel(R2, 'Sprachliche Zugänglichkeit', 'sprachliche_zugaenglichkeit', SPRACH_ZUG_OPTS);
+    var R2sep = mk('div', '');
+    R2sep.style.cssText = 'height:1px;background:var(--bord);margin:10px 0;';
+    R2.appendChild(R2sep);
     sec(R2, 'Klassifikation');
     R2.appendChild(labeled('Operator', itemFields[0].operator));
     R2.appendChild(labeled('Anforderungsbereich', itemFields[0].schwierigkeit));

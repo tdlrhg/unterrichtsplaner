@@ -58,8 +58,10 @@ async function _runFingerprint(reloadFn) {
     if (progEl) progEl.textContent = (i + 1) + '/' + total + ' analysiert…';
     try {
       var fp = await _analyzeFingerprint(gs[i]);
+      var grpPatch = fp.gruppe || fp;
       for (var j = 0; j < gs[i].items.length; j++) {
-        await sbUpdate('inhalte', gs[i].items[j].id, fp);
+        var itPatch = (fp.items && fp.items[j]) ? fp.items[j] : {};
+        await sbUpdate('inhalte', gs[i].items[j].id, Object.assign({}, grpPatch, itPatch));
       }
     } catch (e) {
       console.error('[KI-FP] Fehler:', e);
@@ -75,31 +77,51 @@ async function _runFingerprint(reloadFn) {
 }
 
 async function _analyzeFingerprint(g) {
-  var aufgabeText = g.items.map(function(it) {
+  var first = g.items[0] || {};
+  var fach = first.fach || DB.fach || 'mathe';
+  var fachLabel = { mathe: 'Mathematik', bio: 'Biologie', chemie: 'Chemie' }[fach] || fach;
+  var isMultiItem = g.items.length > 1;
+
+  var aufgabeText = g.items.map(function(it, idx) {
     var parts = [];
-    if (g.items.length > 1 && it.nr) parts.push('(' + it.nr + ')');
-    if (it.aufgabenstellung) parts.push(it.aufgabenstellung);
+    if (isMultiItem && it.nr) parts.push('(' + it.nr + ')');
+    if (it.aufgabenstellung && idx === 0) parts.push(it.aufgabenstellung);
     if (it.inhalt && it.inhalt !== it.aufgabenstellung) parts.push(it.inhalt);
     return parts.filter(Boolean).join(' ');
   }).join('\n');
 
-  var thema = g.items[0] && g.items[0].thema;
-  var prompt = 'Du bist Mathematikdidaktiker. Analysiere die folgende Aufgabe und gib einen JSON-Fingerprint zurück.\n\n'
-    + (thema ? 'Thema: ' + thema + '\n' : '')
+  var opValues = Object.keys(OP_FARBEN2).join('|');
+  var prompt = 'Du bist Fachdidaktiker. Analysiere diese Aufgabe (Fach: ' + fachLabel
+    + (first.jahrgang ? ', Jg. ' + first.jahrgang : '') + ') und gib einen JSON-Fingerprint zurück.\n\n'
+    + (first.kapitel ? 'Kapitel: ' + first.kapitel + '\n' : '')
+    + (first.thema ? 'Thema: ' + first.thema + '\n' : '')
     + 'Aufgabe:\n' + aufgabeText + '\n\n'
-    + 'Gib NUR valides JSON zurück, keine Erklärungen:\n'
-    + '{"aufgabenart":"<diagnose|einstieg|lernaufgabe|uebung|sicherung|anwendung|transfer|reflexion|kontrolle|pruefung>",'
+    + 'Gib NUR valides JSON zurück:\n'
+    + '{"gruppe":{'
+    + '"klp_kompetenz":"<konkretisierte Kompetenzerwartung aus dem Lehrplan, 1 Satz>",'
+    + '"mathematische_objekte":"<kommagetrennt, z.B. Brüche,Verhältnisse>",'
+    + '"vorkenntnisse":"<kommagetrennt, z.B. Grundrechenarten>",'
+    + '"strukturtyp":"<kommagetrennt aus: fermi,modellierung,problemloesen,offen,mc,beweis,konstruktion,zuordnung>",'
+    + '"sozialform":"<einzel|partner|gruppe|plenum>",'
+    + '"didaktische_funktion":"<kommagetrennt aus: motivation,interesse,vorwissen,diagnose,fehlvorstellungen,konflikt,begriffsbildung,entdecken,erarbeiten,zusammenhaenge,vertiefen,strukturieren,sichern,ueben,automatisieren,anwenden,transfer,reflexion,vergleichen>",'
     + '"rolle_in_reihe":"<einstieg|aufbauend|vernetzend|abschliessend|uebertragend|ueberleitend>",'
     + '"offenheit":"<geschlossen|halboffen|offen>",'
     + '"kognitive_anforderung":"<routine|problemloesen|entdecken>",'
     + '"loesungswege":"<einer|mehrere>",'
     + '"unterstuetzung":"<hilfestellungen|teilaufgaben|tipps|ohne>",'
     + '"kontext":"<innermathematisch|sachbezogen|realitaetsnah|faecheruebergreifend>",'
-    + '"didaktische_funktion":"<kommagetrennt: motivation,interesse,vorwissen,diagnose,fehlvorstellungen,konflikt,begriffsbildung,entdecken,erarbeiten,zusammenhaenge,vertiefen,strukturieren,sichern,ueben,automatisieren,anwenden,transfer,reflexion,vergleichen>",'
-    + '"fachliche_kompetenz":"<kommagetrennt: begriffe,verfahren,zusammenhaenge,regeln,darstellen,beurteilen>",'
-    + '"prozessbezogene_kompetenz":"<kommagetrennt: argumentieren,problemloesen,modellieren,darstellen,kommunizieren,symbole>"}';
+    + '"prozessbezogene_kompetenz":"<kommagetrennt aus: argumentieren,problemloesen,modellieren,darstellen,kommunizieren,symbole>",'
+    + '"hilfsmittel":"<ohne|tr|geodreieck|formelsammlung|alle>",'
+    + '"rechenbarkeit":"<kopf|schriftlich|nur_tr>",'
+    + '"differenzierungspotenzial":"<niedrig|mittel|hoch>",'
+    + '"sprachliche_zugaenglichkeit":"<zugaenglich|eingeschraenkt|komplex>"'
+    + '},"items":['
+    + g.items.map(function() {
+        return '{"operator":"<' + opValues + '>","schwierigkeit":"<grundlegend|standard|anspruchsvoll>","umfang":"<kurz|mittel|lang>"}';
+      }).join(',')
+    + ']}';
 
-  var raw = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 400 });
+  var raw = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 700 });
   var m = raw.match(/\{[\s\S]*\}/);
   if (!m) throw new Error('Kein JSON erhalten');
   return JSON.parse(m[0]);

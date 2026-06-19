@@ -338,14 +338,6 @@ function buildAufgabenGenTab(pr) {
     invalidateGeneratedTask(aufg.taskId);
     savePruefungsDB();
   }
-  function syncTaskAcrossViews(taskId, patch) {
-    const sv = pr.strukturVorschlag.find(a => a.taskId === taskId);
-    if (sv) Object.assign(sv, patch);
-    const fs = pr.feinstruktur.find(a => a.taskId === taskId);
-    if (fs) Object.assign(fs, patch);
-    const ga = pr.genAufgaben.find(a => a.taskId === taskId);
-    if (ga) Object.assign(ga, patch);
-  }
   function buildFeinstrukturPrompt(aufg, aufgNr, lernziele, quellenTexte) {
     let p = `Du planst Aufgabe ${aufgNr} einer Klassenarbeit.\n`;
     p += `Thema/Titel: ${aufg.titel}\n`;
@@ -401,43 +393,6 @@ Antworte NUR mit reinem JSON:
     if (pipeIdx < 0) return false;
     const afbKey = line.slice(0, pipeIdx).trim();
     return !!AB_KEY_MAP[afbKey];
-  }
-  function countSpecStats(specText) {
-    const lines = (specText || '').split('\n').map(l => l.replace(/^[-–•]\s*/, '').trim()).filter(Boolean);
-    let teilaufgaben = 0;
-    let punkte = 0;
-    lines.forEach(line => {
-      if (!isAfbLine(line)) return;
-      teilaufgaben++;
-      const lastPipe = line.lastIndexOf('|');
-      // lastPipe muss hinter dem ersten | liegen (sonst ist es nur der AFB-Trenner)
-      const firstPipe = line.indexOf('|');
-      if (lastPipe > firstPipe) {
-        const maybeP = line.slice(lastPipe + 1).trim();
-        if (/^\d+$/.test(maybeP)) punkte += parseInt(maybeP);
-      }
-    });
-    return { teilaufgaben, punkte };
-  }
-  function distributePointsAcrossSpec(fs) {
-    const lines = (fs.spezifikation || '').split('\n').map(l => l.replace(/^[-–•]\s*/, '').trim()).filter(Boolean);
-    const idxs = lines.map((line, idx) => isAfbLine(line) ? idx : -1).filter(idx => idx > -1);
-    if (!idxs.length || !fs.gesamtpunkte) return false;
-    const base = Math.floor(fs.gesamtpunkte / idxs.length);
-    let rest = fs.gesamtpunkte - base * idxs.length;
-    idxs.forEach((lineIdx, pos) => {
-      let line = lines[lineIdx];
-      const lastPipe = line.lastIndexOf('|');
-      if (lastPipe > -1) {
-        const maybeP = line.slice(lastPipe + 1).trim();
-        if (/^\d+$/.test(maybeP)) line = line.slice(0, lastPipe).trim();
-      }
-      const p = base + (rest > 0 ? 1 : 0);
-      if (rest > 0) rest--;
-      lines[lineIdx] = line + '|' + p;
-    });
-    fs.spezifikation = lines.map(l => '- ' + l).join('\n');
-    return true;
   }
   async function reviseFeinstrukturTask(fs, instruction, label) {
     const erlaubt = Object.keys(AB_KEY_MAP).filter(k => (fs.anforderung?.[k] || 0) > 0);

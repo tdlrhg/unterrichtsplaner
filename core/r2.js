@@ -129,67 +129,6 @@ async function r2List(prefix = '', delimiter = '/', continuationToken = '') {
 }
 
 // ── R2 ListAll (paginiert, alle Objekte unter prefix) ────────────
-// delimiter=''  → flaches Listing aller Keys (kein Ordner-Splitting)
-// delimiter='/' → Ordner-Struktur (eine Ebene pro Aufruf)
-async function r2ListAll(prefix = '', delimiter = '/') {
-  let folders = [], files = [], token = '';
-  do {
-    const page = await r2List(prefix, delimiter, token);
-    folders    = folders.concat(page.folders);
-    files      = files.concat(page.files);
-    token      = page.nextToken;
-  } while (token);
-  return { folders, files };
-}
-
-// ── R2 Download (GET mit Signatur) ───────────────────────────────
-async function r2Download(key) {
-  const endpoint  = (localStorage.getItem('r2_endpoint') || '').replace(/\/$/, '');
-  const bucket    = localStorage.getItem('r2_bucket') || '';
-  const accessKey = localStorage.getItem('r2_access_key') || '';
-  const secretKey = localStorage.getItem('r2_secret_key') || '';
-
-  if (!endpoint || !bucket || !accessKey || !secretKey) {
-    throw new Error('R2-Zugangsdaten fehlen.');
-  }
-
-  const encodedKey = key.split('/').map(encodeURIComponent).join('/');
-  const urlStr = `${endpoint}/${bucket}/${encodedKey}`;
-  const urlObj = new URL(urlStr);
-  const host   = urlObj.host;
-
-  const now       = new Date();
-  const amzDate   = now.toISOString().replace(/[:\-]|\.\d{3}/g, '');
-  const dateStamp = amzDate.slice(0, 8);
-  const bodyHash  = await _sha256('');
-
-  const canonHeaders = `host:${host}\nx-amz-content-sha256:${bodyHash}\nx-amz-date:${amzDate}\n`;
-  const signedHdrs   = 'host;x-amz-content-sha256;x-amz-date';
-  const canonReq     = ['GET', urlObj.pathname, '', canonHeaders, signedHdrs, bodyHash].join('\n');
-
-  const scope     = `${dateStamp}/auto/s3/aws4_request`;
-  const strToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${scope}\n${await _sha256(canonReq)}`;
-
-  const kDate    = await _hmac(`AWS4${secretKey}`, dateStamp);
-  const kRegion  = await _hmac(kDate, 'auto');
-  const kService = await _hmac(kRegion, 's3');
-  const kSign    = await _hmac(kService, 'aws4_request');
-  const sig      = await _hmacHex(kSign, strToSign);
-
-  const auth = `AWS4-HMAC-SHA256 Credential=${accessKey}/${scope}, SignedHeaders=${signedHdrs}, Signature=${sig}`;
-
-  const res = await fetch(urlStr, {
-    method: 'GET',
-    headers: { 'x-amz-date': amzDate, 'x-amz-content-sha256': bodyHash, 'Authorization': auth },
-  });
-
-  if (!res.ok) {
-    const txt = await res.text().catch(() => '');
-    throw new Error(`R2 Download fehlgeschlagen (${res.status}): ${txt}`);
-  }
-  return await res.arrayBuffer();
-}
-
 // ── R2 Delete ────────────────────────────────────────────────────
 async function r2Delete(key) {
   const endpoint  = (localStorage.getItem('r2_endpoint') || '').replace(/\/$/, '');

@@ -115,28 +115,6 @@ async function sbSelectAll(table, opts = {}) {
   return all;
 }
 
-// Anzahl der Einträge (ohne Daten zu laden) – gibt total count zurück
-async function sbCount(table, { filters = {}, fts = null, rawParams = [] } = {}) {
-  const params = ['select=id'];
-  if (fts && fts.trim()) {
-    params.push('search_vector=wfts(german).' + encodeURIComponent(fts.trim()));
-  }
-  Object.entries(filters).forEach(([k, v]) => {
-    if (v !== null && v !== undefined && v !== '') {
-      params.push(k + '=eq.' + encodeURIComponent(v));
-    }
-  });
-  rawParams.forEach(function(p) { params.push(p); });
-  params.push('limit=1');
-  const url = _URL + '/rest/v1/' + table + '?' + params.join('&');
-  const res = await fetch(url, { headers: { ..._H(), 'Prefer': 'count=exact' } });
-  if (!res.ok) return null;
-  const range = res.headers.get('Content-Range'); // z.B. "0-0/1234"
-  if (!range) return null;
-  const m = range.match(/\/(\d+)$/);
-  return m ? parseInt(m[1], 10) : null;
-}
-
 // Einzelne Zeile aktualisieren (PATCH per id)
 async function sbUpdate(table, id, changes) {
   const url = _URL + '/rest/v1/' + table + '?id=eq.' + encodeURIComponent(id);
@@ -157,17 +135,3 @@ async function sbDelete(table, id) {
   if (!res.ok) throw new Error(await res.text());
 }
 
-// Synchronisiert eine ID-basierte Tabelle per Vollabgleich:
-// - alle aktuellen rows werden upserted
-// - Zeilen, deren id nicht mehr lokal existiert, werden gelöscht
-async function sbSyncById(table, rows) {
-  const cleanRows = (rows || []).filter(r => r && r.id);
-  await sbInsert(table, cleanRows);
-  const remoteRows = await sbSelectAll(table, { select: 'id', limit: 1000 });
-  const keepIds = new Set(cleanRows.map(r => r.id));
-  const staleIds = (remoteRows || []).map(r => r.id).filter(id => id && !keepIds.has(id));
-  for (const id of staleIds) {
-    await sbDelete(table, id);
-  }
-  return { ok: true, count: cleanRows.length, deleted: staleIds.length };
-}

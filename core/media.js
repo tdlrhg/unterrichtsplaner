@@ -18,13 +18,6 @@ function mediaIsImage(filename) {
   return _IMG_EXTS.has((filename.split('.').pop() || '').toLowerCase());
 }
 
-// dataURL → Anthropic API Image-Block
-function dataURLtoBlock(dataURL) {
-  const [hdr, data] = dataURL.split(',');
-  const media_type = hdr.match(/data:([^;]+)/)[1];
-  return { type: 'image', source: { type: 'base64', media_type, data } };
-}
-
 // ── PDF-Seite rendern ─────────────────────────────────────────────
 // page     : pdfjs-Seitenobjekt
 // longEdge : max. Pixel auf der langen Seite (default: MAT_ANALYSIS_LONG_EDGE)

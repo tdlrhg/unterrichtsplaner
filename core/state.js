@@ -57,18 +57,6 @@ function findStunde(fpId, blockId, reiheId, stundeId) {
   return reihe && (reihe.stunden || []).find(s => s.id === stundeId);
 }
 
-function getAlleStunden(fpId) {
-  const lp = getFachplanung(fpId);
-  if (!lp) return [];
-  const alle = [];
-  (lp.blocks || []).forEach(b =>
-    (b.reihen || []).forEach(r =>
-      (r.stunden || []).forEach(s => alle.push(s))
-    )
-  );
-  return alle;
-}
-
 // ── Didaktik-Kontext für KI-Prompts ─────────────────────────────
 // Gibt passende Kernaussagen + Muster aus DIDARTDB als kompakten Text zurück.
 // ebenen: ['reihe','stunde','material','situation'] - welche Planungsebene

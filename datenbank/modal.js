@@ -357,7 +357,7 @@ function openTaskModal(group, opts) {
   R0.appendChild(seiteRow);
   sec(R0, 'Einordnung');
   sfld(R0, 'Thema', 'thema', 'text', 'z.B. Parallelogramm');
-  sfld(R0, 'Jahrgang', 'jahrgang', 'number', '5–10');
+  sfld(R0, 'Jahrgang', 'jahrgang', 'text', '5–10 oder 7/8');
   ssel(R0, 'Inhaltstyp', 'inhaltstyp', [
     ['aufgabe','📝 Aufgabe'],['lehrtext','📖 Lehrtext'],
     ['arbeitsblatt','📋 Arbeitsblatt'],['loesung','✅ Lösung'],

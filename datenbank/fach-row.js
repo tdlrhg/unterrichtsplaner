@@ -73,8 +73,8 @@ function renderRow(a, onSaved, compact, groupLabel) {
   }
   cells[0] = src;
 
-  // Typ-Badge — nicht für Aufgaben, nicht für MatLK, nicht für Materialsets im compact-Modus (dort inline)
-  if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe' && !isMatLK && !(isMat && compact)) {
+  // Typ-Badge — nicht für Aufgaben, nicht für MatLK, nicht für Materialset-Header im compact-Modus (dort inline in matTop)
+  if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe' && !isMatLK && !(isMat && compact && groupLabel)) {
     var typBadge = tx('span', '', (TYP_ICONS[a.inhaltstyp] ? TYP_ICONS[a.inhaltstyp] + ' ' : '') + (TYP_LABELS[a.inhaltstyp] || a.inhaltstyp));
     var typColor = TYP_FARBEN[a.inhaltstyp] || '#64748b';
     typBadge.style.cssText = 'display:inline-block;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;'

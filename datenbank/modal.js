@@ -667,11 +667,12 @@ function openTaskModal(group, opts) {
           else                                dupShared[k] = el.value.trim() || null;
         });
         var ts = Date.now();
+        var dupGruppenKey = 'dup_' + ts;
         var newRows = items.filter(function(_, i) { return !removed[i]; }).map(function(it, i) {
           return Object.assign({
             id: 'db_' + ts + '_dup' + i + '_' + Math.random().toString(36).slice(2, 6),
             fach: dupShared.fach || it.fach || DB.fach,
-            gruppen_key: 'dup_' + ts + '_' + i
+            gruppen_key: dupGruppenKey
           }, dupShared, itemPatch(i));
         });
         await sbInsert('inhalte', newRows);

@@ -95,8 +95,8 @@ function renderRow(a, onSaved, compact, groupLabel) {
   if (!isMatLK) {
     var inhaltText, inhaltLimit;
     if (isMat && a.inhaltstyp === 'arbeitsblatt') {
-      // Arbeitsblatt: Aufgabenstellung als Titel anzeigen
-      inhaltText = a.aufgabenstellung || a.inhalt || '–';
+      // Header-Zeile (groupLabel gesetzt): Aufgabenstellung; Teilaufgaben: eigener inhalt
+      inhaltText = (compact && !groupLabel) ? (a.inhalt || '–') : (a.aufgabenstellung || a.inhalt || '–');
       inhaltLimit = 80;
     } else if (isMat) {
       // Andere Materialset-Typen: eine Zeile Inhalt

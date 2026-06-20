@@ -133,10 +133,24 @@ JSON-FORMAT:
 // Welcher Prompt passt zum gewählten Quellentyp? contextNr = nr-Wert der vorherigen Seite (für Fortsetzungserkennung)
 function impPromptFor(quellentyp, contextNr) {
   var base = (quellentyp === 'materialset' || quellentyp === 'handreichung') ? MAT_KI_PROMPT : IMP_KI_PROMPT;
-  if (contextNr && (quellentyp === 'materialset' || quellentyp === 'handreichung')) {
+  if (contextNr) {
     base += '\n\nKONTEXT VORHERIGE SEITE: "' + contextNr + '" — Falls diese Seite ohne neue Überschrift beginnt und offensichtlich eine Fortsetzung davon ist, verwende denselben nr-Wert.';
   }
   return base;
+}
+
+function _mergeKontinuierungen(aufgaben) {
+  var merged = [];
+  aufgaben.forEach(function(a) {
+    var prev = merged.length ? merged[merged.length - 1] : null;
+    if (prev && prev.nr === a.nr && prev.inhaltstyp === a.inhaltstyp) {
+      prev.text = (prev.text || '') + (prev.text && a.text ? ' | ' : '') + (a.text || '');
+      if (!prev.abbildung && a.abbildung) prev.abbildung = a.abbildung;
+    } else {
+      merged.push(Object.assign({}, a));
+    }
+  });
+  return merged;
 }
 
 function _impResizeImg(dataUrl, maxW, q) {
@@ -472,6 +486,7 @@ function buildImportView(container) {
         _aufgaben = _aufgaben.concat(aufg);
       }
       if (!_aufgaben.length) { statusEl.textContent = '⚠️ Keine Einträge erkannt — bitte Bilder prüfen.'; return; }
+      _aufgaben = _mergeKontinuierungen(_aufgaben);
       statusEl.textContent = '';
       renderResults();
     } catch(e) {

@@ -499,11 +499,21 @@ function buildImportView(container) {
   // ── Ergebnis rendern ──────────────────────────────────────────
   var TYP_CYCLE = ['aufgabe', 'lehrtext', 'arbeitsblatt', 'loesung', 'lehrerkommentar', 'lzk'];
 
-  function buildAufgabeCard(a, indent) {
+  function buildAufgabeCard(a, indent, idx, mergeBtn) {
     var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';
     var row = mk('div', '');
     row.style.cssText = 'display:flex;align-items:baseline;gap:8px;padding:1px 0 1px '
       + (indent ? '20px' : '4px') + ';';
+
+    var cb = mk('input', '');
+    cb.type = 'checkbox';
+    cb.style.cssText = 'flex-shrink:0;margin-top:2px;cursor:pointer;';
+    cb.onclick = function(e) { e.stopPropagation(); };
+    cb.onchange = function() {
+      if (cb.checked) _impSelected.add(idx); else _impSelected.delete(idx);
+      mergeBtn.style.display = _impSelected.size >= 2 ? '' : 'none';
+    };
+    row.appendChild(cb);
 
     var nrLabel = tx('span', '', (a.nr || '?'));
     nrLabel.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);flex-shrink:0;min-width:32px;';
@@ -542,13 +552,36 @@ function buildImportView(container) {
     return badge;
   }
 
+  var _impSelected = new Set();
+
   function renderResults() {
+    _impSelected.clear();
     resultsWrap.innerHTML = '';
     var rHdr = mk('div', '');
-    rHdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:4px 0;';
+    rHdr.style.cssText = 'display:flex;align-items:center;gap:8px;justify-content:space-between;padding:4px 0;';
     var rTitle = tx('div', '', _aufgaben.length + ' Einträge erkannt — bitte prüfen und speichern');
-    rTitle.style.cssText = 'font-weight:600;font-size:14px;';
+    rTitle.style.cssText = 'font-weight:600;font-size:14px;flex:1;';
     rHdr.appendChild(rTitle);
+
+    var mergeBtn = btn('⊕ Zusammenführen', 'btn btn-sm');
+    mergeBtn.style.display = 'none';
+    mergeBtn.onclick = function() {
+      if (_impSelected.size < 2) return;
+      var indices = Array.from(_impSelected).sort(function(a,b){return a-b;});
+      var first = _aufgaben[indices[0]];
+      indices.slice(1).forEach(function(idx) {
+        var other = _aufgaben[idx];
+        first.text = (first.text || '') + (first.text && other.text ? ' | ' : '') + (other.text || '');
+        if (!first.abbildung && other.abbildung) first.abbildung = other.abbildung;
+      });
+      // Zusammengeführte Einträge (außer dem ersten) entfernen
+      _aufgaben = _aufgaben.filter(function(_, i) {
+        return i === indices[0] || !_impSelected.has(i);
+      });
+      renderResults();
+    };
+    rHdr.appendChild(mergeBtn);
+
     var saveAllBtn = btn('✓ Alle ' + _aufgaben.length + ' speichern', 'btn btn-pri btn-sm');
     saveAllBtn.onclick = saveAll;
     rHdr.appendChild(saveAllBtn);
@@ -593,7 +626,8 @@ function buildImportView(container) {
       groupWrap.appendChild(groupHdr);
 
       g.items.forEach(function(a) {
-        groupWrap.appendChild(buildAufgabeCard(a, hasSubtasks));
+        var idx = _aufgaben.indexOf(a);
+        groupWrap.appendChild(buildAufgabeCard(a, hasSubtasks, idx, mergeBtn));
       });
 
       resultsWrap.appendChild(groupWrap);

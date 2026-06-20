@@ -855,8 +855,12 @@ function _appendLkChip(rowEl, lks, wrap) {
     + 'background:#faeeda;color:#854f0b;border-radius:4px;padding:2px 7px;cursor:pointer;flex-shrink:0;margin-left:6px;';
   chip.textContent = (TYP_ICONS.lehrerkommentar || '🧑‍🏫') + ' ' + lks.length;
   chip.title = 'Lehrerkommentar anzeigen';
-  midCell.style.display = 'flex';
-  midCell.style.alignItems = 'center';
+  // Bestehende Kinder in Wrapper packen → Chip daneben in einer Zeile
+  var textWrap = mk('div', '');
+  textWrap.style.cssText = 'flex:1;min-width:0;';
+  while (midCell.firstChild) textWrap.appendChild(midCell.firstChild);
+  midCell.appendChild(textWrap);
+  midCell.style.cssText = 'display:flex;flex-direction:row;align-items:center;';
   midCell.appendChild(chip);
   var expDiv = mk('div', '');
   expDiv.style.cssText = 'display:none;padding:7px 12px 7px 36px;border-bottom:1px solid var(--bord);'

@@ -65,6 +65,7 @@ Für jeden Eintrag:
 - operator: genau eines von: berechnen|begründen|erklären|zeichnen|messen|konstruieren|beschreiben|vergleichen|ausfüllen|MC — bei Lehrtexten/Beispielen null
 - umfang: genau eines von: kurz|mittel|lang — bei Lehrtexten null
 - schwierigkeit: genau eines von: grundlegend|standard|anspruchsvoll — bei Lehrtexten null
+- abbildung: Kurze Beschreibung einer Abbildung, die für das Verständnis der Aufgabe notwendig ist (z.B. „Koordinatensystem mit eingezeichnetem Dreieck ABC", „Foto einer rostenden Eisenbrücke"). Nur ausfüllen wenn die Abbildung inhaltlich relevant ist — nicht für rein dekorative Bilder, Cliparts oder Randgestaltung. Sonst null.
 
 JSON-FORMAT — sehr wichtig:
 - Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
@@ -74,8 +75,8 @@ JSON-FORMAT — sehr wichtig:
 - Keine Backslashes in Stringwerten
 
 {"aufgaben": [
-  {"inhaltstyp":"lehrtext","nr":"Merksatz","aufgabenstellung":null,"text":"Der Flächeninhalt eines Rechtecks mit den Seiten a und b berechnet sich mit der Formel A = a · b. | Die Einheit des Flächeninhalts ist cm², m² oder mm².","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null},
-  {"inhaltstyp":"aufgabe","nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Berechne den Flächeninhalt der Fig. 1.","anforderung":"Schüler berechnen den Flächeninhalt einer Figur.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend"}
+  {"inhaltstyp":"lehrtext","nr":"Merksatz","aufgabenstellung":null,"text":"Der Flächeninhalt eines Rechtecks mit den Seiten a und b berechnet sich mit der Formel A = a · b. | Die Einheit des Flächeninhalts ist cm², m² oder mm².","anforderung":null,"operator":null,"umfang":null,"schwierigkeit":null,"abbildung":null},
+  {"inhaltstyp":"aufgabe","nr":"8a","aufgabenstellung":"Berechne den Flächeninhalt der Figuren.","text":"Berechne den Flächeninhalt der Fig. 1.","anforderung":"Schüler berechnen den Flächeninhalt einer Figur.","operator":"berechnen","umfang":"kurz","schwierigkeit":"grundlegend","abbildung":"Koordinatensystem mit drei eingezeichneten Figuren, beschriftet mit Fig. 1, Fig. 2, Fig. 3"}
 ]}`;
 
 // ── KI-Prompt für Materialsets / Handreichungen ───────────────────
@@ -115,6 +116,8 @@ Für jeden Eintrag:
 
 - thema: Fachliches Kernthema dieser Seite, max. 5 Wörter (z.B. "Bruchrechnung", "Textaufgaben – Verhältnisse", "Korrosion – Grundlagen")
 
+- abbildung: Kurze Beschreibung einer Abbildung, die für das Verständnis des Materials notwendig ist (z.B. „Foto einer rostenden Eisenbrücke", „Diagramm: Temperaturverlauf über 24h"). Nur ausfüllen wenn die Abbildung inhaltlich relevant ist — nicht für rein dekorative Bilder oder Randgestaltung. Sonst null.
+
 JSON-FORMAT:
 - Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
 - Alle Stringwerte einzeilig (Zeilenumbrüche → " | ")
@@ -122,9 +125,9 @@ JSON-FORMAT:
 - Keine Backslashes in Stringwerten
 
 {"aufgaben": [
-  {"inhaltstyp":"lehrerkommentar","nr":"Hintergrundinformation","aufgabenstellung":null,"text":"Korrosion bezeichnet die Reaktion eines metallischen Werkstoffs mit seiner Umgebung. | Im Meerwasser wird sie durch den hohen Salzgehalt beschleunigt, da gelöste Ionen die elektrische Leitfähigkeit erhöhen und galvanische Elemente entstehen können.","anforderung":null,"niveau":null,"schwierigkeit":null,"thema":"Korrosion – Grundlagen"},
-  {"inhaltstyp":"arbeitsblatt","nr":"M 1","aufgabenstellung":"Korrosion im Meerwasser","text":"Schiffe werden im Meerwasser besonders stark von Korrosion befallen. | 1. Erkläre, warum Salzwasser die Korrosion beschleunigt. | 2. Nenne zwei Schutzmaßnahmen gegen Korrosion an Schiffshüllen.","anforderung":"Schülerinnen erklären Korrosionsvorgänge und nennen Schutzmaßnahmen.","niveau":null,"schwierigkeit":"standard","thema":"Korrosion im Meerwasser"},
-  {"inhaltstyp":"loesung","nr":"Lösung M 1","aufgabenstellung":"Korrosion im Meerwasser – Erwartungshorizont","text":"1. Salzwasser leitet Strom, da Ionen als Ladungsträger wirken. Es bilden sich galvanische Elemente. | 2. Mögliche Schutzmaßnahmen: Schutzanstrich, kathodischer Korrosionsschutz (Opferanode).","anforderung":null,"niveau":null,"schwierigkeit":null,"thema":"Korrosion im Meerwasser"}
+  {"inhaltstyp":"lehrerkommentar","nr":"Hintergrundinformation","aufgabenstellung":null,"text":"Korrosion bezeichnet die Reaktion eines metallischen Werkstoffs mit seiner Umgebung. | Im Meerwasser wird sie durch den hohen Salzgehalt beschleunigt, da gelöste Ionen die elektrische Leitfähigkeit erhöhen und galvanische Elemente entstehen können.","anforderung":null,"niveau":null,"schwierigkeit":null,"thema":"Korrosion – Grundlagen","abbildung":null},
+  {"inhaltstyp":"arbeitsblatt","nr":"M 1","aufgabenstellung":"Korrosion im Meerwasser","text":"Schiffe werden im Meerwasser besonders stark von Korrosion befallen. | 1. Erkläre, warum Salzwasser die Korrosion beschleunigt. | 2. Nenne zwei Schutzmaßnahmen gegen Korrosion an Schiffshüllen.","anforderung":"Schülerinnen erklären Korrosionsvorgänge und nennen Schutzmaßnahmen.","niveau":null,"schwierigkeit":"standard","thema":"Korrosion im Meerwasser","abbildung":"Foto einer stark korrodierten Schiffshülle mit roten Rostflecken"},
+  {"inhaltstyp":"loesung","nr":"Lösung M 1","aufgabenstellung":"Korrosion im Meerwasser – Erwartungshorizont","text":"1. Salzwasser leitet Strom, da Ionen als Ladungsträger wirken. Es bilden sich galvanische Elemente. | 2. Mögliche Schutzmaßnahmen: Schutzanstrich, kathodischer Korrosionsschutz (Opferanode).","anforderung":null,"niveau":null,"schwierigkeit":null,"thema":"Korrosion im Meerwasser","abbildung":null}
 ]}`;
 
 // Welcher Prompt passt zum gewählten Quellentyp? contextNr = nr-Wert der vorherigen Seite (für Fortsetzungserkennung)
@@ -623,6 +626,7 @@ function buildImportView(container) {
         umfang:       a.umfang || null,
         jahrgang:     jg,
         thema:        a.thema || null,
+        abbildung:    a.abbildung || null,
         inhaltstyp:   a.inhaltstyp || 'aufgabe',
       };
     });

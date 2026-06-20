@@ -97,7 +97,7 @@ function renderRow(a, onSaved, compact, groupLabel) {
     if (isMat && a.inhaltstyp === 'arbeitsblatt') {
       // Header-Zeile (groupLabel gesetzt): Aufgabenstellung; Teilaufgaben: eigener inhalt
       inhaltText = (compact && !groupLabel) ? (a.inhalt || '–') : (a.aufgabenstellung || a.inhalt || '–');
-      inhaltLimit = 80;
+      inhaltLimit = groupLabel ? 400 : 80;
     } else if (isMat) {
       // Andere Materialset-Typen: eine Zeile Inhalt
       inhaltText = a.inhalt || a.thema || '–';

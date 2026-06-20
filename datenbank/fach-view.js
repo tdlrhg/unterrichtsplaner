@@ -194,8 +194,8 @@ function buildTableHead(onSortChange) {
       });
     }
 
-    // ── Resize-Handle (nicht nach der letzten Spalte) ──────────────
-    if (visualPos < visCols.length - 1) {
+    // ── Resize-Handle ─────────────────────────────────────────────
+    {
       const rh = mk('div', 'db-col-resize-handle');
       rh.title = 'Spaltenbreite ziehen';
       rh.draggable = false;

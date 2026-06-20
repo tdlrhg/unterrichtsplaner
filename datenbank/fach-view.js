@@ -333,7 +333,7 @@ async function buildFachView(container) {
 
       if (hasSubtasks) {
         // Gruppe: Header wie Einzelaufgaben-Row (gleiche Grid-Struktur), ohne Chips
-        var gHdrItem = { inhalt: g.aufgabenstellung || '', inhaltstyp: ref0.inhaltstyp || 'aufgabe', kapitel: ref0.kapitel, uk_titel: ref0.uk_titel };
+        var gHdrItem = { inhalt: g.aufgabenstellung || '', inhaltstyp: ref0.inhaltstyp || 'aufgabe', quelle_typ: ref0.quelle_typ, kapitel: ref0.kapitel, uk_titel: ref0.uk_titel };
         var ghdr = renderRow(gHdrItem, null, true, seitePrefix + grpTypLabel(g));
         ghdr.title = 'Alle Teilaufgaben ansehen';
         ghdr.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
@@ -353,7 +353,20 @@ async function buildFachView(container) {
           chevron.textContent = subCollapsed ? '▸' : '▾';
         };
         var srcCell = ghdr.querySelector('[data-col-idx="0"]');
-        if (srcCell) srcCell.insertBefore(chevron, srcCell.firstChild);
+        if (srcCell) {
+          var matTopEl = srcCell.querySelector('.mat-top-row');
+          if (matTopEl) {
+            matTopEl.insertBefore(chevron, matTopEl.firstChild);
+          } else {
+            // Schulbuch: glEl in flex-Row mit Chevron zusammenfassen
+            var firstChild = srcCell.firstChild;
+            var topRow = mk('div', '');
+            topRow.style.cssText = 'display:flex;align-items:center;gap:4px;';
+            srcCell.insertBefore(topRow, firstChild);
+            topRow.appendChild(chevron);
+            if (firstChild) topRow.appendChild(firstChild);
+          }
+        }
 
         wrap.appendChild(ghdr);
         if (lkItems.length) _appendLkChip(ghdr, lkItems, wrap);

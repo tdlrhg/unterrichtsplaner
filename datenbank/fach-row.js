@@ -21,7 +21,7 @@ function renderRow(a, onSaved, compact, groupLabel) {
     if (groupLabel) {
       if (isMat) {
         // Materialset: [Chip] [Nr] in einer Zeile, Thema darunter
-        var matTop = mk('div', '');
+        var matTop = mk('div', 'mat-top-row');
         matTop.style.cssText = 'display:flex;align-items:center;gap:5px;padding:2px 0;';
         if (a.inhaltstyp && !isMatLK) {
           var matTypColor = TYP_FARBEN[a.inhaltstyp] || '#64748b';
@@ -74,7 +74,7 @@ function renderRow(a, onSaved, compact, groupLabel) {
   cells[0] = src;
 
   // Typ-Badge — nicht für Aufgaben, nicht für MatLK, nicht für Materialsets im compact-Modus (dort inline)
-  if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe' && !isMatLK && !(isMat && compact && groupLabel)) {
+  if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe' && !isMatLK && !(isMat && compact)) {
     var typBadge = tx('span', '', (TYP_ICONS[a.inhaltstyp] ? TYP_ICONS[a.inhaltstyp] + ' ' : '') + (TYP_LABELS[a.inhaltstyp] || a.inhaltstyp));
     var typColor = TYP_FARBEN[a.inhaltstyp] || '#64748b';
     typBadge.style.cssText = 'display:inline-block;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;'

@@ -623,7 +623,7 @@ async function buildFachView(container) {
 
       if (hasSubtasks) {
         // Gruppe: Header wie Einzelaufgaben-Row (gleiche Grid-Struktur), ohne Chips
-        var gHdrItem = { inhalt: g.aufgabenstellung || '', inhaltstyp: ref0.inhaltstyp || 'aufgabe' };
+        var gHdrItem = { inhalt: g.aufgabenstellung || '', inhaltstyp: ref0.inhaltstyp || 'aufgabe', kapitel: ref0.kapitel, uk_titel: ref0.uk_titel };
         var ghdr = renderRow(gHdrItem, null, true, seitePrefix + grpTypLabel(g));
         ghdr.title = 'Alle Teilaufgaben ansehen';
         ghdr.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
@@ -817,9 +817,9 @@ function renderRow(a, onSaved, compact, groupLabel) {
   }
   cells[4] = umfCol;
 
-  // Zelle 5: Kapitel
+  // Zelle 5: Kapitel — bei Teilaufgaben (compact ohne groupLabel) leer
   var kapCol = mk('div', 'db-col-kap'); kapCol.dataset.colIdx = 5;
-  var kapText = a.kapitel || '';
+  var kapText = (!compact || groupLabel) ? (a.kapitel || '') : '';
   if (kapText) {
     var kapEl = tx('div', 'db-col-kap-text', kapText);
     kapEl.title = kapText;
@@ -827,9 +827,9 @@ function renderRow(a, onSaved, compact, groupLabel) {
   }
   cells[5] = kapCol;
 
-  // Zelle 6: Unterkapitel
+  // Zelle 6: Unterkapitel — bei Teilaufgaben (compact ohne groupLabel) leer
   var ukCol = mk('div', 'db-col-uk'); ukCol.dataset.colIdx = 6;
-  if (a.uk_titel) {
+  if ((!compact || groupLabel) && a.uk_titel) {
     var ukEl = tx('div', 'db-col-kap-text', a.uk_titel);
     ukEl.title = a.uk_titel;
     ukCol.appendChild(ukEl);

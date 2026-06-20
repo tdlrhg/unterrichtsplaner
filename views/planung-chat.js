@@ -2,11 +2,13 @@
 // KI-Agent mit Tool-Use: plant Blöcke → Reihen → Stunden auf Basis
 // eines freien Dialogs. Schreibt direkt in die Fachplanung.
 
-const PC_FACH = { M:'Mathematik', Ch:'Chemie', Bio:'Biologie', Ch_GK:'Chemie', Ch_LK:'Chemie', Bio_GK:'Biologie', Bio_LK:'Biologie' };
+const PC_FACH      = { M:'Mathematik', Ch:'Chemie', Bio:'Biologie', Ch_GK:'Chemie', Ch_LK:'Chemie', Bio_GK:'Biologie', Bio_LK:'Biologie' };
+const PC_NATURWISS = new Set(['Ch','Bio','Ch_GK','Ch_LK','Bio_GK','Bio_LK']);
 
 let _pcMsgs    = [];   // UI: { role, text, toolCalls?, isThinking? }
 let _pcApi     = [];   // Anthropic API message history
 let _pcFpId    = null;
+let _pcConfig  = null; // Planungsrahmendaten aus dem Konfigurationsformular
 let _pcRunning = false;
 
 const PC_TOOLS = [
@@ -180,6 +182,143 @@ function _pcExecTool(name, input, fp) {
   }
 }
 
+// Kompakter Steckbrief der Config für die Begrüßungsnachricht
+function _pcConfigText(cfg) {
+  if (!cfg) return '';
+  const parts = [
+    cfg.stundenGesamt + ' Stunden gesamt',
+    cfg.stundenProWoche + '×/Woche',
+    cfg.lernzeitProWoche + ' Min. Lernzeit',
+    'Format: ' + (cfg.format === '45' ? '45 Min.' : cfg.format === '90' ? '90 Min.' : 'gemischt'),
+    cfg.puffer + ' Pufferstunden',
+    'iPad: ' + cfg.ipad + (cfg.ipadWofuer ? ' (' + cfg.ipadWofuer + ')' : ''),
+  ];
+  if (cfg.versuche) parts.push('Schülerversuche: ' + cfg.versuche);
+  parts.push('Gruppenarbeit: ' + cfg.gruppenarbeit);
+  return parts.join(' · ');
+}
+
+// Abschnitt für den System-Prompt
+function _pcConfigToSystem(cfg) {
+  if (!cfg) return '';
+  return `\nRahmenbedingungen für die Planung:
+- Gesamtstunden: ${cfg.stundenGesamt} (davon ${cfg.puffer} Pufferstunden für Klassenarbeiten/Klausuren)
+- ${cfg.stundenProWoche} Stunden/Woche, ${cfg.lernzeitProWoche} Min. Nettolernzeit/Woche
+- Format: ${cfg.format === '45' ? 'nur 45-Min.-Stunden' : cfg.format === '90' ? 'nur Doppelstunden (90 Min.)' : 'gemischt (45 und 90 Min.)'}
+- iPad-Einsatz: ${cfg.ipad}${cfg.ipadWofuer ? ', vor allem für: ' + cfg.ipadWofuer : ''}
+${cfg.versuche ? '- Schülerversuche: ' + cfg.versuche + '\n' : ''}- Gruppenarbeit: ${cfg.gruppenarbeit}
+Richte alle Reihen- und Stundenplanungen an diesen Rahmenbedingungen aus.`;
+}
+
+// Konfigurationsformular vor dem ersten Chat
+function _pcBuildConfigForm(fp, onDone) {
+  const hatVersuche = PC_NATURWISS.has(fp.fach);
+  const form = mk('div', 'pc-config');
+
+  function cfgRow(label, el) {
+    const r = mk('div', 'pc-cfg-row');
+    r.appendChild(tx('label', 'pc-cfg-label', label));
+    r.appendChild(el);
+    return r;
+  }
+
+  function cfgSel(options, defVal) {
+    const s = document.createElement('select');
+    s.className = 'finp pc-cfg-sel';
+    options.forEach(([v, t]) => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = t;
+      if (v === defVal) o.selected = true;
+      s.appendChild(o);
+    });
+    return s;
+  }
+
+  function cfgNum(def, min) {
+    const i = document.createElement('input');
+    i.type = 'number'; i.className = 'finp pc-cfg-num';
+    i.value = def; i.min = min !== undefined ? min : 0;
+    return i;
+  }
+
+  function cfgTxt(placeholder) {
+    const i = document.createElement('input');
+    i.type = 'text'; i.className = 'finp pc-cfg-txt';
+    i.placeholder = placeholder;
+    return i;
+  }
+
+  const stundenGesamt    = cfgNum(60, 1);
+  const stundenProWoche  = cfgNum(3, 1);
+  const lernzeitProWoche = cfgNum(135, 1);
+  const formatSel = cfgSel([
+    ['gemischt', 'Gemischt (45 + 90 Min.)'],
+    ['45',       'Nur 45 Min.'],
+    ['90',       'Nur 90 Min. (Doppelstunden)']
+  ], 'gemischt');
+  const puffer = cfgNum(4, 0);
+  const ipadSel = cfgSel([
+    ['gelegentlich', 'gelegentlich'],
+    ['häufig',       'häufig'],
+    ['immer',        'immer'],
+    ['nie',          'nie']
+  ], 'gelegentlich');
+  const ipadWofuer  = cfgTxt('z.B. Recherche, Präsentation, Übungsapps');
+  const versucheSel = hatVersuche ? cfgSel([
+    ['gelegentlich', 'gelegentlich'],
+    ['häufig',       'häufig'],
+    ['immer',        'immer'],
+    ['nie',          'nie']
+  ], 'gelegentlich') : null;
+  const gaSel = cfgSel([
+    ['regelmäßig',   'regelmäßig'],
+    ['oft',          'oft'],
+    ['gelegentlich', 'gelegentlich'],
+    ['kaum',         'kaum']
+  ], 'regelmäßig');
+
+  const g1 = mk('div', 'pc-cfg-group');
+  g1.appendChild(tx('div', 'pc-cfg-ghdr', 'Zeitrahmen'));
+  g1.appendChild(cfgRow('Stunden gesamt', stundenGesamt));
+  g1.appendChild(cfgRow('Stunden / Woche', stundenProWoche));
+  g1.appendChild(cfgRow('Lernzeit / Woche (Min.)', lernzeitProWoche));
+  g1.appendChild(cfgRow('Stundenformat', formatSel));
+  g1.appendChild(cfgRow('Pufferstunden', puffer));
+  form.appendChild(g1);
+
+  const g2 = mk('div', 'pc-cfg-group');
+  g2.appendChild(tx('div', 'pc-cfg-ghdr', 'Methodik & Ausstattung'));
+  g2.appendChild(cfgRow('iPad-Nutzung', ipadSel));
+  g2.appendChild(cfgRow('iPad wofür', ipadWofuer));
+  if (versucheSel) g2.appendChild(cfgRow('Schülerversuche', versucheSel));
+  g2.appendChild(cfgRow('Gruppenarbeit', gaSel));
+  form.appendChild(g2);
+
+  const submitBtn = btn('Planung starten →', 'btn btn-primary pc-cfg-submit');
+  submitBtn.onclick = () => {
+    _pcConfig = {
+      stundenGesamt:    +stundenGesamt.value    || 60,
+      stundenProWoche:  +stundenProWoche.value  || 3,
+      lernzeitProWoche: +lernzeitProWoche.value || 135,
+      format:           formatSel.value,
+      puffer:           +puffer.value           || 0,
+      ipad:             ipadSel.value,
+      ipadWofuer:       ipadWofuer.value.trim(),
+      versuche:         versucheSel ? versucheSel.value : null,
+      gruppenarbeit:    gaSel.value
+    };
+    const fachName = PC_FACH[fp.fach] || fp.fach;
+    _pcMsgs.push({
+      role: 'assistant',
+      text: `Wir sind im Jahrgang **${fp.jahrgang}** im Fach **${fachName}**.\n${_pcConfigText(_pcConfig)}\n\nWas soll ich planen?`
+    });
+    onDone();
+    setTimeout(_pcRender, 0);
+  };
+  form.appendChild(submitBtn);
+  return form;
+}
+
 // Aktualisiert die Nachrichtenliste im DOM anhand von _pcMsgs.
 // Verwendet eine feste ID, damit Re-Renders durch render() kein Problem sind.
 function _pcRender() {
@@ -190,7 +329,6 @@ function _pcRender() {
     const d = mk('div', 'pc-msg pc-' + m.role);
     if (m.text) {
       const t = mk('div', 'pc-msg-text');
-      // Einfaches Markdown: **fett** und Zeilenumbrüche
       t.innerHTML = m.text
         .replace(/&/g, '&amp;').replace(/</g, '&lt;')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -209,8 +347,7 @@ function _pcRender() {
   });
   el.scrollTop = el.scrollHeight;
 
-  // Input-Zustand synchronisieren
-  const inp = document.getElementById('pc-input');
+  const inp  = document.getElementById('pc-input');
   const sbtn = document.getElementById('pc-send');
   if (inp)  inp.disabled  = _pcRunning;
   if (sbtn) sbtn.disabled = _pcRunning;
@@ -229,7 +366,7 @@ async function _pcSend(fp, text) {
   _pcMsgs.push(thinkMsg);
   _pcRender();
 
-  const system = `Du bist Planungsassistentin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.
+  const system = `Du bist Planungsassistentin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.${_pcConfigToSystem(_pcConfig)}
 Hilf der Lehrerin, ein Schuljahr strukturiert zu planen: Blöcke (Themenbereiche) → Reihen (Unterrichtssequenzen, 6–15 Stunden) → Stunden.
 Gehe immer so vor:
 1. Lese zuerst den aktuellen Plan (readPlan) und die KLP-Kompetenzen (readKLP).
@@ -274,11 +411,8 @@ Arbeite proaktiv: Wenn die Lehrerin grobe Vorgaben macht, erstelle direkt den vo
 }
 
 function buildPlanungsChat(fp) {
-  // Historie zurücksetzen wenn Fachplanung wechselt
   if (_pcFpId !== fp.id) {
-    _pcMsgs = [];
-    _pcApi  = [];
-    _pcFpId = fp.id;
+    _pcMsgs = []; _pcApi = []; _pcFpId = fp.id; _pcConfig = null;
   }
 
   const wrap = mk('div', 'pc-wrap card');
@@ -290,37 +424,41 @@ function buildPlanungsChat(fp) {
 
   const body = mk('div', 'card-body pc-body');
 
-  const msgs = mk('div', 'pc-messages');
-  msgs.id = 'pc-messages';
-  body.appendChild(msgs);
+  if (!_pcConfig) {
+    body.appendChild(_pcBuildConfigForm(fp, () => render()));
+  } else {
+    const msgs = mk('div', 'pc-messages');
+    msgs.id = 'pc-messages';
+    body.appendChild(msgs);
 
-  const inputRow = mk('div', 'pc-input-row');
+    const inputRow = mk('div', 'pc-input-row');
 
-  const ta = document.createElement('textarea');
-  ta.id = 'pc-input';
-  ta.className = 'finp pc-input';
-  ta.placeholder = 'z.B. "Plane das Schuljahr Chemie EF. Pro Reihe ein Schülerversuch. Präsentationstechniken schrittweise aufbauen."';
-  ta.rows = 3;
-  ta.onkeydown = e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-  };
+    const ta = document.createElement('textarea');
+    ta.id = 'pc-input';
+    ta.className = 'finp pc-input';
+    ta.placeholder = 'z.B. "Plane das 1. Halbjahr: Elektrochemie. Pro Reihe ein Schülerversuch."';
+    ta.rows = 3;
+    ta.onkeydown = e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    };
 
-  const sendBtn = btn('Senden ↵', 'btn btn-primary btn-sm');
-  sendBtn.id = 'pc-send';
-  sendBtn.onclick = send;
+    const sendBtn = btn('Senden ↵', 'btn btn-primary btn-sm');
+    sendBtn.id = 'pc-send';
+    sendBtn.onclick = send;
 
-  function send() {
-    const text = ta.value.trim();
-    if (!text || _pcRunning) return;
-    ta.value = '';
-    _pcSend(fp, text);
+    function send() {
+      const text = ta.value.trim();
+      if (!text || _pcRunning) return;
+      ta.value = '';
+      _pcSend(fp, text);
+    }
+
+    inputRow.appendChild(ta);
+    inputRow.appendChild(sendBtn);
+    body.appendChild(inputRow);
   }
 
-  inputRow.appendChild(ta);
-  inputRow.appendChild(sendBtn);
-  body.appendChild(inputRow);
   wrap.appendChild(body);
-
   _pcRender();
   return wrap;
 }

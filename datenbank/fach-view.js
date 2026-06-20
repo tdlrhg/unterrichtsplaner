@@ -386,6 +386,17 @@ async function buildFachView(container) {
         var rowEl = renderRow(singleItem, function() { load({ keepScroll: true }); }, true, seitePrefix + grpTypLabel(g));
         rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
         rowEl.insertBefore(_mkSelCell(g.gruppen_key, g), rowEl.firstChild);
+        // Unsichtbarer Platzhalter damit Chips mit Chevron-Zeilen ausgerichtet bleiben
+        var srcCell0 = rowEl.querySelector('[data-col-idx="0"]');
+        if (srcCell0) {
+          var matTopEl0 = srcCell0.querySelector('.mat-top-row');
+          if (matTopEl0) {
+            var ph = mk('span', '');
+            ph.style.cssText = 'display:inline-block;font-size:15px;padding:1px 3px;margin-right:4px;flex-shrink:0;visibility:hidden;';
+            ph.textContent = '▾';
+            matTopEl0.insertBefore(ph, matTopEl0.firstChild);
+          }
+        }
         wrap.appendChild(rowEl);
         if (lkItems.length) _appendLkChip(rowEl, lkItems, wrap);
       }

@@ -343,8 +343,8 @@ async function buildFachView(container) {
         var subContainer = mk('div', '');
         var subCollapsed = false;
         var chevron = tx('span', '', '▾');
-        chevron.style.cssText = 'font-size:10px;color:var(--tx3);cursor:pointer;margin-right:3px;'
-          + 'flex-shrink:0;padding:1px 3px;border-radius:3px;user-select:none;';
+        chevron.style.cssText = 'font-size:15px;color:var(--tx3);cursor:pointer;margin-right:4px;'
+          + 'flex-shrink:0;padding:1px 3px;border-radius:3px;user-select:none;line-height:1;';
         chevron.title = 'Teilaufgaben ein-/ausblenden';
         chevron.onclick = function(e) {
           e.stopPropagation();

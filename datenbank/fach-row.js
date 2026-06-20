@@ -36,9 +36,16 @@ function renderRow(a, onSaved, compact, groupLabel) {
         matTop.appendChild(matNr);
         src.appendChild(matTop);
         if (a.thema) {
+          var themaRow = mk('div', '');
+          themaRow.style.cssText = 'display:flex;align-items:center;';
+          var thmPh = mk('span', '');
+          thmPh.style.cssText = 'display:inline-block;font-size:15px;padding:1px 3px;margin-right:4px;flex-shrink:0;visibility:hidden;';
+          thmPh.textContent = '▾';
+          themaRow.appendChild(thmPh);
           var themaEl = tx('div', '', a.thema);
           themaEl.style.cssText = 'font-size:11px;color:var(--tx3);padding:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-          src.appendChild(themaEl);
+          themaRow.appendChild(themaEl);
+          src.appendChild(themaRow);
         }
       } else {
         // Aufgabe: „Aufgabe N" als Zeilenlabel in Spalte 0

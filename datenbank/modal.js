@@ -257,7 +257,7 @@ function openTaskModal(group, opts) {
         if (items[i].id) await sbDelete('inhalte', items[i].id);
         removed[i] = true;
         itemNodes[i].forEach(function(n) { if (n && n.parentNode) n.parentNode.removeChild(n); });
-        if (onDone) onDone();   // Tabelle im Hintergrund aktualisieren
+        await doSave({ noClose: true, silent: true });
       } catch(e) {
         alert('Fehler beim Löschen: ' + e.message); b.disabled = false;
       }
@@ -586,7 +586,7 @@ function openTaskModal(group, opts) {
   var cancelBtn = btn('Abbrechen', 'btn btn-ghost btn-sm'); cancelBtn.onclick = closeEntryModal;
   footer.appendChild(saveBtn);
   footer.appendChild(cancelBtn);
-  function itemPatch(i) {
+  function itemPatch(i, pos) {
     var f = itemFields[i];
     var p = {
       inhalt:        encode(f.inhalt.value),
@@ -600,7 +600,8 @@ function openTaskModal(group, opts) {
     };
     if (isMulti) {
       var pn = parentNrInp ? parentNrInp.value.trim() : '';
-      p.nr = pn ? (pn + posLetter(i)) : null;
+      var letterI = (pos !== undefined) ? pos : i;
+      p.nr = pn ? (pn + posLetter(letterI)) : null;
     }
     return p;
   }
@@ -629,9 +630,11 @@ function openTaskModal(group, opts) {
         if (!opts.noClose) { closeEntryModal(); if (onDone) onDone(newRow); }
         else if (onDone) onDone(newRow);
       } else {
+        var letterIdx = 0;
         await Promise.all(items.map(function(it, i) {
           if (removed[i]) return null;
-          var patch = Object.assign({}, shared, itemPatch(i));
+          var pos = letterIdx++;
+          var patch = Object.assign({}, shared, itemPatch(i, pos));
           if (it.id) return sbUpdate('inhalte', it.id, patch);
           var newId = 'db_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 6);
           var row = Object.assign({

@@ -352,11 +352,18 @@ function buildImportView(container) {
   }
 
   // ── Analyse-Button + Status ───────────────────────────────────
-  var bottomRow = mk('div', ''); bottomRow.style.cssText = 'display:flex;align-items:center;gap:14px;';
+  var bottomRow = mk('div', ''); bottomRow.style.cssText = 'display:flex;align-items:center;gap:14px;flex-wrap:wrap;';
   var analyseBtn = btn('⚡ Seite analysieren', 'btn btn-pri');
   var statusEl = tx('div', '', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);';
+  var skipLkLabel = mk('label', '');
+  skipLkLabel.style.cssText = 'display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;margin-left:auto;';
+  var skipLkChk = mk('input', ''); skipLkChk.type = 'checkbox';
+  skipLkChk.addEventListener('change', function() { if (_aufgaben.length) renderResults(); });
+  skipLkLabel.appendChild(skipLkChk);
+  skipLkLabel.appendChild(document.createTextNode('Lehrerkommentare nicht importieren'));
   bottomRow.appendChild(analyseBtn);
   bottomRow.appendChild(statusEl);
+  bottomRow.appendChild(skipLkLabel);
   metaCard.appendChild(bottomRow);
 
   // ── Ergebnis-Bereich ──────────────────────────────────────────
@@ -558,9 +565,12 @@ function buildImportView(container) {
   function renderResults() {
     _impSelected.clear();
     resultsWrap.innerHTML = '';
+    var _visibleAufgHdr = skipLkChk.checked
+      ? _aufgaben.filter(function(a) { return a.inhaltstyp !== 'lehrerkommentar'; })
+      : _aufgaben;
     var rHdr = mk('div', '');
     rHdr.style.cssText = 'display:flex;align-items:center;gap:8px;justify-content:space-between;padding:4px 0;';
-    var rTitle = tx('div', '', _aufgaben.length + ' Einträge erkannt — bitte prüfen und speichern');
+    var rTitle = tx('div', '', _visibleAufgHdr.length + ' Einträge erkannt — bitte prüfen und speichern');
     rTitle.style.cssText = 'font-weight:600;font-size:14px;flex:1;';
     rHdr.appendChild(rTitle);
 
@@ -583,7 +593,7 @@ function buildImportView(container) {
     };
     rHdr.appendChild(mergeBtn);
 
-    var saveAllBtn = btn('✓ Alle ' + _aufgaben.length + ' speichern', 'btn btn-pri btn-sm');
+    var saveAllBtn = btn('✓ Alle ' + _visibleAufgHdr.length + ' speichern', 'btn btn-pri btn-sm');
     saveAllBtn.onclick = saveAll;
     rHdr.appendChild(saveAllBtn);
     resultsWrap.appendChild(rHdr);
@@ -608,7 +618,7 @@ function buildImportView(container) {
     fachSel.addEventListener('change', metaRefresh);
     resultsWrap.appendChild(metaSummary);
 
-    var groups = dbGroupByParent(_aufgaben);
+    var groups = dbGroupByParent(_visibleAufgHdr);
     groups.forEach(function(g) {
       var hasSubtasks = g.items.length > 1 || (g.items.length === 1 && g.items[0].nr !== g.key);
       var groupWrap = mk('div', '');
@@ -652,7 +662,10 @@ function buildImportView(container) {
     var baseSeite = seiteInp.value ? Number(seiteInp.value) : null;
     var ts       = Date.now();
 
-    var rows = _aufgaben.map(function(a, i) {
+    var _saveAufg = skipLkChk.checked
+      ? _aufgaben.filter(function(a) { return a.inhaltstyp !== 'lehrerkommentar'; })
+      : _aufgaben;
+    var rows = _saveAufg.map(function(a, i) {
       var seite = a._seite !== undefined ? a._seite : baseSeite;
       var nr   = String(a.nr || (i + 1));
       var nrBase = nr.replace(/[a-zA-Z]+$/, '').trim() || nr;

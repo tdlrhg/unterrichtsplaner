@@ -370,7 +370,7 @@ async function buildFachView(container) {
         }
 
         wrap.appendChild(ghdr);
-        if (lkItems.length) _appendLkChip(ghdr, lkItems, wrap);
+        if (lkItems.length) _appendLkChip(ghdr, lkItems, wrap, function() { load({ keepScroll: true }); });
         contentItems.forEach(function(row) {
           var rowEl = renderRow(row, function() { load({ keepScroll: true }); }, true);
           // Spacer hält die Grid-Ausrichtung; Einrückung geht auf die erste Datenspalte

@@ -166,7 +166,7 @@ function renderRow(a, onSaved, compact, groupLabel) {
 // ── Lehrerkommentar-Chip (Materialset) ───────────────────────────
 // Hängt einen aufklappbaren Chip an die Inhalt-Zelle einer Tabellenzeile.
 // expDiv wird direkt nach rowEl in wrap eingefügt.
-function _appendLkChip(rowEl, lks, wrap) {
+function _appendLkChip(rowEl, lks, wrap, onDelete) {
   var midCell = rowEl.querySelector('[data-col-idx="1"]');
   if (!midCell || !lks.length) return;
   var chip = mk('span', '');
@@ -174,7 +174,6 @@ function _appendLkChip(rowEl, lks, wrap) {
     + 'background:#faeeda;color:#854f0b;border-radius:4px;padding:2px 7px;cursor:pointer;flex-shrink:0;margin-left:6px;';
   chip.textContent = (TYP_ICONS.lehrerkommentar || '🧑‍🏫') + ' ' + lks.length;
   chip.title = 'Lehrerkommentar anzeigen';
-  // Bestehende Kinder in Wrapper packen → Chip daneben in einer Zeile
   var textWrap = mk('div', '');
   textWrap.style.cssText = 'flex:1;min-width:0;';
   while (midCell.firstChild) textWrap.appendChild(midCell.firstChild);
@@ -191,8 +190,25 @@ function _appendLkChip(rowEl, lks, wrap) {
     badge.style.cssText = 'flex-shrink:0;font-size:10px;font-weight:600;background:#faeeda;color:#854f0b;'
       + 'padding:2px 7px;border-radius:4px;white-space:nowrap;';
     var text = tx('span', '', lk.inhalt || lk.aufgabenstellung || lk.thema || '–');
-    text.style.cssText = 'color:var(--tx1);line-height:1.4;';
+    text.style.cssText = 'color:var(--tx1);line-height:1.4;flex:1;';
     line.appendChild(badge); line.appendChild(text);
+    if (lk.id && onDelete) {
+      var delBtn = mk('button', '');
+      delBtn.textContent = '🗑';
+      delBtn.title = 'Lehrerkommentar löschen';
+      delBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:13px;padding:0 2px;'
+        + 'opacity:.5;flex-shrink:0;line-height:1;';
+      delBtn.onmouseover = function() { delBtn.style.opacity = '1'; };
+      delBtn.onmouseout  = function() { delBtn.style.opacity = '.5'; };
+      delBtn.onclick = async function(e) {
+        e.stopPropagation();
+        if (!confirm('Lehrerkommentar löschen?')) return;
+        delBtn.disabled = true;
+        try { await sbDelete('inhalte', lk.id); onDelete(); }
+        catch(err) { alert('Fehler: ' + err.message); delBtn.disabled = false; }
+      };
+      line.appendChild(delBtn);
+    }
     expDiv.appendChild(line);
   });
   wrap.appendChild(expDiv);

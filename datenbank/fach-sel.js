@@ -125,6 +125,31 @@ async function _analyzeFingerprint(g) {
   return JSON.parse(m[0]);
 }
 
+async function _runDuplicate(reloadFn) {
+  var gs = Object.values(_selGroups);
+  if (!gs.length) return;
+  var progEl = _actionBar && _actionBar.querySelector('.ab-prog');
+  var ts = Date.now();
+  for (var i = 0; i < gs.length; i++) {
+    var g = gs[i];
+    var dupKey = 'dup_' + ts + '_' + i;
+    var newRows = g.items.map(function(it, j) {
+      var row = Object.assign({}, it);
+      row.id = 'db_' + ts + '_dup' + i + '_' + j + '_' + Math.random().toString(36).slice(2, 6);
+      row.gruppen_key = dupKey;
+      return row;
+    });
+    if (progEl) progEl.textContent = (i + 1) + '/' + gs.length + ' dupliziert…';
+    await sbInsert('inhalte', newRows);
+  }
+  if (progEl) {
+    progEl.textContent = gs.length + ' dupliziert ✓';
+    setTimeout(function() { progEl.textContent = ''; }, 3000);
+  }
+  _clearSel();
+  if (reloadFn) reloadFn({ keepScroll: true });
+}
+
 async function _runDelete(reloadFn) {
   var gs = Object.values(_selGroups);
   if (!gs.length) return;

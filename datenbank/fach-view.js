@@ -57,6 +57,10 @@ async function buildFachView(container) {
   abFpBtn.title = 'Unterrichts-Fingerprint mit KI analysieren';
   abFpBtn.onclick = function() { _runFingerprint(load); };
   actionBar.appendChild(abFpBtn);
+  var abDupBtn = btn('⎘ Duplizieren', 'btn btn-sm');
+  abDupBtn.title = 'Ausgewählte Aufgaben duplizieren';
+  abDupBtn.onclick = function() { _runDuplicate(load); };
+  actionBar.appendChild(abDupBtn);
   var abDelBtn = btn('🗑 Löschen', 'btn btn-sm');
   abDelBtn.style.cssText += 'background:#fee2e2;color:#b91c1c;border-color:#fca5a5;';
   abDelBtn.onclick = function() { _runDelete(load); };

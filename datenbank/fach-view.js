@@ -399,7 +399,7 @@ async function buildFachView(container) {
           }
         }
         wrap.appendChild(rowEl);
-        if (lkItems.length) _appendLkChip(rowEl, lkItems, wrap);
+        if (lkItems.length) _appendLkChip(rowEl, lkItems, wrap, function() { load({ keepScroll: true }); });
       }
     });
 

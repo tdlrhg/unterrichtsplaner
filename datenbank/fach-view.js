@@ -182,13 +182,17 @@ async function buildFachView(container) {
     if (_seq !== _loadSeq) return;
 
     // nr natürlich sortieren: 8 < 8a < 8b < 9 < 10
-    // Bei Custom-Sort: Server-Reihenfolge beibehalten, nur innerhalb gleicher Seite nr-sortieren
+    // Custom-Sort: Server-Reihenfolge beibehalten; nr-Sort nur innerhalb gleicher Gruppe
+    // (gleicher Sort-Feldwert + gleiche Quelle), damit Teilaufgaben korrekt nummeriert bleiben.
     rows.sort(function(a, b) {
       if (!DB.sortCol) {
         if (a.quelle_name !== b.quelle_name) return (a.quelle_name || '') < (b.quelle_name || '') ? -1 : 1;
         if (a.seite !== b.seite) return (a.seite || 0) - (b.seite || 0);
-      } else {
+      } else if (DB.sortCol === 'seite') {
         if (a.quelle_name !== b.quelle_name || a.seite !== b.seite) return 0;
+      } else {
+        var av = a[DB.sortCol], bv = b[DB.sortCol];
+        if ((av || '') !== (bv || '') || a.quelle_name !== b.quelle_name) return 0;
       }
       return cmpNr(a.nr, b.nr);
     });

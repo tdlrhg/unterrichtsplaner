@@ -15,7 +15,7 @@ function _syncSel() {
   if (_actionBar) {
     _actionBar.style.display = count > 0 ? 'flex' : 'none';
     var lbl = _actionBar.querySelector('.ab-count');
-    if (lbl) lbl.textContent = count + (count === 1 ? ' ausgewählt' : ' ausgewählt');
+    if (lbl) lbl.textContent = count + ' ausgewählt';
   }
   document.querySelectorAll('input[data-gkey]').forEach(function(chk) {
     chk.checked = !!_selGroups[chk.dataset.gkey];

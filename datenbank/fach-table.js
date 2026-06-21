@@ -121,7 +121,7 @@ function buildTableHead(onSortChange) {
       if (fromPos === null || fromPos === toPos) return;
       // Reorder nur innerhalb der sichtbaren Spalten, Rest bleibt am Ende
       var vis = visibleCols();
-      var fromIdx = vis[fromPos], toIdx = vis[toPos];
+      var fromIdx = vis[fromPos];
       var newOrder = COL_CONFIG.order.filter(function(i) { return vis.indexOf(i) === -1; });
       vis.splice(fromPos, 1); vis.splice(toPos, 0, fromIdx);
       COL_CONFIG.order = vis.concat(newOrder);

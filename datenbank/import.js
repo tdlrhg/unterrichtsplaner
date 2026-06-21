@@ -410,8 +410,15 @@ function buildImportView(container) {
             var qk = qj + 1;
             while (qk < qn && (cleaned[qk] === ' ' || cleaned[qk] === '\t' || cleaned[qk] === '\r' || cleaned[qk] === '\n')) qk++;
             var qnxt2 = qk < qn ? cleaned[qk] : '';
-            // JSON-Wert-Start: String, Objekt, Array, Zahl, true/false/null
-            if (qnxt2 === '"' || qnxt2 === '{' || qnxt2 === '[' ||
+            if (qnxt2 === '"') {
+              // Nur strukturell wenn der folgende String ein JSON-Schlüssel ist (gefolgt von ':').
+              // Verhindert Fehlschlüsse bei zitiertem Text wie: "..., "Begriff": mehr Text"
+              var qm = qk + 1;
+              while (qm < qn && cleaned[qm] !== '"') { if (cleaned[qm] === '\\') qm++; qm++; }
+              var qm2 = qm + 1;
+              while (qm2 < qn && (cleaned[qm2] === ' ' || cleaned[qm2] === '\t')) qm2++;
+              isStructural = (qm < qn && cleaned[qm2] === ':');
+            } else if (qnxt2 === '{' || qnxt2 === '[' ||
                 (qnxt2 >= '0' && qnxt2 <= '9') || qnxt2 === '-' ||
                 qnxt2 === 't' || qnxt2 === 'f' || qnxt2 === 'n') {
               isStructural = true;

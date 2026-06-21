@@ -28,7 +28,8 @@ function dbGroupByParent(rows) {
     var parentNr = (_m ? _m[1] : _nr).trim() || '?';
     var isMat = r.quelle_typ === 'materialset' || r.quelle_typ === 'handreichung';
     // Materialset-Untereinträge (z.B. M 3a/M 3b) über verschiedene Seiten zusammenfassen
-    var key = (_m && isMat)
+    // Ausnahme: Duplikate (gruppen_key 'dup_…') immer als eigene Gruppe behandeln
+    var key = (_m && isMat && !(r.gruppen_key && /^dup_/.test(r.gruppen_key)))
       ? ((r.quelle_name || '') + '||' + (r.kapitel || '') + '||' + parentNr)
       : (r.gruppen_key || ((r.quelle_name || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr));
     if (!groups[key]) { groups[key] = { key: parentNr, gruppen_key: key, aufgabenstellung: null, items: [] }; order.push(key); }

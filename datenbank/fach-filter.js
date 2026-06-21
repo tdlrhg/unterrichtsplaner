@@ -174,6 +174,8 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     { val: 'loesung',         label: '✅ Lösung',           color: TYP_FARBEN.loesung },
     { val: 'lehrerkommentar', label: '🧑‍🏫 Lehrerkommentar', color: TYP_FARBEN.lehrerkommentar },
     { val: 'lzk',             label: '📝 Lernzielkontrolle',color: TYP_FARBEN.lzk },
+    { val: 'infotext',        label: 'ℹ️ Infotext',          color: TYP_FARBEN.infotext },
+    { val: 'methode',         label: '🔧 Methode',           color: TYP_FARBEN.methode },
   ], 'inhaltstyp'));
 
   // Filter löschen (nur wenn aktiv)

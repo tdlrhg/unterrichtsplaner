@@ -515,14 +515,14 @@ function buildImportView(container) {
   var TYP_CYCLE = ['aufgabe', 'lehrtext', 'arbeitsblatt', 'loesung', 'lehrerkommentar', 'lzk'];
 
   function buildAufgabeCard(a, indent, idx, mergeBtn) {
-    var aufgText = (indent ? a.text : [a.aufgabenstellung, a.text].filter(Boolean).join(' ')) || '';
     var row = mk('div', '');
-    row.style.cssText = 'display:flex;align-items:baseline;gap:8px;padding:1px 0 1px '
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:2px 0 2px '
       + (indent ? '20px' : '4px') + ';';
 
+    // Checkbox — Merge-Auswahl (unverändert)
     var cb = mk('input', '');
     cb.type = 'checkbox';
-    cb.style.cssText = 'flex-shrink:0;margin-top:2px;cursor:pointer;';
+    cb.style.cssText = 'flex-shrink:0;cursor:pointer;accent-color:var(--pri);';
     cb.onclick = function(e) { e.stopPropagation(); };
     cb.onchange = function() {
       if (cb.checked) _impSelected.add(idx); else _impSelected.delete(idx);
@@ -530,15 +530,58 @@ function buildImportView(container) {
     };
     row.appendChild(cb);
 
-    var nrLabel = tx('span', '', (a.nr || '?'));
-    nrLabel.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);flex-shrink:0;min-width:32px;';
-    row.appendChild(nrLabel);
+    // Editierbare Nr.
+    var nrInp = mk('input', '');
+    nrInp.type = 'text';
+    nrInp.value = a.nr || '';
+    nrInp.style.cssText = 'width:46px;font-weight:700;font-size:12px;color:var(--tx2);flex-shrink:0;'
+      + 'border:none;border-bottom:1px solid transparent;background:transparent;padding:1px 2px;border-radius:0;';
+    nrInp.title = 'Nr. bearbeiten';
+    nrInp.addEventListener('focus', function() { nrInp.style.borderBottomColor = 'var(--pri)'; });
+    nrInp.addEventListener('blur',  function() { nrInp.style.borderBottomColor = 'transparent'; a.nr = nrInp.value.trim(); });
+    row.appendChild(nrInp);
 
-    if (aufgText) {
-      var txt = tx('span', '', aufgText.slice(0, 120) + (aufgText.length > 120 ? '…' : ''));
-      txt.style.cssText = 'font-size:12px;color:var(--tx1);line-height:1.4;';
-      row.appendChild(txt);
-    }
+    // Editierbarer Text (span → bei Klick textarea)
+    var editField = indent ? 'text' : 'aufgabenstellung';
+    var fullText = indent
+      ? (a.text || '')
+      : ([a.aufgabenstellung, a.text].filter(Boolean).join(' '));
+    var textSpan = tx('span', '', fullText.slice(0, 140) + (fullText.length > 140 ? '…' : ''));
+    textSpan.style.cssText = 'font-size:12px;color:var(--tx1);line-height:1.4;flex:1;min-width:0;cursor:text;';
+    textSpan.title = 'Klicken zum Bearbeiten';
+    textSpan.onclick = function() {
+      var ta = document.createElement('textarea');
+      ta.value = a[editField] || '';
+      ta.style.cssText = 'font-size:12px;color:var(--tx1);flex:1;min-width:0;width:100%;'
+        + 'border:1px solid var(--pri);border-radius:4px;padding:3px 5px;'
+        + 'resize:vertical;min-height:36px;box-sizing:border-box;';
+      ta.rows = 2;
+      row.replaceChild(ta, textSpan);
+      ta.focus(); ta.select();
+      ta.addEventListener('blur', function() {
+        a[editField] = ta.value.trim();
+        var newFull = indent ? (a.text || '') : ([a.aufgabenstellung, a.text].filter(Boolean).join(' '));
+        textSpan.textContent = newFull.slice(0, 140) + (newFull.length > 140 ? '…' : '');
+        row.replaceChild(textSpan, ta);
+      });
+    };
+    row.appendChild(textSpan);
+
+    // ✕ — Eintrag aus Importliste entfernen
+    var delBtn = mk('button', '');
+    delBtn.textContent = '✕';
+    delBtn.title = 'Aus Import entfernen';
+    delBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:12px;padding:0 4px;'
+      + 'color:var(--tx3);flex-shrink:0;line-height:1;opacity:.45;transition:opacity .1s,color .1s;';
+    delBtn.onmouseover = function() { delBtn.style.opacity = '1'; delBtn.style.color = '#b91c1c'; };
+    delBtn.onmouseout  = function() { delBtn.style.opacity = '.45'; delBtn.style.color = 'var(--tx3)'; };
+    delBtn.onclick = function(e) {
+      e.stopPropagation();
+      _aufgaben = _aufgaben.filter(function(x) { return x !== a; });
+      renderResults();
+    };
+    row.appendChild(delBtn);
+
     return row;
   }
 

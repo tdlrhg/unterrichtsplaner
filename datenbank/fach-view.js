@@ -339,10 +339,11 @@ async function buildFachView(container) {
         ghdr.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
         ghdr.insertBefore(_mkSelCell(g.gruppen_key, g), ghdr.firstChild);
 
-        // Teilaufgaben-Container (ausklappbar)
+        // Teilaufgaben-Container (standardmäßig eingeklappt)
         var subContainer = mk('div', '');
-        var subCollapsed = false;
-        var chevron = tx('span', '', '▾');
+        subContainer.style.display = 'none';
+        var subCollapsed = true;
+        var chevron = tx('span', '', '▸');
         chevron.style.cssText = 'font-size:15px;color:var(--tx3);cursor:pointer;margin-right:4px;'
           + 'flex-shrink:0;padding:1px 3px;border-radius:3px;user-select:none;line-height:1;';
         chevron.title = 'Teilaufgaben ein-/ausblenden';

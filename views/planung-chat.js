@@ -5,11 +5,12 @@
 const PC_FACH      = { M:'Mathematik', Ch:'Chemie', Bio:'Biologie', Ch_GK:'Chemie', Ch_LK:'Chemie', Bio_GK:'Biologie', Bio_LK:'Biologie' };
 const PC_NATURWISS = new Set(['Ch','Bio','Ch_GK','Ch_LK','Bio_GK','Bio_LK']);
 
-let _pcMsgs    = [];   // UI: { role, text, toolCalls?, isThinking? }
-let _pcApi     = [];   // Anthropic API message history
-let _pcFpId    = null;
-let _pcConfig  = null; // Planungsrahmendaten aus dem Konfigurationsformular
-let _pcRunning = false;
+let _pcMsgs      = [];   // UI: { role, text, toolCalls?, isThinking? }
+let _pcApi       = [];   // Anthropic API message history
+let _pcFpId      = null;
+let _pcConfig    = null; // Planungsrahmendaten aus dem Konfigurationsformular
+let _pcCollapsed = false;
+let _pcRunning   = false;
 
 const PC_TOOLS = [
   {
@@ -412,7 +413,7 @@ Arbeite proaktiv: Wenn die Lehrerin grobe Vorgaben macht, erstelle direkt den vo
 
 function buildPlanungsChat(fp) {
   if (_pcFpId !== fp.id) {
-    _pcMsgs = []; _pcApi = []; _pcFpId = fp.id; _pcConfig = null;
+    _pcMsgs = []; _pcApi = []; _pcFpId = fp.id; _pcConfig = null; _pcCollapsed = false;
   }
 
   const wrap = mk('div', 'pc-wrap card');
@@ -420,7 +421,13 @@ function buildPlanungsChat(fp) {
   const hdr = cardHdr('✨ Planungs-Assistent');
   const sub = tx('span', 'pc-hdr-sub', fachLabel(fp.fach) + ' · Jg. ' + fp.jahrgang);
   hdr.appendChild(sub);
+  const toggleBtn = tx('button', 'btn btn-ghost btn-xs pc-toggle', _pcCollapsed ? '▶' : '▼');
+  toggleBtn.title = _pcCollapsed ? 'Aufklappen' : 'Einklappen';
+  toggleBtn.onclick = () => { _pcCollapsed = !_pcCollapsed; render(); };
+  hdr.appendChild(toggleBtn);
   wrap.appendChild(hdr);
+
+  if (_pcCollapsed) { wrap.appendChild(mk('div', 'card-body pc-body-collapsed')); return wrap; }
 
   const body = mk('div', 'card-body pc-body');
 

@@ -342,7 +342,7 @@ function buildImportView(container) {
     if (e.dataTransfer.files.length) setFiles(e.dataTransfer.files);
   };
   fileInput.multiple = true;
-  fileInput.onchange = function() { if (fileInput.files.length) setFiles(fileInput.files); };
+  fileInput.onchange = function() { if (fileInput.files.length) setFiles(fileInput.files); fileInput.value = ''; };
   function setFiles(fileList) {
     _files = Array.from(fileList);
     fileLabel.textContent = _files.length === 1

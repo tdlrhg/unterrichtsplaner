@@ -158,6 +158,7 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
     { val: '7',   label: 'Jg. 7',  color: '#2563eb' },
     { val: '8',   label: 'Jg. 8',  color: '#2563eb' },
     { val: '9',   label: 'Jg. 9',  color: '#7c3aed' },
+    { val: '10',  label: 'Jg. 10', color: '#7c3aed' },
     { val: 'SII', label: 'Sek II', color: '#be123c' },
   ], 'jahrgang'));
 

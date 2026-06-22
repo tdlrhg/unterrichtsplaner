@@ -370,9 +370,10 @@ async function _pcSend(fp, text) {
   const system = `Du bist Planungsassistentin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.${_pcConfigToSystem(_pcConfig)}
 Hilf der Lehrerin, ein Schuljahr strukturiert zu planen: Blöcke (Themenbereiche) → Reihen (Unterrichtssequenzen, 6–15 Stunden) → Stunden.
 Gehe immer so vor:
-1. Lese zuerst den aktuellen Plan (readPlan) und die KLP-Kompetenzen (readKLP).
-2. Setze dann die Vorgaben der Lehrerin um und erstelle die Struktur Schritt für Schritt mit den Tools.
-3. Berücksichtige jahresübergreifende Leitlinien (z.B. Methodenvariation, Schülerversuche, Präsentationstechniken) über alle Reihen hinweg.
+1. Rufe readPlan und readKLP je genau EINMAL auf – zu Beginn, ohne Filter. Wiederhole diese Aufrufe nicht für einzelne Blöcke oder Reihen.
+2. Plane danach die gesamte Struktur im Kopf durch, bevor du mit createBlock/createReihe/createStunde anfängst.
+3. Erstelle dann alle Blöcke und Reihen in einem Durchgang mit den Tools.
+4. Berücksichtige jahresübergreifende Leitlinien (Methodenvariation, Schülerversuche, Präsentationstechniken) über alle Reihen hinweg.
 Arbeite proaktiv: Wenn die Lehrerin grobe Vorgaben macht, erstelle direkt den vollständigen Plan.`;
 
   try {

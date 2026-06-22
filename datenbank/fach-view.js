@@ -152,8 +152,18 @@ async function buildFachView(container) {
     if (DB.schwierigkeit) filters.schwierigkeit = DB.schwierigkeit;
     if (DB.niveau)        filters.niveau        = DB.niveau;
     if (DB.umfang)        filters.umfang        = DB.umfang;
-    if (DB.jahrgang)      filters.jahrgang      = DB.jahrgang;
     var rawParams = [];
+    if (DB.jahrgang) {
+      var jg = DB.jahrgang;
+      // Exakter Match + Bereichsschreibweisen wie "5/6" oder "5-10"
+      rawParams.push('or=' + encodeURIComponent(
+        '(jahrgang.eq.' + jg +
+        ',jahrgang.like.' + jg + '/*' +
+        ',jahrgang.like.' + jg + '-*' +
+        ',jahrgang.like.*/' + jg +
+        ',jahrgang.like.*/' + jg + '/*)'
+      ));
+    }
     if (DB.kapitel) filters.kapitel = DB.kapitel;
     if (DB.uk_titel)      filters.uk_titel      = DB.uk_titel;
     if (DB.inhaltstyp)    filters.inhaltstyp    = DB.inhaltstyp;

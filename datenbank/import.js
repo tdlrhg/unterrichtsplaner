@@ -378,6 +378,10 @@ function buildImportView(container) {
 
   function parseKiJson(raw) {
     var cleaned = raw.trim().replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
+    // Pre-fix: KI schreibt manchmal \" (Backslash + Quote) wo der String enden soll.
+    // Entferne den Backslash vor "  wenn danach ein strukturelles Token folgt.
+    cleaned = cleaned.replace(/\\"(?=[ \t\r\n]*[}\]])/g, '"');
+    cleaned = cleaned.replace(/\\"(?=[ \t\r\n]*,[ \t\r\n]*"[a-z_][^"\n]*"[ \t]*:)/g, '"');
     // Rohe Anführungszeichen innerhalb von JSON-Strings escapen (KI nutzt sie für Betonung).
     // inValue: true wenn der letzte strukturelle Token ':' war → nächster String ist ein Wert,
     // kein Schlüssel. Damit wird "„Inco": text" im Wert korrekt als Text erkannt (nicht als
@@ -406,23 +410,25 @@ function buildImportView(container) {
           } else if (qnxt === ':') {
             isStructural = !wasValue; // Schlüsselende nur wenn wir keinen Wert lesen
           } else if (qnxt === ',') {
-            // Komma könnte JSON-Trenner ODER Text sein — prüfe was danach kommt
             var qk = qj + 1;
             while (qk < qn && (cleaned[qk] === ' ' || cleaned[qk] === '\t' || cleaned[qk] === '\r' || cleaned[qk] === '\n')) qk++;
             var qnxt2 = qk < qn ? cleaned[qk] : '';
             if (qnxt2 === '"') {
-              // Nur strukturell wenn der folgende String ein JSON-Schlüssel ist (gefolgt von ':').
-              // Verhindert Fehlschlüsse bei zitiertem Text wie: "..., "Begriff": mehr Text"
+              // Strukturell nur wenn nächster String ein JSON-Schlüssel ist (gefolgt von ':').
               var qm = qk + 1;
               while (qm < qn && cleaned[qm] !== '"') { if (cleaned[qm] === '\\') qm++; qm++; }
               var qm2 = qm + 1;
               while (qm2 < qn && (cleaned[qm2] === ' ' || cleaned[qm2] === '\t')) qm2++;
               isStructural = (qm < qn && cleaned[qm2] === ':');
-            } else if (qnxt2 === '{' || qnxt2 === '[' ||
+            } else if (!wasValue) {
+              // Innerhalb eines Schlüssel-Strings: strukturell vor JSON-Werten
+              isStructural = (qnxt2 === '{' || qnxt2 === '[' ||
                 (qnxt2 >= '0' && qnxt2 <= '9') || qnxt2 === '-' ||
-                qnxt2 === 't' || qnxt2 === 'f' || qnxt2 === 'n') {
-              isStructural = true;
+                (qnxt2 === 't' && cleaned.slice(qk,qk+4) === 'true'  && !/[a-zA-Z]/.test(cleaned[qk+4]||'')) ||
+                (qnxt2 === 'f' && cleaned.slice(qk,qk+5) === 'false' && !/[a-zA-Z]/.test(cleaned[qk+5]||'')) ||
+                (qnxt2 === 'n' && cleaned.slice(qk,qk+4) === 'null'  && !/[a-zA-Z]/.test(cleaned[qk+4]||'')));
             }
+            // wasValue === true + Buchstabe nach Komma → immer Anführungszeichen im Text, nie strukturell
           }
           if (isStructural) { out += '"'; qi++; break; }
           else { out += '\\"'; qi++; }

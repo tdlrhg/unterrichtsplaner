@@ -130,11 +130,16 @@ function buildSidebar() {
   // ── Datenbanken ───────────────────────────────────────────────
   sb.appendChild(mk('div', 'sb-sep'));
   sb.appendChild(sbSection('Datenbanken'));
-  sb.appendChild(sbRow(
-    '📚 → Datenbank', null,
-    false,
-    () => { window.location.href = 'datenbank.html'; }
-  ));
+  var _dbRow = sbRow('Datenbank', null, false, () => { window.location.href = 'datenbank.html'; });
+  (function() {
+    var lbl = _dbRow.querySelector('.sb-item-label');
+    if (!lbl) return;
+    var img = document.createElement('img');
+    img.src = 'datenbank/icons/datenbank.png';
+    img.style.cssText = 'width:20px;height:20px;vertical-align:middle;margin-right:6px;object-fit:contain;';
+    lbl.insertBefore(img, lbl.firstChild);
+  })();
+  sb.appendChild(_dbRow);
 
   // ── Einstellungen ─────────────────────────────────────────────
   sb.appendChild(mk('div', 'sb-sep'));

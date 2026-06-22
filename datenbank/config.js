@@ -158,7 +158,20 @@ const TYP_LABELS  = { 'aufgabe':'Aufgabe', 'lehrtext':'Lehrtext',
                       'arbeitsblatt':'Arbeitsblatt', 'loesung':'Lösung', 'lehrerkommentar':'Lehrerkommentar', 'lzk':'Lernzielkontrolle',
                       'infotext':'Infotext', 'methode':'Methode' };
 const TYP_ICONS   = { 'aufgabe':'', 'lehrtext':'📖',
-                      'arbeitsblatt':'📋', 'loesung':'✅', 'lehrerkommentar':'🧑‍🏫', 'lzk':'📝',
+                      'arbeitsblatt':'📋', 'loesung':'✅', 'lehrerkommentar':'', 'lzk':'📝',
                       'infotext':'ℹ️', 'methode':'🔧' };
+
+const TYP_ICON_IMGS = {
+  'lehrerkommentar': 'datenbank/icons/kommentar.png',
+};
+
+function mkTypIconEl(typ, size) {
+  var src = TYP_ICON_IMGS[typ];
+  if (!src) return null;
+  var img = document.createElement('img');
+  img.src = src;
+  img.style.cssText = 'width:' + (size||14) + 'px;height:' + (size||14) + 'px;vertical-align:middle;flex-shrink:0;object-fit:contain;';
+  return img;
+}
 
 function opColor(op) { return OP_FARBEN2[op] || '#64748b'; }

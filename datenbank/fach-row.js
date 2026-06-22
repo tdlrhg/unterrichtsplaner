@@ -25,7 +25,13 @@ function renderRow(a, onSaved, compact, groupLabel) {
         matTop.style.cssText = 'display:flex;align-items:center;gap:5px;padding:2px 0;';
         if (a.inhaltstyp && !isMatLK) {
           var matTypColor = TYP_FARBEN[a.inhaltstyp] || '#64748b';
-          var matChip = tx('span', '', (TYP_ICONS[a.inhaltstyp] ? TYP_ICONS[a.inhaltstyp] + ' ' : '') + (TYP_LABELS[a.inhaltstyp] || a.inhaltstyp));
+          var matChip = mk('span', '');
+          (function() {
+            var _ic = mkTypIconEl(a.inhaltstyp, 11);
+            if (_ic) { _ic.style.marginRight = '2px'; matChip.appendChild(_ic); }
+            else if (TYP_ICONS[a.inhaltstyp]) matChip.appendChild(document.createTextNode(TYP_ICONS[a.inhaltstyp] + ' '));
+            matChip.appendChild(document.createTextNode(TYP_LABELS[a.inhaltstyp] || a.inhaltstyp));
+          })();
           matChip.style.cssText = 'flex-shrink:0;font-size:9px;font-weight:700;padding:1px 6px;border-radius:20px;'
             + 'background:' + matTypColor + '18;color:' + matTypColor + ';border:1px solid ' + matTypColor + '38;'
             + 'text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;';
@@ -82,7 +88,13 @@ function renderRow(a, onSaved, compact, groupLabel) {
 
   // Typ-Badge — nicht für Aufgaben, nicht für MatLK, nicht für Materialset compact-Zeilen (Chip dort inline in matTop)
   if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe' && !isMatLK && !(isMat && compact)) {
-    var typBadge = tx('span', '', (TYP_ICONS[a.inhaltstyp] ? TYP_ICONS[a.inhaltstyp] + ' ' : '') + (TYP_LABELS[a.inhaltstyp] || a.inhaltstyp));
+    var typBadge = mk('span', '');
+    (function() {
+      var _ic = mkTypIconEl(a.inhaltstyp, 12);
+      if (_ic) { _ic.style.marginRight = '3px'; typBadge.appendChild(_ic); }
+      else if (TYP_ICONS[a.inhaltstyp]) typBadge.appendChild(document.createTextNode(TYP_ICONS[a.inhaltstyp] + ' '));
+      typBadge.appendChild(document.createTextNode(TYP_LABELS[a.inhaltstyp] || a.inhaltstyp));
+    })();
     var typColor = TYP_FARBEN[a.inhaltstyp] || '#64748b';
     typBadge.style.cssText = 'display:inline-block;font-size:9.5px;font-weight:700;padding:1px 7px;border-radius:20px;'
       + 'background:' + typColor + '18;color:' + typColor + ';border:1px solid ' + typColor + '38;'
@@ -172,7 +184,11 @@ function _appendLkChip(rowEl, lks, wrap, onDelete) {
   var chip = mk('span', '');
   chip.style.cssText = 'display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:500;'
     + 'background:#faeeda;color:#854f0b;border-radius:4px;padding:2px 7px;cursor:pointer;flex-shrink:0;margin-left:6px;';
-  chip.textContent = (TYP_ICONS.lehrerkommentar || '🧑‍🏫') + ' ' + lks.length;
+  (function() {
+    var _ic = mkTypIconEl('lehrerkommentar', 15);
+    if (_ic) { chip.appendChild(_ic); chip.appendChild(document.createTextNode(' ' + lks.length)); }
+    else { chip.textContent = (TYP_ICONS.lehrerkommentar || '🧑‍🏫') + ' ' + lks.length; }
+  })();
   chip.title = 'Lehrerkommentar anzeigen';
   var textWrap = mk('div', '');
   textWrap.style.cssText = 'flex:1;min-width:0;';

@@ -5,12 +5,13 @@
 const PC_FACH      = { M:'Mathematik', Ch:'Chemie', Bio:'Biologie', Ch_GK:'Chemie', Ch_LK:'Chemie', Bio_GK:'Biologie', Bio_LK:'Biologie' };
 const PC_NATURWISS = new Set(['Ch','Bio','Ch_GK','Ch_LK','Bio_GK','Bio_LK']);
 
-let _pcMsgs      = [];   // UI: { role, text, toolCalls?, isThinking? }
-let _pcApi       = [];   // Anthropic API message history
-let _pcFpId      = null;
-let _pcConfig    = null; // Planungsrahmendaten aus dem Konfigurationsformular
-let _pcCollapsed = false;
-let _pcRunning   = false;
+let _pcMsgs         = [];   // UI: { role, text, toolCalls?, isThinking? }
+let _pcApi          = [];   // Anthropic API message history
+let _pcFpId         = null;
+let _pcConfig       = null; // Planungsrahmendaten aus dem Konfigurationsformular
+let _pcCollapsed    = false;
+let _pcEditingCfg   = false;
+let _pcRunning      = false;
 
 const PC_TOOLS = [
   {
@@ -211,9 +212,10 @@ ${cfg.versuche ? '- Schülerversuche: ' + cfg.versuche + '\n' : ''}- Gruppenarbe
 Richte alle Reihen- und Stundenplanungen an diesen Rahmenbedingungen aus.`;
 }
 
-// Konfigurationsformular vor dem ersten Chat
-function _pcBuildConfigForm(fp, onDone) {
+// Konfigurationsformular — initial oder zum Bearbeiten
+function _pcBuildConfigForm(fp, onDone, isEdit) {
   const hatVersuche = PC_NATURWISS.has(fp.fach);
+  const c = isEdit && _pcConfig ? _pcConfig : null; // Vorbelegen im Edit-Modus
   const form = mk('div', 'pc-config');
 
   function cfgRow(label, el) {
@@ -249,34 +251,35 @@ function _pcBuildConfigForm(fp, onDone) {
     return i;
   }
 
-  const stundenGesamt    = cfgNum(60, 1);
-  const stundenProWoche  = cfgNum(3, 1);
-  const lernzeitProWoche = cfgNum(135, 1);
+  const stundenGesamt    = cfgNum(c ? c.stundenGesamt    : 60,  1);
+  const stundenProWoche  = cfgNum(c ? c.stundenProWoche  : 3,   1);
+  const lernzeitProWoche = cfgNum(c ? c.lernzeitProWoche : 135, 1);
   const formatSel = cfgSel([
     ['gemischt', 'Gemischt (45 + 90 Min.)'],
     ['45',       'Nur 45 Min.'],
     ['90',       'Nur 90 Min. (Doppelstunden)']
-  ], 'gemischt');
-  const puffer = cfgNum(4, 0);
+  ], c ? c.format : 'gemischt');
+  const puffer = cfgNum(c ? c.puffer : 4, 0);
   const ipadSel = cfgSel([
     ['gelegentlich', 'gelegentlich'],
     ['häufig',       'häufig'],
     ['immer',        'immer'],
     ['nie',          'nie']
-  ], 'gelegentlich');
+  ], c ? c.ipad : 'gelegentlich');
   const ipadWofuer  = cfgTxt('z.B. Recherche, Präsentation, Übungsapps');
+  if (c && c.ipadWofuer) ipadWofuer.value = c.ipadWofuer;
   const versucheSel = hatVersuche ? cfgSel([
     ['gelegentlich', 'gelegentlich'],
     ['häufig',       'häufig'],
     ['immer',        'immer'],
     ['nie',          'nie']
-  ], 'gelegentlich') : null;
+  ], c && c.versuche ? c.versuche : 'gelegentlich') : null;
   const gaSel = cfgSel([
     ['regelmäßig',   'regelmäßig'],
     ['oft',          'oft'],
     ['gelegentlich', 'gelegentlich'],
     ['kaum',         'kaum']
-  ], 'regelmäßig');
+  ], c ? c.gruppenarbeit : 'regelmäßig');
 
   const g1 = mk('div', 'pc-cfg-group');
   g1.appendChild(tx('div', 'pc-cfg-ghdr', 'Zeitrahmen'));
@@ -295,7 +298,7 @@ function _pcBuildConfigForm(fp, onDone) {
   g2.appendChild(cfgRow('Gruppenarbeit', gaSel));
   form.appendChild(g2);
 
-  const submitBtn = btn('Planung starten →', 'btn btn-primary pc-cfg-submit');
+  const submitBtn = btn(isEdit ? 'Speichern' : 'Planung starten →', 'btn btn-primary pc-cfg-submit');
   submitBtn.onclick = () => {
     _pcConfig = {
       stundenGesamt:    +stundenGesamt.value    || 60,
@@ -308,11 +311,16 @@ function _pcBuildConfigForm(fp, onDone) {
       versuche:         versucheSel ? versucheSel.value : null,
       gruppenarbeit:    gaSel.value
     };
-    const fachName = PC_FACH[fp.fach] || fp.fach;
-    _pcMsgs.push({
-      role: 'assistant',
-      text: `Wir sind im Jahrgang **${fp.jahrgang}** im Fach **${fachName}**.\n${_pcConfigText(_pcConfig)}\n\nWas soll ich planen?`
-    });
+    if (isEdit) {
+      _pcEditingCfg = false;
+      _pcMsgs.push({ role: 'assistant', text: `Einstellungen aktualisiert: ${_pcConfigText(_pcConfig)}` });
+    } else {
+      const fachName = PC_FACH[fp.fach] || fp.fach;
+      _pcMsgs.push({
+        role: 'assistant',
+        text: `Wir sind im Jahrgang **${fp.jahrgang}** im Fach **${fachName}**.\n${_pcConfigText(_pcConfig)}\n\nWas soll ich planen?`
+      });
+    }
     onDone();
     setTimeout(_pcRender, 0);
   };
@@ -414,7 +422,7 @@ Arbeite proaktiv: Wenn die Lehrerin grobe Vorgaben macht, erstelle direkt den vo
 
 function buildPlanungsChat(fp) {
   if (_pcFpId !== fp.id) {
-    _pcMsgs = []; _pcApi = []; _pcFpId = fp.id; _pcConfig = null; _pcCollapsed = false;
+    _pcMsgs = []; _pcApi = []; _pcFpId = fp.id; _pcConfig = null; _pcCollapsed = false; _pcEditingCfg = false;
   }
 
   const wrap = mk('div', 'pc-wrap card');
@@ -428,12 +436,22 @@ function buildPlanungsChat(fp) {
   hdr.appendChild(toggleBtn);
   wrap.appendChild(hdr);
 
+  // Konfig-Leiste (nur wenn Config gesetzt und nicht im Edit-Modus)
+  if (_pcConfig && !_pcEditingCfg && !_pcCollapsed) {
+    const bar = mk('div', 'pc-cfg-bar');
+    bar.appendChild(tx('span', 'pc-cfg-bar-text', _pcConfigText(_pcConfig)));
+    const editBtn = tx('button', 'btn btn-ghost btn-xs', '⚙ Einstellungen');
+    editBtn.onclick = () => { _pcEditingCfg = true; render(); };
+    bar.appendChild(editBtn);
+    wrap.appendChild(bar);
+  }
+
   if (_pcCollapsed) { wrap.appendChild(mk('div', 'card-body pc-body-collapsed')); return wrap; }
 
   const body = mk('div', 'card-body pc-body');
 
-  if (!_pcConfig) {
-    body.appendChild(_pcBuildConfigForm(fp, () => render()));
+  if (!_pcConfig || _pcEditingCfg) {
+    body.appendChild(_pcBuildConfigForm(fp, () => render(), _pcEditingCfg));
   } else {
     const msgs = mk('div', 'pc-messages');
     msgs.id = 'pc-messages';

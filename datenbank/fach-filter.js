@@ -151,21 +151,15 @@ function buildFilterBar(containerEl, loadFn, searchInp, fach) {
 
   bar.appendChild(sep());
 
-  // Anforderungsbereich (NRW AFB I–III)
+  // Jahrgangsstufen
   bar.appendChild(fchipGroup([
-    { val: 'grundlegend',   label: '○ AFB I',   color: SCHW_FARBEN.grundlegend },
-    { val: 'standard',      label: '◑ AFB II',  color: SCHW_FARBEN.standard },
-    { val: 'anspruchsvoll', label: '● AFB III', color: SCHW_FARBEN.anspruchsvoll },
-  ], 'schwierigkeit'));
-
-  bar.appendChild(sep());
-
-  // Aufgabenniveau
-  bar.appendChild(fchipGroup([
-    { val: 'leicht',  label: '▽ leicht',  color: NIVEAU_FARBEN.leicht },
-    { val: 'mittel',  label: '▾ mittel',  color: NIVEAU_FARBEN.mittel },
-    { val: 'schwer',  label: '▼ schwer',  color: NIVEAU_FARBEN.schwer },
-  ], 'niveau'));
+    { val: '5',   label: 'Jg. 5',  color: '#0891b2' },
+    { val: '6',   label: 'Jg. 6',  color: '#0891b2' },
+    { val: '7',   label: 'Jg. 7',  color: '#2563eb' },
+    { val: '8',   label: 'Jg. 8',  color: '#2563eb' },
+    { val: '9',   label: 'Jg. 9',  color: '#7c3aed' },
+    { val: 'SII', label: 'Sek II', color: '#be123c' },
+  ], 'jahrgang'));
 
   bar.appendChild(sep());
 

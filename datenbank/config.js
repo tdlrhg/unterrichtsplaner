@@ -175,3 +175,18 @@ function mkTypIconEl(typ, size) {
 }
 
 function opColor(op) { return OP_FARBEN2[op] || '#64748b'; }
+
+// "5-10" → "5/6/7/8/9/10", alles andere unverändert
+function normJahrgang(s) {
+  if (!s) return s;
+  var m = s.match(/^(\d+)-(\d+)$/);
+  if (m) {
+    var from = parseInt(m[1]), to = parseInt(m[2]);
+    if (from < to && to - from <= 13) {
+      var years = [];
+      for (var y = from; y <= to; y++) years.push(y);
+      return years.join('/');
+    }
+  }
+  return s;
+}

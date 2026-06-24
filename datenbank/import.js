@@ -712,7 +712,7 @@ function buildImportView(container) {
       return;
     }
     var fach     = fachSel.value;
-    var jg       = jgInp.value.trim() || null;
+    var jg       = normJahrgang(jgInp.value.trim()) || null;
     var kap      = kapInp.value.trim() || null;
     var uk       = ukInp.value.trim() || null;
     var baseSeite = seiteInp.value ? Number(seiteInp.value) : null;

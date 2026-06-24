@@ -357,7 +357,7 @@ function openTaskModal(group, opts) {
   R0.appendChild(seiteRow);
   sec(R0, 'Einordnung');
   sfld(R0, 'Thema', 'thema', 'text', 'z.B. Parallelogramm');
-  sfld(R0, 'Jahrgang', 'jahrgang', 'text', '5–10 oder 7/8');
+  sfld(R0, 'Jahrgang', 'jahrgang', 'text', 'z.B. 7/8 oder 5/6/7');
   ssel(R0, 'Inhaltstyp', 'inhaltstyp', [
     ['aufgabe','📝 Aufgabe'],['lehrtext','📖 Lehrtext'],
     ['arbeitsblatt','📋 Arbeitsblatt'],['loesung','✅ Lösung'],
@@ -429,6 +429,7 @@ function openTaskModal(group, opts) {
         var k = el.dataset.key;
         if (el.type === 'number')          sharedSnap[k] = el.value !== '' ? Number(el.value) : null;
         else if (el.tagName === 'TEXTAREA') sharedSnap[k] = encode(el.value);
+        else if (k === 'jahrgang')          sharedSnap[k] = normJahrgang(el.value.trim()) || null;
         else                                sharedSnap[k] = el.value.trim() || null;
       });
       // Oberaufgabennummer ermitteln: aus dem Gruppen-Feld (Multi) oder dem

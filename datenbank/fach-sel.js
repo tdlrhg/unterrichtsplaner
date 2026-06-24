@@ -112,7 +112,8 @@ async function _analyzeFingerprint(g) {
     + '"sprachliche_zugaenglichkeit":"<zugaenglich|eingeschraenkt|komplex>",'
     + '"mathematische_objekte":"<kommagetrennt>",'
     + '"vorkenntnisse":"<kommagetrennt>",'
-    + '"klp_kompetenz":"<konkretisierte Kompetenzerwartung, 1 Satz>"'
+    + '"klp_kompetenz":"<konkretisierte Kompetenzerwartung, 1 Satz>",'
+    + '"thema":"<fachliches Kernthema, max. 5 Wörter, z.B. Bruchrechnung oder Korrosion – Grundlagen>"'
     + '},"items":['
     + g.items.map(function() {
         return '{"operator":"<' + opValues + '>","schwierigkeit":"<grundlegend|standard|anspruchsvoll>","umfang":"<kurz|mittel|lang>","niveau":"<leicht|mittel|schwer>"}';

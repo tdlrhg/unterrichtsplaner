@@ -802,9 +802,9 @@ function buildImportView(container) {
           _files = [];
           statusEl.textContent = ''; statusEl.style.color = 'var(--tx2)';
           wrap.innerHTML = '';
-          // Formular-Elemente wieder einbauen
+          // Formular-Elemente wieder einbauen (fileCard zurück in bodyRow, nicht auf wrap-Ebene)
+          bodyRow.appendChild(fileCard);
           wrap.appendChild(metaCard);
-          wrap.appendChild(fileCard);
           wrap.appendChild(bottomRow);
           wrap.appendChild(resultsWrap);
         }

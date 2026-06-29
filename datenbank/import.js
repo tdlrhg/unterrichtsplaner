@@ -460,13 +460,17 @@ function buildImportView(container) {
     var resized = await Promise.all(imgs.map(function(u) { return _impResizeImg(u, 1200, 0.82); }));
 
     var allAufg = [];
-    var totalBatches = Math.ceil(resized.length / IMP_BATCH_SIZE);
+    // Materialsets/Handreichungen: jede PDF-Seite einzeln → korrekte Seitennummer pro Seite.
+    // Schulbücher: bis zu IMP_BATCH_SIZE Seiten pro KI-Aufruf (Schulbücher werden i.d.R. seitenweise hochgeladen).
+    var isMat = typSel.value === 'materialset' || typSel.value === 'handreichung';
+    var batchSize = isMat ? 1 : IMP_BATCH_SIZE;
+    var totalBatches = Math.ceil(resized.length / batchSize);
 
     for (var bi = 0; bi < totalBatches; bi++) {
-      var batch = resized.slice(bi * IMP_BATCH_SIZE, (bi + 1) * IMP_BATCH_SIZE);
+      var batch = resized.slice(bi * batchSize, (bi + 1) * batchSize);
       var batchLabel = totalBatches > 1
-        ? prefix + '⏳ Seiten ' + (bi * IMP_BATCH_SIZE + 1) + '–' + Math.min((bi + 1) * IMP_BATCH_SIZE, resized.length) + ' von ' + resized.length + '…'
-        : prefix + '⏳ KI analysiert ' + resized.length + ' Seite(n)…';
+        ? prefix + '⏳ Seite ' + (bi + 1) + ' von ' + resized.length + '…'
+        : prefix + '⏳ KI analysiert…';
       statusEl.textContent = batchLabel;
 
       var blocks = [];
@@ -479,10 +483,12 @@ function buildImportView(container) {
 
       var raw = await callKI(blocks, { maxTokens: 16000 });
       var parsed = parseKiJson(raw);
-      allAufg = allAufg.concat(parsed.aufgaben || []);
+      var batchAufg = parsed.aufgaben || [];
+      var batchSeite = fileSeite != null ? fileSeite + bi * batchSize : null;
+      batchAufg.forEach(function(a) { a._seite = batchSeite; });
+      allAufg = allAufg.concat(batchAufg);
     }
 
-    allAufg.forEach(function(a) { a._seite = fileSeite; });
     return allAufg;
   }
 

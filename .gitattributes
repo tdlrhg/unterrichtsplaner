@@ -1,0 +1,3 @@
+# version.json wird vom CI-Workflow automatisch gestempelt.
+# Bei Merge-Konflikten immer die Remote-Version (theirs) nehmen.
+version.json merge=theirs

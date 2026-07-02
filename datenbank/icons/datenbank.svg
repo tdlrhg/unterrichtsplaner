@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect x="2" y="83" width="56" height="13" rx="3.5" fill="#29B6F6" stroke="#0D0D30" stroke-width="4"/>
+  <rect x="2" y="83" width="15" height="13" rx="3.5" fill="#0288D1" stroke="#0D0D30" stroke-width="4"/>
+  <rect x="2" y="71" width="54" height="11" rx="3" fill="#8BC34A" stroke="#0D0D30" stroke-width="3.5"/>
+  <rect x="2" y="71" width="14" height="11" rx="3" fill="#558B2F" stroke="#0D0D30" stroke-width="3.5"/>
+  <rect x="2" y="59" width="56" height="11" rx="3" fill="#FFD034" stroke="#0D0D30" stroke-width="4"/>
+  <rect x="2" y="59" width="15" height="11" rx="3" fill="#F5A020" stroke="#0D0D30" stroke-width="4"/>
+  <rect x="2" y="47" width="54" height="11" rx="3" fill="#AB47BC" stroke="#0D0D30" stroke-width="3.5"/>
+  <rect x="2" y="47" width="14" height="11" rx="3" fill="#7B1FA2" stroke="#0D0D30" stroke-width="3.5"/>
+  <rect x="2" y="35" width="56" height="11" rx="3" fill="#26C6DA" stroke="#0D0D30" stroke-width="4"/>
+  <rect x="2" y="35" width="15" height="11" rx="3" fill="#00838F" stroke="#0D0D30" stroke-width="4"/>
+  <rect x="2" y="23" width="54" height="11" rx="3" fill="#F06292" stroke="#0D0D30" stroke-width="3.5"/>
+  <rect x="2" y="23" width="14" height="11" rx="3" fill="#C2185B" stroke="#0D0D30" stroke-width="3.5"/>
+  <rect x="2" y="11" width="56" height="11" rx="3" fill="#EF5350" stroke="#0D0D30" stroke-width="4"/>
+  <rect x="2" y="11" width="15" height="11" rx="3" fill="#C62828" stroke="#0D0D30" stroke-width="4"/>
+  <line x1="22" y1="16" x2="50" y2="16" stroke="#0D0D30" stroke-width="2" stroke-linecap="round"/>
+  <line x1="22" y1="28" x2="44" y2="28" stroke="#0D0D30" stroke-width="2" stroke-linecap="round"/>
+  <line x1="22" y1="40" x2="50" y2="40" stroke="#0D0D30" stroke-width="2" stroke-linecap="round"/>
+  <line x1="22" y1="52" x2="44" y2="52" stroke="#0D0D30" stroke-width="2" stroke-linecap="round"/>
+  <path d="M47 14 Q47 9 52 9 L72 11 L72 87 Q60 85 47 87 Z" fill="#FFF0D0" stroke="#0D0D30" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M97 14 Q97 9 92 9 L72 11 L72 87 Q84 85 97 87 Z" fill="white" stroke="#0D0D30" stroke-width="4" stroke-linejoin="round"/>
+  <ellipse cx="72" cy="50" rx="7" ry="22" fill="#FFD8A0" opacity="0.65"/>
+  <rect x="45" y="85" width="54" height="12" rx="4" fill="#FF7E2E" stroke="#0D0D30" stroke-width="4"/>
+  <line x1="72" y1="11" x2="72" y2="87" stroke="#0D0D30" stroke-width="3"/>
+</svg>

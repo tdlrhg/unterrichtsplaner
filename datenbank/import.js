@@ -100,9 +100,9 @@ Für jeden Eintrag:
   · lzk             = Lernzielkontrolle, Test, Quiz, Leistungsüberprüfung
   FAUSTREGEL: Bearbeiten Schülerinnen diese Seite zum Üben? → arbeitsblatt. Ist es eine Leistungsüberprüfung? → lzk. Enthält sie Lösungen/Erwartungen? → loesung. Ist sie nur für die Lehrkraft? → lehrerkommentar.
 
-- nr: Bezeichnung der Seite VERBATIM aus dem Dokument.
-  Raabe-Beispiele: "M 1", "M 2", "M 3", "Lösung M 1", "Lösung M 2", "Hintergrundinformation", "Hinweise zu Methodik und Didaktik", "Kompetenzübersicht", "Quellenangaben", "Materialübersicht"
-  Falls keine Bezeichnung: Typ + laufende Nummer, z.B. "Arbeitsblatt 1", "Lehrerkommentar 1"
+- nr: Explizite Materialbezeichnung VERBATIM aus dem Dokument — erkennbar als eigenständiges Label auf der Seite (z.B. "M 5", "M 10", "Lösung M 1", "Hintergrundinformation", "Materialübersicht").
+  WICHTIG: Erfinde KEINE M-Nummern. Eine M-Nummer erkennst du NUR, wenn sie explizit auf der Seite steht (z.B. oben rechts "M 5"). Aufgaben-Labels ("Aufgabe 2", "Aufgabe 3") und Zwischenüberschriften ("Herleitung der 2. binomischen Formel") sind KEINE Materialbezeichnungen.
+  Falls keine eigenständige Materialbezeichnung sichtbar: verwende die erste Überschrift oder den ersten Aufgaben-Titel der Seite VERBATIM als nr (z.B. "Aufgabe 4", "Herleitung der 3. binomischen Formel").
 
 - aufgabenstellung: Überschrift oder Titel der Seite, VERBATIM — null wenn keine vorhanden
 
@@ -497,6 +497,8 @@ function buildImportView(container) {
     if (!buchInp.value.trim()) { statusEl.textContent = '⚠️ Bitte Werk / Titel eingeben.'; return; }
     analyseBtn.disabled = true;
     analyseBtn.textContent = _files.length > 1 ? '⏳ Analysiere ' + _files.length + ' Dateien…' : '⏳ Analysiere…';
+    window._importAnalysisRunning = true;
+    window._importActive = true;
     statusEl.textContent = ''; statusEl.style.color = 'var(--tx2)';
     resultsWrap.innerHTML = ''; _aufgaben = [];
     var baseSeite = seiteInp.value ? Number(seiteInp.value) : null;
@@ -520,6 +522,9 @@ function buildImportView(container) {
       statusEl.textContent = '❌ ' + e.message;
     } finally {
       analyseBtn.disabled = false; analyseBtn.textContent = '⚡ Seite analysieren';
+      window._importAnalysisRunning = false;
+      if (typeof _importFinishBadge === 'function') _importFinishBadge();
+      // _importActive bleibt true bis Ergebnisse gespeichert sind
     }
   };
 
@@ -625,6 +630,7 @@ function buildImportView(container) {
   var _impSelected = new Set();
 
   function renderResults() {
+    window._importActive = true;
     _impSelected.clear();
     resultsWrap.innerHTML = '';
     var _visibleAufgHdr = skipLkChk.checked
@@ -763,6 +769,8 @@ function buildImportView(container) {
 
     try {
       await sbInsert('inhalte', rows);
+      window._importActive = false;
+      if (typeof _importHideBadge === 'function') _importHideBadge();
       _buchCache = {}; // Cache leeren damit neues Buch im Filter erscheint
       if (rows.length) _lastSavedNr = rows[rows.length - 1].nr || null;
       _aufgaben = [];

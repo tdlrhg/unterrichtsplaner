@@ -14,12 +14,32 @@ function dbRender() {
 
   const content = document.getElementById('db-content');
   if (!content) return;
-  content.innerHTML = '';
+
+  if (DB.view === 'import') {
+    var holder = document.getElementById('_import_bg_holder');
+    if (holder && holder.firstChild) {
+      content.innerHTML = '';
+      while (holder.firstChild) content.appendChild(holder.firstChild);
+      holder.remove();
+      _importHideBadge();
+    } else {
+      content.innerHTML = '';
+      buildImportView(content);
+    }
+    return;
+  }
+
+  if (window._importActive) {
+    var holder = document.getElementById('_import_bg_holder');
+    if (!holder) { holder = document.createElement('div'); holder.id = '_import_bg_holder'; holder.style.display = 'none'; document.body.appendChild(holder); }
+    while (content.firstChild) holder.appendChild(content.firstChild);
+    _importShowBadge();
+  } else {
+    content.innerHTML = '';
+  }
 
   if (DB.view === 'landing') {
     buildLanding(content);
-  } else if (DB.view === 'import') {
-    buildImportView(content);
   } else if (DB.view === 'fach') {
     buildFachView(content);
   } else if (DB.view === 'methoden') {
@@ -27,6 +47,32 @@ function dbRender() {
   } else if (DB.view === 'didaktik') {
     content.appendChild(viewDidaktik());
   }
+}
+
+function _importShowBadge() {
+  var b = document.getElementById('_import_badge');
+  var isRunning = !!window._importAnalysisRunning;
+  if (!b) {
+    b = document.createElement('div');
+    b.id = '_import_badge';
+    b.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;color:#fff;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:background .2s;';
+    b.onclick = function() { DB.view = 'import'; dbRender(); };
+    document.body.appendChild(b);
+  }
+  b.style.background = isRunning ? 'var(--pri,#0f766e)' : '#b45309';
+  b.textContent = isRunning ? '⏳ Import läuft…' : '📋 Ergebnisse noch nicht gespeichert';
+}
+
+function _importHideBadge() {
+  var b = document.getElementById('_import_badge');
+  if (b) b.remove();
+}
+
+function _importFinishBadge() {
+  var b = document.getElementById('_import_badge');
+  if (!b) return;
+  b.style.background = '#b45309';
+  b.textContent = '📋 Ergebnisse noch nicht gespeichert';
 }
 
 // ── Init ──────────────────────────────────────────────────────────

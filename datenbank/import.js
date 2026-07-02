@@ -335,11 +335,16 @@ function buildImportView(container) {
       var resized = await _impResizeImg(imgs[0], 1200, 0.82);
       var detPrompt = 'Analysiere dieses Unterrichtsmaterial und empfehle einen Importtyp.\n\n'
         + 'Importtypen:\n'
-        + '- schulbuch: Klassisches Schulbuch mit nummerierten Aufgaben (1a, 1b, 2...) — Aufgaben werden einzeln erfasst\n'
-        + '- aufgabenpool: Eigenständige Aufgabenblätter (kein festes Buch) mit mehreren nummerierten Aufgaben pro Seite\n'
-        + '- materialset: Arbeitsblatt oder Materialset (z.B. Raabe, Auer) — jede Seite ist ein zusammenhängendes Material (M 1, M 2...) und wird als ganzes erfasst\n'
+        + '- materialset: Verlagsgestaltetes Arbeitsblatt oder Materialset (Auer, Raabe, Klett, Cornelsen…). '
+        + 'Erkennungsmerkmale: grafisch gestaltete Rahmen/Boxen (z.B. "Tipp", "Weiterführende Aufgabe", "Lösungshinweis", "Info", "Merke", "Hilfe"); '
+        + 'Materialbezeichnung M 1/M 2 auf der Seite; durchgehend gestaltete Seiten, die als Einheit zusammengehören. '
+        + 'ENTSCHEIDEND: Sobald strukturierte Pedagogen-Boxen (Tipp, Weiterführende Aufgabe usw.) als fester Bestandteil erscheinen — auch wenn die Seite Aufgaben enthält — ist es materialset.\n'
         + '- handreichung: Lehrerhandreichung oder Kommentarband — vor allem Lehrerinformationen, Didaktik, Erwartungshorizonte\n'
-        + '- eigenmaterial: Selbst erstelltes Material\n\n'
+        + '- schulbuch: Klassisches Schulbuch mit nummerierten Aufgaben (1a, 1b, 2...) ohne besondere Rahmen-Boxen\n'
+        + '- aufgabenpool: Einfache Aufgabenblätter OHNE Verlags-Gestaltung — nur schlichte nummerierte Aufgaben, keine Tipp-/Info-/Weiterführende-Boxen\n'
+        + '- eigenmaterial: Selbst erstelltes, unformatiertes Material\n\n'
+        + 'Entscheidungsregel: Siehst du grafisch abgegrenzte Boxen (Tipp, Weiterführende Aufgabe, Info, Merke, Lösungshinweis) oder M-Nummern auf der Seite? → materialset. '
+        + 'Nur schlichte nummerierte Aufgaben ohne Sonder-Boxen und ohne Verlagsgestaltung? → aufgabenpool oder schulbuch.\n\n'
         + 'Antworte NUR mit diesem JSON (kein Markdown, kein Text davor oder danach):\n'
         + '{"typ":"schulbuch|aufgabenpool|materialset|handreichung|eigenmaterial","grund":"<1-2 Sätze auf Deutsch>"}';
       var blocks = [

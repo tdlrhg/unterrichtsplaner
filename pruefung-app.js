@@ -96,15 +96,15 @@ function showNewPruefungModal() {
 }
 
 // ── Version Check ─────────────────────────────────────────────────
-async function prCheckVersion(ghDate) {
+async function prCheckVersion(ghSha) {
   const v = await fetch('version.json', { cache: 'no-store' }).then(r => r.json()).catch(() => null);
   if (!v) return;
   const prev = PR_VERSION_STATUS;
   PR_VERSION = v.built;
-  if (ghDate) PR_VERSION_STATUS = (new Date(ghDate) - new Date(v.built)) <= 10000 ? 'current' : 'deploying';
+  if (ghSha && v.sha) PR_VERSION_STATUS = v.sha === ghSha ? 'current' : 'deploying';
   if (prev === 'deploying' && PR_VERSION_STATUS === 'current' && Date.now() - _prStarted > 10000) { location.reload(true); return; }
   renderPr();
-  if (PR_VERSION_STATUS === 'deploying') setTimeout(() => prCheckVersion(ghDate), 30000);
+  if (PR_VERSION_STATUS === 'deploying') setTimeout(() => prCheckVersion(ghSha), 30000);
 }
 
 // ── Init ──────────────────────────────────────────────────────────
@@ -136,5 +136,9 @@ async function prCheckVersion(ghDate) {
   fetch('https://api.github.com/repos/tdlrhg/unterrichtsplaner/commits/main',
     { headers: { 'Accept': 'application/vnd.github.v3+json' } })
     .then(r => r.json()).catch(() => null)
-    .then(gh => { prCheckVersion(gh?.commit?.committer?.date || null); });
+    .then(gh => {
+      if (!gh?.sha) return prCheckVersion(null);
+      const isStamp = gh.commit?.message?.includes('[skip ci]');
+      prCheckVersion((isStamp && gh.parents?.[0]) ? gh.parents[0].sha : gh.sha);
+    });
 })();

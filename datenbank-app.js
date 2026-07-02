@@ -100,13 +100,13 @@ function _importFinishBadge() {
 
   // Versions-Check
   var _dbStarted = Date.now();
-  var _ghDate = null;
+  var _ghSha = null;
   async function checkDBVersion() {
     var v = await fetch('version.json', { cache: 'no-store' }).then(function(r) { return r.json(); }).catch(function() { return null; });
     if (!v) return;
     var prev = DB_VERSION_STATUS;
     DB_VERSION = v.built;
-    if (_ghDate) DB_VERSION_STATUS = new Date(v.built) >= new Date(_ghDate) ? 'current' : 'deploying';
+    if (_ghSha && v.sha) DB_VERSION_STATUS = v.sha === _ghSha ? 'current' : 'deploying';
     if (prev === 'deploying' && DB_VERSION_STATUS === 'current' && Date.now() - _dbStarted > 10000) { location.reload(true); return; }
     var oldTop = document.querySelector('.topbar');
     if (oldTop) oldTop.replaceWith(buildDBTopbar());
@@ -114,7 +114,13 @@ function _importFinishBadge() {
   }
   fetch('https://api.github.com/repos/tdlrhg/unterrichtsplaner/commits/main', { headers: { 'Accept': 'application/vnd.github.v3+json' } })
     .then(function(r) { return r.json(); }).catch(function() { return null; })
-    .then(function(gh) { if (gh && gh.commit && gh.commit.committer) _ghDate = gh.commit.committer.date; checkDBVersion(); });
+    .then(function(gh) {
+      if (!gh || !gh.sha) return checkDBVersion();
+      // Stamp-Commits ([skip ci]) sind nicht der relevante Stand — Parent-SHA verwenden
+      var isStamp = gh.commit && gh.commit.message && gh.commit.message.indexOf('[skip ci]') !== -1;
+      _ghSha = (isStamp && gh.parents && gh.parents[0]) ? gh.parents[0].sha : gh.sha;
+      checkDBVersion();
+    });
 
   // Methoden + Didaktik nachladen → Regal aktualisieren
   function reloadLanding() {

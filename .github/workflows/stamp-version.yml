@@ -29,8 +29,8 @@ jobs:
       - name: version.json mit Build-Zeit setzen
         run: |
           ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-          echo "{\"built\":\"$ts\"}" > version.json
-          echo "Gestempelt: $ts"
+          echo "{\"built\":\"$ts\",\"sha\":\"$GITHUB_SHA\"}" > version.json
+          echo "Gestempelt: $ts (SHA: $GITHUB_SHA)"
 
       - name: Zurueck nach main committen
         run: |

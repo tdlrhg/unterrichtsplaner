@@ -220,47 +220,69 @@ function buildImportView(container) {
   var ukInp    = finp('Unterkapitel (optional)');
   var seiteInp = finp('z.B. 142', 'number'); seiteInp.style.maxWidth = '110px';
 
-  // ── Quellentyp-Buttons ────────────────────────────────────────
-  var typBtnRow = mk('div', '');
-  typBtnRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
-  var _typBtns = [];
-  Object.keys(HERKUNFT).forEach(function(k) {
-    var h = HERKUNFT[k];
-    var b = mk('button', '');
-    b.textContent = h.icon + ' ' + h.label;
-    b.style.cssText = 'padding:5px 11px;border-radius:7px;border:1.5px solid var(--border);background:transparent;font-size:12.5px;cursor:pointer;transition:all .12s;white-space:nowrap;color:var(--tx2);';
-    b.addEventListener('click', function() {
-      typSel.value = k;
-      typSel.dispatchEvent(new Event('change'));
+  // ── Quellentyp-Karten (2 Modi) ───────────────────────────────
+  var AUFG_TYPEN = ['schulbuch', 'aufgabenpool', 'eigenmaterial'];
+  var MAT_TYPEN  = ['materialset', 'handreichung'];
+  var _typChips  = [];
+  var _modCards  = [];
+
+  var typCardRow = mk('div', '');
+  typCardRow.style.cssText = 'display:flex;gap:10px;';
+
+  function makeModCard(icon, title, desc, types, defaultTyp) {
+    var card = mk('div', '');
+    card.style.cssText = 'flex:1;border:2px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s,background .15s;display:flex;flex-direction:column;gap:8px;';
+    var hdr = mk('div', '');
+    hdr.style.cssText = 'display:flex;align-items:center;gap:7px;';
+    hdr.appendChild(tx('span', '', icon)).style.cssText = 'font-size:18px;';
+    hdr.appendChild(tx('span', '', title)).style.cssText = 'font-size:13px;font-weight:700;color:var(--tx1);';
+    card.appendChild(hdr);
+    card.appendChild(tx('div', '', desc)).style.cssText = 'font-size:11.5px;color:var(--tx2);line-height:1.4;';
+    var chips = mk('div', '');
+    chips.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;';
+    types.forEach(function(k) {
+      var h = HERKUNFT[k]; if (!h) return;
+      var chip = mk('button', '');
+      chip.textContent = h.icon + ' ' + h.label;
+      chip.style.cssText = 'padding:3px 9px;border-radius:6px;border:1.5px solid var(--border);background:transparent;font-size:11.5px;cursor:pointer;transition:all .12s;color:var(--tx2);';
+      chip.addEventListener('click', function(e) { e.stopPropagation(); typSel.value = k; typSel.dispatchEvent(new Event('change')); });
+      chips.appendChild(chip);
+      _typChips.push({ k: k, chip: chip, h: h });
     });
-    typBtnRow.appendChild(b);
-    _typBtns.push({ k: k, b: b, h: h });
-  });
+    card.appendChild(chips);
+    card.addEventListener('click', function() { typSel.value = defaultTyp; typSel.dispatchEvent(new Event('change')); });
+    return { el: card, types: types };
+  }
+
+  var cardAufg = makeModCard('📖', 'Aufgaben-Modus',
+    'Schulbücher, Aufgabenblätter — Aufgaben werden einzeln erfasst und sind einzeln suchbar',
+    AUFG_TYPEN, 'schulbuch');
+  var cardMat = makeModCard('📋', 'Material-Modus',
+    'Materialsets, Handreichungen (Raabe, Auer…) — jede Seite wird als zusammenhängendes Material erfasst',
+    MAT_TYPEN, 'materialset');
+  _modCards.push({ card: cardAufg, types: AUFG_TYPEN });
+  _modCards.push({ card: cardMat,  types: MAT_TYPEN });
+  typCardRow.appendChild(cardAufg.el);
+  typCardRow.appendChild(cardMat.el);
+
   function refreshTypBtns() {
-    _typBtns.forEach(function(t) {
-      var active = typSel.value === t.k;
-      t.b.style.background   = active ? t.h.color + '20' : 'transparent';
-      t.b.style.borderColor  = active ? t.h.color : 'var(--border)';
-      t.b.style.color        = active ? t.h.color : 'var(--tx2)';
-      t.b.style.fontWeight   = active ? '600' : '400';
+    var cur = typSel.value;
+    _modCards.forEach(function(mc) {
+      var active = mc.types.indexOf(cur) !== -1;
+      mc.card.el.style.borderColor = active ? 'var(--pri)' : 'var(--border)';
+      mc.card.el.style.background  = active ? 'rgba(15,118,110,.06)' : 'transparent';
+    });
+    _typChips.forEach(function(t) {
+      var active = cur === t.k;
+      t.chip.style.background  = active ? t.h.color + '20' : 'transparent';
+      t.chip.style.borderColor = active ? t.h.color : 'var(--border)';
+      t.chip.style.color       = active ? t.h.color : 'var(--tx2)';
+      t.chip.style.fontWeight  = active ? '600' : '400';
     });
   }
   refreshTypBtns();
   typSel.addEventListener('change', refreshTypBtns);
-  metaCard.appendChild(typBtnRow);
-
-  // ── Modus-Hinweis ─────────────────────────────────────────────
-  var modeHint = tx('div', '', '');
-  modeHint.style.cssText = 'font-size:12px;color:var(--tx3);margin-top:-4px;';
-  function updateModeHint() {
-    var isMat = typSel.value === 'materialset' || typSel.value === 'handreichung';
-    modeHint.textContent = isMat
-      ? '📋 Materialset-Modus: jede Seite wird als ganzer Eintrag erfasst'
-      : '📖 Schulbuch-Modus: Aufgaben und Lehrtexte werden einzeln erfasst';
-  }
-  updateModeHint();
-  typSel.addEventListener('change', updateModeHint);
-  metaCard.appendChild(modeHint);
+  metaCard.appendChild(typCardRow);
 
   // ── Typ-Erkennung per Musterseite ─────────────────────────────
   var typDetectRow = mk('div', '');

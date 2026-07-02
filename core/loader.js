@@ -2,7 +2,7 @@
 // Lädt alle Seiten-Scripts mit ?v=<built> aus version.json,
 // damit GitHub Pages CDN-Cache bei jedem Deploy umgangen wird.
 (async function () {
-  const v = await fetch('version.json', { cache: 'no-store' })
+  const v = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' })
     .then(function(r) { return r.json(); })
     .catch(function() { return {}; });
   const q = v.built ? '?v=' + encodeURIComponent(v.built) : '';

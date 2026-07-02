@@ -262,6 +262,88 @@ function buildImportView(container) {
   typSel.addEventListener('change', updateModeHint);
   metaCard.appendChild(modeHint);
 
+  // ── Typ-Erkennung per Musterseite ─────────────────────────────
+  var typDetectRow = mk('div', '');
+  typDetectRow.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px;';
+
+  var typDetectLbl = tx('span', '', '🔍 Unsicher?');
+  typDetectLbl.style.cssText = 'font-size:12px;color:var(--tx3);';
+
+  var typDetectFileBtn = document.createElement('label');
+  typDetectFileBtn.style.cssText = 'font-size:12px;color:var(--pri);cursor:pointer;text-decoration:underline;text-underline-offset:2px;';
+  typDetectFileBtn.textContent = 'Musterseite hochladen';
+  var typDetectFileInp = document.createElement('input');
+  typDetectFileInp.type = 'file'; typDetectFileInp.accept = 'image/*,.pdf';
+  typDetectFileInp.style.display = 'none';
+  typDetectFileBtn.appendChild(typDetectFileInp);
+
+  var typDetectFileName = tx('span', '', '');
+  typDetectFileName.style.cssText = 'font-size:11.5px;color:var(--tx3);';
+
+  var typDetectBtn = btn('Typ erkennen', 'btn btn-ghost btn-sm');
+  typDetectBtn.style.cssText += 'font-size:11.5px;padding:3px 10px;display:none;';
+
+  var typDetectResult = tx('div', '', '');
+  typDetectResult.style.cssText = 'font-size:12px;color:var(--tx2);width:100%;margin-top:2px;display:none;';
+
+  typDetectRow.appendChild(typDetectLbl);
+  typDetectRow.appendChild(typDetectFileBtn);
+  typDetectRow.appendChild(typDetectFileName);
+  typDetectRow.appendChild(typDetectBtn);
+  typDetectRow.appendChild(typDetectResult);
+  metaCard.appendChild(typDetectRow);
+
+  var _typDetectFile = null;
+  typDetectFileInp.onchange = function() {
+    if (!typDetectFileInp.files.length) return;
+    _typDetectFile = typDetectFileInp.files[0];
+    typDetectFileName.textContent = _typDetectFile.name;
+    typDetectBtn.style.display = '';
+    typDetectResult.style.display = 'none'; typDetectResult.textContent = '';
+    typDetectFileInp.value = '';
+  };
+
+  typDetectBtn.onclick = async function() {
+    if (!_typDetectFile) return;
+    typDetectBtn.disabled = true; typDetectBtn.textContent = '⏳ Erkenne…';
+    typDetectResult.style.display = 'none';
+    try {
+      var imgs = await fileToDataURLs(_typDetectFile, { longEdge: 1568, quality: 0.88 });
+      if (!imgs.length) throw new Error('Datei konnte nicht gelesen werden');
+      var resized = await _impResizeImg(imgs[0], 1200, 0.82);
+      var detPrompt = 'Analysiere dieses Unterrichtsmaterial und empfehle einen Importtyp.\n\n'
+        + 'Importtypen:\n'
+        + '- schulbuch: Klassisches Schulbuch mit nummerierten Aufgaben (1a, 1b, 2...) — Aufgaben werden einzeln erfasst\n'
+        + '- aufgabenpool: Eigenständige Aufgabenblätter (kein festes Buch) mit mehreren nummerierten Aufgaben pro Seite\n'
+        + '- materialset: Arbeitsblatt oder Materialset (z.B. Raabe, Auer) — jede Seite ist ein zusammenhängendes Material (M 1, M 2...) und wird als ganzes erfasst\n'
+        + '- handreichung: Lehrerhandreichung oder Kommentarband — vor allem Lehrerinformationen, Didaktik, Erwartungshorizonte\n'
+        + '- eigenmaterial: Selbst erstelltes Material\n\n'
+        + 'Antworte NUR mit diesem JSON (kein Markdown, kein Text davor oder danach):\n'
+        + '{"typ":"schulbuch|aufgabenpool|materialset|handreichung|eigenmaterial","grund":"<1-2 Sätze auf Deutsch>"}';
+      var blocks = [
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: resized.split(',')[1] } },
+        { type: 'text', text: detPrompt }
+      ];
+      var raw = await callKI(blocks, { model: KI_MODEL_HAIKU, maxTokens: 200 });
+      var m = raw.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error('Keine Antwort');
+      var res = JSON.parse(m[0]);
+      if (res.typ && HERKUNFT[res.typ]) {
+        typSel.value = res.typ;
+        typSel.dispatchEvent(new Event('change'));
+        typDetectResult.innerHTML = '<b>→ ' + HERKUNFT[res.typ].icon + ' ' + HERKUNFT[res.typ].label + '</b> — ' + (res.grund || '');
+      } else {
+        typDetectResult.textContent = '⚠ Kein eindeutiger Typ erkannt';
+      }
+      typDetectResult.style.display = '';
+    } catch(e) {
+      typDetectResult.textContent = '❌ ' + e.message;
+      typDetectResult.style.display = '';
+    } finally {
+      typDetectBtn.disabled = false; typDetectBtn.textContent = 'Typ erkennen';
+    }
+  };
+
   // ── Fach-Buttons (links) + Eingabefelder (rechts) ─────────────
   var bodyRow = mk('div', '');
   bodyRow.style.cssText = 'display:flex;gap:120px;align-items:flex-start;';

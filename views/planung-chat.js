@@ -9,7 +9,7 @@ let _pcMsgs         = [];   // UI: { role, text, toolCalls?, isThinking? }
 let _pcApi          = [];   // Anthropic API message history
 let _pcFpId         = null;
 let _pcConfig       = null; // Planungsrahmendaten aus dem Konfigurationsformular
-let _pcCollapsed    = false;
+let _pcCollapsed    = true;
 let _pcEditingCfg   = false;
 let _pcRunning      = false;
 

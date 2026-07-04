@@ -552,7 +552,7 @@ Antworte NUR mit reinem JSON:
         if (erlaubt.length) p += `Anforderungsbereiche – Erlaubt: ${erlaubt.join(', ')} | VERBOTEN: ${verboten.join(', ')}\n`;
         p += `\nAntworte NUR mit reinem JSON:\n{"titel":"Kurzer Titel","beschreibung":"Was Schüler hier tun (1 Satz)"}`;
         try {
-          const raw = await callKI([{ type: 'text', text: p }], { maxTokens: 600 });
+          const raw = await callKI([{ type: 'text', text: p }], { model: KI_MODEL_HAIKU, maxTokens: 600 });
           const parsed = parseKI(raw);
           if (parsed.titel) aufg.titel = parsed.titel;
           if (parsed.beschreibung) aufg.beschreibung = parsed.beschreibung;

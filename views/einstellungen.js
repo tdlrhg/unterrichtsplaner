@@ -473,7 +473,7 @@ function viewKursEinstellungen(kursId) {
       if (lg.fachsprache) p += 'Fachsprache: ' + lg.fachsprache + '\n';
       if (lg.foerderung?.length) p += 'Förderbedarf: ' + lg.foerderung.join(', ') + '\n';
       if (lg.besonderheitenText) p += 'Besonderheiten: ' + lg.besonderheitenText + '\n';
-      lg.konsequenzen = await callKI(p, { maxTokens: 600 });
+      lg.konsequenzen = await callKI(p, { model: KI_MODEL_HAIKU, maxTokens: 600 });
       konsTa.value = lg.konsequenzen;
       scheduleSave(); aiStatus.textContent = '✓';
     } catch(e) { aiStatus.textContent = 'Fehler: ' + e.message; }

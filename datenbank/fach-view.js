@@ -229,6 +229,23 @@ async function buildFachView(container) {
     // Gruppen jetzt berechnen — für korrekte Aufgaben-Zählung
     var groups = dbGroupByParent(rows);
 
+    // Gruppen nach höchster Seitenzahl + nr sortieren (Default-Sort):
+    // verhindert, dass Multi-Seiten-Gruppen (3a auf S.267, 3b auf S.268)
+    // unter der falschen Seiten-Sektion erscheinen.
+    if (!DB.sortCol) {
+      groups.forEach(function(g) {
+        g._maxSeite = g.items.reduce(function(mx, r) { return r.seite != null && r.seite > mx ? r.seite : mx; }, 0) || null;
+      });
+      groups.sort(function(ga, gb) {
+        var ra = ga.items[0], rb = gb.items[0];
+        if (!ra || !rb) return 0;
+        var qna = ra.quelle_name || '', qnb = rb.quelle_name || '';
+        if (qna !== qnb) return qna < qnb ? -1 : 1;
+        if ((ga._maxSeite || 0) !== (gb._maxSeite || 0)) return (ga._maxSeite || 0) - (gb._maxSeite || 0);
+        return cmpNr(ga.key, gb.key);
+      });
+    }
+
     // Materialset: alleinstehende LK-Gruppen in eine passende nicht-LK-Gruppe
     // eingliedern. Matching zweistufig: erst quelle_name+kapitel+uk_titel+seite,
     // dann ohne seite. Kein Match → LK bleibt eigenständige Gruppe (nie falsch anhängen).
@@ -319,8 +336,9 @@ async function buildFachView(container) {
 
       // ── Seiten-Trenner ───────────────────────────────────────────
       // Nur wenn kein einzelner Seiten-Filter aktiv ist, seite bekannt, und kein Materialset
-      if (!DB.seite && ref0 && ref0.seite != null && ref0.quelle_typ !== 'materialset' && ref0.quelle_typ !== 'handreichung') {
-        var seiteBuchKey = (ref0.quelle_name || '') + '::' + ref0.seite;
+      var _sepSeite = (g._maxSeite != null ? g._maxSeite : (ref0 ? ref0.seite : null));
+      if (!DB.seite && ref0 && _sepSeite != null && ref0.quelle_typ !== 'materialset' && ref0.quelle_typ !== 'handreichung') {
+        var seiteBuchKey = (ref0.quelle_name || '') + '::' + _sepSeite;
         if (seiteBuchKey !== _lastSeiteBuch) {
           if (_lastSeiteBuch !== null) {
             // Trennlinie zwischen Seiten
@@ -331,7 +349,7 @@ async function buildFachView(container) {
           // Seiten-Header
           var pageHdr = mk('div', '');
           pageHdr.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px 2px;';
-          var pagePill = tx('span', '', 'Seite ' + ref0.seite);
+          var pagePill = tx('span', '', 'Seite ' + _sepSeite);
           pagePill.style.cssText = 'font-size:13px;font-weight:800;letter-spacing:.04em;'
             + 'color:var(--pri);background:rgba(15,118,110,.10);border:1px solid rgba(15,118,110,.22);'
             + 'border-radius:20px;padding:4px 14px;';

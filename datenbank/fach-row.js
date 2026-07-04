@@ -23,6 +23,10 @@ function renderRow(a, onSaved, compact, groupLabel) {
         // Materialset: [Chip] [Nr] in einer Zeile, Thema darunter
         var matTop = mk('div', 'mat-top-row');
         matTop.style.cssText = 'display:flex;align-items:center;gap:5px;padding:2px 0;';
+        var _nrPh = mk('span', 'mat-nr-ph');
+        _nrPh.style.cssText = 'font-size:15px;padding:1px 3px;flex-shrink:0;visibility:hidden;line-height:1;user-select:none;';
+        _nrPh.textContent = '▸';
+        matTop.appendChild(_nrPh);
         if (a.inhaltstyp && !isMatLK) {
           var matTypColor = TYP_FARBEN[a.inhaltstyp] || '#64748b';
           var matChip = mk('span', '');
@@ -55,9 +59,16 @@ function renderRow(a, onSaved, compact, groupLabel) {
         }
       } else {
         // Aufgabe: „Aufgabe N" als Zeilenlabel in Spalte 0
+        var glWrap = mk('div', '');
+        glWrap.style.cssText = 'display:flex;align-items:center;gap:4px;';
+        var _nrPh = mk('span', 'mat-nr-ph');
+        _nrPh.style.cssText = 'font-size:15px;padding:1px 3px;flex-shrink:0;visibility:hidden;line-height:1;user-select:none;';
+        _nrPh.textContent = '▸';
         var glEl = tx('div', '', groupLabel);
         glEl.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;padding:2px 0;';
-        src.appendChild(glEl);
+        glWrap.appendChild(_nrPh);
+        glWrap.appendChild(glEl);
+        src.appendChild(glWrap);
       }
     } else {
       var nrMatch = String(a.nr || '').match(/[a-zA-Z]+$/);

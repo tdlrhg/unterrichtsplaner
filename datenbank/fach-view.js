@@ -374,10 +374,12 @@ async function buildFachView(container) {
         var srcCell = ghdr.querySelector('[data-col-idx="0"]');
         if (srcCell) {
           var matTopEl = srcCell.querySelector('.mat-top-row');
-          if (matTopEl) {
+          var _ph = srcCell.querySelector('.mat-nr-ph');
+          if (_ph) {
+            _ph.parentNode.replaceChild(chevron, _ph);
+          } else if (matTopEl) {
             matTopEl.insertBefore(chevron, matTopEl.firstChild);
           } else {
-            // Schulbuch: glEl in flex-Row mit Chevron zusammenfassen
             var firstChild = srcCell.firstChild;
             var topRow = mk('div', '');
             topRow.style.cssText = 'display:flex;align-items:center;gap:4px;';

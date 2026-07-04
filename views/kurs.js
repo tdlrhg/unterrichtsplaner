@@ -401,38 +401,61 @@ function viewFachplanung() {
   treePanel.appendChild(buildFpTree(lp, sel));
   div.appendChild(treePanel);
 
-  // ── Notizen zur ausgewählten Ebene ────────────────────────────
-  const KI_EBENEN = {
-    block: { label: 'Reihen',  childKey: 'reihen',  childLabel: 'Reihe' },
-    reihe: { label: 'Stunden', childKey: 'stunden', childLabel: 'Stunde' },
-  };
+  // ── Detailbereich für ausgewählten Block oder Reihe ──────────
   const notizObj = selReihe || selBlock;
   const notizTyp = selReihe ? 'reihe' : selBlock ? 'block' : null;
-  const notizLabel = notizObj ? 'Notizen · ' + notizObj.titel : null;
 
   if (notizObj && notizTyp) {
     const nc = mk('div', 'card');
-    const nhdr = cardHdr(notizLabel);
+    nc.appendChild(cardHdr(notizObj.titel));
+    const nb = mk('div', 'card-body fp-detail-body');
 
-    const ebene = KI_EBENEN[notizTyp];
-    const kiBtn = btn('✨ KI → ' + ebene.label + ' vorschlagen', 'btn btn-ghost btn-xs');
-    kiBtn.onclick = () => kiPlanung(lp, notizObj, notizTyp, nta, kiResultDiv, {
-      selBlock, selReihe
-    });
-    nhdr.appendChild(kiBtn);
-    nc.appendChild(nhdr);
+    function detailLabel(text) { return tx('div', 'fp-detail-label', text); }
 
-    const nb = mk('div', 'card-body');
+    if (selReihe) {
+      // Stunden geplant
+      const stundenRow = mk('div', 'fp-detail-inline');
+      stundenRow.appendChild(tx('span', 'fp-detail-label', 'Geplante Stunden'));
+      const stundenInp = document.createElement('input');
+      stundenInp.type = 'number'; stundenInp.className = 'finp fp-detail-num';
+      stundenInp.value = selReihe.stundenAnzahl || '';
+      stundenInp.placeholder = '—';
+      stundenInp.onblur = () => {
+        selReihe.stundenAnzahl = stundenInp.value ? +stundenInp.value : null;
+        scheduleSave(); render();
+      };
+      stundenRow.appendChild(stundenInp);
+      nb.appendChild(stundenRow);
+
+      // Schwerpunkt
+      nb.appendChild(detailLabel('Schwerpunkt'));
+      const schwInp = document.createElement('input');
+      schwInp.type = 'text'; schwInp.className = 'finp fp-detail-txt';
+      schwInp.value = selReihe.schwerpunkt || '';
+      schwInp.placeholder = 'z.B. Schülerversuch, eigenverantwortliches Arbeiten…';
+      schwInp.onblur = () => { selReihe.schwerpunkt = schwInp.value; scheduleSave(); };
+      nb.appendChild(schwInp);
+    }
+
+    // Didaktische Begründung (Block + Reihe)
+    nb.appendChild(detailLabel('Didaktische Begründung'));
+    const beschTA = document.createElement('textarea');
+    beschTA.className = 'finp fp-detail-ta';
+    beschTA.placeholder = 'Begründung, Ziele, didaktischer Kontext…';
+    beschTA.value = notizObj.beschreibung || '';
+    beschTA.onblur = () => { notizObj.beschreibung = beschTA.value; scheduleSave(); };
+    nb.appendChild(beschTA);
+
+    // Notizen
+    nb.appendChild(detailLabel('Notizen'));
     const nta = document.createElement('textarea');
-    nta.className = 'finp fp-notizen';
+    nta.className = 'finp fp-detail-ta';
     nta.placeholder = 'Stichworte, Ideen, Materialhinweise, offene Fragen…';
     nta.value = notizObj.notizen || '';
     nta.onblur = () => { notizObj.notizen = nta.value; scheduleSave(); };
     nb.appendChild(nta);
-    nc.appendChild(nb);
 
-    const kiResultDiv = mk('div', '');
-    nc.appendChild(kiResultDiv);
+    nc.appendChild(nb);
     div.appendChild(nc);
   }
 

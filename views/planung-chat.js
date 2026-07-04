@@ -79,6 +79,35 @@ const PC_TOOLS = [
     }
   },
   {
+    name: 'updateBlock',
+    description: 'Aktualisiert Titel oder Beschreibung eines bestehenden Blocks.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        blockId:      { type: 'string', description: 'ID des Blocks' },
+        titel:        { type: 'string', description: 'Neuer Titel (optional)' },
+        beschreibung: { type: 'string', description: 'Neue Beschreibung (optional)' }
+      },
+      required: ['blockId']
+    }
+  },
+  {
+    name: 'updateReihe',
+    description: 'Aktualisiert Felder einer bestehenden Reihe (Titel, Beschreibung, Schwerpunkt, Stundenzahl).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        blockId:       { type: 'string', description: 'ID des Blocks' },
+        reiheId:       { type: 'string', description: 'ID der Reihe' },
+        titel:         { type: 'string', description: 'Neuer Titel (optional)' },
+        beschreibung:  { type: 'string', description: 'Didaktische Begründung (optional)' },
+        schwerpunkt:   { type: 'string', description: 'Methodischer Schwerpunkt (optional)' },
+        stundenAnzahl: { type: 'number', description: 'Geplante Stunden (optional)' }
+      },
+      required: ['blockId', 'reiheId']
+    }
+  },
+  {
     name: 'createStunde',
     description: 'Erstellt eine einzelne Unterrichtsstunde in einer Reihe.',
     input_schema: {
@@ -140,6 +169,27 @@ function _pcExecTool(name, input, fp) {
       const themen  = input.themen  ? input.themen.split(',').map(s => s.trim())  : [];
       const text = getDIDContext(ebenen, themen);
       return text || '(keine passenden Einträge gefunden)';
+    }
+
+    case 'updateBlock': {
+      const blk = (fp.blocks || []).find(b => b.id === input.blockId);
+      if (!blk) return JSON.stringify({ error: 'Block nicht gefunden: ' + input.blockId });
+      if (input.titel        !== undefined) blk.titel        = input.titel;
+      if (input.beschreibung !== undefined) blk.beschreibung = input.beschreibung;
+      scheduleSave(); render();
+      return JSON.stringify({ ok: true, id: blk.id, titel: blk.titel });
+    }
+
+    case 'updateReihe': {
+      const blk = (fp.blocks || []).find(b => b.id === input.blockId);
+      const rei = blk && (blk.reihen || []).find(r => r.id === input.reiheId);
+      if (!rei) return JSON.stringify({ error: 'Reihe nicht gefunden: ' + input.reiheId });
+      if (input.titel         !== undefined) rei.titel         = input.titel;
+      if (input.beschreibung  !== undefined) rei.beschreibung  = input.beschreibung;
+      if (input.schwerpunkt   !== undefined) rei.schwerpunkt   = input.schwerpunkt;
+      if (input.stundenAnzahl !== undefined) rei.stundenAnzahl = input.stundenAnzahl;
+      scheduleSave(); render();
+      return JSON.stringify({ ok: true, id: rei.id, titel: rei.titel });
     }
 
     case 'createBlock': {

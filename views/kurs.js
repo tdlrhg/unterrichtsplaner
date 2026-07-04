@@ -394,8 +394,6 @@ function viewFachplanung() {
   const selBlock  = selBlockId  && (lp.blocks || []).find(b => b.id === selBlockId);
   const selReihe  = selBlock    && (selBlock.reihen || []).find(r => r.id === selReiheId);
 
-  div.appendChild(buildPlanungsChat(lp));
-
   const treePanel = mk('div', 'fp-tree-panel');
   treePanel.appendChild(buildFpTree(lp, sel));
   div.appendChild(treePanel);
@@ -460,100 +458,24 @@ function viewFachplanung() {
     nta.onblur = () => { notizObj.notizen = nta.value; scheduleSave(); };
     nb.appendChild(nta);
 
-    nc.appendChild(nb);
-    div.appendChild(nc);
-  }
-
-  // ── KLP-Referenz ─────────────────────────────────────────────
-  const klpOpenKey = 'klpRef_' + lp.id;
-  const klpCard = mk('div', 'card klp-ref-card');
-
-  const klpHdr = cardHdr('');
-  klpHdr.style.cursor = 'pointer';
-  const klpHdrInner = mk('div', 'klp-ref-hdr-inner');
-  klpHdrInner.appendChild(tx('span', 'klp-ref-arrow', S.open[klpOpenKey] ? '▾' : '›'));
-  klpHdrInner.appendChild(tx('span', '', 'KLP-Kompetenzen · ' + fachLabel(lp.fach) + ' · Jg. ' + lp.jahrgang));
-  if (KLPDB.length === 0) klpHdrInner.appendChild(tx('span', 'klp-ref-empty-hint', '(KLP-Datenbank nicht geladen)'));
-  klpHdr.appendChild(klpHdrInner);
-  klpHdr.onclick = () => { S.open[klpOpenKey] = !S.open[klpOpenKey]; render(); };
-  klpCard.appendChild(klpHdr);
-
-  if (S.open[klpOpenKey] && KLPDB.length > 0) {
-    const fachNameMap = { 'M': 'Mathematik', 'Ch': 'Chemie', 'Bio': 'Biologie', 'Ch_GK': 'Chemie', 'Ch_LK': 'Chemie', 'Bio_GK': 'Biologie', 'Bio_LK': 'Biologie' };
-    const fachName = fachNameMap[lp.fach] || lp.fach;
-    const isSII = ['EF', 'Q1', 'Q2', 'SII'].includes(lp.jahrgang);
-    const isGK = lp.fach.includes('GK');
-    const isLK = lp.fach.includes('LK');
-
-    let hits = KLPDB.filter(e => {
-      if (e.fach !== fachName) return false;
-      const entryIsSII = e.stufe === 'SII' || (e.id && e.id.toUpperCase().includes('SII'));
-      if (isSII !== entryIsSII) return false;
-      if (isSII) {
-        if (isGK && e.id.toUpperCase().includes('LK')) return false;
-        if (isLK && e.id.toUpperCase().includes('GK')) return false;
-      }
-      return true;
-    });
-
-    // Suchfeld
-    const klpSearch = mk('div', 'klp-ref-search-wrap');
-    const klpInp = document.createElement('input');
-    klpInp.type = 'text'; klpInp.className = 'finp klp-ref-search';
-    klpInp.placeholder = 'Kompetenz suchen…';
-    klpSearch.appendChild(klpInp);
-    klpCard.appendChild(klpSearch);
-
-    const klpBody = mk('div', 'klp-ref-body');
-
-    function renderKlpBody(q) {
-      klpBody.innerHTML = '';
-      const filtered = q ? hits.filter(e =>
-        e.beschreibung.toLowerCase().includes(q) ||
-        e.inhaltsfeld.toLowerCase().includes(q) ||
-        e.kompetenzcodes.join(' ').toLowerCase().includes(q)
-      ) : hits;
-
-      const grouped = {};
-      filtered.forEach(e => {
-        const key = e.inhaltsfeld;
-        if (!grouped[key]) grouped[key] = [];
-        grouped[key].push(e);
-      });
-
-      if (!Object.keys(grouped).length) {
-        klpBody.appendChild(tx('div', 'klp-ref-empty', 'Keine Treffer.'));
-        return;
-      }
-
-      Object.entries(grouped).forEach(([inhaltsfeld, entries]) => {
-        const groupKey = 'klpIF_' + lp.id + '_' + inhaltsfeld;
-        const isIfOpen = S.open[groupKey] || !!q;
-
-        const groupHdr = mk('div', 'klp-ref-group-hdr');
-        groupHdr.appendChild(tx('span', 'klp-ref-arrow', isIfOpen ? '▾' : '›'));
-        groupHdr.appendChild(tx('span', 'klp-ref-group-label', inhaltsfeld));
-        groupHdr.appendChild(tx('span', 'klp-ref-group-count', entries.length));
-        groupHdr.onclick = () => { S.open[groupKey] = !isIfOpen; renderKlpBody(klpInp.value.toLowerCase().trim()); };
-        klpBody.appendChild(groupHdr);
-
-        if (isIfOpen) {
-          entries.forEach(e => {
-            const row = mk('div', 'klp-ref-entry');
-            row.appendChild(tx('span', 'klp-ref-codes', e.kompetenzcodes.join(', ')));
-            row.appendChild(tx('span', 'klp-ref-desc', e.beschreibung));
-            klpBody.appendChild(row);
-          });
-        }
-      });
+    // "Reihen planen"-Button (nur für Blöcke)
+    if (notizTyp === 'block') {
+      const chatOpen = !!S.open['blockChat_' + selBlock.id];
+      const planBtn = btn('✨ Reihen planen' + (chatOpen ? ' ▼' : ' ›'), 'btn btn-primary btn-sm');
+      planBtn.style.marginTop = '4px';
+      planBtn.onclick = () => { S.open['blockChat_' + selBlock.id] = !chatOpen; render(); };
+      nb.appendChild(planBtn);
     }
 
-    klpInp.oninput = () => renderKlpBody(klpInp.value.toLowerCase().trim());
-    renderKlpBody('');
-    klpCard.appendChild(klpBody);
+    nc.appendChild(nb);
+    div.appendChild(nc);
+
+    // Block-Chat (unterhalb der Detailkarte)
+    if (notizTyp === 'block' && S.open['blockChat_' + selBlock.id]) {
+      div.appendChild(buildBlockChat(lp, selBlock));
+    }
   }
 
-  div.appendChild(klpCard);
   return div;
 }
 

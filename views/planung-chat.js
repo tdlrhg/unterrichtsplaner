@@ -131,9 +131,11 @@ function _pcExecTool(name, input, fp) {
     case 'readPlan':
       return JSON.stringify((fp.blocks || []).map(b => ({
         id: b.id, titel: b.titel, beschreibung: b.beschreibung,
+        notizen: b.notizen || '',
         reihen: (b.reihen || []).map(r => ({
           id: r.id, titel: r.titel, beschreibung: r.beschreibung,
           schwerpunkt: r.schwerpunkt, stundenAnzahl: r.stundenAnzahl,
+          notizen: r.notizen || '',
           stunden: (r.stunden || []).map(s => ({ id: s.id, titel: s.titel, lernziel: s.lernziel, dauer: s.dauer, methode: s.methode }))
         }))
       })));

@@ -437,14 +437,16 @@ function viewFachplanung() {
       nb.appendChild(schwInp);
     }
 
-    // Didaktische Begründung (Block + Reihe)
-    nb.appendChild(detailLabel('Didaktische Begründung'));
-    const beschTA = document.createElement('textarea');
-    beschTA.className = 'finp fp-detail-ta';
-    beschTA.placeholder = 'Begründung, Ziele, didaktischer Kontext…';
-    beschTA.value = notizObj.beschreibung || '';
-    beschTA.onblur = () => { notizObj.beschreibung = beschTA.value; scheduleSave(); };
-    nb.appendChild(beschTA);
+    // Didaktische Begründung (nur Reihe)
+    if (selReihe) {
+      nb.appendChild(detailLabel('Didaktische Begründung'));
+      const beschTA = document.createElement('textarea');
+      beschTA.className = 'finp fp-detail-ta';
+      beschTA.placeholder = 'Begründung, Ziele, didaktischer Kontext…';
+      beschTA.value = selReihe.beschreibung || '';
+      beschTA.onblur = () => { selReihe.beschreibung = beschTA.value; scheduleSave(); };
+      nb.appendChild(beschTA);
+    }
 
     // Notizen
     nb.appendChild(detailLabel('Notizen'));

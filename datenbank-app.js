@@ -111,6 +111,7 @@ function _importFinishBadge() {
       var oldTop = document.querySelector('.topbar');
       if (oldTop) oldTop.replaceWith(buildDBTopbar());
     } else if (v.built !== _initialBuilt && Date.now() - _dbStarted > 10000) {
+      if (window._importActive || window._importAnalysisRunning) { setTimeout(checkDBVersion, 60000); return; }
       location.reload(true); return;
     }
     setTimeout(checkDBVersion, 60000);

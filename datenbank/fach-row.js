@@ -202,8 +202,10 @@ function _appendLkChip(rowEl, lks, wrap, onDelete) {
   lks.forEach(function(lk) {
     var line = mk('div', '');
     line.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:3px 0;font-size:12px;';
-    var badge = tx('span', '', 'Lehrerkommentar');
-    badge.style.cssText = 'flex-shrink:0;font-size:10px;font-weight:600;background:#faeeda;color:#854f0b;'
+    var _isLoes = lk.inhaltstyp === 'loesung';
+    var badge = tx('span', '', _isLoes ? '✅ Lösung' : 'Lehrerkommentar');
+    badge.style.cssText = 'flex-shrink:0;font-size:10px;font-weight:600;'
+      + (_isLoes ? 'background:#ede9fe;color:#6d28d9;' : 'background:#faeeda;color:#854f0b;')
       + 'padding:2px 7px;border-radius:4px;white-space:nowrap;';
     var text = tx('span', '', lk.inhalt || lk.aufgabenstellung || lk.thema || '–');
     text.style.cssText = 'color:var(--tx1);line-height:1.4;flex:1;';

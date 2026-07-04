@@ -307,9 +307,9 @@ async function buildFachView(container) {
       var isMat0 = g.items[0] && (g.items[0].quelle_typ === 'materialset' || g.items[0].quelle_typ === 'handreichung');
       var lkItems = [], contentItems = g.items;
       if (isMat0) {
-        var _lkList = g.items.filter(function(r) { return r.inhaltstyp === 'lehrerkommentar'; });
+        var _lkList = g.items.filter(function(r) { return r.inhaltstyp === 'lehrerkommentar' || r.inhaltstyp === 'loesung'; });
         if (_lkList.length) {
-          var _cList = g.items.filter(function(r) { return r.inhaltstyp !== 'lehrerkommentar'; });
+          var _cList = g.items.filter(function(r) { return r.inhaltstyp !== 'lehrerkommentar' && r.inhaltstyp !== 'loesung'; });
           if (_cList.length) { lkItems = _lkList; contentItems = _cList; }
         }
       }

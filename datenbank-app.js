@@ -102,7 +102,7 @@ function _importFinishBadge() {
   var _dbStarted = Date.now();
   var _ghSha = null;
   async function checkDBVersion() {
-    var v = await fetch('version.json', { cache: 'no-store' }).then(function(r) { return r.json(); }).catch(function() { return null; });
+    var v = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(function(r) { return r.json(); }).catch(function() { return null; });
     if (!v) return;
     var prev = DB_VERSION_STATUS;
     DB_VERSION = v.built;

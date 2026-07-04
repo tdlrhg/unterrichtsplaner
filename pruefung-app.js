@@ -97,7 +97,7 @@ function showNewPruefungModal() {
 
 // ── Version Check ─────────────────────────────────────────────────
 async function prCheckVersion(ghSha) {
-  const v = await fetch('version.json', { cache: 'no-store' }).then(r => r.json()).catch(() => null);
+  const v = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).catch(() => null);
   if (!v) return;
   const prev = PR_VERSION_STATUS;
   PR_VERSION = v.built;

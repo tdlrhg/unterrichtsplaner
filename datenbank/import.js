@@ -32,7 +32,7 @@ function dbGroupByParent(rows) {
       // Normiere auf M-Nummer: "Lösung M 1", "M 1a" → alle in Gruppe "M 1"
       var _mNum = _nr.match(/\b(M\s*\d+)/i);
       if (_mNum) {
-        parentNr = _mNum[1].replace(/\s+/, ' ');
+        parentNr = _mNum[1].replace(/M\s*(\d+)/i, 'M $1');
         key = (r.quelle_name || '') + '||mat||' + parentNr;
       } else {
         key = r.gruppen_key || ((r.quelle_name || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr);

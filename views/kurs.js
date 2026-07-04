@@ -204,7 +204,8 @@ function buildFpTree(lp, sel) {
       const rKey = 'r_' + reihe.id;
       const sn = (reihe.stunden || []).length;
       const gn = (reihe.einheiten || []).length;
-      const rSub = sn + ' Stunde' + (sn !== 1 ? 'n' : '') + (gn > 0 ? ' · ' + gn + ' Gruppe' + (gn !== 1 ? 'n' : '') : '');
+      const rSub = (reihe.stundenAnzahl ? sn + '/' + reihe.stundenAnzahl + ' Std.' : sn + ' Stunde' + (sn !== 1 ? 'n' : ''))
+                + (gn > 0 ? ' · ' + gn + ' Gruppe' + (gn !== 1 ? 'n' : '') : '');
 
       const { row: rRow, open: rOpen } = makeRow({
         level: 1, title: reihe.titel, sub: rSub,

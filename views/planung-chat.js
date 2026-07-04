@@ -73,7 +73,7 @@ const PC_TOOLS = [
         titel:         { type: 'string', description: 'Titel der Reihe' },
         beschreibung:  { type: 'string', description: 'Didaktische Begründung (optional)' },
         schwerpunkt:   { type: 'string', description: 'Pädagogischer Schwerpunkt, z.B. Schülerversuch, Präsentation, eigenverantwortliches Arbeiten (optional)' },
-        stundenAnzahl: { type: 'number', description: 'Geplante Unterrichtsstunden' }
+        stundenAnzahl: { type: 'number', description: 'Geplante Unterrichtsstunden – immer angeben, auch wenn noch keine Einzelstunden angelegt sind' }
       },
       required: ['blockId', 'titel']
     }

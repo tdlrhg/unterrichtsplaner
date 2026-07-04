@@ -212,7 +212,7 @@ function buildImportView(container) {
   wrap.appendChild(metaCard);
 
   // Hidden selects — halten den Wert, werden im restlichen Code via .value gelesen
-  var typSel  = fsel(HERKUNFT_OPTS); typSel.style.display = 'none';
+  var typSel  = fsel(HERKUNFT_OPTS); typSel.style.display = 'none'; typSel.value = 'materialset';
   var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; })); fachSel.style.display = 'none';
   var buchInp  = finp('z.B. Lambacher Schweizer 8');
   var jgInp    = finp('z.B. 7/8'); jgInp.style.maxWidth = '80px';

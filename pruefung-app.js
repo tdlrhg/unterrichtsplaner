@@ -96,15 +96,19 @@ function showNewPruefungModal() {
 }
 
 // ── Version Check ─────────────────────────────────────────────────
-async function prCheckVersion(ghSha) {
+var _prInitialBuilt = null;
+async function prCheckVersion() {
   const v = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).catch(() => null);
-  if (!v) return;
-  const prev = PR_VERSION_STATUS;
+  if (!v) { setTimeout(prCheckVersion, 60000); return; }
   PR_VERSION = v.built;
-  if (ghSha && v.sha) PR_VERSION_STATUS = v.sha === ghSha ? 'current' : 'deploying';
-  if (prev === 'deploying' && PR_VERSION_STATUS === 'current' && Date.now() - _prStarted > 10000) { location.reload(true); return; }
-  renderPr();
-  if (PR_VERSION_STATUS === 'deploying') setTimeout(() => prCheckVersion(ghSha), 30000);
+  if (_prInitialBuilt === null) {
+    _prInitialBuilt = v.built;
+    PR_VERSION_STATUS = 'current';
+    renderPr();
+  } else if (v.built !== _prInitialBuilt && Date.now() - _prStarted > 10000) {
+    location.reload(true); return;
+  }
+  setTimeout(prCheckVersion, 60000);
 }
 
 // ── Init ──────────────────────────────────────────────────────────
@@ -133,12 +137,5 @@ async function prCheckVersion(ghSha) {
   renderPr();
 
   // Version prüfen
-  fetch('https://api.github.com/repos/tdlrhg/unterrichtsplaner/commits/main',
-    { headers: { 'Accept': 'application/vnd.github.v3+json' } })
-    .then(r => r.json()).catch(() => null)
-    .then(gh => {
-      if (!gh?.sha) return prCheckVersion(null);
-      const isStamp = gh.commit?.message?.includes('[skip ci]');
-      prCheckVersion((isStamp && gh.parents?.[0]) ? gh.parents[0].sha : gh.sha);
-    });
+  prCheckVersion();
 })();

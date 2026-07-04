@@ -98,29 +98,24 @@ function _importFinishBadge() {
   root.appendChild(app);
   buildLanding(content);
 
-  // Versions-Check
+  // Versions-Check: alle 60s version.json pollen — bei Änderung neu laden
   var _dbStarted = Date.now();
-  var _ghSha = null;
+  var _initialBuilt = null;
   async function checkDBVersion() {
     var v = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(function(r) { return r.json(); }).catch(function() { return null; });
-    if (!v) return;
-    var prev = DB_VERSION_STATUS;
+    if (!v) { setTimeout(checkDBVersion, 60000); return; }
     DB_VERSION = v.built;
-    if (_ghSha && v.sha) DB_VERSION_STATUS = v.sha === _ghSha ? 'current' : 'deploying';
-    if (prev === 'deploying' && DB_VERSION_STATUS === 'current' && Date.now() - _dbStarted > 10000) { location.reload(true); return; }
-    var oldTop = document.querySelector('.topbar');
-    if (oldTop) oldTop.replaceWith(buildDBTopbar());
-    if (DB_VERSION_STATUS === 'deploying') setTimeout(checkDBVersion, 30000);
+    if (_initialBuilt === null) {
+      _initialBuilt = v.built;
+      DB_VERSION_STATUS = 'current';
+      var oldTop = document.querySelector('.topbar');
+      if (oldTop) oldTop.replaceWith(buildDBTopbar());
+    } else if (v.built !== _initialBuilt && Date.now() - _dbStarted > 10000) {
+      location.reload(true); return;
+    }
+    setTimeout(checkDBVersion, 60000);
   }
-  fetch('https://api.github.com/repos/tdlrhg/unterrichtsplaner/commits/main', { headers: { 'Accept': 'application/vnd.github.v3+json' } })
-    .then(function(r) { return r.json(); }).catch(function() { return null; })
-    .then(function(gh) {
-      if (!gh || !gh.sha) return checkDBVersion();
-      // Stamp-Commits ([skip ci]) sind nicht der relevante Stand — Parent-SHA verwenden
-      var isStamp = gh.commit && gh.commit.message && gh.commit.message.indexOf('[skip ci]') !== -1;
-      _ghSha = (isStamp && gh.parents && gh.parents[0]) ? gh.parents[0].sha : gh.sha;
-      checkDBVersion();
-    });
+  checkDBVersion();
 
   // Methoden + Didaktik nachladen → Regal aktualisieren
   function reloadLanding() {

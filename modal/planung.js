@@ -6,6 +6,7 @@ function modalHandlerPlanung(type, data, m) {
     m.appendChild(tx('div', 'modal-title', 'Neuer Themenblock'));
     m.appendChild(modalInput('mt', 'Titel', 'z.B. Rationale Zahlen'));
     m.appendChild(modalInput('ms', 'Geplante Stunden', '', '', 'number'));
+    m.appendChild(modalTextarea('mn', 'Notizen / Inhaltsverzeichnis', 'Themen, Schulbuch-Kapitel, Stichworte …'));
     const footer = mk('div', 'modal-footer');
     footer.appendChild(cancelBtn());
     const sv = btn('Anlegen', 'btn btn-pri');
@@ -14,7 +15,28 @@ function modalHandlerPlanung(type, data, m) {
       if (!t) return;
       const lp = getFachplanung(data.fpId);
       if (!lp.blocks) lp.blocks = [];
-      lp.blocks.push({ id: uid(), titel: t, stundenGesamt: document.getElementById('ms').value, reihen: [] });
+      lp.blocks.push({ id: uid(), titel: t, stundenGesamt: document.getElementById('ms').value, notizen: document.getElementById('mn').value.trim(), reihen: [] });
+      S.modal = null; scheduleSave(); render();
+    };
+    footer.appendChild(sv); m.appendChild(footer);
+    return true;
+  }
+
+  if (type === 'editBlock') {
+    const { block } = data;
+    m.appendChild(tx('div', 'modal-title', 'Themenblock bearbeiten'));
+    m.appendChild(modalInput('mt', 'Titel', '', block.titel));
+    m.appendChild(modalInput('ms', 'Geplante Stunden', '', block.stundenGesamt || '', 'number'));
+    m.appendChild(modalTextarea('mn', 'Notizen / Inhaltsverzeichnis', 'Themen, Schulbuch-Kapitel, Stichworte …', block.notizen || ''));
+    const footer = mk('div', 'modal-footer');
+    footer.appendChild(cancelBtn());
+    const sv = btn('Speichern', 'btn btn-pri');
+    sv.onclick = () => {
+      const t = document.getElementById('mt').value.trim();
+      if (!t) return;
+      block.titel = t;
+      block.stundenGesamt = document.getElementById('ms').value;
+      block.notizen = document.getElementById('mn').value.trim();
       S.modal = null; scheduleSave(); render();
     };
     footer.appendChild(sv); m.appendChild(footer);

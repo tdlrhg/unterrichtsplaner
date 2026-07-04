@@ -33,7 +33,7 @@ function buildFpTree(lp, sel) {
 
   function makeRow(opts) {
     const { level, title, sub, isActive, hasChildren, openKey, onSelect,
-            dragPayload, dropType, onDrop, onEdit, onUp, onDown, onDelete,
+            dragPayload, dropType, onDrop, onEdit, onChat, onUp, onDown, onDelete,
             isFirst, isLast, onAdd, addLabel, accentColor } = opts;
     const open = openKey ? isOpen(openKey) : false;
 
@@ -72,6 +72,12 @@ function buildFpTree(lp, sel) {
       eb.textContent = '✏'; eb.title = 'Umbenennen';
       eb.onclick = e => { e.stopPropagation(); onEdit(); };
       actions.appendChild(eb);
+    }
+    if (onChat) {
+      const cb = mk('button', 'fp-tree-act-btn');
+      cb.textContent = '✨'; cb.title = 'Reihen planen';
+      cb.onclick = e => { e.stopPropagation(); onChat(); };
+      actions.appendChild(cb);
     }
     if (onUp !== undefined) {
       const ub = mk('button', 'fp-tree-act-btn'); ub.textContent = '↑'; ub.title = 'Nach oben';
@@ -175,7 +181,8 @@ function buildFpTree(lp, sel) {
         S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
         scheduleSave(); render();
       },
-      onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: block, feld: 'titel', label: 'Themenblock' } }; render(); },
+      onEdit: () => { S.modal = { type: 'editBlock', data: { block } }; render(); },
+      onChat: () => { S.open['blockChat_' + block.id] = !S.open['blockChat_' + block.id]; render(); },
       onUp: () => { swap(lp.blocks, bi, bi-1); scheduleSave(); render(); },
       onDown: () => { swap(lp.blocks, bi, bi+1); scheduleSave(); render(); },
       isFirst: bi === 0, isLast: bi === lp.blocks.length-1,
@@ -398,82 +405,64 @@ function viewFachplanung() {
   treePanel.appendChild(buildFpTree(lp, sel));
   div.appendChild(treePanel);
 
-  // ── Detailbereich für ausgewählten Block oder Reihe ──────────
-  const notizObj = selReihe || selBlock;
-  const notizTyp = selReihe ? 'reihe' : selBlock ? 'block' : null;
-
-  if (notizObj && notizTyp) {
+  // ── Detailbereich für ausgewählte Reihe ─────────────────────
+  if (selReihe) {
     const nc = mk('div', 'card');
-    nc.appendChild(cardHdr(notizObj.titel));
+    nc.appendChild(cardHdr(selReihe.titel));
     const nb = mk('div', 'card-body fp-detail-body');
 
     function detailLabel(text) { return tx('div', 'fp-detail-label', text); }
 
-    // Geplante Stunden (Block: stundenGesamt / Reihe: stundenAnzahl)
+    // Geplante Stunden
     {
       const stundenRow = mk('div', 'fp-detail-inline');
       stundenRow.appendChild(tx('span', 'fp-detail-label', 'Geplante Stunden'));
       const stundenInp = document.createElement('input');
       stundenInp.type = 'number'; stundenInp.className = 'finp fp-detail-num';
-      stundenInp.value = selReihe ? (selReihe.stundenAnzahl || '') : (selBlock.stundenGesamt || '');
+      stundenInp.value = selReihe.stundenAnzahl || '';
       stundenInp.placeholder = '—';
       stundenInp.onblur = () => {
-        const v = stundenInp.value ? +stundenInp.value : null;
-        if (selReihe) selReihe.stundenAnzahl = v; else selBlock.stundenGesamt = v || '';
+        selReihe.stundenAnzahl = stundenInp.value ? +stundenInp.value : null;
         scheduleSave(); render();
       };
       stundenRow.appendChild(stundenInp);
       nb.appendChild(stundenRow);
     }
 
-    if (selReihe) {
+    // Schwerpunkt
+    nb.appendChild(detailLabel('Schwerpunkt'));
+    const schwInp = document.createElement('input');
+    schwInp.type = 'text'; schwInp.className = 'finp fp-detail-txt';
+    schwInp.value = selReihe.schwerpunkt || '';
+    schwInp.placeholder = 'z.B. Schülerversuch, eigenverantwortliches Arbeiten…';
+    schwInp.onblur = () => { selReihe.schwerpunkt = schwInp.value; scheduleSave(); };
+    nb.appendChild(schwInp);
 
-      // Schwerpunkt
-      nb.appendChild(detailLabel('Schwerpunkt'));
-      const schwInp = document.createElement('input');
-      schwInp.type = 'text'; schwInp.className = 'finp fp-detail-txt';
-      schwInp.value = selReihe.schwerpunkt || '';
-      schwInp.placeholder = 'z.B. Schülerversuch, eigenverantwortliches Arbeiten…';
-      schwInp.onblur = () => { selReihe.schwerpunkt = schwInp.value; scheduleSave(); };
-      nb.appendChild(schwInp);
-    }
-
-    // Didaktische Begründung (nur Reihe)
-    if (selReihe) {
-      nb.appendChild(detailLabel('Didaktische Begründung'));
-      const beschTA = document.createElement('textarea');
-      beschTA.className = 'finp fp-detail-ta';
-      beschTA.placeholder = 'Begründung, Ziele, didaktischer Kontext…';
-      beschTA.value = selReihe.beschreibung || '';
-      beschTA.onblur = () => { selReihe.beschreibung = beschTA.value; scheduleSave(); };
-      nb.appendChild(beschTA);
-    }
+    // Didaktische Begründung
+    nb.appendChild(detailLabel('Didaktische Begründung'));
+    const beschTA = document.createElement('textarea');
+    beschTA.className = 'finp fp-detail-ta';
+    beschTA.placeholder = 'Begründung, Ziele, didaktischer Kontext…';
+    beschTA.value = selReihe.beschreibung || '';
+    beschTA.onblur = () => { selReihe.beschreibung = beschTA.value; scheduleSave(); };
+    nb.appendChild(beschTA);
 
     // Notizen
     nb.appendChild(detailLabel('Notizen'));
     const nta = document.createElement('textarea');
     nta.className = 'finp fp-detail-ta';
     nta.placeholder = 'Stichworte, Ideen, Materialhinweise, offene Fragen…';
-    nta.value = notizObj.notizen || '';
-    nta.onblur = () => { notizObj.notizen = nta.value; scheduleSave(); };
+    nta.value = selReihe.notizen || '';
+    nta.onblur = () => { selReihe.notizen = nta.value; scheduleSave(); };
     nb.appendChild(nta);
-
-    // "Reihen planen"-Button (nur für Blöcke)
-    if (notizTyp === 'block') {
-      const chatOpen = !!S.open['blockChat_' + selBlock.id];
-      const planBtn = btn('✨ Reihen planen' + (chatOpen ? ' ▼' : ' ›'), 'btn btn-primary btn-sm');
-      planBtn.style.marginTop = '4px';
-      planBtn.onclick = () => { S.open['blockChat_' + selBlock.id] = !chatOpen; render(); };
-      nb.appendChild(planBtn);
-    }
 
     nc.appendChild(nb);
     div.appendChild(nc);
+  }
 
-    // Block-Chat (unterhalb der Detailkarte)
-    if (notizTyp === 'block' && S.open['blockChat_' + selBlock.id]) {
-      div.appendChild(buildBlockChat(lp, selBlock));
-    }
+  // ── Block-Chat (unterhalb des Baums, wenn ✨ aktiv) ──────────
+  if (selBlock && !selReihe && S.open['blockChat_' + selBlock.id]) {
+    div.appendChild(buildBlockChat(lp, selBlock));
   }
 
   return div;

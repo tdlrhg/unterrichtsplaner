@@ -75,6 +75,17 @@ function modalInput(id, label, placeholder, val = '', type = 'text') {
   return fg;
 }
 
+function modalTextarea(id, label, placeholder, val = '') {
+  const fg = mk('div', 'fg');
+  if (label) fg.appendChild(tx('label', 'fl', label));
+  const ta = document.createElement('textarea');
+  ta.id = id; ta.placeholder = placeholder;
+  ta.value = val; ta.className = 'finp';
+  ta.rows = 4; ta.style.resize = 'vertical';
+  fg.appendChild(ta);
+  return fg;
+}
+
 function modalSelect(id, label, options, selected = '') {
   const fg = mk('div', 'fg');
   if (label) fg.appendChild(tx('label', 'fl', label));

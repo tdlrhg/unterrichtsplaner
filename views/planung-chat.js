@@ -422,7 +422,7 @@ Arbeite proaktiv: Wenn die Lehrerin grobe Vorgaben macht, erstelle direkt den vo
 
 function buildPlanungsChat(fp) {
   if (_pcFpId !== fp.id) {
-    _pcMsgs = []; _pcApi = []; _pcFpId = fp.id; _pcConfig = null; _pcCollapsed = false; _pcEditingCfg = false;
+    _pcMsgs = []; _pcApi = []; _pcFpId = fp.id; _pcConfig = null; _pcCollapsed = true; _pcEditingCfg = false;
   }
 
   const wrap = mk('div', 'pc-wrap card');

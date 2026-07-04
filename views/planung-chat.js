@@ -1,17 +1,14 @@
 // ── Planungs-Chat (Block-Ebene) ───────────────────────────────────────
-// KI-Agent mit Tool-Use: plant Reihen für einen Block auf Basis
-// eines freien Dialogs. Schreibt direkt in die Fachplanung.
+// KI-Agent mit Tool-Use: plant Reihen für einen Block.
+// Startet automatisch beim Öffnen; kein Konfigformular.
 
-const PC_FACH      = { M:'Mathematik', Ch:'Chemie', Bio:'Biologie', Ch_GK:'Chemie', Ch_LK:'Chemie', Bio_GK:'Biologie', Bio_LK:'Biologie' };
-const PC_NATURWISS = new Set(['Ch','Bio','Ch_GK','Ch_LK','Bio_GK','Bio_LK']);
+const PC_FACH = { M:'Mathematik', Ch:'Chemie', Bio:'Biologie', Ch_GK:'Chemie', Ch_LK:'Chemie', Bio_GK:'Biologie', Bio_LK:'Biologie' };
 
-let _pcMsgs       = [];   // UI: { role, text, toolCalls?, isThinking? }
-let _pcApi        = [];   // Anthropic API message history
-let _pcFpId       = null;
-let _pcBlockId    = null;
-let _pcConfig     = null; // Planungsrahmendaten aus dem Konfigurationsformular
-let _pcEditingCfg = false;
-let _pcRunning    = false;
+let _pcMsgs    = [];
+let _pcApi     = [];
+let _pcFpId    = null;
+let _pcBlockId = null;
+let _pcRunning = false;
 
 const PC_TOOLS = [
   {
@@ -59,15 +56,15 @@ const PC_TOOLS = [
       properties: {
         titel:        { type: 'string', description: 'Titel der Reihe' },
         beschreibung: { type: 'string', description: 'Didaktische Begründung (optional)' },
-        schwerpunkt:  { type: 'string', description: 'Pädagogischer Schwerpunkt, z.B. Schülerversuch, Präsentation, eigenverantwortliches Arbeiten (optional)' },
-        stundenAnzahl:{ type: 'number', description: 'Geplante Unterrichtsstunden – immer angeben, auch wenn noch keine Einzelstunden angelegt sind' }
+        schwerpunkt:  { type: 'string', description: 'Pädagogischer Schwerpunkt, z.B. Schülerversuch, Präsentation (optional)' },
+        stundenAnzahl:{ type: 'number', description: 'Geplante Unterrichtsstunden – immer angeben' }
       },
       required: ['titel']
     }
   },
   {
     name: 'updateReihe',
-    description: 'Aktualisiert Felder einer bestehenden Reihe (Titel, Beschreibung, Schwerpunkt, Stundenzahl).',
+    description: 'Aktualisiert Felder einer bestehenden Reihe.',
     input_schema: {
       type: 'object',
       properties: {
@@ -90,7 +87,7 @@ const PC_TOOLS = [
         titel:    { type: 'string', description: 'Stundenthema' },
         lernziel: { type: 'string', description: 'Lernziel (optional)' },
         dauer:    { type: 'number', description: '45 oder 90 Minuten' },
-        intention:{ type: 'string', description: 'Didaktische Begründung für diese Stunde (optional)' },
+        intention:{ type: 'string', description: 'Didaktische Begründung (optional)' },
         methode:  { type: 'string', description: 'Hauptmethode (optional)' }
       },
       required: ['reiheId', 'titel']
@@ -194,133 +191,6 @@ function _pcExecTool(name, input, fp) {
   }
 }
 
-function _pcConfigText(cfg) {
-  if (!cfg) return '';
-  const parts = [
-    'Format: ' + (cfg.format === '45' ? '45 Min.' : cfg.format === '90' ? '90 Min.' : 'gemischt'),
-    cfg.puffer + ' Pufferstd.',
-    'iPad: ' + cfg.ipad + (cfg.ipadWofuer ? ' (' + cfg.ipadWofuer + ')' : ''),
-  ];
-  if (cfg.versuche) parts.push('Versuche: ' + cfg.versuche);
-  parts.push('GA: ' + cfg.gruppenarbeit);
-  return parts.join(' · ');
-}
-
-function _pcConfigToSystem(cfg) {
-  if (!cfg) return '';
-  return `\nRahmenbedingungen für die Planung:
-- Stundenformat: ${cfg.format === '45' ? 'nur 45-Min.-Stunden' : cfg.format === '90' ? 'nur Doppelstunden (90 Min.)' : 'gemischt (45 und 90 Min.)'}
-- Pufferstunden im Block: ${cfg.puffer}
-- iPad-Einsatz: ${cfg.ipad}${cfg.ipadWofuer ? ', vor allem für: ' + cfg.ipadWofuer : ''}
-${cfg.versuche ? '- Schülerversuche: ' + cfg.versuche + '\n' : ''}- Gruppenarbeit: ${cfg.gruppenarbeit}
-Richte alle Reihenplanungen an diesen Rahmenbedingungen aus.`;
-}
-
-function _pcBuildConfigForm(fp, block, onDone, isEdit) {
-  const hatVersuche = PC_NATURWISS.has(fp.fach);
-  const c = isEdit && _pcConfig ? _pcConfig : null;
-  const form = mk('div', 'pc-config');
-
-  function cfgRow(label, el) {
-    const r = mk('div', 'pc-cfg-row');
-    r.appendChild(tx('label', 'pc-cfg-label', label));
-    r.appendChild(el);
-    return r;
-  }
-
-  function cfgSel(options, defVal) {
-    const s = document.createElement('select');
-    s.className = 'finp pc-cfg-sel';
-    options.forEach(([v, t]) => {
-      const o = document.createElement('option');
-      o.value = v; o.textContent = t;
-      if (v === defVal) o.selected = true;
-      s.appendChild(o);
-    });
-    return s;
-  }
-
-  function cfgNum(def, min) {
-    const i = document.createElement('input');
-    i.type = 'number'; i.className = 'finp pc-cfg-num';
-    i.value = def; i.min = min !== undefined ? min : 0;
-    return i;
-  }
-
-  function cfgTxt(placeholder) {
-    const i = document.createElement('input');
-    i.type = 'text'; i.className = 'finp pc-cfg-txt';
-    i.placeholder = placeholder;
-    return i;
-  }
-
-  const formatSel = cfgSel([
-    ['gemischt', 'Gemischt (45 + 90 Min.)'],
-    ['45',       'Nur 45 Min.'],
-    ['90',       'Nur 90 Min. (Doppelstunden)']
-  ], c ? c.format : 'gemischt');
-  const puffer = cfgNum(c ? c.puffer : 0, 0);
-  const ipadSel = cfgSel([
-    ['gelegentlich', 'gelegentlich'],
-    ['häufig',       'häufig'],
-    ['immer',        'immer'],
-    ['nie',          'nie']
-  ], c ? c.ipad : 'gelegentlich');
-  const ipadWofuer = cfgTxt('z.B. Recherche, Präsentation, Übungsapps');
-  if (c && c.ipadWofuer) ipadWofuer.value = c.ipadWofuer;
-  const versucheSel = hatVersuche ? cfgSel([
-    ['gelegentlich', 'gelegentlich'],
-    ['häufig',       'häufig'],
-    ['immer',        'immer'],
-    ['nie',          'nie']
-  ], c && c.versuche ? c.versuche : 'gelegentlich') : null;
-  const gaSel = cfgSel([
-    ['regelmäßig',   'regelmäßig'],
-    ['oft',          'oft'],
-    ['gelegentlich', 'gelegentlich'],
-    ['kaum',         'kaum']
-  ], c ? c.gruppenarbeit : 'regelmäßig');
-
-  const g1 = mk('div', 'pc-cfg-group');
-  g1.appendChild(tx('div', 'pc-cfg-ghdr', 'Stundenformat'));
-  g1.appendChild(cfgRow('Stundenformat', formatSel));
-  g1.appendChild(cfgRow('Pufferstunden', puffer));
-  form.appendChild(g1);
-
-  const g2 = mk('div', 'pc-cfg-group');
-  g2.appendChild(tx('div', 'pc-cfg-ghdr', 'Methodik & Ausstattung'));
-  g2.appendChild(cfgRow('iPad-Nutzung', ipadSel));
-  g2.appendChild(cfgRow('iPad wofür', ipadWofuer));
-  if (versucheSel) g2.appendChild(cfgRow('Schülerversuche', versucheSel));
-  g2.appendChild(cfgRow('Gruppenarbeit', gaSel));
-  form.appendChild(g2);
-
-  const submitBtn = btn(isEdit ? 'Speichern' : 'Planung starten →', 'btn btn-primary pc-cfg-submit');
-  submitBtn.onclick = () => {
-    _pcConfig = {
-      format:       formatSel.value,
-      puffer:       +puffer.value || 0,
-      ipad:         ipadSel.value,
-      ipadWofuer:   ipadWofuer.value.trim(),
-      versuche:     versucheSel ? versucheSel.value : null,
-      gruppenarbeit: gaSel.value
-    };
-    if (isEdit) {
-      _pcEditingCfg = false;
-      _pcMsgs.push({ role: 'assistant', text: `Einstellungen aktualisiert: ${_pcConfigText(_pcConfig)}` });
-    } else {
-      _pcMsgs.push({
-        role: 'assistant',
-        text: `Block: **${block.titel}**${block.stundenGesamt ? ' (' + block.stundenGesamt + ' Std.)' : ''}\n${_pcConfigText(_pcConfig)}\n\nWas soll ich für diesen Block planen?`
-      });
-    }
-    onDone();
-    setTimeout(_pcRender, 0);
-  };
-  form.appendChild(submitBtn);
-  return form;
-}
-
 function _pcRender() {
   const el = document.getElementById('pc-messages');
   if (!el) return;
@@ -353,31 +223,32 @@ function _pcRender() {
   if (sbtn) sbtn.disabled = _pcRunning;
 }
 
-async function _pcSend(fp, block, text) {
+async function _pcSend(fp, block, text, autoStart) {
   if (_pcRunning || !text.trim()) return;
   _pcRunning = true;
 
-  const fachName = PC_FACH[fp.fach] || fp.fach;
-
-  _pcMsgs.push({ role: 'user', text: text.trim() });
+  if (!autoStart) {
+    _pcMsgs.push({ role: 'user', text: text.trim() });
+  }
   _pcApi.push({ role: 'user', content: text.trim() });
 
   const thinkMsg = { role: 'assistant', text: '', isThinking: true, toolCalls: [] };
   _pcMsgs.push(thinkMsg);
   _pcRender();
 
-  const blockInfo = `„${block.titel}"${block.stundenGesamt ? ' (' + block.stundenGesamt + ' Stunden gesamt)' : ''}`;
+  const fachName  = PC_FACH[fp.fach] || fp.fach;
+  const blockInfo = `„${block.titel}"${block.stundenGesamt ? ' (' + block.stundenGesamt + ' Stunden)' : ''}`;
   const notizInfo = block.notizen ? `\nNotizen der Lehrerin zu diesem Block:\n${block.notizen}\n` : '';
 
   const system = `Du bist Planungsassistentin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.
-Dein Auftrag: Plane Unterrichtsreihen für den Block ${blockInfo}.${notizInfo}${_pcConfigToSystem(_pcConfig)}
+Dein Auftrag: Plane Unterrichtsreihen für den Block ${blockInfo}.${notizInfo}
 Gehe immer so vor:
 1. Rufe readPlan und readKLP je genau EINMAL auf – zu Beginn, ohne Filter. Wiederhole diese Aufrufe nicht.
 2. Überblicke alle bereits vorhandenen Reihen in diesem Block.
 3. Plane die Reihenstruktur vollständig durch, bevor du mit createReihe anfängst.
 4. Erstelle alle Reihen in einem Durchgang mit createReihe (stundenAnzahl immer angeben).
 Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.
-Arbeite proaktiv: Wenn die Lehrerin grobe Vorgaben macht, erstelle direkt alle Reihen für den Block.`;
+Arbeite proaktiv und erstelle direkt einen vollständigen Reihenplan für den Block.`;
 
   try {
     while (true) {
@@ -417,64 +288,58 @@ Arbeite proaktiv: Wenn die Lehrerin grobe Vorgaben macht, erstelle direkt alle R
 
 function buildBlockChat(fp, block) {
   if (_pcFpId !== fp.id || _pcBlockId !== block.id) {
-    const fpChanged = _pcFpId !== fp.id;
     _pcMsgs = []; _pcApi = [];
     _pcFpId = fp.id; _pcBlockId = block.id;
-    if (fpChanged) _pcConfig = null; // Config bleibt beim Blockwechsel innerhalb derselben FP erhalten
-    _pcEditingCfg = false;
+    _pcRunning = false;
+  }
+
+  // Beim ersten Öffnen sofort loslegen
+  if (_pcMsgs.length === 0 && !_pcRunning) {
+    const capturedBlockId = block.id;
+    setTimeout(() => {
+      if (_pcBlockId === capturedBlockId) {
+        _pcSend(fp, block, 'Analysiere den Block und erstelle einen vollständigen Reihenplan.', true);
+      }
+    }, 50);
   }
 
   const wrap = mk('div', 'pc-wrap card');
 
   const hdr = cardHdr('✨ Reihen planen');
-  const sub = tx('span', 'pc-hdr-sub', block.titel + (block.stundenGesamt ? ' · ' + block.stundenGesamt + ' Std.' : ''));
-  hdr.appendChild(sub);
+  hdr.appendChild(tx('span', 'pc-hdr-sub', block.titel + (block.stundenGesamt ? ' · ' + block.stundenGesamt + ' Std.' : '')));
   wrap.appendChild(hdr);
-
-  if (_pcConfig && !_pcEditingCfg) {
-    const bar = mk('div', 'pc-cfg-bar');
-    bar.appendChild(tx('span', 'pc-cfg-bar-text', _pcConfigText(_pcConfig)));
-    const editBtn = tx('button', 'btn btn-ghost btn-xs', '⚙ Einstellungen');
-    editBtn.onclick = () => { _pcEditingCfg = true; render(); };
-    bar.appendChild(editBtn);
-    wrap.appendChild(bar);
-  }
 
   const body = mk('div', 'card-body pc-body');
 
-  if (!_pcConfig || _pcEditingCfg) {
-    body.appendChild(_pcBuildConfigForm(fp, block, () => render(), _pcEditingCfg));
-  } else {
-    const msgs = mk('div', 'pc-messages');
-    msgs.id = 'pc-messages';
-    body.appendChild(msgs);
+  const msgs = mk('div', 'pc-messages');
+  msgs.id = 'pc-messages';
+  body.appendChild(msgs);
 
-    const inputRow = mk('div', 'pc-input-row');
+  const inputRow = mk('div', 'pc-input-row');
 
-    const ta = document.createElement('textarea');
-    ta.id = 'pc-input';
-    ta.className = 'finp pc-input';
-    ta.placeholder = 'z.B. "Plane 4 Reihen für diesen Block, davon eine mit Schülerversuch."';
-    ta.rows = 3;
-    ta.onkeydown = e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-    };
+  const ta = document.createElement('textarea');
+  ta.id = 'pc-input';
+  ta.className = 'finp pc-input';
+  ta.placeholder = 'z.B. "Füge eine weitere Reihe mit Schülerversuch hinzu."';
+  ta.rows = 3;
+  ta.onkeydown = e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  };
 
-    const sendBtn = btn('Senden ↵', 'btn btn-primary btn-sm');
-    sendBtn.id = 'pc-send';
-    sendBtn.onclick = send;
+  const sendBtn = btn('Senden ↵', 'btn btn-primary btn-sm');
+  sendBtn.id = 'pc-send';
+  sendBtn.onclick = send;
 
-    function send() {
-      const text = ta.value.trim();
-      if (!text || _pcRunning) return;
-      ta.value = '';
-      _pcSend(fp, block, text);
-    }
-
-    inputRow.appendChild(ta);
-    inputRow.appendChild(sendBtn);
-    body.appendChild(inputRow);
+  function send() {
+    const text = ta.value.trim();
+    if (!text || _pcRunning) return;
+    ta.value = '';
+    _pcSend(fp, block, text, false);
   }
+
+  inputRow.appendChild(ta);
+  inputRow.appendChild(sendBtn);
+  body.appendChild(inputRow);
 
   wrap.appendChild(body);
   _pcRender();

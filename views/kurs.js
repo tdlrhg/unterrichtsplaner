@@ -216,7 +216,7 @@ function buildFpTree(lp, sel) {
       const { row: rRow, open: rOpen } = makeRow({
         level: 1, title: reihe.titel, sub: rSub,
         isActive: selReiheId === reihe.id && !selStundeId,
-        hasChildren: sn > 0, openKey: rKey,
+        hasChildren: true, openKey: rKey,
         onSelect: () => {
           S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
           if (!isOpen(rKey)) S._treeOffen[rKey] = true;

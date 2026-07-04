@@ -105,7 +105,7 @@ Für jeden Eintrag:
 - inhaltstyp: genau eines von: arbeitsblatt|loesung|lehrerkommentar|lehrtext|lzk
   · arbeitsblatt    = Schülerarbeitsblatt mit Aufgaben zum Bearbeiten (Materialien M 1, M 2 … die Schülerinnen bearbeiten)
   · loesung         = Musterlösung, Erwartungshorizont, Lösungsblatt, Erläuterungen zu Materialien
-  · lehrerkommentar = Seiten NUR für die Lehrkraft: Hintergrundinformation, Methodik/Didaktik, Kompetenzübersicht, Quellenangaben, Materialübersicht
+  · lehrerkommentar = Seiten NUR für die Lehrkraft: Hintergrundinformation, Fachartikel, theoretische Grundlagen, Methodik/Didaktik, Kompetenzübersicht, Quellenangaben, Materialübersicht
   · lehrtext        = Informationstext oder Sachtext als Lesematerial für Schülerinnen ohne Aufgaben
   · lzk             = Lernzielkontrolle, Test, Quiz, Leistungsüberprüfung
   FAUSTREGEL: Bearbeiten Schülerinnen diese Seite zum Üben? → arbeitsblatt. Ist es eine Leistungsüberprüfung? → lzk. Enthält sie Lösungen/Erwartungen? → loesung. Ist sie nur für die Lehrkraft? → lehrerkommentar.

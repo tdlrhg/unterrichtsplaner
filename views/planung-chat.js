@@ -1,6 +1,6 @@
-// ── Planungs-Chat (Block-Ebene) ───────────────────────────────────────
-// KI-Agent mit Tool-Use: plant Reihen für einen Block.
-// Startet automatisch beim Öffnen; kein Konfigformular.
+// ── Planungs-Chat (Block- und Reihen-Ebene) ──────────────────────────
+// Block-Chat: plant Reihen für einen Block (Themensequenzen)
+// Reihen-Chat: plant Stundenthemen und -abfolge für eine Reihe
 
 const PC_FACH = { M:'Mathematik', Ch:'Chemie', Bio:'Biologie', Ch_GK:'Chemie', Ch_LK:'Chemie', Bio_GK:'Biologie', Bio_LK:'Biologie' };
 
@@ -8,8 +8,10 @@ let _pcMsgs    = [];
 let _pcApi     = [];
 let _pcFpId    = null;
 let _pcBlockId = null;
+let _pcReiheId = null;  // null = Block-Chat, reihe.id = Reihen-Chat
 let _pcRunning = false;
 
+// ── Tools für den Block-Chat (plant Reihen) ──────────────────────────
 const PC_TOOLS = [
   {
     name: 'readPlan',
@@ -28,23 +30,23 @@ const PC_TOOLS = [
   },
   {
     name: 'readMethoden',
-    description: 'Liest die Methodendatenbank. Gibt Methoden mit Name, Beschreibung, Unterrichtsphase und Sozialform zurück.',
+    description: 'Liest die Methodendatenbank.',
     input_schema: {
       type: 'object',
       properties: {
-        phase:      { type: 'string', description: 'Filter auf Unterrichtsphase, z.B. einstieg, erarbeitung, sicherung (optional)' },
-        sozialform: { type: 'string', description: 'Filter auf Sozialform, z.B. einzelarbeit, partnerarbeit, gruppenarbeit, plenum (optional)' }
+        phase:      { type: 'string', description: 'Filter auf Unterrichtsphase (optional)' },
+        sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' }
       }
     }
   },
   {
     name: 'readDidaktik',
-    description: 'Liest didaktische Leitlinien, Kernaussagen und Unterrichtsmuster aus der Didaktik-Wissensbasis.',
+    description: 'Liest didaktische Leitlinien aus der Wissensbasis.',
     input_schema: {
       type: 'object',
       properties: {
         ebenen: { type: 'string', description: 'Kommagetrennte Planungsebenen: reihe, stunde, material, situation (optional)' },
-        themen:  { type: 'string', description: 'Kommagetrennte didaktische Themen, z.B. differenzierung,motivation,problemlösen (optional)' }
+        themen:  { type: 'string', description: 'Kommagetrennte Themen, z.B. differenzierung,motivation (optional)' }
       }
     }
   },
@@ -56,7 +58,7 @@ const PC_TOOLS = [
       properties: {
         titel:        { type: 'string', description: 'Titel der Reihe' },
         beschreibung: { type: 'string', description: 'Didaktische Begründung (optional)' },
-        schwerpunkt:  { type: 'string', description: 'Pädagogischer Schwerpunkt, z.B. Schülerversuch, Präsentation (optional)' },
+        schwerpunkt:  { type: 'string', description: 'Pädagogischer Schwerpunkt (optional)' },
         stundenAnzahl:{ type: 'number', description: 'Geplante Unterrichtsstunden – immer angeben' }
       },
       required: ['titel']
@@ -69,47 +71,119 @@ const PC_TOOLS = [
       type: 'object',
       properties: {
         reiheId:      { type: 'string', description: 'ID der Reihe (aus readPlan)' },
-        titel:        { type: 'string', description: 'Neuer Titel (optional)' },
-        beschreibung: { type: 'string', description: 'Didaktische Begründung (optional)' },
-        schwerpunkt:  { type: 'string', description: 'Methodischer Schwerpunkt (optional)' },
-        stundenAnzahl:{ type: 'number', description: 'Geplante Stunden (optional)' }
+        titel:        { type: 'string' },
+        beschreibung: { type: 'string' },
+        schwerpunkt:  { type: 'string' },
+        stundenAnzahl:{ type: 'number' }
       },
       required: ['reiheId']
     }
   },
   {
     name: 'deleteReihe',
-    description: 'Löscht eine Reihe aus dem aktuellen Block. Nur verwenden wenn die Reihe wirklich überflüssig oder ein Duplikat ist.',
+    description: 'Löscht eine Reihe. Nur wenn sie wirklich überflüssig oder ein Duplikat ist.',
     input_schema: {
       type: 'object',
       properties: {
-        reiheId: { type: 'string', description: 'ID der zu löschenden Reihe (aus readPlan)' }
+        reiheId: { type: 'string', description: 'ID der zu löschenden Reihe' }
       },
       required: ['reiheId']
+    }
+  }
+];
+
+// ── Tools für den Reihen-Chat (plant Stundenthemen und -abfolge) ─────
+const PC_STUNDEN_TOOLS = [
+  {
+    name: 'readPlan',
+    description: 'Liest den aktuellen Stand dieser Reihe: alle bereits geplanten Stunden.',
+    input_schema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'readKLP',
+    description: 'Liest KLP-Kompetenzerwartungen (NRW) für dieses Fach.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        filter: { type: 'string', description: 'Optionaler Suchbegriff' }
+      }
+    }
+  },
+  {
+    name: 'readMethoden',
+    description: 'Liest die Methodendatenbank.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        phase:      { type: 'string', description: 'Filter auf Unterrichtsphase (optional)' },
+        sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' }
+      }
     }
   },
   {
     name: 'createStunde',
-    description: 'Erstellt eine einzelne Unterrichtsstunde in einer Reihe.',
+    description: 'Erstellt eine Unterrichtsstunde in dieser Reihe (Thema, Lernziel, Dauer, Methode – noch keine Phasen).',
     input_schema: {
       type: 'object',
       properties: {
-        reiheId:  { type: 'string', description: 'ID der Reihe (aus readPlan oder createReihe)' },
         titel:    { type: 'string', description: 'Stundenthema' },
-        lernziel: { type: 'string', description: 'Lernziel (optional)' },
+        lernziel: { type: 'string', description: 'Lernziel der Stunde (optional)' },
         dauer:    { type: 'number', description: '45 oder 90 Minuten' },
         intention:{ type: 'string', description: 'Didaktische Begründung (optional)' },
         methode:  { type: 'string', description: 'Hauptmethode (optional)' }
       },
-      required: ['reiheId', 'titel']
+      required: ['titel']
+    }
+  },
+  {
+    name: 'updateStunde',
+    description: 'Aktualisiert eine bestehende Stunde.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        stundeId: { type: 'string', description: 'ID der Stunde (aus readPlan)' },
+        titel:    { type: 'string' },
+        lernziel: { type: 'string' },
+        dauer:    { type: 'number' },
+        intention:{ type: 'string' },
+        methode:  { type: 'string' }
+      },
+      required: ['stundeId']
+    }
+  },
+  {
+    name: 'deleteStunde',
+    description: 'Löscht eine Stunde. Nur wenn sie wirklich überflüssig oder ein Duplikat ist.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        stundeId: { type: 'string', description: 'ID der zu löschenden Stunde' }
+      },
+      required: ['stundeId']
     }
   }
 ];
 
 function _pcExecTool(name, input, fp) {
   switch (name) {
+
     case 'readPlan': {
       const blk = (fp.blocks || []).find(b => b.id === _pcBlockId);
+      if (_pcReiheId) {
+        // Reihen-Kontext: nur diese Reihe zurückgeben
+        const rei = blk && (blk.reihen || []).find(r => r.id === _pcReiheId);
+        if (!rei) return JSON.stringify({});
+        return JSON.stringify({
+          id: rei.id, titel: rei.titel, beschreibung: rei.beschreibung || '',
+          schwerpunkt: rei.schwerpunkt || '', stundenAnzahl: rei.stundenAnzahl,
+          notizen: rei.notizen || '',
+          stunden: (rei.stunden || []).map(s => ({
+            id: s.id, titel: s.titel, lernziel: s.lernziel || '',
+            dauer: s.dauer, intention: s.intention || '', methode: s.methode || ''
+          }))
+        });
+      }
+      // Block-Kontext: ganzen Block zurückgeben
       if (!blk) return JSON.stringify([]);
       return JSON.stringify([{
         id: blk.id, titel: blk.titel, beschreibung: blk.beschreibung,
@@ -194,8 +268,8 @@ function _pcExecTool(name, input, fp) {
 
     case 'createStunde': {
       const blk = (fp.blocks || []).find(b => b.id === _pcBlockId);
-      const rei = blk && (blk.reihen || []).find(r => r.id === input.reiheId);
-      if (!rei) return JSON.stringify({ error: 'Reihe nicht gefunden: ' + input.reiheId });
+      const rei = blk && (blk.reihen || []).find(r => r.id === _pcReiheId);
+      if (!rei) return JSON.stringify({ error: 'Aktuelle Reihe nicht gefunden' });
       const s = {
         id: uid(), titel: input.titel, lernziel: input.lernziel || '',
         dauer: input.dauer || 45, intention: input.intention || '', methode: input.methode || '',
@@ -205,6 +279,31 @@ function _pcExecTool(name, input, fp) {
       rei.stunden.push(s);
       scheduleSave(); render();
       return JSON.stringify({ ok: true, id: s.id, titel: s.titel });
+    }
+
+    case 'updateStunde': {
+      const blk = (fp.blocks || []).find(b => b.id === _pcBlockId);
+      const rei = blk && (blk.reihen || []).find(r => r.id === _pcReiheId);
+      const stunde = rei && (rei.stunden || []).find(s => s.id === input.stundeId);
+      if (!stunde) return JSON.stringify({ error: 'Stunde nicht gefunden: ' + input.stundeId });
+      if (input.titel     !== undefined) stunde.titel     = input.titel;
+      if (input.lernziel  !== undefined) stunde.lernziel  = input.lernziel;
+      if (input.dauer     !== undefined) stunde.dauer     = input.dauer;
+      if (input.intention !== undefined) stunde.intention = input.intention;
+      if (input.methode   !== undefined) stunde.methode   = input.methode;
+      scheduleSave(); render();
+      return JSON.stringify({ ok: true, id: stunde.id });
+    }
+
+    case 'deleteStunde': {
+      const blk = (fp.blocks || []).find(b => b.id === _pcBlockId);
+      const rei = blk && (blk.reihen || []).find(r => r.id === _pcReiheId);
+      if (!rei) return JSON.stringify({ error: 'Aktuelle Reihe nicht gefunden' });
+      const before = (rei.stunden || []).length;
+      rei.stunden = (rei.stunden || []).filter(s => s.id !== input.stundeId);
+      if (rei.stunden.length === before) return JSON.stringify({ error: 'Stunde nicht gefunden: ' + input.stundeId });
+      scheduleSave(); render();
+      return JSON.stringify({ ok: true });
     }
 
     default:
@@ -244,7 +343,8 @@ function _pcRender() {
   if (sbtn) sbtn.disabled = _pcRunning;
 }
 
-async function _pcSend(fp, block, text, autoStart) {
+async function _pcSend(fp, context, text, autoStart) {
+  // context = { block } für Block-Chat, { block, reihe } für Reihen-Chat
   if (_pcRunning || !text.trim()) return;
   _pcRunning = true;
 
@@ -257,22 +357,48 @@ async function _pcSend(fp, block, text, autoStart) {
   _pcMsgs.push(thinkMsg);
   _pcRender();
 
-  const fachName  = PC_FACH[fp.fach] || fp.fach;
-  const blockInfo = `„${block.titel}"${block.stundenGesamt ? ' (' + block.stundenGesamt + ' Stunden)' : ''}`;
-  const notizInfo = block.notizen ? `\nNotizen der Lehrerin zu diesem Block:\n${block.notizen}\n` : '';
+  const { block, reihe } = context;
+  const fachName = PC_FACH[fp.fach] || fp.fach;
 
-  const system = `Du bist Planungsassistentin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.
+  let tools, system;
+
+  if (reihe) {
+    // Reihen-Chat: Stundenthemen und -abfolge planen
+    const reiheInfo = `„${reihe.titel}"${reihe.stundenAnzahl ? ' (' + reihe.stundenAnzahl + ' Stunden)' : ''}`;
+    const ctx = [
+      reihe.schwerpunkt  ? 'Schwerpunkt: '           + reihe.schwerpunkt  : '',
+      reihe.beschreibung ? 'Didaktische Begründung: ' + reihe.beschreibung : '',
+      reihe.notizen      ? 'Notizen: '                + reihe.notizen      : ''
+    ].filter(Boolean).join('\n');
+    tools = PC_STUNDEN_TOOLS;
+    system = `Du bist Planungsassistentin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.
+Dein Auftrag: Plane die Stundenthemen und Abfolge für die Unterrichtsreihe ${reiheInfo}.
+${ctx ? ctx + '\n' : ''}
+Gehe immer so vor:
+1. Rufe readPlan und readKLP je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
+2. Prüfe, welche Stunden bereits vorhanden sind. Erstelle keine Duplikate.
+3. Wenn die Reihe bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.
+4. Plane die Stundenabfolge vollständig durch, dann erstelle alle Stunden mit createStunde (dauer immer angeben).
+Plane nur Stundenthemen und -abfolge – noch keine Phasen oder Materialien.
+Arbeite proaktiv und erstelle direkt einen vollständigen Stundenplan für die Reihe.`;
+  } else {
+    // Block-Chat: Reihen planen
+    const blockInfo = `„${block.titel}"${block.stundenGesamt ? ' (' + block.stundenGesamt + ' Stunden)' : ''}`;
+    const notizInfo = block.notizen ? `\nNotizen der Lehrerin zu diesem Block:\n${block.notizen}\n` : '';
+    tools = PC_TOOLS;
+    system = `Du bist Planungsassistentin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.
 Dein Auftrag: Plane Unterrichtsreihen für den Block ${blockInfo}.${notizInfo}
 Gehe immer so vor:
-1. Rufe readPlan und readKLP je genau EINMAL auf – zu Beginn, ohne Filter. Wiederhole diese Aufrufe nicht.
+1. Rufe readPlan und readKLP je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
 2. Prüfe, welche Reihen bereits vorhanden sind. Erstelle KEINE Duplikate bestehender Reihen.
 3. Wenn der Block bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.
-4. Wenn Reihen fehlen: Plane die fehlende Struktur durch, dann erstelle sie in einem Durchgang mit createReihe (stundenAnzahl immer angeben).
+4. Wenn Reihen fehlen: Plane die fehlende Struktur durch, dann erstelle sie mit createReihe (stundenAnzahl immer angeben).
 Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
+  }
 
   try {
     while (true) {
-      const resp = await callKIAgent({ messages: _pcApi, tools: PC_TOOLS, system, maxTokens: 8192 });
+      const resp = await callKIAgent({ messages: _pcApi, tools, system, maxTokens: 8192 });
 
       _pcApi.push({ role: 'assistant', content: resp.content });
 
@@ -306,29 +432,7 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
   _pcRender();
 }
 
-function buildBlockChat(fp, block) {
-  if (_pcFpId !== fp.id || _pcBlockId !== block.id) {
-    _pcMsgs = []; _pcApi = [];
-    _pcFpId = fp.id; _pcBlockId = block.id;
-    _pcRunning = false;
-  }
-
-  // Beim ersten Öffnen sofort loslegen
-  if (_pcMsgs.length === 0 && !_pcRunning) {
-    const capturedBlockId = block.id;
-    setTimeout(() => {
-      if (_pcBlockId === capturedBlockId) {
-        _pcSend(fp, block, 'Analysiere den Block und erstelle einen vollständigen Reihenplan.', true);
-      }
-    }, 50);
-  }
-
-  const wrap = mk('div', 'pc-wrap card');
-
-  const hdr = cardHdr('✨ Reihen planen');
-  hdr.appendChild(tx('span', 'pc-hdr-sub', block.titel + (block.stundenGesamt ? ' · ' + block.stundenGesamt + ' Std.' : '')));
-  wrap.appendChild(hdr);
-
+function _pcBuildChatUI(wrap, sendFn, placeholder) {
   const body = mk('div', 'card-body pc-body');
 
   const msgs = mk('div', 'pc-messages');
@@ -336,32 +440,83 @@ function buildBlockChat(fp, block) {
   body.appendChild(msgs);
 
   const inputRow = mk('div', 'pc-input-row');
-
   const ta = document.createElement('textarea');
-  ta.id = 'pc-input';
-  ta.className = 'finp pc-input';
-  ta.placeholder = 'z.B. "Füge eine weitere Reihe mit Schülerversuch hinzu."';
-  ta.rows = 3;
-  ta.onkeydown = e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-  };
+  ta.id = 'pc-input'; ta.className = 'finp pc-input';
+  ta.placeholder = placeholder; ta.rows = 3;
+  ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendFn(); } };
 
   const sendBtn = btn('Senden ↵', 'btn btn-primary btn-sm');
   sendBtn.id = 'pc-send';
-  sendBtn.onclick = send;
-
-  function send() {
-    const text = ta.value.trim();
-    if (!text || _pcRunning) return;
-    ta.value = '';
-    _pcSend(fp, block, text, false);
-  }
+  sendBtn.onclick = sendFn;
 
   inputRow.appendChild(ta);
   inputRow.appendChild(sendBtn);
   body.appendChild(inputRow);
-
   wrap.appendChild(body);
+}
+
+function buildBlockChat(fp, block) {
+  if (_pcFpId !== fp.id || _pcBlockId !== block.id || _pcReiheId !== null) {
+    _pcMsgs = []; _pcApi = [];
+    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = null;
+    _pcRunning = false;
+  }
+
+  if (_pcMsgs.length === 0 && !_pcRunning) {
+    const capturedBlockId = block.id;
+    setTimeout(() => {
+      if (_pcBlockId === capturedBlockId && _pcReiheId === null) {
+        _pcSend(fp, { block }, 'Analysiere den Block und erstelle einen vollständigen Reihenplan.', true);
+      }
+    }, 50);
+  }
+
+  const wrap = mk('div', 'pc-wrap card');
+  const hdr = cardHdr('✨ Reihen planen');
+  hdr.appendChild(tx('span', 'pc-hdr-sub', block.titel + (block.stundenGesamt ? ' · ' + block.stundenGesamt + ' Std.' : '')));
+  wrap.appendChild(hdr);
+
+  _pcBuildChatUI(wrap, () => {
+    const ta = document.getElementById('pc-input');
+    const text = ta ? ta.value.trim() : '';
+    if (!text || _pcRunning) return;
+    ta.value = '';
+    _pcSend(fp, { block }, text, false);
+  }, 'z.B. "Füge eine weitere Reihe mit Schülerversuch hinzu."');
+
+  _pcRender();
+  return wrap;
+}
+
+function buildReiheChat(fp, block, reihe) {
+  if (_pcFpId !== fp.id || _pcBlockId !== block.id || _pcReiheId !== reihe.id) {
+    _pcMsgs = []; _pcApi = [];
+    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = reihe.id;
+    _pcRunning = false;
+  }
+
+  if (_pcMsgs.length === 0 && !_pcRunning) {
+    const capturedReiheId = reihe.id;
+    setTimeout(() => {
+      if (_pcReiheId === capturedReiheId) {
+        _pcSend(fp, { block, reihe }, 'Analysiere die Reihe und erstelle einen vollständigen Stundenplan.', true);
+      }
+    }, 50);
+  }
+
+  const wrap = mk('div', 'pc-wrap card');
+  const hdr = cardHdr('✨ Stunden planen');
+  hdr.appendChild(tx('span', 'pc-hdr-sub', reihe.titel + (reihe.stundenAnzahl ? ' · ' + reihe.stundenAnzahl + ' Std.' : '')));
+  wrap.appendChild(hdr);
+
+  _pcBuildChatUI(wrap, () => {
+    const ta = document.getElementById('pc-input');
+    const text = ta ? ta.value.trim() : '';
+    if (!text || _pcRunning) return;
+    ta.value = '';
+    _pcSend(fp, { block, reihe }, text, false);
+  }, 'z.B. "Verschiebe Stunde 3 ans Ende" oder "Füge eine Wiederholungsstunde ein."');
+
   _pcRender();
   return wrap;
 }

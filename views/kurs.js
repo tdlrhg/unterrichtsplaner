@@ -456,8 +456,19 @@ function viewFachplanung() {
     nta.onblur = () => { selReihe.notizen = nta.value; scheduleSave(); };
     nb.appendChild(nta);
 
+    // ✨ Stunden planen
+    const reiheChat = !!S.open['reiheChat_' + selReihe.id];
+    const stundenBtn = btn('✨ Stunden planen' + (reiheChat ? ' ▼' : ' ›'), 'btn btn-primary btn-sm');
+    stundenBtn.style.marginTop = '4px';
+    stundenBtn.onclick = () => { S.open['reiheChat_' + selReihe.id] = !reiheChat; render(); };
+    nb.appendChild(stundenBtn);
+
     nc.appendChild(nb);
     div.appendChild(nc);
+
+    if (reiheChat) {
+      div.appendChild(buildReiheChat(lp, selBlock, selReihe));
+    }
   }
 
   // ── Block-Chat (unterhalb des Baums, wenn ✨ aktiv) ──────────

@@ -87,7 +87,7 @@ const PC_TOOLS = [
         blockId:       { type: 'string', description: 'ID des Blocks' },
         titel:         { type: 'string', description: 'Neuer Titel (optional)' },
         beschreibung:  { type: 'string', description: 'Neue Beschreibung (optional)' },
-        stundenAnzahl: { type: 'number', description: 'Geplante Stunden für diesen Block (optional)' }
+        stundenGesamt: { type: 'number', description: 'Geplante Stunden für diesen Block (optional)' }
       },
       required: ['blockId']
     }
@@ -132,7 +132,7 @@ function _pcExecTool(name, input, fp) {
     case 'readPlan':
       return JSON.stringify((fp.blocks || []).map(b => ({
         id: b.id, titel: b.titel, beschreibung: b.beschreibung,
-        stundenAnzahl: b.stundenAnzahl || null, notizen: b.notizen || '',
+        stundenGesamt: b.stundenGesamt || null, notizen: b.notizen || '',
         reihen: (b.reihen || []).map(r => ({
           id: r.id, titel: r.titel, beschreibung: r.beschreibung,
           schwerpunkt: r.schwerpunkt, stundenAnzahl: r.stundenAnzahl,
@@ -177,9 +177,9 @@ function _pcExecTool(name, input, fp) {
     case 'updateBlock': {
       const blk = (fp.blocks || []).find(b => b.id === input.blockId);
       if (!blk) return JSON.stringify({ error: 'Block nicht gefunden: ' + input.blockId });
-      if (input.titel         !== undefined) blk.titel         = input.titel;
-      if (input.beschreibung  !== undefined) blk.beschreibung  = input.beschreibung;
-      if (input.stundenAnzahl !== undefined) blk.stundenAnzahl = input.stundenAnzahl;
+      if (input.titel        !== undefined) blk.titel        = input.titel;
+      if (input.beschreibung !== undefined) blk.beschreibung = input.beschreibung;
+      if (input.stundenGesamt !== undefined) blk.stundenGesamt = String(input.stundenGesamt);
       scheduleSave(); render();
       return JSON.stringify({ ok: true, id: blk.id, titel: blk.titel });
     }

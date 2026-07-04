@@ -152,7 +152,7 @@ function buildFpTree(lp, sel) {
     const rn = (block.reihen || []).length;
     const angelegte = (block.reihen || []).reduce((s, r) => s + (r.stunden || []).length, 0);
     const bSub = rn + ' Reihe' + (rn !== 1 ? 'n' : '') +
-      (block.stundenAnzahl ? ' · ' + angelegte + '/' + block.stundenAnzahl + ' Std.' : (angelegte > 0 ? ' · ' + angelegte + ' Std.' : ''));
+      (block.stundenGesamt ? ' · ' + angelegte + '/' + parseInt(block.stundenGesamt) + ' Std.' : (angelegte > 0 ? ' · ' + angelegte + ' Std.' : ''));
 
     const { row: bRow, open: bOpen } = makeRow({
       level: 0, title: block.titel, sub: bSub,
@@ -411,17 +411,17 @@ function viewFachplanung() {
 
     function detailLabel(text) { return tx('div', 'fp-detail-label', text); }
 
-    // Geplante Stunden (Block + Reihe)
+    // Geplante Stunden (Block: stundenGesamt / Reihe: stundenAnzahl)
     {
-      const obj = selReihe || selBlock;
       const stundenRow = mk('div', 'fp-detail-inline');
       stundenRow.appendChild(tx('span', 'fp-detail-label', 'Geplante Stunden'));
       const stundenInp = document.createElement('input');
       stundenInp.type = 'number'; stundenInp.className = 'finp fp-detail-num';
-      stundenInp.value = obj.stundenAnzahl || '';
+      stundenInp.value = selReihe ? (selReihe.stundenAnzahl || '') : (selBlock.stundenGesamt || '');
       stundenInp.placeholder = '—';
       stundenInp.onblur = () => {
-        obj.stundenAnzahl = stundenInp.value ? +stundenInp.value : null;
+        const v = stundenInp.value ? +stundenInp.value : null;
+        if (selReihe) selReihe.stundenAnzahl = v; else selBlock.stundenGesamt = v || '';
         scheduleSave(); render();
       };
       stundenRow.appendChild(stundenInp);

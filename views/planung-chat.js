@@ -78,6 +78,17 @@ const PC_TOOLS = [
     }
   },
   {
+    name: 'deleteReihe',
+    description: 'Löscht eine Reihe aus dem aktuellen Block. Nur verwenden wenn die Reihe wirklich überflüssig oder ein Duplikat ist.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        reiheId: { type: 'string', description: 'ID der zu löschenden Reihe (aus readPlan)' }
+      },
+      required: ['reiheId']
+    }
+  },
+  {
     name: 'createStunde',
     description: 'Erstellt eine einzelne Unterrichtsstunde in einer Reihe.',
     input_schema: {
@@ -169,6 +180,16 @@ function _pcExecTool(name, input, fp) {
       if (input.stundenAnzahl !== undefined) rei.stundenAnzahl = input.stundenAnzahl;
       scheduleSave(); render();
       return JSON.stringify({ ok: true, id: rei.id, titel: rei.titel });
+    }
+
+    case 'deleteReihe': {
+      const blk = (fp.blocks || []).find(b => b.id === _pcBlockId);
+      if (!blk) return JSON.stringify({ error: 'Block nicht gefunden' });
+      const before = (blk.reihen || []).length;
+      blk.reihen = (blk.reihen || []).filter(r => r.id !== input.reiheId);
+      if (blk.reihen.length === before) return JSON.stringify({ error: 'Reihe nicht gefunden: ' + input.reiheId });
+      scheduleSave(); render();
+      return JSON.stringify({ ok: true });
     }
 
     case 'createStunde': {

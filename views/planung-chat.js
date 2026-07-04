@@ -244,11 +244,10 @@ async function _pcSend(fp, block, text, autoStart) {
 Dein Auftrag: Plane Unterrichtsreihen für den Block ${blockInfo}.${notizInfo}
 Gehe immer so vor:
 1. Rufe readPlan und readKLP je genau EINMAL auf – zu Beginn, ohne Filter. Wiederhole diese Aufrufe nicht.
-2. Überblicke alle bereits vorhandenen Reihen in diesem Block.
-3. Plane die Reihenstruktur vollständig durch, bevor du mit createReihe anfängst.
-4. Erstelle alle Reihen in einem Durchgang mit createReihe (stundenAnzahl immer angeben).
-Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.
-Arbeite proaktiv und erstelle direkt einen vollständigen Reihenplan für den Block.`;
+2. Prüfe, welche Reihen bereits vorhanden sind. Erstelle KEINE Duplikate bestehender Reihen.
+3. Wenn der Block bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.
+4. Wenn Reihen fehlen: Plane die fehlende Struktur durch, dann erstelle sie in einem Durchgang mit createReihe (stundenAnzahl immer angeben).
+Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
 
   try {
     while (true) {

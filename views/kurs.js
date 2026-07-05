@@ -223,7 +223,7 @@ function buildFpTree(lp, sel) {
           render();
         },
         dragPayload: { type: 'reihe', srcBlockId: block.id, reiheId: reihe.id },
-        onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: reihe, feld: 'titel', label: 'Unterrichtsreihe' } }; render(); },
+        onEdit: () => { S.modal = { type: 'editReihe', data: { reihe } }; render(); },
         onUp: () => { swap(block.reihen, ri, ri-1); scheduleSave(); render(); },
         onDown: () => { swap(block.reihen, ri, ri+1); scheduleSave(); render(); },
         isFirst: ri === 0, isLast: ri === block.reihen.length-1,
@@ -408,58 +408,29 @@ function viewFachplanung() {
   // ── Detailbereich für ausgewählte Reihe ─────────────────────
   if (selReihe) {
     const nc = mk('div', 'card');
-    nc.appendChild(cardHdr(selReihe.titel));
-    const nb = mk('div', 'card-body fp-detail-body');
+    const hdr = cardHdr(selReihe.titel);
+    const editBtn = btn('✏', 'btn btn-ghost btn-xs');
+    editBtn.title = 'Reihe bearbeiten';
+    editBtn.onclick = () => { S.modal = { type: 'editReihe', data: { reihe: selReihe } }; render(); };
+    hdr.appendChild(editBtn);
+    nc.appendChild(hdr);
 
-    function detailLabel(text) { return tx('div', 'fp-detail-label', text); }
+    const nb = mk('div', 'card-body');
+    nb.style.cssText = 'padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;';
 
-    // Geplante Stunden
-    {
-      const stundenRow = mk('div', 'fp-detail-inline');
-      stundenRow.appendChild(tx('span', 'fp-detail-label', 'Geplante Stunden'));
-      const stundenInp = document.createElement('input');
-      stundenInp.type = 'number'; stundenInp.className = 'finp fp-detail-num';
-      stundenInp.value = selReihe.stundenAnzahl || '';
-      stundenInp.placeholder = '—';
-      stundenInp.onblur = () => {
-        selReihe.stundenAnzahl = stundenInp.value ? +stundenInp.value : null;
-        scheduleSave(); render();
-      };
-      stundenRow.appendChild(stundenInp);
-      nb.appendChild(stundenRow);
+    // kompakte Infos
+    if (selReihe.stundenAnzahl) {
+      nb.appendChild(tx('span', 'fp-detail-chip', selReihe.stundenAnzahl + ' Std.'));
     }
-
-    // Schwerpunkt
-    nb.appendChild(detailLabel('Schwerpunkt'));
-    const schwInp = document.createElement('input');
-    schwInp.type = 'text'; schwInp.className = 'finp fp-detail-txt';
-    schwInp.value = selReihe.schwerpunkt || '';
-    schwInp.placeholder = 'z.B. Schülerversuch, eigenverantwortliches Arbeiten…';
-    schwInp.onblur = () => { selReihe.schwerpunkt = schwInp.value; scheduleSave(); };
-    nb.appendChild(schwInp);
-
-    // Didaktische Begründung
-    nb.appendChild(detailLabel('Didaktische Begründung'));
-    const beschTA = document.createElement('textarea');
-    beschTA.className = 'finp fp-detail-ta';
-    beschTA.placeholder = 'Begründung, Ziele, didaktischer Kontext…';
-    beschTA.value = selReihe.beschreibung || '';
-    beschTA.onblur = () => { selReihe.beschreibung = beschTA.value; scheduleSave(); };
-    nb.appendChild(beschTA);
-
-    // Notizen
-    nb.appendChild(detailLabel('Notizen'));
-    const nta = document.createElement('textarea');
-    nta.className = 'finp fp-detail-ta';
-    nta.placeholder = 'Stichworte, Ideen, Materialhinweise, offene Fragen…';
-    nta.value = selReihe.notizen || '';
-    nta.onblur = () => { selReihe.notizen = nta.value; scheduleSave(); };
-    nb.appendChild(nta);
+    if (selReihe.schwerpunkt) {
+      const sp = tx('span', 'fp-detail-chip', selReihe.schwerpunkt);
+      sp.style.color = 'var(--tx2)';
+      nb.appendChild(sp);
+    }
 
     // ✨ Stunden planen
     const reiheChat = !!S.open['reiheChat_' + selReihe.id];
     const stundenBtn = btn('✨ Stunden planen' + (reiheChat ? ' ▼' : ' ›'), 'btn btn-primary btn-sm');
-    stundenBtn.style.marginTop = '4px';
     stundenBtn.onclick = () => { S.open['reiheChat_' + selReihe.id] = !reiheChat; render(); };
     nb.appendChild(stundenBtn);
 

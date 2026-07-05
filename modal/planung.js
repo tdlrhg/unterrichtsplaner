@@ -43,6 +43,32 @@ function modalHandlerPlanung(type, data, m) {
     return true;
   }
 
+  if (type === 'editReihe') {
+    const { reihe } = data;
+    m.appendChild(tx('div', 'modal-title', 'Unterrichtsreihe bearbeiten'));
+    m.appendChild(modalInput('mt', 'Titel', '', reihe.titel));
+    m.appendChild(modalInput('ms', 'Geplante Stunden', '', reihe.stundenAnzahl || '', 'number'));
+    m.appendChild(modalInput('msw', 'Schwerpunkt', 'z.B. Schülerversuch, eigenverantwortliches Arbeiten…', reihe.schwerpunkt || ''));
+    m.appendChild(modalTextarea('mb', 'Didaktische Begründung', 'Begründung, Ziele, didaktischer Kontext…', reihe.beschreibung || ''));
+    m.appendChild(modalTextarea('mn', 'Notizen', 'Stichworte, Ideen, Materialhinweise, offene Fragen…', reihe.notizen || ''));
+    const footer = mk('div', 'modal-footer');
+    footer.appendChild(cancelBtn());
+    const sv = btn('Speichern', 'btn btn-pri');
+    sv.onclick = () => {
+      const t = document.getElementById('mt').value.trim();
+      if (!t) return;
+      reihe.titel       = t;
+      reihe.stundenAnzahl = document.getElementById('ms').value ? +document.getElementById('ms').value : null;
+      reihe.schwerpunkt = document.getElementById('msw').value.trim();
+      reihe.beschreibung = document.getElementById('mb').value.trim();
+      reihe.notizen     = document.getElementById('mn').value.trim();
+      S.modal = null; scheduleSave(); render();
+    };
+    footer.appendChild(sv); m.appendChild(footer);
+    setTimeout(() => { const i = document.getElementById('mt'); if(i){i.focus();i.select();} }, 50);
+    return true;
+  }
+
   if (type === 'newReihe') {
     m.appendChild(tx('div', 'modal-title', 'Neue Unterrichtsreihe'));
     m.appendChild(modalInput('mt', 'Titel', ''));

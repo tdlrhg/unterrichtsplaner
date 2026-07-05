@@ -56,7 +56,7 @@ function buildFpTree(lp, sel) {
     const label = mk('div', 'fp-tree-label');
     label.appendChild(tx('span', 'fp-tree-title', title));
     if (sub) label.appendChild(tx('span', 'fp-tree-sub', sub));
-    label.onclick = e => { e.stopPropagation(); onSelect && onSelect(); };
+    label.onclick = e => { e.stopPropagation(); onSelect && onSelect(e); };
     row.appendChild(label);
 
     // Actions
@@ -240,77 +240,53 @@ function buildFpTree(lp, sel) {
       tree.appendChild(rRow);
       if (!rOpen) return;
 
-      // ── Stunden (flach, mit Gruppentrennern) ─────────────────────
+      // ── Stunden (flach in Originalreihenfolge, Gruppenheader inline) ──
       if (!(reihe.stunden || []).length) {
         const emp = tx('div', 'fp-tree-empty', 'Noch keine Stunden.');
         emp.style.paddingLeft = (16 + 2 * 44) + 'px';
         tree.appendChild(emp);
       } else {
-        // Stunden nach Gruppen ordnen: erst alle pro Gruppe, dann ungroupiert
+        if (!S.multisel) S.multisel = [];
         const gruppenMap = {};
         (reihe.einheiten || []).forEach(e => { gruppenMap[e.id] = e; });
+        let lastGrpId = null;
+        const allSn = reihe.stunden;
 
-        // Gruppen-Reihenfolge: wie in reihe.einheiten definiert
-        const gruppenIds = (reihe.einheiten || []).map(e => e.id);
-        const stundenProGruppe = {}; // einheitId → stunden[]
-        const ungrouped = [];
-        gruppenIds.forEach(id => { stundenProGruppe[id] = []; });
-
-        (reihe.stunden || []).forEach(s => {
-          if (s.einheitId && stundenProGruppe[s.einheitId]) {
-            stundenProGruppe[s.einheitId].push(s);
-          } else {
-            ungrouped.push(s);
+        allSn.forEach((stunde, si) => {
+          const grpId = stunde.einheitId || null;
+          // Gruppenheader vor erster Stunde der Gruppe
+          if (grpId !== lastGrpId && grpId && gruppenMap[grpId]) {
+            tree.appendChild(makeGruppenDivider(gruppenMap[grpId], reihe, si, lp.id, block.id));
           }
-        });
+          lastGrpId = grpId;
 
-        // Gruppen mit ihren Stunden
-        gruppenIds.forEach((gId, gi) => {
-          const gruppe = gruppenMap[gId];
-          const gStunden = stundenProGruppe[gId];
-          tree.appendChild(makeGruppenDivider(gruppe, reihe, gi, lp.id, block.id));
-
-          gStunden.forEach((stunde, si) => {
-            const farbe = gruppe.farbe || '#94a3b8';
-            const prioIcon = { pflicht:'🟢', optional:'🟡', puffer:'🔵', klassenarbeit:'📝', rueckgabe:'📋' }[stunde.prioritaet||'pflicht'] || '🟢';
-            const { row: sRow } = makeRow({
-              level: 2, title: prioIcon + ' ' + (stunde.titel || '(ohne Titel)'),
-              sub: stunde.lernziel ? stunde.lernziel.slice(0, 55) + '…' : null,
-              isActive: selStundeId === stunde.id,
-              hasChildren: false, accentColor: farbe,
-              onSelect: () => { S.sel = { type: 'stunde', ids: [lp.id, block.id, reihe.id, stunde.id] }; render(); },
-              dragPayload: { type: 'stunde', srcReiheId: reihe.id, stundeId: stunde.id },
-              onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: stunde, feld: 'titel', label: 'Stunde' } }; render(); },
-              onUp: () => { const arr = reihe.stunden; swap(arr, arr.indexOf(stunde), arr.indexOf(stunde)-1); scheduleSave(); render(); },
-              onDown: () => { const arr = reihe.stunden; swap(arr, arr.indexOf(stunde), arr.indexOf(stunde)+1); scheduleSave(); render(); },
-              isFirst: si === 0, isLast: si === gStunden.length-1,
-              onDelete: () => {
-                if (confirm('Stunde löschen?')) {
-                  reihe.stunden = reihe.stunden.filter(s => s.id !== stunde.id);
-                  if (selStundeId === stunde.id) S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
-                  scheduleSave(); render();
-                }
-              },
-            });
-            sRow.style.borderLeft = '3px solid ' + farbe;
-            tree.appendChild(sRow);
-          });
-        });
-
-        // Ungroupierte Stunden
-        ungrouped.forEach((stunde, si) => {
-          const prioIcon = { pflicht:'🟢', optional:'🟡', puffer:'🔵', klassenarbeit:'📝', rueckgabe:'📋' }[stunde.prioritaet||'pflicht'] || '🟢';
+          const gruppe = grpId ? gruppenMap[grpId] : null;
+          const farbe = gruppe ? gruppe.farbe : null;
+          const isMSel = S.multisel.includes(stunde.id);
+          const prioIcon = { pflicht:'🟢', optional:'🟡', puffer:'🔵', klassenarbeit:'📝', rueckgabe:'📋' }[stunde.prioritaet || 'pflicht'] || '🟢';
           const { row: sRow } = makeRow({
-            level: 2, title: prioIcon + ' ' + (stunde.titel || '(ohne Titel)'),
+            level: 2,
+            title: prioIcon + ' ' + (stunde.titel || '(ohne Titel)'),
             sub: stunde.lernziel ? stunde.lernziel.slice(0, 55) + '…' : null,
-            isActive: selStundeId === stunde.id,
-            hasChildren: false,
-            onSelect: () => { S.sel = { type: 'stunde', ids: [lp.id, block.id, reihe.id, stunde.id] }; render(); },
+            isActive: selStundeId === stunde.id && !S.multisel.length,
+            hasChildren: false, accentColor: farbe,
+            onSelect: e => {
+              if (e && (e.ctrlKey || e.metaKey)) {
+                if (!S.multisel) S.multisel = [];
+                S.multisel = isMSel
+                  ? S.multisel.filter(id => id !== stunde.id)
+                  : [...S.multisel, stunde.id];
+                render(); return;
+              }
+              S.multisel = [];
+              S.sel = { type: 'stunde', ids: [lp.id, block.id, reihe.id, stunde.id] };
+              render();
+            },
             dragPayload: { type: 'stunde', srcReiheId: reihe.id, stundeId: stunde.id },
             onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: stunde, feld: 'titel', label: 'Stunde' } }; render(); },
-            onUp: () => { const arr = reihe.stunden; swap(arr, arr.indexOf(stunde), arr.indexOf(stunde)-1); scheduleSave(); render(); },
-            onDown: () => { const arr = reihe.stunden; swap(arr, arr.indexOf(stunde), arr.indexOf(stunde)+1); scheduleSave(); render(); },
-            isFirst: si === 0, isLast: si === ungrouped.length-1,
+            onUp:   () => { swap(allSn, si, si - 1); scheduleSave(); render(); },
+            onDown: () => { swap(allSn, si, si + 1); scheduleSave(); render(); },
+            isFirst: si === 0, isLast: si === allSn.length - 1,
             onDelete: () => {
               if (confirm('Stunde löschen?')) {
                 reihe.stunden = reihe.stunden.filter(s => s.id !== stunde.id);
@@ -319,17 +295,35 @@ function buildFpTree(lp, sel) {
               }
             },
           });
+          if (isMSel) sRow.classList.add('fp-tree-row-multisel');
+          if (farbe) sRow.style.borderLeft = '3px solid ' + farbe;
           tree.appendChild(sRow);
         });
-      }
 
-      // "+ Gruppe" Button am Ende der Reihe
-      if (rOpen) {
-        const addGrpBtn = mk('button', 'fp-tree-add-gruppe');
-        addGrpBtn.textContent = '+ Gruppe anlegen';
-        addGrpBtn.style.paddingLeft = (16 + 2 * 44) + 'px';
-        addGrpBtn.onclick = () => { S.modal = { type: 'newGruppe', data: { fpId: lp.id, blockId: block.id, reiheId: reihe.id } }; render(); };
-        tree.appendChild(addGrpBtn);
+        // Aktionsleiste bei Multi-Selektion
+        if (S.multisel.length >= 2) {
+          const bar = mk('div', 'fp-multisel-bar');
+          bar.style.paddingLeft = (16 + 2 * 44) + 'px';
+          bar.appendChild(tx('span', 'fp-multisel-count', S.multisel.length + ' Stunden ausgewählt'));
+          const grpBtn = btn('Zu Gruppe zusammenfassen', 'btn btn-primary btn-sm');
+          grpBtn.onclick = () => {
+            const name = prompt('Gruppenname:');
+            if (!name || !name.trim()) return;
+            if (!reihe.einheiten) reihe.einheiten = [];
+            const usedColors = new Set(reihe.einheiten.map(e => e.farbe));
+            const farbe = GRUPPEN_FARBEN.find(c => !usedColors.has(c)) || GRUPPEN_FARBEN[reihe.einheiten.length % GRUPPEN_FARBEN.length];
+            const grp = { id: uid(), titel: name.trim(), farbe };
+            reihe.einheiten.push(grp);
+            (reihe.stunden || []).forEach(s => { if (S.multisel.includes(s.id)) s.einheitId = grp.id; });
+            S.multisel = [];
+            scheduleSave(); render();
+          };
+          bar.appendChild(grpBtn);
+          const clrBtn = btn('Auswahl aufheben', 'btn btn-ghost btn-sm');
+          clrBtn.onclick = () => { S.multisel = []; render(); };
+          bar.appendChild(clrBtn);
+          tree.appendChild(bar);
+        }
       }
     });
   });

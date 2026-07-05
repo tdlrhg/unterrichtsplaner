@@ -970,6 +970,11 @@ textarea::placeholder { color: #c4cdd6; }
 
 .fp-tree-empty { font-size: 12px; color: var(--tx3); font-style: italic; padding: 3px 16px; }
 
+.fp-tree-row-multisel { background: rgba(99,102,241,.10) !important; }
+.fp-tree-row-multisel.active { background: rgba(99,102,241,.18) !important; }
+.fp-multisel-bar { display:flex; align-items:center; gap:8px; padding:6px 0 4px; flex-wrap:wrap; }
+.fp-multisel-count { font-size:12px; color:var(--tx2); }
+
 .fp-tree-add-top {
   display: block; margin: 6px 14px 2px; padding: 5px 12px;
   background: none; border: 1px dashed var(--bord);

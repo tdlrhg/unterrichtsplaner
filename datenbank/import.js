@@ -34,6 +34,9 @@ function dbGroupByParent(rows) {
       if (_mNum) {
         parentNr = _mNum[1].replace(/M\s*(\d+)/i, 'M $1');
         key = (r.quelle_name || '') + '||mat||' + parentNr;
+      } else if (r.quelle_typ === 'handreichung') {
+        // Zeitschriften/Handreichungen: nach Artikeltitel (nr) gruppieren, nicht nach Seite
+        key = (r.quelle_name || '') + '||hand||' + parentNr;
       } else {
         key = r.gruppen_key || ((r.quelle_name || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr);
       }
@@ -113,6 +116,9 @@ Für jeden Eintrag:
 - nr: Explizite Materialbezeichnung VERBATIM aus dem Dokument — erkennbar als eigenständiges Label auf der Seite (z.B. "M 5", "M 10", "Lösung M 1", "Hintergrundinformation", "Materialübersicht").
   WICHTIG: Erfinde KEINE M-Nummern. Eine M-Nummer erkennst du NUR, wenn sie explizit auf der Seite steht (z.B. oben rechts "M 5"). Aufgaben-Labels ("Aufgabe 2", "Aufgabe 3") und Zwischenüberschriften ("Herleitung der 2. binomischen Formel") sind KEINE Materialbezeichnungen.
   Falls keine eigenständige Materialbezeichnung sichtbar: verwende die erste Überschrift oder den ersten Aufgaben-Titel der Seite VERBATIM als nr (z.B. "Aufgabe 4", "Herleitung der 3. binomischen Formel").
+  LEHRERZEITSCHRIFTEN (z.B. "Unterricht Chemie", "mathematik lehren") — Sonderregel für nr:
+  · Fachartikelseiten: Verwende den ARTIKELTITEL als nr (die übergeordnete Themenüberschrift, z.B. "Stöchiometrisches Rechnen"). Bei Folgeseiten ohne neue Hauptüberschrift: gleichen nr-Wert wie die Startseite beibehalten.
+  · Begleitmaterial mit "Zum Beitrag S.X–Y" in der Fußzeile: Verwende die THEMENÜBERSCHRIFT der Seite (die große, hervorgehobene Überschrift, z.B. "Stöchiometrisches Rechnen") als nr — NICHT den spezifischen Untertitel des Arbeitsblatts. Begründung: gleicher nr-Wert wie der Fachartikel ermöglicht automatische Zuordnung in der Datenbank.
 
 - aufgabenstellung: Überschrift oder Titel der Seite, VERBATIM — null wenn keine vorhanden
 
@@ -441,48 +447,61 @@ function buildImportView(container) {
     }
   });
 
-  // ── Datei-Upload (rechts neben den Feldern) ───────────────────
+  // ── Datei-Dropzone ────────────────────────────────────────────
   var fileCard = mk('div', '');
-  fileCard.style.cssText = 'border:2px dashed var(--border);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:140px;';
-  bodyRow.appendChild(fileCard);
-  var fileLabel = tx('div', '', '📄 PDF oder Bild hierher ziehen — oder klicken');
-  fileLabel.style.cssText = 'font-size:13px;color:var(--tx2);line-height:1.4;';
-  fileCard.appendChild(fileLabel);
+  fileCard.style.cssText = 'border:2px dashed var(--border);border-radius:12px;padding:28px 20px;text-align:center;'
+    + 'cursor:pointer;transition:border-color .2s,background .2s;display:flex;flex-direction:column;'
+    + 'align-items:center;justify-content:center;gap:10px;min-height:130px;';
+  metaCard.appendChild(fileCard);
+
+  var fileIcon = tx('div', '', '📂');
+  fileIcon.style.cssText = 'font-size:36px;line-height:1;pointer-events:none;';
+  var fileMainLabel = tx('div', '', 'PDF oder Bild hierher ziehen');
+  fileMainLabel.style.cssText = 'font-size:15px;font-weight:600;color:var(--tx1);pointer-events:none;';
+  var fileSubLabel = tx('div', '', 'oder klicken zum Auswählen · Mehrere Dateien möglich');
+  fileSubLabel.style.cssText = 'font-size:12px;color:var(--tx3);pointer-events:none;';
+  fileCard.appendChild(fileIcon);
+  fileCard.appendChild(fileMainLabel);
+  fileCard.appendChild(fileSubLabel);
+
   var fileInput = document.createElement('input');
   fileInput.type = 'file'; fileInput.accept = '.pdf,image/*'; fileInput.style.display = 'none';
   fileCard.appendChild(fileInput);
 
   var _files = [];
   fileCard.onclick = function() { fileInput.click(); };
-  fileCard.ondragover = function(e) { e.preventDefault(); fileCard.style.borderColor = 'var(--acc)'; };
-  fileCard.ondragleave = function() { fileCard.style.borderColor = ''; };
+  fileCard.ondragover = function(e) {
+    e.preventDefault();
+    fileCard.style.borderColor = 'var(--pri)';
+    fileCard.style.background = 'rgba(15,118,110,.04)';
+  };
+  fileCard.ondragleave = function() { fileCard.style.borderColor = ''; fileCard.style.background = ''; };
   fileCard.ondrop = function(e) {
-    e.preventDefault(); fileCard.style.borderColor = '';
+    e.preventDefault(); fileCard.style.borderColor = ''; fileCard.style.background = '';
     if (e.dataTransfer.files.length) setFiles(e.dataTransfer.files);
   };
   fileInput.multiple = true;
   fileInput.onchange = function() { if (fileInput.files.length) setFiles(fileInput.files); fileInput.value = ''; };
   function setFiles(fileList) {
     _files = Array.from(fileList);
-    fileLabel.textContent = _files.length === 1
-      ? '✓ ' + _files[0].name
-      : '✓ ' + _files.length + ' Dateien ausgewählt (' + _files.map(function(f) { return f.name; }).join(', ') + ')';
-    fileLabel.style.color = 'var(--acc)';
+    fileIcon.textContent = '✅';
+    fileMainLabel.textContent = _files.length === 1
+      ? _files[0].name
+      : _files.length + ' Dateien ausgewählt';
+    fileMainLabel.style.color = 'var(--pri)';
+    fileSubLabel.textContent = _files.length > 1
+      ? _files.map(function(f) { return f.name; }).join(' · ')
+      : 'Klicken um andere Datei zu wählen';
+    fileCard.style.borderColor = 'var(--pri)';
+    fileCard.style.background = 'rgba(15,118,110,.04)';
   }
 
   // ── Analyse-Button + Status ───────────────────────────────────
   var bottomRow = mk('div', ''); bottomRow.style.cssText = 'display:flex;align-items:center;gap:14px;flex-wrap:wrap;';
   var analyseBtn = btn('⚡ Seite analysieren', 'btn btn-pri');
   var statusEl = tx('div', '', ''); statusEl.style.cssText = 'font-size:13px;color:var(--tx2);';
-  var skipLkLabel = mk('label', '');
-  skipLkLabel.style.cssText = 'display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;margin-left:auto;';
-  var skipLkChk = mk('input', ''); skipLkChk.type = 'checkbox';
-  skipLkChk.addEventListener('change', function() { if (_aufgaben.length) renderResults(); });
-  skipLkLabel.appendChild(skipLkChk);
-  skipLkLabel.appendChild(document.createTextNode('Lehrerkommentare nicht importieren'));
   bottomRow.appendChild(analyseBtn);
   bottomRow.appendChild(statusEl);
-  bottomRow.appendChild(skipLkLabel);
   metaCard.appendChild(bottomRow);
 
   // ── Ergebnis-Bereich ──────────────────────────────────────────
@@ -752,9 +771,7 @@ function buildImportView(container) {
     window._importActive = true;
     _impSelected.clear();
     resultsWrap.innerHTML = '';
-    var _visibleAufgHdr = skipLkChk.checked
-      ? _aufgaben.filter(function(a) { return a.inhaltstyp !== 'lehrerkommentar'; })
-      : _aufgaben;
+    var _visibleAufgHdr = _aufgaben;
     var rHdr = mk('div', '');
     rHdr.style.cssText = 'display:flex;align-items:center;gap:8px;justify-content:space-between;padding:4px 0;';
     var rTitle = tx('div', '', _visibleAufgHdr.length + ' Einträge erkannt — bitte prüfen und speichern');
@@ -849,9 +866,7 @@ function buildImportView(container) {
     var baseSeite = seiteInp.value ? Number(seiteInp.value) : null;
     var ts       = Date.now();
 
-    var _saveAufg = skipLkChk.checked
-      ? _aufgaben.filter(function(a) { return a.inhaltstyp !== 'lehrerkommentar'; })
-      : _aufgaben;
+    var _saveAufg = _aufgaben;
     var rows = _saveAufg.map(function(a, i) {
       var seite = a._seite !== undefined ? a._seite : baseSeite;
       var nr   = String(a.nr || (i + 1));

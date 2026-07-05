@@ -21,6 +21,8 @@ function renderRow(a, onSaved, compact, groupLabel) {
     if (groupLabel) {
       if (isMat) {
         // Materialset: [Chip] [Nr] in einer Zeile, Thema darunter
+        // Bei langen Titeln (Zeitschriftenartikel): nur Chip in src, Titel geht in mid-Spalte
+        var _isLongLabel = !!(groupLabel && groupLabel.length > 14);
         var matTop = mk('div', 'mat-top-row');
         matTop.style.cssText = 'display:flex;align-items:center;gap:5px;padding:2px 0;';
         var _nrPh = mk('span', 'mat-nr-ph');
@@ -41,9 +43,11 @@ function renderRow(a, onSaved, compact, groupLabel) {
             + 'text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;';
           matTop.appendChild(matChip);
         }
-        var matNr = tx('span', '', groupLabel);
-        matNr.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;';
-        matTop.appendChild(matNr);
+        if (!_isLongLabel) {
+          var matNr = tx('span', '', groupLabel);
+          matNr.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;';
+          matTop.appendChild(matNr);
+        }
         src.appendChild(matTop);
         if (a.thema) {
           var themaRow = mk('div', '');
@@ -117,21 +121,35 @@ function renderRow(a, onSaved, compact, groupLabel) {
   var mid = mk('div', 'db-col-inhalt'); mid.dataset.colIdx = 1;
   if (!isMatLK) {
     var inhaltText, inhaltLimit;
-    if (isMat && a.inhaltstyp === 'arbeitsblatt') {
-      // Header-Zeile (groupLabel gesetzt): Aufgabenstellung; Teilaufgaben: eigener inhalt
-      inhaltText = (compact && !groupLabel) ? (a.inhalt || '–') : (a.aufgabenstellung || a.inhalt || '–');
+    if (isMat && _isLongLabel) {
+      // Zeitschriftenartikel: Artikeltitel als fette Überschrift, dann Inhalt
+      var _titleEl = tx('div', '', groupLabel);
+      _titleEl.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx1);margin-bottom:2px;';
+      mid.appendChild(_titleEl);
+      inhaltText = a.aufgabenstellung || a.inhalt || '';
+      if (inhaltText) {
+        var _prevEl = tx('div', 'db-inhalt-text wrap', inhaltText.slice(0, 200));
+        mid.appendChild(_prevEl);
+      }
+    } else if (isMat && a.inhaltstyp === 'arbeitsblatt') {
+      if (compact && groupLabel) {
+        var _gl = (groupLabel || '').replace(/^S\.\s*\d+\s*·\s*/, '').trim();
+        var _as = (a.aufgabenstellung || '').trim();
+        inhaltText = (_as && _as !== _gl) ? _as : (a.inhalt || '–');
+      } else {
+        inhaltText = a.inhalt || '–';
+      }
       inhaltLimit = groupLabel ? 400 : 80;
+      mid.appendChild(tx('div', 'db-inhalt-text' + (compact && groupLabel ? ' wrap' : ''), inhaltText.replace(/ \| /g, ' · ').slice(0, inhaltLimit)));
     } else if (isMat) {
-      // Andere Materialset-Typen: eine Zeile Inhalt
       inhaltText = a.inhalt || a.thema || '–';
-      inhaltLimit = 80;
+      mid.appendChild(tx('div', 'db-inhalt-text', inhaltText.replace(/ \| /g, ' · ').slice(0, 80)));
     } else {
       inhaltText = compact ? (a.inhalt || '–') : (a.inhalt || a.thema || a.beschreibung || '–');
       inhaltLimit = groupLabel ? 400 : 150;
+      mid.appendChild(tx('div', 'db-inhalt-text' + (compact && groupLabel ? ' wrap' : ''), inhaltText.replace(/ \| /g, ' · ').slice(0, inhaltLimit)));
+      if (!compact && a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
     }
-    var inhaltCls = 'db-inhalt-text' + (compact && groupLabel ? ' wrap' : '');
-    mid.appendChild(tx('div', inhaltCls, inhaltText.replace(/ \| /g, ' · ').slice(0, inhaltLimit)));
-    if (!compact && !isMat && a.anforderung) mid.appendChild(tx('div', 'db-anf-text', a.anforderung.slice(0, 120)));
   }
   cells[1] = mid;
 

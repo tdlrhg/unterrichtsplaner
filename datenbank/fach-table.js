@@ -40,7 +40,7 @@ function buildTableHead(onSortChange) {
       hCell.style.cssText += 'cursor:pointer;';
     }
     const lbl = tx('span', '', col.label + sortArrow);
-    lbl.style.pointerEvents = 'none';
+    lbl.style.cssText = 'pointer-events:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;width:100%;';
     hCell.appendChild(lbl);
 
     // Sort-Klick (nur wenn kein Drag läuft)

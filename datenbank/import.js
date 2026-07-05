@@ -389,7 +389,7 @@ function buildImportView(container) {
 
   // ── Fach-Buttons (links) + Eingabefelder (rechts) ─────────────
   var bodyRow = mk('div', '');
-  bodyRow.style.cssText = 'display:flex;gap:120px;align-items:flex-start;';
+  bodyRow.style.cssText = 'display:flex;gap:20px;align-items:flex-start;';
 
   var fachCol = mk('div', '');
   fachCol.style.cssText = 'display:flex;flex-direction:column;gap:14px;flex-shrink:0;margin-left:16px;margin-top:10px;';
@@ -420,20 +420,24 @@ function buildImportView(container) {
   fachSel.addEventListener('change', refreshFachBtns);
   bodyRow.appendChild(fachCol);
 
+  var inputWrapper = mk('div', '');
+  inputWrapper.style.cssText = 'display:flex;flex-direction:column;gap:8px;flex:0 0 auto;width:260px;';
+
   var inputCol = mk('div', '');
-  inputCol.style.cssText = 'display:flex;flex-direction:column;gap:8px;flex:1;min-width:0;max-width:380px;';
+  inputCol.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
   inputCol.appendChild(fg('Werk / Titel', buchInp));
   inputCol.appendChild(fg('Kapitel', kapInp));
   inputCol.appendChild(fg('Unterkapitel', ukInp));
-  bodyRow.appendChild(inputCol);
-  metaCard.appendChild(bodyRow);
+  inputWrapper.appendChild(inputCol);
 
-  // ── Jahrgang + Erste Seite ────────────────────────────────────
   var jgRow = mk('div', ''); jgRow.style.cssText = 'display:flex;gap:10px;';
   var _jgFg = fg('Jahrgang', jgInp); _jgFg.style.flex = '0 0 auto';
   var _seiteFg = fg('Erste Seite', seiteInp); _seiteFg.style.flex = '0 0 auto';
   jgRow.appendChild(_jgFg); jgRow.appendChild(_seiteFg);
-  metaCard.appendChild(jgRow);
+  inputWrapper.appendChild(jgRow);
+
+  bodyRow.appendChild(inputWrapper);
+  metaCard.appendChild(bodyRow);
 
   // Autocomplete
   attachAutocomplete(buchInp, function() { return suggestBooks(fachSel.value); });
@@ -449,10 +453,10 @@ function buildImportView(container) {
 
   // ── Datei-Dropzone ────────────────────────────────────────────
   var fileCard = mk('div', '');
-  fileCard.style.cssText = 'border:2px dashed var(--border);border-radius:12px;padding:28px 20px;text-align:center;'
+  fileCard.style.cssText = 'border:2px dashed var(--pri);border-radius:12px;padding:20px 16px;text-align:center;'
     + 'cursor:pointer;transition:border-color .2s,background .2s;display:flex;flex-direction:column;'
-    + 'align-items:center;justify-content:center;gap:10px;min-height:130px;';
-  metaCard.appendChild(fileCard);
+    + 'align-items:center;justify-content:center;gap:8px;flex:1;min-height:0;align-self:stretch;';
+  bodyRow.appendChild(fileCard);
 
   var fileIcon = tx('div', '', '📂');
   fileIcon.style.cssText = 'font-size:36px;line-height:1;pointer-events:none;';

@@ -134,13 +134,13 @@ const PC_STUNDEN_TOOLS = [
   },
   {
     name: 'createStunde',
-    description: 'Erstellt eine Unterrichtsstunde in dieser Reihe (Thema, Lernziel, Methode – noch keine Phasen). Immer dauer=45 verwenden – ob zwei Stunden als Doppelstunde zusammengelegt werden, entscheidet die Lehrerin.',
+    description: 'Erstellt eine Unterrichtsstunde in dieser Reihe (Thema, Lernziel, Methode – noch keine Phasen). Jede angelegte Stunde entspricht einer Unterrichtsstunde à 45 Min. – auch wenn sie später als Teil einer Doppelstunde unterrichtet wird. Verwende immer dauer=45.',
     input_schema: {
       type: 'object',
       properties: {
         titel:    { type: 'string', description: 'Stundenthema' },
         lernziel: { type: 'string', description: 'Lernziel der Stunde (optional)' },
-        dauer:    { type: 'number', description: 'Immer 45 – nie 90 angeben' },
+        dauer:    { type: 'number', description: 'Immer 45 – eine Doppelstunde = zwei Einträge à 45 Min.' },
         intention:{ type: 'string', description: 'Didaktische Begründung (optional)' },
         methode:  { type: 'string', description: 'Hauptmethode (optional)' }
       },
@@ -451,7 +451,7 @@ Gehe immer so vor:
 2. Werte das Materialangebot aus readDatenbank sorgfältig aus: Welche Arbeitsblätter, Materialsets oder Handreichungen gibt es für dieses Thema? Plane die Stundenstruktur so, dass das vorhandene Material optimal eingesetzt wird — z.B. ein AB pro Stunde, mehrere Aspekte in einer Stunde wenn ein Materialset sie abdeckt, Hinführungsstunde wenn Material eine Vorbereitung erfordert. Wenn für einen Schwerpunkt kein Material vorhanden ist, weise darauf hin.
 3. Prüfe, welche Stunden bereits vorhanden sind. Erstelle keine Duplikate.
 4. Wenn die Reihe bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.
-5. Plane die Stundenabfolge vollständig durch, dann erstelle alle Stunden mit createStunde. Verwende immer dauer=45 – plane also genau stundenAnzahl Einzelstunden. Ob zwei davon als Doppelstunde zusammengelegt werden, entscheidet die Lehrerin – das ist nicht deine Aufgabe.
+5. Plane die Stundenabfolge vollständig durch, dann erstelle alle Stunden mit createStunde (dauer immer 45). stundenAnzahl gibt das Budget in Unterrichtsstunden à 45 Min. an – eine Doppelstunde zählt darin als zwei. Lege also genau stundenAnzahl Einträge an, jeden mit dauer=45. Wie die Lehrerin sie im Stundenplan auf Einzel- oder Doppelstunden verteilt, entscheidest nicht du.
 Plane nur Stundenthemen und -abfolge – noch keine Phasen oder Materialien.
 Arbeite proaktiv und erstelle direkt einen vollständigen Stundenplan für die Reihe.`;
   } else {

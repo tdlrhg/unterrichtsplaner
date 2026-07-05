@@ -91,12 +91,14 @@ const PC_TOOLS = [
     }
   },
   {
-    name: 'readMaterial',
-    description: 'Listet verfügbares Unterrichtsmaterial aus dem Dateispeicher. Nutze dies um zu entscheiden welche Reihen sinnvoll sind und ob Material eine Hinführungsstunde erfordert.',
+    name: 'readDatenbank',
+    description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Rufe dies IMMER auf bevor du planst — berücksichtige nur Material, das tatsächlich vorhanden ist.',
     input_schema: {
       type: 'object',
       properties: {
-        prefix: { type: 'string', description: 'Optionaler Ordner-Präfix zum Einschränken der Suche (optional)' }
+        thema: { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort — leer lassen für alle Materialien des Fachs' },
+        jahrgang: { type: 'string', description: 'Nach Jahrgang filtern, z.B. "9" (optional)' },
+        inhaltstyp: { type: 'string', description: 'Nach Typ filtern: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext (optional)' }
       }
     }
   }
@@ -132,13 +134,13 @@ const PC_STUNDEN_TOOLS = [
   },
   {
     name: 'createStunde',
-    description: 'Erstellt eine Unterrichtsstunde in dieser Reihe (Thema, Lernziel, Dauer, Methode – noch keine Phasen).',
+    description: 'Erstellt eine Unterrichtsstunde in dieser Reihe (Thema, Lernziel, Methode – noch keine Phasen). Immer dauer=45 verwenden – ob zwei Stunden als Doppelstunde zusammengelegt werden, entscheidet die Lehrerin.',
     input_schema: {
       type: 'object',
       properties: {
         titel:    { type: 'string', description: 'Stundenthema' },
         lernziel: { type: 'string', description: 'Lernziel der Stunde (optional)' },
-        dauer:    { type: 'number', description: '45 oder 90 Minuten' },
+        dauer:    { type: 'number', description: 'Immer 45 – nie 90 angeben' },
         intention:{ type: 'string', description: 'Didaktische Begründung (optional)' },
         methode:  { type: 'string', description: 'Hauptmethode (optional)' }
       },
@@ -173,12 +175,14 @@ const PC_STUNDEN_TOOLS = [
     }
   },
   {
-    name: 'readMaterial',
-    description: 'Listet verfügbares Unterrichtsmaterial aus dem Dateispeicher. Rufe dies VOR der Stundenplanung auf – wenn für ein Thema passendes Material existiert, plane entsprechend (ggf. Hinführungsstunde, Zusammenfassung mehrerer Aspekte in einer Stunde etc.).',
+    name: 'readDatenbank',
+    description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Rufe dies IMMER auf bevor du planst — berücksichtige nur Material, das tatsächlich vorhanden ist.',
     input_schema: {
       type: 'object',
       properties: {
-        prefix: { type: 'string', description: 'Optionaler Ordner-Präfix (optional)' }
+        thema: { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort — leer lassen für alle Materialien des Fachs' },
+        jahrgang: { type: 'string', description: 'Nach Jahrgang filtern, z.B. "9" (optional)' },
+        inhaltstyp: { type: 'string', description: 'Nach Typ filtern: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext (optional)' }
       }
     }
   }
@@ -326,16 +330,51 @@ async function _pcExecTool(name, input, fp) {
       return JSON.stringify({ ok: true });
     }
 
-    case 'readMaterial': {
+    case 'readDatenbank': {
       try {
-        const result = await r2List(input.prefix || '', '/');
-        return JSON.stringify({
-          folders: result.folders,
-          files: result.files.map(f => f.key),
-          truncated: result.truncated
+        var _dbFilters = { fach: fp.fach };
+        if (input.inhaltstyp) _dbFilters.inhaltstyp = input.inhaltstyp;
+        if (input.jahrgang)   _dbFilters.jahrgang   = input.jahrgang;
+
+        var _rows = await sbSelectAll('inhalte', { filters: _dbFilters, limit: 500 });
+
+        // Thema-Suche client-seitig
+        if (input.thema) {
+          var _q = input.thema.toLowerCase();
+          _rows = _rows.filter(function(r) {
+            return (r.thema || '').toLowerCase().includes(_q) ||
+                   (r.kapitel || '').toLowerCase().includes(_q) ||
+                   (r.uk_titel || '').toLowerCase().includes(_q) ||
+                   (r.nr || '').toLowerCase().includes(_q) ||
+                   (r.aufgabenstellung || '').toLowerCase().includes(_q) ||
+                   (r.inhalt || '').toLowerCase().includes(_q);
+          });
+        }
+
+        // Nach Quelle gruppieren für kompakte Ausgabe
+        var _byQ = {}, _qOrder = [];
+        _rows.forEach(function(r) {
+          var qn = r.quelle_name || '(ohne Quelle)';
+          if (!_byQ[qn]) { _byQ[qn] = { typ: r.quelle_typ, items: [] }; _qOrder.push(qn); }
+          _byQ[qn].items.push({
+            inhaltstyp: r.inhaltstyp,
+            nr: r.nr,
+            thema: r.thema,
+            kapitel: r.kapitel,
+            jahrgang: r.jahrgang,
+            schwierigkeit: r.schwierigkeit,
+            beschreibung: (r.aufgabenstellung || r.inhalt || '').slice(0, 150)
+          });
         });
-      } catch (e) {
-        return JSON.stringify({ error: 'Material nicht verfügbar: ' + e.message });
+
+        return JSON.stringify({
+          gesamt: _rows.length,
+          quellen: _qOrder.map(function(qn) {
+            return { quelle: qn, typ: _byQ[qn].typ, materialien: _byQ[qn].items };
+          })
+        });
+      } catch(e) {
+        return JSON.stringify({ error: 'Datenbank nicht verfügbar: ' + e.message });
       }
     }
 
@@ -408,11 +447,11 @@ async function _pcSend(fp, context, text, autoStart) {
 Dein Auftrag: Plane die Stundenthemen und Abfolge für die Unterrichtsreihe ${reiheInfo}.
 ${ctx ? ctx + '\n' : ''}
 Gehe immer so vor:
-1. Rufe readPlan, readKLP und readMaterial je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
-2. Nutze das Materialangebot beim Planen: Wenn ein AB oder eine Datei mehrere Aspekte abdeckt, fasse diese ggf. in einer Stunde zusammen. Wenn Material eine Vorbereitung erfordert, plane ggf. eine Hinführungsstunde ein. Wenn für einen Schwerpunkt kein Material vorhanden ist, beachte das bei der Planung.
+1. Rufe readPlan, readKLP und readDatenbank je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
+2. Werte das Materialangebot aus readDatenbank sorgfältig aus: Welche Arbeitsblätter, Materialsets oder Handreichungen gibt es für dieses Thema? Plane die Stundenstruktur so, dass das vorhandene Material optimal eingesetzt wird — z.B. ein AB pro Stunde, mehrere Aspekte in einer Stunde wenn ein Materialset sie abdeckt, Hinführungsstunde wenn Material eine Vorbereitung erfordert. Wenn für einen Schwerpunkt kein Material vorhanden ist, weise darauf hin.
 3. Prüfe, welche Stunden bereits vorhanden sind. Erstelle keine Duplikate.
 4. Wenn die Reihe bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.
-5. Plane die Stundenabfolge vollständig durch, dann erstelle alle Stunden mit createStunde (dauer immer angeben).
+5. Plane die Stundenabfolge vollständig durch, dann erstelle alle Stunden mit createStunde. Verwende immer dauer=45 – plane also genau stundenAnzahl Einzelstunden. Ob zwei davon als Doppelstunde zusammengelegt werden, entscheidet die Lehrerin – das ist nicht deine Aufgabe.
 Plane nur Stundenthemen und -abfolge – noch keine Phasen oder Materialien.
 Arbeite proaktiv und erstelle direkt einen vollständigen Stundenplan für die Reihe.`;
   } else {
@@ -423,10 +462,11 @@ Arbeite proaktiv und erstelle direkt einen vollständigen Stundenplan für die R
     system = `Du bist Planungsassistentin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.
 Dein Auftrag: Plane Unterrichtsreihen für den Block ${blockInfo}.${notizInfo}
 Gehe immer so vor:
-1. Rufe readPlan und readKLP je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
-2. Prüfe, welche Reihen bereits vorhanden sind. Erstelle KEINE Duplikate bestehender Reihen.
-3. Wenn der Block bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.
-4. Wenn Reihen fehlen: Plane die fehlende Struktur durch, dann erstelle sie mit createReihe (stundenAnzahl immer angeben).
+1. Rufe readPlan, readKLP und readDatenbank je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
+2. Werte das Materialangebot aus readDatenbank aus: Welche Themen sind durch vorhandenes Material gut abgedeckt? Orientiere die Reihenstruktur am tatsächlich vorhandenen Material — gut ausgestattete Themen verdienen eine eigene Reihe, schwach ausgestattete können zusammengefasst oder als Hinweis markiert werden.
+3. Prüfe, welche Reihen bereits vorhanden sind. Erstelle KEINE Duplikate bestehender Reihen.
+4. Wenn der Block bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.
+5. Wenn Reihen fehlen: Plane die fehlende Struktur durch, dann erstelle sie mit createReihe (stundenAnzahl immer angeben).
 Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
   }
 

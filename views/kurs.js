@@ -263,10 +263,9 @@ function buildFpTree(lp, sel) {
           const gruppe = grpId ? gruppenMap[grpId] : null;
           const farbe = gruppe ? gruppe.farbe : null;
           const isMSel = S.multisel.includes(stunde.id);
-          const prioIcon = { pflicht:'🟢', optional:'🟡', puffer:'🔵', klassenarbeit:'📝', rueckgabe:'📋' }[stunde.prioritaet || 'pflicht'] || '🟢';
           const { row: sRow } = makeRow({
             level: 2,
-            title: prioIcon + ' ' + (stunde.titel || '(ohne Titel)'),
+            title: (si + 1) + '. ' + (stunde.titel || '(ohne Titel)'),
             sub: stunde.lernziel ? stunde.lernziel.slice(0, 55) + '…' : null,
             isActive: selStundeId === stunde.id && !S.multisel.length,
             hasChildren: false, accentColor: farbe,
@@ -300,7 +299,10 @@ function buildFpTree(lp, sel) {
             },
           });
           if (isMSel) sRow.classList.add('fp-tree-row-multisel');
-          if (farbe) sRow.style.borderLeft = '3px solid ' + farbe;
+          if (farbe) {
+            const r = parseInt(farbe.slice(1,3),16), g = parseInt(farbe.slice(3,5),16), b = parseInt(farbe.slice(5,7),16);
+            sRow.style.background = `rgba(${r},${g},${b},0.07)`;
+          }
           tree.appendChild(sRow);
         });
 

@@ -999,11 +999,6 @@ textarea::placeholder { color: #c4cdd6; }
 .fp-gruppe-actions { display: none; align-items: center; gap: 1px; }
 .fp-gruppe-divider:hover .fp-gruppe-actions { display: flex; }
 
-/* Farbige linke Kante bei Stunden innerhalb einer Gruppe */
-.fp-tree-row[style*="--row-accent"] {
-  border-left: 3px solid var(--row-accent, transparent);
-  padding-left: calc(var(--stunden-indent, 0px) - 3px);
-}
 
 /* "+ Gruppe" Button innerhalb einer Reihe */
 .fp-tree-add-gruppe {

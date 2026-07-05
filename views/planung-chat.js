@@ -222,8 +222,7 @@ async function _pcExecTool(name, input, fp) {
     }
 
     case 'readKLP': {
-      const fachName = PC_FACH[fp.fach] || fp.fach;
-      let hits = KLPDB.filter(e => e.fach === fachName);
+      let hits = KLPDB.filter(e => e.fach === fp.fach);
       if (input.filter) {
         const q = input.filter.toLowerCase();
         hits = hits.filter(e =>

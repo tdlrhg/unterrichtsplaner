@@ -116,8 +116,10 @@ function buildFpTree(lp, sel) {
   // Farbige Gruppentrennzeile (nicht anklickbar, kein Toggle)
   function makeGruppenDivider(gruppe, reihe, gi, fpId, blockId) {
     const farbe = gruppe.farbe || '#94a3b8';
+    const r = parseInt(farbe.slice(1,3),16), g = parseInt(farbe.slice(3,5),16), b = parseInt(farbe.slice(5,7),16);
     const div = mk('div', 'fp-gruppe-divider');
     div.style.paddingLeft = (16 + 2 * 44) + 'px';
+    div.style.background = `rgba(${r},${g},${b},0.18)`;
 
     const dot = mk('span', 'fp-gruppe-dot');
     dot.style.background = farbe;
@@ -268,7 +270,7 @@ function buildFpTree(lp, sel) {
             title: (si + 1) + '. ' + (stunde.titel || '(ohne Titel)'),
             sub: stunde.lernziel ? stunde.lernziel.slice(0, 55) + '…' : null,
             isActive: selStundeId === stunde.id && !S.multisel.length,
-            hasChildren: false, accentColor: farbe,
+            hasChildren: false,
             onSelect: e => {
               if (e && (e.ctrlKey || e.metaKey)) {
                 if (!S.multisel) S.multisel = [];
@@ -301,7 +303,8 @@ function buildFpTree(lp, sel) {
           if (isMSel) sRow.classList.add('fp-tree-row-multisel');
           if (farbe) {
             const r = parseInt(farbe.slice(1,3),16), g = parseInt(farbe.slice(3,5),16), b = parseInt(farbe.slice(5,7),16);
-            sRow.style.background = `rgba(${r},${g},${b},0.07)`;
+            const indent = 16 + 2 * 44;
+            sRow.style.background = `linear-gradient(to right, transparent ${indent}px, rgba(${r},${g},${b},0.09) ${indent}px)`;
           }
           tree.appendChild(sRow);
         });

@@ -89,6 +89,16 @@ const PC_TOOLS = [
       },
       required: ['reiheId']
     }
+  },
+  {
+    name: 'readMaterial',
+    description: 'Listet verfügbares Unterrichtsmaterial aus dem Dateispeicher. Nutze dies um zu entscheiden welche Reihen sinnvoll sind und ob Material eine Hinführungsstunde erfordert.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prefix: { type: 'string', description: 'Optionaler Ordner-Präfix zum Einschränken der Suche (optional)' }
+      }
+    }
   }
 ];
 
@@ -161,10 +171,20 @@ const PC_STUNDEN_TOOLS = [
       },
       required: ['stundeId']
     }
+  },
+  {
+    name: 'readMaterial',
+    description: 'Listet verfügbares Unterrichtsmaterial aus dem Dateispeicher. Rufe dies VOR der Stundenplanung auf – wenn für ein Thema passendes Material existiert, plane entsprechend (ggf. Hinführungsstunde, Zusammenfassung mehrerer Aspekte in einer Stunde etc.).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        prefix: { type: 'string', description: 'Optionaler Ordner-Präfix (optional)' }
+      }
+    }
   }
 ];
 
-function _pcExecTool(name, input, fp) {
+async function _pcExecTool(name, input, fp) {
   switch (name) {
 
     case 'readPlan': {
@@ -306,6 +326,19 @@ function _pcExecTool(name, input, fp) {
       return JSON.stringify({ ok: true });
     }
 
+    case 'readMaterial': {
+      try {
+        const result = await r2List(input.prefix || '', '/');
+        return JSON.stringify({
+          folders: result.folders,
+          files: result.files.map(f => f.key),
+          truncated: result.truncated
+        });
+      } catch (e) {
+        return JSON.stringify({ error: 'Material nicht verfügbar: ' + e.message });
+      }
+    }
+
     default:
       return JSON.stringify({ error: 'Unbekanntes Tool: ' + name });
   }
@@ -375,10 +408,11 @@ async function _pcSend(fp, context, text, autoStart) {
 Dein Auftrag: Plane die Stundenthemen und Abfolge für die Unterrichtsreihe ${reiheInfo}.
 ${ctx ? ctx + '\n' : ''}
 Gehe immer so vor:
-1. Rufe readPlan und readKLP je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
-2. Prüfe, welche Stunden bereits vorhanden sind. Erstelle keine Duplikate.
-3. Wenn die Reihe bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.
-4. Plane die Stundenabfolge vollständig durch, dann erstelle alle Stunden mit createStunde (dauer immer angeben).
+1. Rufe readPlan, readKLP und readMaterial je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
+2. Nutze das Materialangebot beim Planen: Wenn ein AB oder eine Datei mehrere Aspekte abdeckt, fasse diese ggf. in einer Stunde zusammen. Wenn Material eine Vorbereitung erfordert, plane ggf. eine Hinführungsstunde ein. Wenn für einen Schwerpunkt kein Material vorhanden ist, beachte das bei der Planung.
+3. Prüfe, welche Stunden bereits vorhanden sind. Erstelle keine Duplikate.
+4. Wenn die Reihe bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.
+5. Plane die Stundenabfolge vollständig durch, dann erstelle alle Stunden mit createStunde (dauer immer angeben).
 Plane nur Stundenthemen und -abfolge – noch keine Phasen oder Materialien.
 Arbeite proaktiv und erstelle direkt einen vollständigen Stundenplan für die Reihe.`;
   } else {
@@ -417,7 +451,7 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
       for (const tu of toolUses) {
         thinkMsg.toolCalls.push({ name: tu.name });
         _pcRender();
-        const res = _pcExecTool(tu.name, tu.input, fp);
+        const res = await _pcExecTool(tu.name, tu.input, fp);
         results.push({ type: 'tool_result', tool_use_id: tu.id, content: res });
       }
       _pcApi.push({ role: 'user', content: results });

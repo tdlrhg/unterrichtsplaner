@@ -276,7 +276,11 @@ function buildFpTree(lp, sel) {
                 S.multisel = isMSel
                   ? S.multisel.filter(id => id !== stunde.id)
                   : [...S.multisel, stunde.id];
-                render(); return;
+                const sc = document.querySelector('.content');
+                const top = sc ? sc.scrollTop : 0;
+                render();
+                if (sc) sc.scrollTop = top;
+                return;
               }
               S.multisel = [];
               S.sel = { type: 'stunde', ids: [lp.id, block.id, reihe.id, stunde.id] };
@@ -320,7 +324,12 @@ function buildFpTree(lp, sel) {
           };
           bar.appendChild(grpBtn);
           const clrBtn = btn('Auswahl aufheben', 'btn btn-ghost btn-sm');
-          clrBtn.onclick = () => { S.multisel = []; render(); };
+          clrBtn.onclick = () => {
+            const sc = document.querySelector('.content');
+            const top = sc ? sc.scrollTop : 0;
+            S.multisel = []; render();
+            if (sc) sc.scrollTop = top;
+          };
           bar.appendChild(clrBtn);
           tree.appendChild(bar);
         }

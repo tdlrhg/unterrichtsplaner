@@ -153,13 +153,13 @@ const UNTERSTUETZ_FARBEN = { 'hilfestellungen':'#8b5cf6', 'teilaufgaben':'#2563e
 const UNTERSTUETZ_LABELS = { 'hilfestellungen':'Hilfen', 'teilaufgaben':'Teilaufg.', 'tipps':'Tipps', 'ohne':'ohne Diff.' };
 const TYP_FARBEN  = { 'aufgabe':'#0f766e', 'lehrtext':'#2563eb',
                       'arbeitsblatt':'#0f766e', 'loesung':'#7c3aed', 'lehrerkommentar':'#92400e', 'lzk':'#b45309',
-                      'infotext':'#0284c7', 'methode':'#d97706' };
+                      'infotext':'#0284c7', 'methode':'#d97706', 'stundenverlauf':'#0891b2' };
 const TYP_LABELS  = { 'aufgabe':'Aufgabe', 'lehrtext':'Lehrtext',
                       'arbeitsblatt':'Arbeitsblatt', 'loesung':'Lösung', 'lehrerkommentar':'Lehrerkommentar', 'lzk':'Lernzielkontrolle',
-                      'infotext':'Infotext', 'methode':'Methode' };
+                      'infotext':'Infotext', 'methode':'Methode', 'stundenverlauf':'Stundenverlauf' };
 const TYP_ICONS   = { 'aufgabe':'', 'lehrtext':'📖',
                       'arbeitsblatt':'📋', 'loesung':'✅', 'lehrerkommentar':'', 'lzk':'📝',
-                      'infotext':'ℹ️', 'methode':'🔧' };
+                      'infotext':'ℹ️', 'methode':'🔧', 'stundenverlauf':'🗓' };
 
 const TYP_ICON_IMGS = {
   'lehrerkommentar': 'datenbank/icons/kommentar.png',

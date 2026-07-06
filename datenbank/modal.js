@@ -362,6 +362,7 @@ function openTaskModal(group, opts) {
     ['aufgabe','📝 Aufgabe'],['lehrtext','📖 Lehrtext'],
     ['arbeitsblatt','📋 Arbeitsblatt'],['loesung','✅ Lösung'],
     ['lehrerkommentar','🧑‍🏫 Lehrerkommentar'],['lzk','📝 Lernzielkontrolle'],
+    ['stundenverlauf','🗓 Stundenverlauf'],
     ['infotext','ℹ️ Infotext'],['methode','🔧 Methode'],
   ]);
   p0.appendChild(R0);

@@ -105,13 +105,21 @@ Ignoriere vollständig und erfasse NICHT im text-Feld: Verlagswebseiten (z.B. "w
 VERBATIM-REGEL: Gib alle Texte EXAKT so wieder wie sie auf der Seite stehen — Wort für Wort, ohne Kürzungen. Gilt für den eigentlichen Seiteninhalt (Kopf-/Fußzeilen und Wasserzeichen ausgenommen).
 
 Für jeden Eintrag:
-- inhaltstyp: genau eines von: arbeitsblatt|loesung|lehrerkommentar|lehrtext|lzk
+- inhaltstyp: genau eines von: arbeitsblatt|loesung|lehrerkommentar|lehrtext|lzk|stundenverlauf
   · arbeitsblatt    = Schülerarbeitsblatt mit Aufgaben zum Bearbeiten (Materialien M 1, M 2 … die Schülerinnen bearbeiten)
   · loesung         = Musterlösung, Erwartungshorizont, Lösungsblatt, Erläuterungen zu Materialien
   · lehrerkommentar = Seiten NUR für die Lehrkraft: Hintergrundinformation, Fachartikel, theoretische Grundlagen, Methodik/Didaktik, Kompetenzübersicht, Quellenangaben, Materialübersicht
   · lehrtext        = Informationstext oder Sachtext als Lesematerial für Schülerinnen ohne Aufgaben
   · lzk             = Lernzielkontrolle, Test, Quiz, Leistungsüberprüfung
-  FAUSTREGEL: Bearbeiten Schülerinnen diese Seite zum Üben? → arbeitsblatt. Ist es eine Leistungsüberprüfung? → lzk. Enthält sie Lösungen/Erwartungen? → loesung. Ist sie nur für die Lehrkraft? → lehrerkommentar.
+  · stundenverlauf  = Ausgearbeiteter Unterrichtsverlauf mit Phasen (Einstieg, Erarbeitung, Sicherung), Lehrer-/Schüleraktivitäten, Methoden und Materialhinweisen — typisch für Unterrichtskonzepte-Bücher (Stark, Klett, Raabe)
+  FAUSTREGEL: Bearbeiten Schülerinnen diese Seite zum Üben? → arbeitsblatt. Ist es eine Leistungsüberprüfung? → lzk. Enthält sie Lösungen/Erwartungen? → loesung. Beschreibt sie den Unterrichtsablauf für die Lehrkraft mit Phasen? → stundenverlauf. Ist es anderes Lehrermaterial? → lehrerkommentar.
+
+SONDERREGEL für stundenverlauf — text-Format:
+Erfasse den Stundenverlauf NICHT als Fließtext, sondern strukturiert nach Phasen. Jede Phase in diesem Format (Felder durch " | " getrennt):
+PHASE · DAUER min · METHODE · MATERIAL | L: Lehreraktivität | S: Schüleraktivität
+Bekannte Phasen: EINSTIEG, ERARBEITUNG I, ERARBEITUNG II, ZWISCHENSICHERUNG, SICHERUNG, HAUSAUFGABE, WIEDERHOLUNG.
+Beispiel: "EINSTIEG · 10 min · Demonstration · Würfelbecher MA 1 | L: Würfeltrick vorführen, Einführungsrede halten | S: Zuschauen, erste Ideen äußern | ERARBEITUNG I · 20 min · GA · MA 1 | L: Beobachten, Impulse geben | S: Trick nachspielen, Rechenwege notieren | SICHERUNG · 15 min · UG · – | L: Rechengesetze einführen, Zusammenfassung leiten | S: Termumformungen ins Heft übernehmen"
+aufgabenstellung = Titel der Unterrichtsstunde (z.B. "1. Unterrichtsstunde: Die Würfelzauberei")
 
 - nr: Explizite Materialbezeichnung VERBATIM aus dem Dokument — erkennbar als eigenständiges Label auf der Seite (z.B. "M 5", "M 10", "Lösung M 1", "Hintergrundinformation", "Materialübersicht").
   WICHTIG: Erfinde KEINE M-Nummern. Eine M-Nummer erkennst du NUR, wenn sie explizit auf der Seite steht (z.B. oben rechts "M 5"). Aufgaben-Labels ("Aufgabe 2", "Aufgabe 3") und Zwischenüberschriften ("Herleitung der 2. binomischen Formel") sind KEINE Materialbezeichnungen.
@@ -671,7 +679,7 @@ function buildImportView(container) {
   };
 
   // ── Ergebnis rendern ──────────────────────────────────────────
-  var TYP_CYCLE = ['aufgabe', 'lehrtext', 'arbeitsblatt', 'loesung', 'lehrerkommentar', 'lzk'];
+  var TYP_CYCLE = ['aufgabe', 'lehrtext', 'arbeitsblatt', 'loesung', 'lehrerkommentar', 'lzk', 'stundenverlauf'];
 
   function buildAufgabeCard(a, indent, idx, mergeBtn) {
     var row = mk('div', '');

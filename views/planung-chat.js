@@ -447,7 +447,7 @@ Dein Auftrag: Plane die Stundenthemen und Abfolge für die Unterrichtsreihe ${re
 ${ctx ? ctx + '\n' : ''}
 Gehe immer so vor:
 1. Rufe readPlan, readKLP und readDatenbank je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
-2. Werte das Materialangebot aus readDatenbank sorgfältig aus: Welche Arbeitsblätter, Materialsets oder Handreichungen gibt es für dieses Thema? Plane die Stundenstruktur so, dass das vorhandene Material optimal eingesetzt wird — z.B. ein AB pro Stunde, mehrere Aspekte in einer Stunde wenn ein Materialset sie abdeckt, Hinführungsstunde wenn Material eine Vorbereitung erfordert. Wenn für einen Schwerpunkt kein Material vorhanden ist, weise darauf hin.
+2. Werte das Materialangebot aus readDatenbank sorgfältig aus: Welche Arbeitsblätter, Materialsets, Handreichungen oder Stundenverläufe gibt es für dieses Thema? Stundenverläufe (inhaltstyp stundenverlauf) enthalten ausgearbeitete Unterrichtskonzepte mit Phasen — nutze sie als Vorlage für Stundenstruktur und Methoden, auch wenn du sie nicht 1:1 übernimmst. Plane so, dass das vorhandene Material optimal eingesetzt wird. Wenn für einen Schwerpunkt kein Material vorhanden ist, weise darauf hin.
 3. Prüfe, welche Stunden bereits vorhanden sind. Erstelle keine Duplikate.
 4. Wenn die Reihe bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.
 5. Plane die Stundenabfolge vollständig durch, dann erstelle alle Stunden mit createStunde (dauer immer 45). stundenAnzahl gibt das Budget in Unterrichtsstunden à 45 Min. an – eine Doppelstunde zählt darin als zwei. Lege also genau stundenAnzahl Einträge an, jeden mit dauer=45. Wie die Lehrerin sie im Stundenplan auf Einzel- oder Doppelstunden verteilt, entscheidest nicht du.
@@ -462,7 +462,7 @@ Arbeite proaktiv und erstelle direkt einen vollständigen Stundenplan für die R
 Dein Auftrag: Plane Unterrichtsreihen für den Block ${blockInfo}.${notizInfo}
 Gehe immer so vor:
 1. Rufe readPlan, readKLP und readDatenbank je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
-2. Werte das Materialangebot aus readDatenbank aus: Welche Themen sind durch vorhandenes Material gut abgedeckt? Orientiere die Reihenstruktur am tatsächlich vorhandenen Material — gut ausgestattete Themen verdienen eine eigene Reihe, schwach ausgestattete können zusammengefasst oder als Hinweis markiert werden.
+2. Werte das Materialangebot aus readDatenbank aus: Welche Themen sind durch vorhandenes Material gut abgedeckt? Stundenverläufe (inhaltstyp stundenverlauf) sind ausgearbeitete Unterrichtskonzepte — ein Thema mit einem Stundenverlauf ist besonders gut ausgestattet. Orientiere die Reihenstruktur am tatsächlich vorhandenen Material — gut ausgestattete Themen verdienen eine eigene Reihe, schwach ausgestattete können zusammengefasst oder als Hinweis markiert werden.
 3. Prüfe, welche Reihen bereits vorhanden sind. Erstelle KEINE Duplikate bestehender Reihen.
 4. Wenn der Block bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.
 5. Wenn Reihen fehlen: Plane die fehlende Struktur durch, dann erstelle sie mit createReihe (stundenAnzahl immer angeben).

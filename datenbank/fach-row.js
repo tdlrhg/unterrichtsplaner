@@ -62,15 +62,29 @@ function renderRow(a, onSaved, compact, groupLabel) {
           src.appendChild(themaRow);
         }
       } else {
-        // Aufgabe: „Aufgabe N" als Zeilenlabel in Spalte 0
+        // Aufgabe: Chip (wenn vorhanden) + Label in einer Zeile
         var glWrap = mk('div', '');
-        glWrap.style.cssText = 'display:flex;align-items:center;gap:4px;';
+        glWrap.style.cssText = 'display:flex;align-items:center;gap:5px;padding:2px 0;overflow:hidden;';
         var _nrPh = mk('span', 'mat-nr-ph');
         _nrPh.style.cssText = 'font-size:15px;padding:1px 3px;flex-shrink:0;visibility:hidden;line-height:1;user-select:none;';
         _nrPh.textContent = '▸';
-        var glEl = tx('div', '', groupLabel);
-        glEl.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;padding:2px 0;';
         glWrap.appendChild(_nrPh);
+        if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe' && !isMatLK) {
+          var _glChip = mk('span', '');
+          (function() {
+            var _ic = mkTypIconEl(a.inhaltstyp, 11);
+            if (_ic) { _ic.style.marginRight = '2px'; _glChip.appendChild(_ic); }
+            else if (TYP_ICONS[a.inhaltstyp]) _glChip.appendChild(document.createTextNode(TYP_ICONS[a.inhaltstyp] + ' '));
+            _glChip.appendChild(document.createTextNode(TYP_LABELS[a.inhaltstyp] || a.inhaltstyp));
+          })();
+          var _glTypColor = TYP_FARBEN[a.inhaltstyp] || '#64748b';
+          _glChip.style.cssText = 'flex-shrink:0;font-size:9px;font-weight:700;padding:1px 6px;border-radius:20px;'
+            + 'background:' + _glTypColor + '18;color:' + _glTypColor + ';border:1px solid ' + _glTypColor + '38;'
+            + 'text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;';
+          glWrap.appendChild(_glChip);
+        }
+        var glEl = tx('span', '', groupLabel);
+        glEl.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx2);letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex-shrink:1;';
         glWrap.appendChild(glEl);
         src.appendChild(glWrap);
       }
@@ -101,8 +115,9 @@ function renderRow(a, onSaved, compact, groupLabel) {
   }
   cells[0] = src;
 
-  // Typ-Badge — nicht für Aufgaben, nicht für MatLK, nicht für Materialset compact-Zeilen (Chip dort inline in matTop)
-  if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe' && !isMatLK && !(isMat && compact)) {
+  // Typ-Badge — nicht für Aufgaben, nicht für MatLK, nicht wenn Chip schon inline in der Zeilenbeschriftung
+  var _chipAlreadyInline = compact && !!groupLabel && !isMat && a.inhaltstyp && a.inhaltstyp !== 'aufgabe' && !isMatLK;
+  if (a.inhaltstyp && a.inhaltstyp !== 'aufgabe' && !isMatLK && !(isMat && compact) && !_chipAlreadyInline) {
     var typBadge = mk('span', '');
     (function() {
       var _ic = mkTypIconEl(a.inhaltstyp, 12);

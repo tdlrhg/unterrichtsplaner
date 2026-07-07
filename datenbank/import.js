@@ -244,8 +244,8 @@ function buildImportView(container) {
   var seiteInp = finp('z.B. 142', 'number'); seiteInp.style.maxWidth = '110px';
 
   // ── Quellentyp-Karten (2 Modi) ───────────────────────────────
-  var AUFG_TYPEN = ['schulbuch', 'aufgabenpool', 'eigenmaterial'];
-  var MAT_TYPEN  = ['materialset', 'handreichung'];
+  var AUFG_TYPEN = ['schulbuch', 'aufgabenpool'];
+  var MAT_TYPEN  = ['materialset', 'handreichung', 'eigenmaterial'];
   var _typChips  = [];
   var _modCards  = [];
 

@@ -1,6 +1,8 @@
 // ── Modal: Fachplanung & Inhalte ──────────────────────────────────
 const GRUPPEN_FARBEN = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899'];
 
+function _focusSelect(id) { setTimeout(function() { var i = document.getElementById(id); if (i) { i.focus(); i.select(); } }, 50); }
+
 function modalHandlerPlanung(type, data, m) {
   if (type === 'newBlock') {
     m.appendChild(tx('div', 'modal-title', 'Neuer Themenblock'));
@@ -58,14 +60,15 @@ function modalHandlerPlanung(type, data, m) {
       const t = document.getElementById('mt').value.trim();
       if (!t) return;
       reihe.titel       = t;
-      reihe.stundenAnzahl = document.getElementById('ms').value ? +document.getElementById('ms').value : null;
+      const msEl = document.getElementById('ms');
+      reihe.stundenAnzahl = msEl.value ? +msEl.value : null;
       reihe.schwerpunkt = document.getElementById('msw').value.trim();
       reihe.beschreibung = document.getElementById('mb').value.trim();
       reihe.notizen     = document.getElementById('mn').value.trim();
       S.modal = null; scheduleSave(); render();
     };
     footer.appendChild(sv); m.appendChild(footer);
-    setTimeout(() => { const i = document.getElementById('mt'); if(i){i.focus();i.select();} }, 50);
+    _focusSelect('mt');
     return true;
   }
 
@@ -169,7 +172,7 @@ function modalHandlerPlanung(type, data, m) {
       S.modal = null; scheduleSave(); render();
     };
     footer.appendChild(sv); m.appendChild(footer);
-    setTimeout(() => { const i = document.getElementById('mumb'); if(i){i.focus();i.select();} }, 50);
+    _focusSelect('mumb');
     return true;
   }
 

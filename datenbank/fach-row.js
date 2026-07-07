@@ -136,33 +136,7 @@ function renderRow(a, onSaved, compact, groupLabel) {
   var mid = mk('div', 'db-col-inhalt'); mid.dataset.colIdx = 1;
   if (!isMatLK) {
     var inhaltText, inhaltLimit;
-    if (a.inhaltstyp === 'stundenverlauf') {
-      // Stundenverlauf: Phasennamen als Chips, dann erste L:-Zeile als Vorschau
-      var _svText = a.inhalt || a.aufgabenstellung || '';
-      var _svParts = _svText.split(' | ');
-      var _phaseNames = ['EINSTIEG','ERARBEITUNG','ZWISCHENSICHERUNG','SICHERUNG','HAUSAUFGABE','WIEDERHOLUNG','ÜBERGANG'];
-      var _phases = _svParts.filter(function(p) {
-        return _phaseNames.some(function(n) { return p.toUpperCase().startsWith(n); });
-      }).map(function(p) { return p.split('·')[0].trim(); });
-      if (_phases.length) {
-        var _phRow = mk('div', '');
-        _phRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px;';
-        _phases.forEach(function(ph) {
-          var _pc = tx('span', '', ph);
-          _pc.style.cssText = 'font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;'
-            + 'background:#0891b218;color:#0891b2;border:1px solid #0891b238;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;';
-          _phRow.appendChild(_pc);
-        });
-        mid.appendChild(_phRow);
-      }
-      var _firstL = _svParts.find(function(p) { return p.startsWith('L:'); });
-      if (_firstL) {
-        var _lEl = tx('div', 'db-inhalt-text', _firstL.replace(/^L:\s*/, '').slice(0, 120));
-        mid.appendChild(_lEl);
-      } else if (!_phases.length) {
-        mid.appendChild(tx('div', 'db-inhalt-text', _svText.slice(0, 150)));
-      }
-    } else if (isMat && _isLongLabel) {
+    if (isMat && _isLongLabel) {
       // Zeitschriftenartikel: Artikeltitel als fette Überschrift, dann Inhalt
       var _titleEl = tx('div', '', groupLabel);
       _titleEl.style.cssText = 'font-weight:700;font-size:12px;color:var(--tx1);margin-bottom:2px;';

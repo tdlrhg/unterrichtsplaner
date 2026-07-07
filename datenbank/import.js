@@ -111,15 +111,14 @@ Für jeden Eintrag:
   · lehrerkommentar = Seiten NUR für die Lehrkraft: Hintergrundinformation, Fachartikel, theoretische Grundlagen, Methodik/Didaktik, Kompetenzübersicht, Quellenangaben, Materialübersicht
   · lehrtext        = Informationstext oder Sachtext als Lesematerial für Schülerinnen ohne Aufgaben
   · lzk             = Lernzielkontrolle, Test, Quiz, Leistungsüberprüfung
-  · stundenverlauf  = Ausgearbeiteter Unterrichtsverlauf mit Phasen (Einstieg, Erarbeitung, Sicherung), Lehrer-/Schüleraktivitäten, Methoden und Materialhinweisen — typisch für Unterrichtskonzepte-Bücher (Stark, Klett, Raabe)
-  FAUSTREGEL: Bearbeiten Schülerinnen diese Seite zum Üben? → arbeitsblatt. Ist es eine Leistungsüberprüfung? → lzk. Enthält sie Lösungen/Erwartungen? → loesung. Beschreibt sie den Unterrichtsablauf für die Lehrkraft mit Phasen? → stundenverlauf. Ist es anderes Lehrermaterial? → lehrerkommentar.
+  · stundenverlauf  = Ausgearbeitete Unterrichtsbeschreibung für die Lehrkraft: chronologische Stundenbeschreibung, Lehreranweisungen, antizipierte Schülerantworten und -probleme, Tafelanschriebe, Methodenhinweise — typisch für Unterrichtskonzepte-Bücher (Stark, Klett, Raabe). Kann narrativ ODER tabellarisch sein.
+  FAUSTREGEL: Bearbeiten Schülerinnen diese Seite zum Üben? → arbeitsblatt. Ist es eine Leistungsüberprüfung? → lzk. Enthält sie Lösungen/Erwartungen? → loesung. Beschreibt sie den Unterrichtsablauf für die Lehrkraft (chronologisch oder als Phasentabelle)? → stundenverlauf. Ist es anderes Lehrermaterial ohne Unterrichtsablauf? → lehrerkommentar.
 
-SONDERREGEL für stundenverlauf — text-Format:
-Erfasse den Stundenverlauf NICHT als Fließtext, sondern strukturiert nach Phasen. Jede Phase in diesem Format (Felder durch " | " getrennt):
-PHASE · DAUER min · METHODE · MATERIAL | L: Lehreraktivität | S: Schüleraktivität
-Bekannte Phasen: EINSTIEG, ERARBEITUNG I, ERARBEITUNG II, ZWISCHENSICHERUNG, SICHERUNG, HAUSAUFGABE, WIEDERHOLUNG.
-Beispiel: "EINSTIEG · 10 min · Demonstration · Würfelbecher MA 1 | L: Würfeltrick vorführen, Einführungsrede halten | S: Zuschauen, erste Ideen äußern | ERARBEITUNG I · 20 min · GA · MA 1 | L: Beobachten, Impulse geben | S: Trick nachspielen, Rechenwege notieren | SICHERUNG · 15 min · UG · – | L: Rechengesetze einführen, Zusammenfassung leiten | S: Termumformungen ins Heft übernehmen"
-aufgabenstellung = Titel der Unterrichtsstunde (z.B. "1. Unterrichtsstunde: Die Würfelzauberei")
+SONDERREGEL für stundenverlauf:
+- text: VERBATIM erfassen (wie alle anderen Eintragstypen auch) — KEINE Umstrukturierung, KEIN Phase-Format erzwingen
+- aufgabenstellung: Titel der Unterrichtsstunde VERBATIM (z.B. "1. Unterrichtsstunde: Die Würfelzauberei")
+- nr: Stundentitel als nr-Wert (z.B. "1. Unterrichtsstunde")
+- MEHRSEITIG: Geht eine Stundenbeschreibung über mehrere PDF-Seiten, verwende auf allen Folgeseiten denselben nr-Wert wie auf der ersten Seite — die Seiten werden dann automatisch zusammengeführt.
 
 - nr: Explizite Materialbezeichnung VERBATIM aus dem Dokument — erkennbar als eigenständiges Label auf der Seite (z.B. "M 5", "M 10", "Lösung M 1", "Hintergrundinformation", "Materialübersicht").
   WICHTIG: Erfinde KEINE M-Nummern. Eine M-Nummer erkennst du NUR, wenn sie explizit auf der Seite steht (z.B. oben rechts "M 5"). Aufgaben-Labels ("Aufgabe 2", "Aufgabe 3") und Zwischenüberschriften ("Herleitung der 2. binomischen Formel") sind KEINE Materialbezeichnungen.
@@ -157,7 +156,7 @@ JSON-FORMAT:
 
 // Welcher Prompt passt zum gewählten Quellentyp? contextNr = nr-Wert der vorherigen Seite (für Fortsetzungserkennung)
 function impPromptFor(quellentyp, contextNr) {
-  var base = (quellentyp === 'materialset' || quellentyp === 'handreichung') ? MAT_KI_PROMPT : IMP_KI_PROMPT;
+  var base = (quellentyp === 'materialset' || quellentyp === 'handreichung' || quellentyp === 'eigenmaterial') ? MAT_KI_PROMPT : IMP_KI_PROMPT;
   if (contextNr) {
     base += '\n\nKONTEXT VORHERIGE SEITE: "' + contextNr + '" — Falls diese Seite ohne neue Überschrift beginnt und offensichtlich eine Fortsetzung davon ist, verwende denselben nr-Wert.';
   }
@@ -496,14 +495,11 @@ function buildImportView(container) {
   fileInput.onchange = function() { if (fileInput.files.length) setFiles(fileInput.files); fileInput.value = ''; };
   function setFiles(fileList) {
     _files = Array.from(fileList);
+    var names = _files.map(function(f) { return f.name; });
     fileIcon.textContent = '✅';
-    fileMainLabel.textContent = _files.length === 1
-      ? _files[0].name
-      : _files.length + ' Dateien ausgewählt';
+    fileMainLabel.textContent = names.length === 1 ? names[0] : names.length + ' Dateien ausgewählt';
     fileMainLabel.style.color = 'var(--pri)';
-    fileSubLabel.textContent = _files.length > 1
-      ? _files.map(function(f) { return f.name; }).join(' · ')
-      : 'Klicken um andere Datei zu wählen';
+    fileSubLabel.textContent = names.length > 1 ? names.join(' · ') : 'Klicken um andere Datei zu wählen';
     fileCard.style.borderColor = 'var(--pri)';
     fileCard.style.background = 'rgba(15,118,110,.04)';
   }

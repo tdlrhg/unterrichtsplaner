@@ -155,14 +155,21 @@ async function buildFachView(container) {
     var rawParams = [];
     if (DB.jahrgang) {
       var jg = DB.jahrgang;
-      // Exakter Match + Bereichsschreibweisen wie "5/6" oder "5-10"
-      rawParams.push('or=' + encodeURIComponent(
-        '(jahrgang.eq.' + jg +
-        ',jahrgang.like.' + jg + '/*' +
-        ',jahrgang.like.' + jg + '-*' +
-        ',jahrgang.like.*/' + jg +
-        ',jahrgang.like.*/' + jg + '/*)'
-      ));
+      var jgOr;
+      if (jg === 'SII') {
+        // SII-Einträge werden als 11, 12, 13 gespeichert
+        jgOr = '(jahrgang.eq.11,jahrgang.like.11/*,jahrgang.like.11-*'
+             + ',jahrgang.eq.12,jahrgang.like.12/*,jahrgang.like.*/12'
+             + ',jahrgang.eq.13,jahrgang.like.*/13'
+             + ',jahrgang.eq.SII,jahrgang.like.SII/*)';
+      } else {
+        jgOr = '(jahrgang.eq.' + jg
+             + ',jahrgang.like.' + jg + '/*'
+             + ',jahrgang.like.' + jg + '-*'
+             + ',jahrgang.like.*/' + jg
+             + ',jahrgang.like.*/' + jg + '/*)';
+      }
+      rawParams.push('or=' + encodeURIComponent(jgOr));
     }
     if (DB.kapitel) filters.kapitel = DB.kapitel;
     if (DB.uk_titel)      filters.uk_titel      = DB.uk_titel;

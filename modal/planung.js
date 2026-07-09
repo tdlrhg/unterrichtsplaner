@@ -67,7 +67,7 @@ function modalHandlerPlanung(type, data, m) {
       return true;
     }
 
-    const sv = btn('Speichern', 'btn btn-sec');
+    const sv = btn('Speichern', 'btn btn-ghost');
     sv.onclick = () => { if (!saveFields()) return; S.modal = null; scheduleSave(); render(); };
     footer.appendChild(sv);
 

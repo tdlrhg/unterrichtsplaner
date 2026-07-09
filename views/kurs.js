@@ -416,7 +416,9 @@ function viewFachplanung() {
 
   // ── Reihen-Chat (wenn aus Modal geöffnet) ───────────────────
   if (selReihe && S.open['reiheChat_' + selReihe.id]) {
-    div.appendChild(buildReiheChat(lp, selBlock, selReihe));
+    const chatEl = buildReiheChat(lp, selBlock, selReihe);
+    div.appendChild(chatEl);
+    requestAnimationFrame(() => chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
   // ── Block-Chat (unterhalb des Baums, wenn ✨ aktiv) ──────────

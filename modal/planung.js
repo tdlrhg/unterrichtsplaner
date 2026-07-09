@@ -150,6 +150,30 @@ function modalHandlerPlanung(type, data, m) {
     return true;
   }
 
+  if (type === 'editStunde') {
+    const { stunde } = data;
+    m.appendChild(tx('div', 'modal-title', 'Stunde bearbeiten'));
+    m.appendChild(modalInput('mt', 'Titel', 'z.B. Einführung Nucleophilie', stunde.titel || ''));
+    m.appendChild(modalInput('mlz', 'Lernziel', 'Was können SuS am Ende?', stunde.lernziel || ''));
+    m.appendChild(modalInput('mmeth', 'Methode', 'z.B. Schülerexperiment, UG, GA', stunde.methode || ''));
+    m.appendChild(modalTextarea('mn', 'Notizen', 'Materialhinweise, didaktische Ideen, offene Fragen…', stunde.notizen || ''));
+    const footer = mk('div', 'modal-footer');
+    footer.appendChild(cancelBtn());
+    const sv = btn('Speichern', 'btn btn-pri');
+    sv.onclick = () => {
+      const t = document.getElementById('mt').value.trim();
+      if (!t) return;
+      stunde.titel   = t;
+      stunde.lernziel = document.getElementById('mlz').value.trim();
+      stunde.methode  = document.getElementById('mmeth').value.trim();
+      stunde.notizen  = document.getElementById('mn').value.trim();
+      S.modal = null; scheduleSave(); render();
+    };
+    footer.appendChild(sv); m.appendChild(footer);
+    _focusSelect('mt');
+    return true;
+  }
+
   if (type === 'umbenennen') {
     const { obj, feld, label } = data;
     const istBlock = label === 'Themenblock';

@@ -289,7 +289,7 @@ function buildFpTree(lp, sel) {
               render();
             },
             dragPayload: { type: 'stunde', srcReiheId: reihe.id, stundeId: stunde.id },
-            onEdit: () => { S.modal = { type: 'umbenennen', data: { obj: stunde, feld: 'titel', label: 'Stunde' } }; render(); },
+            onEdit: () => { S.modal = { type: 'editStunde', data: { stunde } }; render(); },
             onUp:   () => { swap(allSn, si, si - 1); scheduleSave(); render(); },
             onDown: () => { swap(allSn, si, si + 1); scheduleSave(); render(); },
             isFirst: si === 0, isLast: si === allSn.length - 1,

@@ -142,7 +142,8 @@ const PC_STUNDEN_TOOLS = [
         lernziel: { type: 'string', description: 'Lernziel der Stunde (optional)' },
         dauer:    { type: 'number', description: 'Immer 45 – eine Doppelstunde = zwei Einträge à 45 Min.' },
         intention:{ type: 'string', description: 'Didaktische Begründung (optional)' },
-        methode:  { type: 'string', description: 'Hauptmethode (optional)' }
+        methode:  { type: 'string', description: 'Hauptmethode (optional)' },
+        notizen:  { type: 'string', description: 'Materialhinweise, didaktische Kommentare, offene Fragen — wird dauerhaft gespeichert und ist für die Lehrkraft sichtbar' }
       },
       required: ['titel']
     }
@@ -158,7 +159,8 @@ const PC_STUNDEN_TOOLS = [
         lernziel: { type: 'string' },
         dauer:    { type: 'number' },
         intention:{ type: 'string' },
-        methode:  { type: 'string' }
+        methode:  { type: 'string' },
+        notizen:  { type: 'string' }
       },
       required: ['stundeId']
     }
@@ -216,7 +218,7 @@ async function _pcExecTool(name, input, fp) {
           id: r.id, titel: r.titel, beschreibung: r.beschreibung,
           schwerpunkt: r.schwerpunkt, stundenAnzahl: r.stundenAnzahl,
           notizen: r.notizen || '',
-          stunden: (r.stunden || []).map(s => ({ id: s.id, titel: s.titel, lernziel: s.lernziel, dauer: s.dauer, methode: s.methode }))
+          stunden: (r.stunden || []).map(s => ({ id: s.id, titel: s.titel, lernziel: s.lernziel, dauer: s.dauer, methode: s.methode, notizen: s.notizen || '' }))
         }))
       }]);
     }
@@ -296,6 +298,7 @@ async function _pcExecTool(name, input, fp) {
       const s = {
         id: uid(), titel: input.titel, lernziel: input.lernziel || '',
         dauer: input.dauer || 45, intention: input.intention || '', methode: input.methode || '',
+        notizen: input.notizen || '',
         phasen: [], klpInhalt: [], klpProzess: [], material: []
       };
       if (!rei.stunden) rei.stunden = [];
@@ -314,6 +317,7 @@ async function _pcExecTool(name, input, fp) {
       if (input.dauer     !== undefined) stunde.dauer     = input.dauer;
       if (input.intention !== undefined) stunde.intention = input.intention;
       if (input.methode   !== undefined) stunde.methode   = input.methode;
+      if (input.notizen   !== undefined) stunde.notizen   = input.notizen;
       scheduleSave(); render();
       return JSON.stringify({ ok: true, id: stunde.id });
     }

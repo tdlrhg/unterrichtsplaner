@@ -965,6 +965,8 @@ textarea::placeholder { color: #c4cdd6; }
 .fp-tree-act-btn:hover { background: var(--bord); color: var(--tx); }
 .fp-tree-act-btn.danger:hover { background: var(--red-bg); color: var(--red); }
 .fp-tree-act-btn:disabled { opacity: .3; cursor: default; pointer-events: none; }
+.fp-tree-act-btn--label { padding: 2px 8px; font-size: 11px; color: var(--tx1); border: 1px solid var(--bord); }
+.fp-tree-act-btn--label:hover { background: var(--surf2); color: var(--tx); border-color: var(--tx3); }
 .fp-tree-add { color: var(--pri); font-size: 11px; }
 .fp-tree-add:hover { background: #ccfbf1 !important; color: var(--pri) !important; }
 

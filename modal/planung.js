@@ -46,7 +46,7 @@ function modalHandlerPlanung(type, data, m) {
   }
 
   if (type === 'editReihe') {
-    const { reihe } = data;
+    const { reihe, fpId, blockId } = data;
     m.appendChild(tx('div', 'modal-title', 'Unterrichtsreihe bearbeiten'));
     m.appendChild(modalInput('mt', 'Titel', '', reihe.titel));
     m.appendChild(modalInput('ms', 'Geplante Stunden', '', reihe.stundenAnzahl || '', 'number'));
@@ -55,19 +55,33 @@ function modalHandlerPlanung(type, data, m) {
     m.appendChild(modalTextarea('mn', 'Notizen', 'Stichworte, Ideen, Materialhinweise, offene Fragen…', reihe.notizen || ''));
     const footer = mk('div', 'modal-footer');
     footer.appendChild(cancelBtn());
-    const sv = btn('Speichern', 'btn btn-pri');
-    sv.onclick = () => {
+
+    function saveFields() {
       const t = document.getElementById('mt').value.trim();
-      if (!t) return;
+      if (!t) return false;
       reihe.titel       = t;
-      const msEl = document.getElementById('ms');
-      reihe.stundenAnzahl = msEl.value ? +msEl.value : null;
+      reihe.stundenAnzahl = document.getElementById('ms').value ? +document.getElementById('ms').value : null;
       reihe.schwerpunkt = document.getElementById('msw').value.trim();
       reihe.beschreibung = document.getElementById('mb').value.trim();
       reihe.notizen     = document.getElementById('mn').value.trim();
-      S.modal = null; scheduleSave(); render();
+      return true;
+    }
+
+    const sv = btn('Speichern', 'btn btn-sec');
+    sv.onclick = () => { if (!saveFields()) return; S.modal = null; scheduleSave(); render(); };
+    footer.appendChild(sv);
+
+    const planBtn = btn('✨ Stunden planen', 'btn btn-pri');
+    planBtn.onclick = () => {
+      if (!saveFields()) return;
+      S.modal = null;
+      if (fpId && blockId) S.sel = { type: 'reihe', ids: [fpId, blockId, reihe.id] };
+      S.open['reiheChat_' + reihe.id] = true;
+      scheduleSave(); render();
     };
-    footer.appendChild(sv); m.appendChild(footer);
+    footer.appendChild(planBtn);
+
+    m.appendChild(footer);
     _focusSelect('mt');
     return true;
   }

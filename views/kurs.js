@@ -33,7 +33,7 @@ function buildFpTree(lp, sel) {
 
   function makeRow(opts) {
     const { level, title, sub, isActive, hasChildren, openKey, onSelect,
-            dragPayload, dropType, onDrop, onEdit, onChat, onUp, onDown, onDelete,
+            dragPayload, dropType, onDrop, onEdit, editLabel, onChat, onUp, onDown, onDelete,
             isFirst, isLast, onAdd, addLabel, accentColor } = opts;
     const open = openKey ? isOpen(openKey) : false;
 
@@ -68,8 +68,8 @@ function buildFpTree(lp, sel) {
       actions.appendChild(ab);
     }
     if (onEdit) {
-      const eb = mk('button', 'fp-tree-act-btn');
-      eb.textContent = '✏'; eb.title = 'Umbenennen';
+      const eb = mk('button', 'fp-tree-act-btn' + (editLabel ? ' fp-tree-act-btn--label' : ''));
+      eb.textContent = editLabel || '✏'; eb.title = editLabel ? '' : 'Umbenennen';
       eb.onclick = e => { e.stopPropagation(); onEdit(); };
       actions.appendChild(eb);
     }
@@ -225,7 +225,8 @@ function buildFpTree(lp, sel) {
           render();
         },
         dragPayload: { type: 'reihe', srcBlockId: block.id, reiheId: reihe.id },
-        onEdit: () => { S.modal = { type: 'editReihe', data: { reihe } }; render(); },
+        onEdit: () => { S.modal = { type: 'editReihe', data: { reihe, fpId: lp.id, blockId: block.id } }; render(); },
+        editLabel: '✏ Bearbeiten',
         onUp: () => { swap(block.reihen, ri, ri-1); scheduleSave(); render(); },
         onDown: () => { swap(block.reihen, ri, ri+1); scheduleSave(); render(); },
         isFirst: ri === 0, isLast: ri === block.reihen.length-1,
@@ -413,41 +414,9 @@ function viewFachplanung() {
   treePanel.appendChild(buildFpTree(lp, sel));
   div.appendChild(treePanel);
 
-  // ── Detailbereich für ausgewählte Reihe ─────────────────────
-  if (selReihe) {
-    const nc = mk('div', 'card');
-    const hdr = cardHdr(selReihe.titel);
-    const editBtn = btn('✏', 'btn btn-ghost btn-xs');
-    editBtn.title = 'Reihe bearbeiten';
-    editBtn.onclick = () => { S.modal = { type: 'editReihe', data: { reihe: selReihe } }; render(); };
-    hdr.appendChild(editBtn);
-    nc.appendChild(hdr);
-
-    const nb = mk('div', 'card-body');
-    nb.style.cssText = 'padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;';
-
-    // kompakte Infos
-    if (selReihe.stundenAnzahl) {
-      nb.appendChild(tx('span', 'fp-detail-chip', selReihe.stundenAnzahl + ' Std.'));
-    }
-    if (selReihe.schwerpunkt) {
-      const sp = tx('span', 'fp-detail-chip', selReihe.schwerpunkt);
-      sp.style.color = 'var(--tx2)';
-      nb.appendChild(sp);
-    }
-
-    // ✨ Stunden planen
-    const reiheChat = !!S.open['reiheChat_' + selReihe.id];
-    const stundenBtn = btn('✨ Stunden planen' + (reiheChat ? ' ▼' : ' ›'), 'btn btn-primary btn-sm');
-    stundenBtn.onclick = () => { S.open['reiheChat_' + selReihe.id] = !reiheChat; render(); };
-    nb.appendChild(stundenBtn);
-
-    nc.appendChild(nb);
-    div.appendChild(nc);
-
-    if (reiheChat) {
-      div.appendChild(buildReiheChat(lp, selBlock, selReihe));
-    }
+  // ── Reihen-Chat (wenn aus Modal geöffnet) ───────────────────
+  if (selReihe && S.open['reiheChat_' + selReihe.id]) {
+    div.appendChild(buildReiheChat(lp, selBlock, selReihe));
   }
 
   // ── Block-Chat (unterhalb des Baums, wenn ✨ aktiv) ──────────

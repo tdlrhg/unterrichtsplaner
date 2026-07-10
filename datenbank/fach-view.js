@@ -339,6 +339,8 @@ async function buildFachView(container) {
       }
 
       var ref0 = contentItems[0] || g.items[0];
+      // Für Materialsets: Modal nur mit contentItems öffnen (lkItems sind separate Einträge, keine Teilaufgaben)
+      var modalGroup = (isMat0 && lkItems.length) ? Object.assign({}, g, { items: contentItems }) : g;
       var hasSubtasks = contentItems.length > 1 || (contentItems.length === 1 && g.key !== '?' && contentItems[0].nr !== g.key);
 
       // ── Seiten-Trenner ───────────────────────────────────────────
@@ -379,7 +381,7 @@ async function buildFachView(container) {
         var gHdrItem = { inhalt: g.aufgabenstellung || '', inhaltstyp: ref0.inhaltstyp || 'aufgabe', quelle_typ: ref0.quelle_typ, kapitel: ref0.kapitel, uk_titel: ref0.uk_titel };
         var ghdr = renderRow(gHdrItem, null, true, seitePrefix + grpTypLabel(g));
         ghdr.title = 'Alle Teilaufgaben ansehen';
-        ghdr.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
+        ghdr.onclick = function() { openGroupModal(modalGroup, function() { load({ keepScroll: true }); }, groups, i); };
         ghdr.insertBefore(_mkSelCell(g.gruppen_key, g), ghdr.firstChild);
 
         // Teilaufgaben-Container (standardmäßig eingeklappt)
@@ -422,7 +424,7 @@ async function buildFachView(container) {
           var _subSpacer = mk('div', 'db-col-sel'); _subSpacer.dataset.selCell = '1';
           rowEl.insertBefore(_subSpacer, rowEl.firstChild);
           if (rowEl.children[1]) rowEl.children[1].style.paddingLeft = '18px';
-          rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
+          rowEl.onclick = function() { openGroupModal(modalGroup, function() { load({ keepScroll: true }); }, groups, i); };
           subContainer.appendChild(rowEl);
         });
         wrap.appendChild(subContainer);
@@ -430,7 +432,7 @@ async function buildFachView(container) {
         // Einzelaufgabe: „Aufgabe N" + Text in einer Zeile (kein separater Header)
         var singleItem = contentItems[0] || g.items[0];
         var rowEl = renderRow(singleItem, function() { load({ keepScroll: true }); }, true, seitePrefix + grpTypLabel(g));
-        rowEl.onclick = function() { openGroupModal(g, function() { load({ keepScroll: true }); }, groups, i); };
+        rowEl.onclick = function() { openGroupModal(modalGroup, function() { load({ keepScroll: true }); }, groups, i); };
         rowEl.insertBefore(_mkSelCell(g.gruppen_key, g), rowEl.firstChild);
         // Unsichtbarer Platzhalter damit Chips mit Chevron-Zeilen ausgerichtet bleiben
         var srcCell0 = rowEl.querySelector('[data-col-idx="0"]');

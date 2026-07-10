@@ -254,17 +254,31 @@ function _appendLkChip(rowEl, lks, wrap, onDelete) {
     var text = tx('span', '', lk.inhalt || lk.aufgabenstellung || lk.thema || '–');
     text.style.cssText = 'color:var(--tx1);line-height:1.4;flex:1;';
     line.appendChild(badge); line.appendChild(text);
+    if (lk.id) {
+      var editBtn = mk('button', '');
+      editBtn.textContent = '✏';
+      editBtn.title = 'Bearbeiten';
+      editBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:13px;padding:0 2px;'
+        + 'opacity:.5;flex-shrink:0;line-height:1;';
+      editBtn.onmouseover = function() { editBtn.style.opacity = '1'; };
+      editBtn.onmouseout  = function() { editBtn.style.opacity = '.5'; };
+      editBtn.onclick = function(e) {
+        e.stopPropagation();
+        openEntryModal(lk, 'edit', onDelete);
+      };
+      line.appendChild(editBtn);
+    }
     if (lk.id && onDelete) {
       var delBtn = mk('button', '');
       delBtn.textContent = '🗑';
-      delBtn.title = 'Lehrerkommentar löschen';
+      delBtn.title = 'Löschen';
       delBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:13px;padding:0 2px;'
         + 'opacity:.5;flex-shrink:0;line-height:1;';
       delBtn.onmouseover = function() { delBtn.style.opacity = '1'; };
       delBtn.onmouseout  = function() { delBtn.style.opacity = '.5'; };
       delBtn.onclick = async function(e) {
         e.stopPropagation();
-        if (!confirm('Lehrerkommentar löschen?')) return;
+        if (!confirm('Löschen?')) return;
         delBtn.disabled = true;
         try { await sbDelete('inhalte', lk.id); onDelete(); }
         catch(err) { alert('Fehler: ' + err.message); delBtn.disabled = false; }

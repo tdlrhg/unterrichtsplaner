@@ -265,6 +265,7 @@ async function buildFachView(container) {
           if ((cr.quelle_typ === 'materialset' || cr.quelle_typ === 'handreichung') &&
               cr.quelle_name === r0.quelle_name && cr.kapitel === r0.kapitel &&
               cr.uk_titel === r0.uk_titel &&
+              cg.key === g.key &&
               (!matchSeite || cr.seite === r0.seite) &&
               !cg.items.every(function(r) { return r.inhaltstyp === 'lehrerkommentar'; })) {
             return cg;

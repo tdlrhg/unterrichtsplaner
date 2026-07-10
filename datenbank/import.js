@@ -28,7 +28,7 @@ function dbGroupByParent(rows) {
     var parentNr = (_m ? _m[1] : _nr).trim() || '?';
     var isMat = r.quelle_typ === 'materialset' || r.quelle_typ === 'handreichung';
     var key;
-    if (isMat && !(r.gruppen_key && /^dup_/.test(r.gruppen_key))) {
+    if (isMat) {
       // Normiere auf M-Nummer: "Lösung M 1", "M 1a" → alle in Gruppe "M 1"
       var _mNum = _nr.match(/\b(M\s*\d+)/i);
       if (_mNum) {

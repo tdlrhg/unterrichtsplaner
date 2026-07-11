@@ -1092,8 +1092,11 @@ textarea::placeholder { color: #c4cdd6; }
 .pc-assistant { align-self:flex-start; background:var(--surf2); border:1px solid var(--bord); border-bottom-left-radius:2px; }
 .pc-msg-text strong { font-weight:600; }
 .pc-tool-badge { display:inline-block; font-size:11px; color:var(--tx3); background:var(--surf); border:1px solid var(--bord); border-radius:10px; padding:2px 8px; margin-top:4px; margin-right:4px; }
-.pc-thinking { color:var(--tx3); font-size:13px; animation:pc-blink 1.2s infinite; }
-@keyframes pc-blink { 0%,100%{opacity:.3} 50%{opacity:1} }
+.pc-thinking-row { display:flex; align-items:center; gap:8px; padding:2px 0; }
+.pc-thinking { color:var(--tx2); font-size:13px; }
+.pc-spinner { display:inline-block; width:14px; height:14px; border:2px solid var(--bord); border-top-color:var(--pri); border-radius:50%; animation:pc-spin .8s linear infinite; flex-shrink:0; }
+@keyframes pc-spin { to { transform:rotate(360deg); } }
+.pc-tool-badge { display:block; font-size:12px; color:var(--tx2); padding:3px 0; margin-top:2px; }
 .pc-input-row { display:flex; gap:8px; align-items:flex-end; }
 .pc-input { flex:1; resize:vertical; min-height:60px; font-size:13px; }
 .pc-input:disabled { opacity:.5; }

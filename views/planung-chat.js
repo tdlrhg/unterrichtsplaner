@@ -386,6 +386,16 @@ async function _pcExecTool(name, input, fp) {
   }
 }
 
+const _PC_TOOL_LABELS = {
+  readPlan:       '📋 Lese aktuellen Plan …',
+  readKLP:        '📖 Lese Kernlehrplan …',
+  readDatenbank:  '🔍 Suche Materialien in der Datenbank …',
+  createStunde:   '✏ Lege Stunde an …',
+  createReihe:    '✏ Lege Reihe an …',
+  editStunde:     '✏ Bearbeite Stunde …',
+  editReihe:      '✏ Bearbeite Reihe …',
+};
+
 function _pcRender() {
   const el = document.getElementById('pc-messages');
   if (!el) return;
@@ -402,11 +412,15 @@ function _pcRender() {
     }
     if (m.toolCalls && m.toolCalls.length) {
       m.toolCalls.forEach(tc => {
-        d.appendChild(tx('div', 'pc-tool-badge', '🔧 ' + tc.name));
+        d.appendChild(tx('div', 'pc-tool-badge', _PC_TOOL_LABELS[tc.name] || ('🔧 ' + tc.name)));
       });
     }
     if (m.isThinking) {
-      d.appendChild(tx('span', 'pc-thinking', '…'));
+      const row = mk('div', 'pc-thinking-row');
+      const spinner = mk('span', 'pc-spinner');
+      row.appendChild(spinner);
+      row.appendChild(tx('span', 'pc-thinking', m.toolCalls && m.toolCalls.length ? 'Warte auf Antwort …' : 'KI denkt …'));
+      d.appendChild(row);
     }
     el.appendChild(d);
   });
@@ -418,7 +432,7 @@ function _pcRender() {
   if (sbtn) sbtn.disabled = _pcRunning;
 }
 
-async function _pcSend(fp, context, text, autoStart) {
+async function _pcSend(fp, context, text, autoStart, existingThinkMsg) {
   // context = { block } für Block-Chat, { block, reihe } für Reihen-Chat
   if (_pcRunning || !text.trim()) return;
   _pcRunning = true;
@@ -428,8 +442,8 @@ async function _pcSend(fp, context, text, autoStart) {
   }
   _pcApi.push({ role: 'user', content: text.trim() });
 
-  const thinkMsg = { role: 'assistant', text: '', isThinking: true, toolCalls: [] };
-  _pcMsgs.push(thinkMsg);
+  const thinkMsg = existingThinkMsg || { role: 'assistant', text: '', isThinking: true, toolCalls: [] };
+  if (!existingThinkMsg) _pcMsgs.push(thinkMsg);
   _pcRender();
 
   const { block, reihe } = context;
@@ -540,11 +554,14 @@ function buildBlockChat(fp, block) {
   }
 
   if (_pcMsgs.length === 0 && !_pcRunning) {
+    _pcRunning = true;
+    const thinkMsg = { role: 'assistant', text: '', isThinking: true, toolCalls: [] };
+    _pcMsgs.push(thinkMsg);
     const capturedBlockId = block.id;
     setTimeout(() => {
-      if (_pcBlockId === capturedBlockId && _pcReiheId === null) {
-        _pcSend(fp, { block }, 'Analysiere den Block und erstelle einen vollständigen Reihenplan.', true);
-      }
+      if (_pcBlockId !== capturedBlockId || _pcReiheId !== null) { _pcRunning = false; _pcMsgs = []; return; }
+      _pcRunning = false;
+      _pcSend(fp, { block }, 'Analysiere den Block und erstelle einen vollständigen Reihenplan.', true, thinkMsg);
     }, 50);
   }
 
@@ -573,11 +590,14 @@ function buildReiheChat(fp, block, reihe) {
   }
 
   if (_pcMsgs.length === 0 && !_pcRunning) {
+    _pcRunning = true;
+    const thinkMsg = { role: 'assistant', text: '', isThinking: true, toolCalls: [] };
+    _pcMsgs.push(thinkMsg);
     const capturedReiheId = reihe.id;
     setTimeout(() => {
-      if (_pcReiheId === capturedReiheId) {
-        _pcSend(fp, { block, reihe }, 'Analysiere die Reihe und erstelle einen vollständigen Stundenplan.', true);
-      }
+      if (_pcReiheId !== capturedReiheId) { _pcRunning = false; _pcMsgs = []; return; }
+      _pcRunning = false;
+      _pcSend(fp, { block, reihe }, 'Analysiere die Reihe und erstelle einen vollständigen Stundenplan.', true, thinkMsg);
     }, 50);
   }
 

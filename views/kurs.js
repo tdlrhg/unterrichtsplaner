@@ -418,7 +418,7 @@ function viewFachplanung() {
   if (selReihe && S.open['reiheChat_' + selReihe.id]) {
     const chatEl = buildReiheChat(lp, selBlock, selReihe);
     div.appendChild(chatEl);
-    requestAnimationFrame(() => chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    setTimeout(() => chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   }
 
   // ── Block-Chat (unterhalb des Baums, wenn ✨ aktiv) ──────────

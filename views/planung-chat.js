@@ -588,6 +588,10 @@ function buildReiheChat(fp, block, reihe) {
     _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = reihe.id;
     _pcRunning = false;
   }
+  // Stunden wurden extern gelöscht → alter Kontext ist veraltet, neu starten
+  if (_pcMsgs.length > 0 && !_pcRunning && (reihe.stunden || []).length === 0) {
+    _pcMsgs = []; _pcApi = [];
+  }
 
   if (_pcMsgs.length === 0 && !_pcRunning) {
     _pcRunning = true;

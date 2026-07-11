@@ -41,7 +41,7 @@ function dbGroupByParent(rows) {
         key = r.gruppen_key || ((r.quelle_name || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr);
       }
     } else if (_m && !(r.gruppen_key && /^dup_/.test(r.gruppen_key))) {
-      key = (r.quelle_name || '') + '||' + (r.kapitel || '') + '||' + parentNr;
+      key = (r.quelle_name || '') + '||' + (r.kapitel || '') + '||' + (r.uk_titel || '') + '||' + parentNr;
     } else {
       key = r.gruppen_key || ((r.quelle_name || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr);
     }

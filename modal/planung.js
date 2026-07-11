@@ -67,6 +67,18 @@ function modalHandlerPlanung(type, data, m) {
       return true;
     }
 
+    const clearBtn = btn('Alle Stunden löschen', 'btn btn-danger');
+    clearBtn.style.marginRight = 'auto';
+    clearBtn.onclick = () => {
+      const n = (reihe.stunden || []).length;
+      if (!n) return;
+      if (!confirm(n + ' Stunde' + (n !== 1 ? 'n' : '') + ' löschen? Die Reihe bleibt erhalten.')) return;
+      reihe.stunden = [];
+      reihe.einheiten = [];
+      S.modal = null; scheduleSave(); render();
+    };
+    if ((reihe.stunden || []).length) footer.appendChild(clearBtn);
+
     const sv = btn('Speichern', 'btn btn-ghost');
     sv.onclick = () => { if (!saveFields()) return; S.modal = null; scheduleSave(); render(); };
     footer.appendChild(sv);

@@ -132,7 +132,7 @@ function _importFinishBadge() {
     });
   }
   Promise.all([
-    dl('methoden.json'),
+    sbSelectAll('methoden').catch(function() { return []; }),
     dl('didaktik-artikel.json'),
   ]).then(function(res) {
     if (Array.isArray(res[0])) METHDB   = res[0];

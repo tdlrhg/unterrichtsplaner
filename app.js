@@ -131,7 +131,7 @@ function buildSetup() {
     sbDownload('data.json').catch(() => null),
     fetch('klp.json', { cache: 'no-store' }).then(r => r.json()).catch(() => []),
     sbDownload('didaktik.json').catch(() => ({})),
-    sbDownload('methoden.json').catch(() => []),
+    sbSelectAll('methoden').catch(() => []),
     sbDownload('didaktik-artikel.json').catch(() => []),
   ]);
   KLPDB = Array.isArray(klpdb) ? klpdb : [];

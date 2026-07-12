@@ -202,7 +202,7 @@ function viewMethoden() {
     prefill = prefill || {};
     const isNew = !existing;
     const m = existing ? JSON.parse(JSON.stringify(existing))
-      : { id:'', name: prefill.name || '', beschreibung: prefill.beschreibung || '', ziel: prefill.ziel || '', hinweise: prefill.hinweise || '', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], quelle:'' };
+      : { id:'', name: prefill.name || '', beschreibung: prefill.beschreibung || '', ziel: prefill.ziel || '', hinweise: prefill.hinweise || '', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], typ: null, quelle:'' };
 
     overlay.innerHTML = '';
     overlay.classList.add('open');
@@ -268,6 +268,13 @@ function viewMethoden() {
       selAufwand.appendChild(opt);
     });
 
+    const selTyp = mk('select', 'meth-form-input');
+    [{v:'',l:'– kein Typ –'},{v:'vermitteln',l:'Vermitteln'},{v:'erarbeiten',l:'Erarbeiten'},{v:'austauschen',l:'Austauschen'},{v:'anwenden',l:'Anwenden'},{v:'strukturieren',l:'Strukturieren'},{v:'reflektieren',l:'Reflektieren'}].forEach(o => {
+      const opt = mk('option',''); opt.value = o.v; opt.textContent = o.l;
+      if ((m.typ || '') === o.v) opt.selected = true;
+      selTyp.appendChild(opt);
+    });
+
     const cbSoz  = checkGroup(SOZ_ALL,  m.sozialform);
     const cbPhas = checkGroup(PHAS_ALL, m.phasen);
     const cbMat  = checkGroup(MAT_ALL,  m.materialtyp);
@@ -280,6 +287,7 @@ function viewMethoden() {
     form.appendChild(field('Hinweise', inpHinw));
     form.appendChild(field('Zeitbedarf', inpZeit));
     form.appendChild(field('Aufwand', selAufwand));
+    form.appendChild(field('Typ', selTyp));
     form.appendChild(field('Sozialform', cbSoz));
     form.appendChild(field('Phasen', cbPhas));
     form.appendChild(field('Material', cbMat));
@@ -303,6 +311,7 @@ function viewMethoden() {
         hinweise: inpHinw.value.trim(),
         zeitbedarf: inpZeit.value.trim() || 'variabel',
         aufwand: parseInt(selAufwand.value),
+        typ: selTyp.value || null,
         sozialform: getChecked(cbSoz),
         phasen: getChecked(cbPhas),
         materialtyp: getChecked(cbMat),
@@ -321,21 +330,21 @@ function viewMethoden() {
   }
 
   async function saveMethod(updated, isNew) {
+    await sbInsert('methoden', [updated]);
     if (isNew) {
       METHDB.push(updated);
     } else {
       const i = METHDB.findIndex(x => x.id === updated.id);
       if (i >= 0) METHDB[i] = updated;
     }
-    await sbUpload('methoden.json', METHDB);
     refresh();
   }
 
   async function deleteMethod(id) {
     if (!confirm('Methode wirklich löschen?')) return;
+    await sbDelete('methoden', id);
     const i = METHDB.findIndex(m => m.id === id);
     if (i >= 0) METHDB.splice(i, 1);
-    await sbUpload('methoden.json', METHDB);
     refresh();
   }
 
@@ -512,7 +521,7 @@ materialtyp: aus ["Kein Material","Texte","Karten","Arbeitsblätter","Experiment
         const saveAllBtn = btn('Alle ' + methoden.length + ' speichern', 'btn btn-pri btn-sm');
         saveAllBtn.onclick = async () => {
           saveAllBtn.disabled = true; saveAllBtn.textContent = '⏳ Speichert…';
-          methoden.forEach(m => METHDB.push({
+          const newRows = methoden.map(m => ({
             id: uid(),
             name: m.name,
             beschreibung: m.beschreibung || '',
@@ -523,9 +532,11 @@ materialtyp: aus ["Kein Material","Texte","Karten","Arbeitsblätter","Experiment
             sozialform: Array.isArray(m.sozialform) ? m.sozialform : [],
             phasen: Array.isArray(m.phasen) ? m.phasen : [],
             materialtyp: Array.isArray(m.materialtyp) ? m.materialtyp : [],
+            typ: null,
             quelle: '',
           }));
-          await sbUpload('methoden.json', METHDB);
+          await sbInsert('methoden', newRows);
+          newRows.forEach(r => METHDB.push(r));
           closeOv();
           refresh();
         };

@@ -100,6 +100,10 @@ function viewMethoden() {
   const PHAS_ALL = ['Einstieg','Erarbeitung','Übung','Sicherung'];
   const MAT_ALL  = ['Kein Material','Texte','Karten','Arbeitsblätter','Experimente','Plakate/Papier','Bilder/Comics','Objekte/Modelle','Digitale Medien'];
 
+  const TYP_ORDER = ['vermitteln','erarbeiten','austauschen','anwenden','strukturieren','reflektieren'];
+  const TYP_LABEL = { vermitteln:'Vermitteln', erarbeiten:'Erarbeiten', austauschen:'Austauschen', anwenden:'Anwenden', strukturieren:'Strukturieren', reflektieren:'Reflektieren' };
+  const TYP_DESC  = { vermitteln:'Wissen einführen & erklären', erarbeiten:'Selbstständig erkunden & erschließen', austauschen:'Kommunizieren & diskutieren', anwenden:'Üben & transferieren', strukturieren:'Ordnen & zusammenfassen', reflektieren:'Rückblicken & bewerten' };
+
   function refresh() {
     [pRow, sRow, mRow, aRow].forEach(row => {
       row.querySelectorAll('.meth-filter-chip').forEach(c => {
@@ -132,63 +136,86 @@ function viewMethoden() {
       return;
     }
 
-    filtered.forEach(m => {
-      const card = mk('div', 'meth-card');
+    // Nach Typ gruppieren und pro Gruppe rendern
+    const byTyp = {};
+    TYP_ORDER.forEach(t => { byTyp[t] = []; });
+    filtered.forEach(m => { (byTyp[m.typ] || byTyp['erarbeiten']).push(m); });
 
-      const nameRow = mk('div', '');
-      nameRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:6px;';
-      nameRow.appendChild(tx('div', 'meth-card-name', m.name));
-      if (m.aufwand) {
-        const aw = mk('span', 'meth-aufwand');
-        for (let i = 1; i <= 4; i++) {
-          const dot = tx('span', 'meth-aufwand-dot', '●');
-          dot.style.color = i <= m.aufwand ? AUFWAND_COLOR[m.aufwand] : 'var(--bord)';
-          aw.appendChild(dot);
+    TYP_ORDER.forEach(typ => {
+      const group = byTyp[typ];
+      if (!group.length) return;
+
+      const secHdr = mk('div', '');
+      secHdr.style.cssText = 'grid-column:1/-1;display:flex;align-items:baseline;gap:10px;margin-top:8px;padding-bottom:6px;border-bottom:2px solid var(--bdr);';
+      const secTitle = tx('span', '', TYP_LABEL[typ]);
+      secTitle.style.cssText = 'font-size:16px;font-weight:700;';
+      const secDesc = tx('span', '', TYP_DESC[typ]);
+      secDesc.style.cssText = 'font-size:12px;color:var(--tx3);';
+      const secCount = tx('span', '', group.length + (group.length === 1 ? ' Methode' : ' Methoden'));
+      secCount.style.cssText = 'font-size:11px;color:var(--tx3);margin-left:auto;';
+      secHdr.appendChild(secTitle);
+      secHdr.appendChild(secDesc);
+      secHdr.appendChild(secCount);
+      listWrap.appendChild(secHdr);
+
+      group.forEach(m => {
+        const card = mk('div', 'meth-card');
+
+        const nameRow = mk('div', '');
+        nameRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:6px;';
+        nameRow.appendChild(tx('div', 'meth-card-name', m.name));
+        if (m.aufwand) {
+          const aw = mk('span', 'meth-aufwand');
+          for (let i = 1; i <= 4; i++) {
+            const dot = tx('span', 'meth-aufwand-dot', '●');
+            dot.style.color = i <= m.aufwand ? AUFWAND_COLOR[m.aufwand] : 'var(--bord)';
+            aw.appendChild(dot);
+          }
+          nameRow.appendChild(aw);
         }
-        nameRow.appendChild(aw);
-      }
-      card.appendChild(nameRow);
+        card.appendChild(nameRow);
 
-      const chips = mk('div', 'meth-card-chips');
-      m.phasen.forEach(p => chips.appendChild(tx('span', 'meth-chip meth-chip-phase', p)));
-      m.sozialform.forEach(s => chips.appendChild(tx('span', 'meth-chip meth-chip-soz', SOZ_ABK[s] || s)));
-      m.materialtyp.forEach(mt => {
-        if (mt !== 'Kein Material') chips.appendChild(tx('span', 'meth-chip meth-chip-mat', mt));
+        const chips = mk('div', 'meth-card-chips');
+        m.phasen.forEach(p => chips.appendChild(tx('span', 'meth-chip meth-chip-phase', p)));
+        m.sozialform.forEach(s => chips.appendChild(tx('span', 'meth-chip meth-chip-soz', SOZ_ABK[s] || s)));
+        m.materialtyp.forEach(mt => {
+          if (mt !== 'Kein Material') chips.appendChild(tx('span', 'meth-chip meth-chip-mat', mt));
+        });
+        card.appendChild(chips);
+
+        card.appendChild(tx('div', 'meth-card-desc', m.beschreibung));
+
+        const details = mk('details', '');
+        const summary = mk('summary', '');
+        summary.textContent = 'Ziel & Hinweise';
+        details.appendChild(summary);
+        const detBody = mk('div', 'meth-card-det');
+        if (m.zeitbedarf && m.zeitbedarf !== 'variabel') detBody.appendChild(tx('div', '', '⏱ ' + m.zeitbedarf));
+        if (m.ziel) detBody.appendChild(tx('div', '', '🎯 ' + m.ziel));
+        if (m.hinweise) detBody.appendChild(tx('div', '', '💡 ' + m.hinweise));
+        const ql = mk('a', '');
+        ql.href = m.quelle; ql.target = '_blank';
+        ql.textContent = '↗ Methodenkartei';
+        ql.style.cssText = 'font-size:11px;color:var(--pri);';
+        detBody.appendChild(ql);
+        details.appendChild(detBody);
+        card.appendChild(details);
+
+        if (editMode) {
+          const editRow = mk('div', '');
+          editRow.style.cssText = 'display:flex;gap:6px;margin-top:6px;border-top:1px solid var(--bord);padding-top:6px;';
+          const eb = btn('Bearbeiten', 'btn btn-sm');
+          eb.onclick = () => openForm(m);
+          const db = btn('Löschen', 'btn btn-sm');
+          db.style.color = 'var(--red)';
+          db.onclick = () => deleteMethod(m.id);
+          editRow.appendChild(eb);
+          editRow.appendChild(db);
+          card.appendChild(editRow);
+        }
+
+        listWrap.appendChild(card);
       });
-      card.appendChild(chips);
-
-      card.appendChild(tx('div', 'meth-card-desc', m.beschreibung));
-
-      const details = mk('details', '');
-      const summary = mk('summary', '');
-      summary.textContent = 'Ziel & Hinweise';
-      details.appendChild(summary);
-      const detBody = mk('div', 'meth-card-det');
-      if (m.zeitbedarf && m.zeitbedarf !== 'variabel') detBody.appendChild(tx('div', '', '⏱ ' + m.zeitbedarf));
-      if (m.ziel) detBody.appendChild(tx('div', '', '🎯 ' + m.ziel));
-      if (m.hinweise) detBody.appendChild(tx('div', '', '💡 ' + m.hinweise));
-      const ql = mk('a', '');
-      ql.href = m.quelle; ql.target = '_blank';
-      ql.textContent = '↗ Methodenkartei';
-      ql.style.cssText = 'font-size:11px;color:var(--pri);';
-      detBody.appendChild(ql);
-      details.appendChild(detBody);
-      card.appendChild(details);
-
-      if (editMode) {
-        const editRow = mk('div', '');
-        editRow.style.cssText = 'display:flex;gap:6px;margin-top:6px;border-top:1px solid var(--bord);padding-top:6px;';
-        const eb = btn('Bearbeiten', 'btn btn-sm');
-        eb.onclick = () => openForm(m);
-        const db = btn('Löschen', 'btn btn-sm');
-        db.style.color = 'var(--red)';
-        db.onclick = () => deleteMethod(m.id);
-        editRow.appendChild(eb);
-        editRow.appendChild(db);
-        card.appendChild(editRow);
-      }
-
-      listWrap.appendChild(card);
     });
   }
 

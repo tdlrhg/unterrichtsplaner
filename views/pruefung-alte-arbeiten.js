@@ -32,6 +32,23 @@ function buildAlteArbeitDetail(aa) {
     saveAlteArbeitenDB();
   };
   kursRow.appendChild(kursSel);
+
+  const sjInp = document.createElement('input'); sjInp.className = 'finp'; sjInp.type = 'text';
+  sjInp.placeholder = 'Schuljahr'; sjInp.value = aa.schuljahr || '';
+  sjInp.style.cssText = 'max-width:90px;font-size:12px;padding:3px 6px;';
+  sjInp.onchange = () => { aa.schuljahr = sjInp.value.trim() || null; saveAlteArbeitenDB(); };
+  kursRow.appendChild(sjInp);
+
+  const artSel = document.createElement('select'); artSel.className = 'finp';
+  artSel.style.cssText = 'max-width:130px;font-size:12px;padding:3px 6px;';
+  [{v:'regulaer',l:'Regulär'},{v:'nachschreiber',l:'Nachschreiber'}].forEach(o => {
+    const opt = document.createElement('option'); opt.value = o.v; opt.textContent = o.l;
+    if ((aa.art || 'regulaer') === o.v) opt.selected = true;
+    artSel.appendChild(opt);
+  });
+  artSel.onchange = () => { aa.art = artSel.value; saveAlteArbeitenDB(); };
+  kursRow.appendChild(artSel);
+
   left.appendChild(kursRow);
   hdr.appendChild(left); div.appendChild(hdr);
 
@@ -133,8 +150,11 @@ function buildAlteArbeitenOverview() {
       body.style.cssText = 'display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 14px;';
       body.appendChild(tx('span', '', '📝'));
       const info = mk('div', ''); info.style.flex = '1';
-      info.appendChild(tx('div', '', aa.titel || '–')).style.fontWeight = '600';
-      const sub = [aa.kursLabel, aa.datum ? new Date(aa.datum).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : null, aa.dauer ? aa.dauer+' Min.' : null].filter(Boolean).join(' · ');
+      const titelRow = mk('div', ''); titelRow.style.cssText = 'display:flex;align-items:center;gap:6px;';
+      titelRow.appendChild(tx('span', '', aa.titel || '–')).style.fontWeight = '600';
+      if (aa.art === 'nachschreiber') titelRow.appendChild(tx('span', 'matc-jg', 'Nachschreiber'));
+      info.appendChild(titelRow);
+      const sub = [aa.kursLabel, aa.schuljahr, aa.datum ? new Date(aa.datum).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : null, aa.dauer ? aa.dauer+' Min.' : null].filter(Boolean).join(' · ');
       if (sub) info.appendChild(tx('div', '', sub)).style.cssText = 'font-size:12px;color:var(--tx3);';
       body.appendChild(info);
       const del = btn('✕', 'matc-del'); del.style.color = 'var(--tx3)';
@@ -175,6 +195,15 @@ function showNeueAlteArbeitModal() {
     kursSel.appendChild(o);
   });
   body.appendChild(field('Kurs', kursSel));
+
+  const sjInp = document.createElement('input'); sjInp.className = 'finp'; sjInp.type = 'text'; sjInp.placeholder = 'z.B. 2025/26';
+  body.appendChild(field('Schuljahr', sjInp));
+
+  const artSel = document.createElement('select'); artSel.className = 'finp';
+  [{v:'regulaer',l:'Regulär'},{v:'nachschreiber',l:'Nachschreiber'}].forEach(o => {
+    const opt = document.createElement('option'); opt.value = o.v; opt.textContent = o.l; artSel.appendChild(opt);
+  });
+  body.appendChild(field('Art', artSel));
 
   const datumInp = document.createElement('input'); datumInp.type = 'date'; datumInp.className = 'finp';
   body.appendChild(field('Datum', datumInp));
@@ -260,6 +289,8 @@ function showNeueAlteArbeitModal() {
       const aa = {
         id: uid(), titel,
         kursId, kursLabel: kurs ? kurs.klasse+(fp?' · '+fp.fach:'') : null,
+        schuljahr: sjInp.value.trim() || null,
+        art: artSel.value,
         datum: datumInp.value || null,
         dauer: dauerInp.value ? parseInt(dauerInp.value) : null,
         aufgaben: allAufgaben, erstellt: new Date().toISOString(),

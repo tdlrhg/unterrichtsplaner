@@ -2,7 +2,7 @@
 // Alle KI-Aufrufe im Unterrichtsplaner laufen über diese Funktion,
 // damit Modellwahl, Header und Fehlerbehandlung einheitlich bleiben.
 
-const KI_MODEL_SONNET = 'claude-sonnet-5';
+const KI_MODEL_SONNET = 'claude-sonnet-4-6';
 const KI_MODEL_HAIKU  = 'claude-haiku-4-5';
 
 // prompt    : String  → wird als Text-Block verpackt

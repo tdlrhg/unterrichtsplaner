@@ -40,6 +40,7 @@ function viewEinstellungen() {
   const MODELS_TO_TEST = [
     { id: 'claude-haiku-4-5-20251001', label: 'Haiku 4.5' },
     { id: 'claude-sonnet-4-6',         label: 'Sonnet 4.6' },
+    { id: 'claude-sonnet-5',           label: 'Sonnet 5' },
   ];
   const modelTestStatus = tx('span', '', ''); modelTestStatus.style.cssText = 'font-size:12px;color:var(--tx2);';
   MODELS_TO_TEST.forEach(({ id, label }) => {

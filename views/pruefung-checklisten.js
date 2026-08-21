@@ -64,6 +64,13 @@ function buildChecklistDetail(cl) {
       titelInp.value = cl.titel || ''; titelInp.style.cssText = 'font-size:20px;font-weight:700;margin-bottom:4px;';
       titelInp.oninput = () => { cl.titel = titelInp.value.trim(); saveChecklistDB(); };
       left.appendChild(titelInp);
+
+      const jgSel = document.createElement('select'); jgSel.className = 'finp';
+      jgSel.style.cssText = 'max-width:200px;margin-bottom:4px;';
+      const noJg = document.createElement('option'); noJg.value = ''; noJg.textContent = '– kein Jahrgang –'; jgSel.appendChild(noJg);
+      JAHRGAENGE.forEach(jg => { const o = document.createElement('option'); o.value = jg; o.textContent = 'Jahrgang ' + jg; if (cl.jahrgang === jg) o.selected = true; jgSel.appendChild(o); });
+      jgSel.onchange = () => { cl.jahrgang = jgSel.value || null; saveChecklistDB(); };
+      left.appendChild(jgSel);
     } else {
       left.appendChild(tx('div', 'c-title', cl.titel || '–'));
     }

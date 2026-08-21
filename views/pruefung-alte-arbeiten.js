@@ -10,6 +10,29 @@ function buildAlteArbeitDetail(aa) {
   left.appendChild(tx('div', 'c-title', aa.titel || '–'));
   const sub = [aa.kursLabel, aa.datum ? new Date(aa.datum).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : null, aa.dauer ? aa.dauer + ' Min.' : null].filter(Boolean).join(' · ');
   if (sub) left.appendChild(tx('div', 'c-sub', sub));
+
+  const kursRow = mk('div', ''); kursRow.style.cssText = 'display:flex;align-items:center;gap:6px;margin-top:6px;';
+  kursRow.appendChild(tx('span', '', 'Kurs:')).style.cssText = 'font-size:12px;color:var(--tx3);';
+  const kursSel = document.createElement('select'); kursSel.className = 'finp';
+  kursSel.style.cssText = 'max-width:220px;font-size:12px;padding:3px 6px;';
+  const noK = document.createElement('option'); noK.value = ''; noK.textContent = '– kein Kurs –'; kursSel.appendChild(noK);
+  (S.data?.kurse || []).forEach(k => {
+    const fp = (S.data?.fachplanungen||[]).find(f => f.id === k.fachplanungId);
+    const o = document.createElement('option'); o.value = k.id;
+    o.textContent = k.klasse + ' · ' + (fp ? fp.fach : '?') + ' ' + k.schuljahr;
+    if (aa.kursId === k.id) o.selected = true;
+    kursSel.appendChild(o);
+  });
+  kursSel.onchange = () => {
+    const kursId = kursSel.value || null;
+    const kurs = kursId ? (S.data?.kurse||[]).find(k=>k.id===kursId) : null;
+    const fp = kurs ? (S.data?.fachplanungen||[]).find(f=>f.id===kurs.fachplanungId) : null;
+    aa.kursId = kursId;
+    aa.kursLabel = kurs ? kurs.klasse+(fp?' · '+fp.fach:'') : null;
+    saveAlteArbeitenDB();
+  };
+  kursRow.appendChild(kursSel);
+  left.appendChild(kursRow);
   hdr.appendChild(left); div.appendChild(hdr);
 
   if (aa.aufgaben?.length) {

@@ -574,7 +574,7 @@ materialtyp: aus ["Kein Material","Texte","Karten","Arbeitsblätter","Experiment
         body.appendChild(saveRow);
 
       } catch(e) {
-        statusEl.textContent = 'Fehler: ' + e.message;
+        showKIError(statusEl, e, 'Fehler: ');
         extractBtn.disabled = false; extractBtn.textContent = '✨ KI extrahiert';
       }
     };

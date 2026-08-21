@@ -557,7 +557,7 @@ Antworte NUR mit reinem JSON:
           if (parsed.titel) aufg.titel = parsed.titel;
           if (parsed.beschreibung) aufg.beschreibung = parsed.beschreibung;
           savePruefungsDB(); renderStruktur(); renderAFBBanner();
-        } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
+        } catch(e) { showKIError(statusEl, e); }
         grobRegenBtn.textContent = '↺'; grobRegenBtn.disabled = false;
       };
       hrow.appendChild(grobRegenBtn);
@@ -635,7 +635,7 @@ Antworte NUR mit reinem JSON:
             switchSubTab(2);
             statusEl.textContent = `✓ Feinstruktur fuer Aufgabe ${aufgNr} aktualisiert.`;
           } catch (e) {
-            statusEl.textContent = '⚠ ' + e.message;
+            showKIError(statusEl, e);
           }
           refreshBtn.disabled = false;
           refreshBtn.textContent = '↺ Feinplanung fuer diese Aufgabe';
@@ -1136,7 +1136,7 @@ Antworte NUR mit reinem JSON:
       kiStatus.textContent = `⏳ ${label}…`;
       kiBtns.querySelectorAll('button').forEach(b => { b.disabled = true; });
       try { await fn(); buildTaList(); kiStatus.textContent = '✓ ' + label; }
-      catch(e) { kiStatus.textContent = '⚠ ' + e.message.slice(0, 80); }
+      catch(e) { showKIError(kiStatus, { message: e.message.slice(0, 80) }); }
       kiBtns.querySelectorAll('button').forEach(b => { b.disabled = false; });
     };
 
@@ -1598,7 +1598,7 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
       const gesamtzeit = pr.strukturVorschlag.reduce((s, a) => s + (a.zeitMinuten || 0), 0);
       const zeitHinweis = gesamtzeit ? ` (${gesamtzeit} Min. gesamt)` : '';
       statusEl.textContent = '✓ ' + pr.strukturVorschlag.length + ' Aufgaben vorgeschlagen' + zeitHinweis + '. Streiche unerwünschte, dann → Feinstruktur.';
-    } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
+    } catch(e) { showKIError(statusEl, e); }
     strukturBtn.disabled = false;
   };
 
@@ -1631,7 +1631,7 @@ reproduktion | leichteAnwendung | mittlereAnwendung | transfer`;
       renderAFBBanner();
       lockInfo.textContent = 'Grobstruktur ist nach der ersten Feinplanung gesperrt. Zum Aendern einzelne Aufgaben entsperren.';
       statusEl.textContent = '✓ Feinstruktur fertig. Korrigiere wenn nötig, dann über Aktionen ▾ konkrete Aufgaben generieren.';
-    } catch(e) { statusEl.textContent = '⚠ ' + e.message; }
+    } catch(e) { showKIError(statusEl, e); }
     zuFeinBtn.disabled = false; strukturBtn.disabled = false;
   };
 

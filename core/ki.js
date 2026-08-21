@@ -4,6 +4,27 @@
 
 const KI_MODEL_SONNET = 'claude-sonnet-4-6';
 const KI_MODEL_HAIKU  = 'claude-haiku-4-5';
+const KI_BILLING_URL  = 'https://console.anthropic.com/settings/billing';
+
+function isKICreditError(err) {
+  const msg = (err && err.message || '').toLowerCase();
+  return msg.includes('credit balance') || msg.includes('insufficient_quota');
+}
+
+// Zeigt eine KI-Fehlermeldung in einem Status-Element an. Bei Guthaben-Fehlern
+// wird zusätzlich ein klickbarer Link zur Anthropic-Konsole eingeblendet.
+function showKIError(el, err, prefix) {
+  el.innerHTML = '';
+  el.appendChild(document.createTextNode((prefix || '⚠ ') + err.message));
+  if (isKICreditError(err)) {
+    el.appendChild(document.createTextNode(' — '));
+    const a = document.createElement('a');
+    a.href = KI_BILLING_URL; a.target = '_blank'; a.rel = 'noopener';
+    a.textContent = 'Guthaben aufladen ↗';
+    a.style.color = 'var(--pri)';
+    el.appendChild(a);
+  }
+}
 
 // prompt    : String  → wird als Text-Block verpackt
 //             Array   → Content-Blocks direkt (Multimodal, z.B. mit Bildern)

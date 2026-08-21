@@ -99,25 +99,29 @@ function buildAlteArbeitenOverview() {
     return div;
   }
 
-  const grid = mk('div', '');
-  grid.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-top:8px;';
-  ALTE_ARBEITEN_DB.forEach(aa => {
-    const row = mk('div', 'card');
-    const body = mk('div', 'card-body');
-    body.style.cssText = 'display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 14px;';
-    body.appendChild(tx('span', '', '📝'));
-    const info = mk('div', ''); info.style.flex = '1';
-    info.appendChild(tx('div', '', aa.titel || '–')).style.fontWeight = '600';
-    const sub = [aa.kursLabel, aa.datum ? new Date(aa.datum).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : null, aa.dauer ? aa.dauer+' Min.' : null].filter(Boolean).join(' · ');
-    if (sub) info.appendChild(tx('div', '', sub)).style.cssText = 'font-size:12px;color:var(--tx3);';
-    body.appendChild(info);
-    const del = btn('✕', 'matc-del'); del.style.color = 'var(--tx3)';
-    del.onclick = e => { e.stopPropagation(); if (!confirm('"'+aa.titel+'" löschen?')) return; ALTE_ARBEITEN_DB=ALTE_ARBEITEN_DB.filter(a=>a.id!==aa.id); saveAlteArbeitenDB(); renderPr(); };
-    body.appendChild(del);
-    body.onclick = e => { if (e.target===del||del.contains(e.target)) return; PR.view='alte_arbeit'; PR.aktAlteArbeitId=aa.id; renderPr(); };
-    row.appendChild(body); grid.appendChild(row);
+  const groups = groupByJahrgang(ALTE_ARBEITEN_DB, aa => jahrgangOfKurs(aa.kursId));
+  groups.forEach(({ jahrgang, items }) => {
+    div.appendChild(jahrgangSecHdr(jahrgang, items.length));
+    const grid = mk('div', '');
+    grid.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:16px;';
+    items.forEach(aa => {
+      const row = mk('div', 'card');
+      const body = mk('div', 'card-body');
+      body.style.cssText = 'display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 14px;';
+      body.appendChild(tx('span', '', '📝'));
+      const info = mk('div', ''); info.style.flex = '1';
+      info.appendChild(tx('div', '', aa.titel || '–')).style.fontWeight = '600';
+      const sub = [aa.kursLabel, aa.datum ? new Date(aa.datum).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : null, aa.dauer ? aa.dauer+' Min.' : null].filter(Boolean).join(' · ');
+      if (sub) info.appendChild(tx('div', '', sub)).style.cssText = 'font-size:12px;color:var(--tx3);';
+      body.appendChild(info);
+      const del = btn('✕', 'matc-del'); del.style.color = 'var(--tx3)';
+      del.onclick = e => { e.stopPropagation(); if (!confirm('"'+aa.titel+'" löschen?')) return; ALTE_ARBEITEN_DB=ALTE_ARBEITEN_DB.filter(a=>a.id!==aa.id); saveAlteArbeitenDB(); renderPr(); };
+      body.appendChild(del);
+      body.onclick = e => { if (e.target===del||del.contains(e.target)) return; PR.view='alte_arbeit'; PR.aktAlteArbeitId=aa.id; renderPr(); };
+      row.appendChild(body); grid.appendChild(row);
+    });
+    div.appendChild(grid);
   });
-  div.appendChild(grid);
   return div;
 }
 
@@ -242,7 +246,7 @@ function showNeueAlteArbeitModal() {
       PR.aktAlteArbeitId = aa.id; PR.view = 'alte_arbeit'; PR.aktId = null;
       close(); renderPr();
     } catch(e) {
-      statusEl.textContent = '⚠ ' + e.message;
+      showKIError(statusEl, e);
       saveBtn.disabled = false;
     }
   };

@@ -60,11 +60,12 @@ function viewEinstellungen() {
           modelTestStatus.textContent = '✓ ' + label + ' funktioniert.';
           modelTestStatus.style.color = 'var(--grn)';
         } else {
-          modelTestStatus.textContent = label + ': ' + res.status + ' – ' + (d.error?.message || d.error?.type || res.statusText);
+          const msg = d.error?.message || d.error?.type || res.statusText;
+          showKIError(modelTestStatus, new Error(label + ': ' + res.status + ' – ' + msg), '');
           modelTestStatus.style.color = '#dc2626';
         }
       } catch(e) {
-        modelTestStatus.textContent = label + ': Netzwerkfehler – ' + e.message;
+        showKIError(modelTestStatus, new Error(label + ': Netzwerkfehler – ' + e.message), '');
         modelTestStatus.style.color = '#dc2626';
       }
       b.disabled = false;

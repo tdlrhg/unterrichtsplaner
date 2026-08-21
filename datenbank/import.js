@@ -387,7 +387,7 @@ function buildImportView(container) {
       }
       typDetectResult.style.display = '';
     } catch(e) {
-      typDetectResult.textContent = '❌ ' + e.message;
+      showKIError(typDetectResult, e, '❌ ');
       typDetectResult.style.display = '';
     } finally {
       typDetectBtn.disabled = false; typDetectBtn.textContent = 'Typ erkennen';
@@ -665,7 +665,7 @@ function buildImportView(container) {
       statusEl.textContent = '';
       renderResults();
     } catch(e) {
-      statusEl.textContent = '❌ ' + e.message;
+      showKIError(statusEl, e, '❌ ');
     } finally {
       analyseBtn.disabled = false; analyseBtn.textContent = '⚡ Seite analysieren';
       window._importAnalysisRunning = false;

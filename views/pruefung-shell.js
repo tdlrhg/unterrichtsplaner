@@ -1,3 +1,44 @@
+// ── Jahrgangs-Gruppierung (Checklisten, Alte Arbeiten) ────────────
+function groupByJahrgang(items, jahrgangOf) {
+  const order = JAHRGAENGE;
+  const buckets = new Map();
+  items.forEach(it => {
+    const jg = jahrgangOf(it) || null;
+    const key = jg || '__none__';
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(it);
+  });
+  const groups = [];
+  order.forEach(jg => {
+    if (buckets.has(jg)) { groups.push({ jahrgang: jg, items: buckets.get(jg) }); buckets.delete(jg); }
+  });
+  buckets.forEach((its, key) => { if (key !== '__none__') groups.push({ jahrgang: key, items: its }); });
+  if (buckets.has('__none__')) groups.push({ jahrgang: null, items: buckets.get('__none__') });
+  return groups;
+}
+
+function jahrgangSecHdr(jahrgang, count) {
+  const hdr = mk('div', '');
+  hdr.style.cssText = 'display:flex;align-items:baseline;gap:10px;margin:12px 0 6px;padding-bottom:4px;border-bottom:2px solid var(--bord);';
+  const title = tx('span', '', jahrgang ? 'Jahrgang ' + jahrgang : 'Ohne Jahrgang');
+  title.style.cssText = 'font-size:14px;font-weight:700;color:var(--tx1);';
+  const cnt = tx('span', '', count + (count === 1 ? ' Eintrag' : ' Einträge'));
+  cnt.style.cssText = 'font-size:11px;color:var(--tx3);';
+  hdr.appendChild(title); hdr.appendChild(cnt);
+  return hdr;
+}
+
+function jahrgangOfKurs(kursId) {
+  if (!kursId) return null;
+  const kurs = (S.data?.kurse || []).find(k => k.id === kursId);
+  if (!kurs) return null;
+  const klasse = String(kurs.klasse || '');
+  const m = klasse.match(/^(\d+)/);
+  if (m) return m[1];
+  const up = klasse.toUpperCase();
+  return JAHRGAENGE.includes(up) ? up : null;
+}
+
 // ── Render ────────────────────────────────────────────────────────
 function renderPr() {
   const root = document.getElementById('root');

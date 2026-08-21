@@ -18,25 +18,29 @@ function buildChecklistenOverview() {
     return div;
   }
 
-  const grid = mk('div', '');
-  grid.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-top:8px;';
-  CHECKLISTDB.forEach(cl => {
-    const row = mk('div', 'card');
-    const body = mk('div', 'card-body');
-    body.style.cssText = 'display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 14px;';
-    body.appendChild(tx('span', '', '☑️'));
-    const info = mk('div', ''); info.style.flex = '1';
-    info.appendChild(tx('div', '', cl.titel || '–')).style.fontWeight = '600';
-    const abschnitte = [...new Set((cl.lernziele||[]).map(l => l.abschnitt))].length;
-    info.appendChild(tx('div', '', (cl.lernziele?.length||0) + ' Lernziele · ' + abschnitte + ' Abschnitte')).style.cssText = 'font-size:12px;color:var(--tx3);';
-    body.appendChild(info);
-    const del = btn('✕', 'matc-del'); del.style.color = 'var(--tx3)';
-    del.onclick = e => { e.stopPropagation(); if (!confirm('"'+cl.titel+'" löschen?')) return; CHECKLISTDB=CHECKLISTDB.filter(c=>c.id!==cl.id); saveChecklistDB(); renderPr(); };
-    body.appendChild(del);
-    body.onclick = e => { if (e.target===del||del.contains(e.target)) return; PR.view='checkliste'; PR.aktCheckId=cl.id; renderPr(); };
-    row.appendChild(body); grid.appendChild(row);
+  const groups = groupByJahrgang(CHECKLISTDB, cl => cl.jahrgang);
+  groups.forEach(({ jahrgang, items }) => {
+    div.appendChild(jahrgangSecHdr(jahrgang, items.length));
+    const grid = mk('div', '');
+    grid.style.cssText = 'display:flex;flex-direction:column;gap:6px;margin-bottom:16px;';
+    items.forEach(cl => {
+      const row = mk('div', 'card');
+      const body = mk('div', 'card-body');
+      body.style.cssText = 'display:flex;align-items:center;gap:12px;cursor:pointer;padding:10px 14px;';
+      body.appendChild(tx('span', '', '☑️'));
+      const info = mk('div', ''); info.style.flex = '1';
+      info.appendChild(tx('div', '', cl.titel || '–')).style.fontWeight = '600';
+      const abschnitte = [...new Set((cl.lernziele||[]).map(l => l.abschnitt))].length;
+      info.appendChild(tx('div', '', (cl.lernziele?.length||0) + ' Lernziele · ' + abschnitte + ' Abschnitte')).style.cssText = 'font-size:12px;color:var(--tx3);';
+      body.appendChild(info);
+      const del = btn('✕', 'matc-del'); del.style.color = 'var(--tx3)';
+      del.onclick = e => { e.stopPropagation(); if (!confirm('"'+cl.titel+'" löschen?')) return; CHECKLISTDB=CHECKLISTDB.filter(c=>c.id!==cl.id); saveChecklistDB(); renderPr(); };
+      body.appendChild(del);
+      body.onclick = e => { if (e.target===del||del.contains(e.target)) return; PR.view='checkliste'; PR.aktCheckId=cl.id; renderPr(); };
+      row.appendChild(body); grid.appendChild(row);
+    });
+    div.appendChild(grid);
   });
-  div.appendChild(grid);
   return div;
 }
 
@@ -158,6 +162,12 @@ function showNewChecklistModal() {
   const fg = mk('div', 'fg'); fg.appendChild(tx('label', 'fl', 'Titel *')); fg.appendChild(titelInp);
   body.appendChild(fg);
 
+  const jahrgangSel = document.createElement('select'); jahrgangSel.className = 'finp';
+  const noJg = document.createElement('option'); noJg.value = ''; noJg.textContent = '– kein Jahrgang –'; jahrgangSel.appendChild(noJg);
+  JAHRGAENGE.forEach(jg => { const o = document.createElement('option'); o.value = jg; o.textContent = 'Jahrgang ' + jg; jahrgangSel.appendChild(o); });
+  const fgJg = mk('div', 'fg'); fgJg.appendChild(tx('label', 'fl', 'Jahrgang')); fgJg.appendChild(jahrgangSel);
+  body.appendChild(fgJg);
+
   let uploadedImgs = [];
   const zone = mk('div', '');
   zone.style.cssText = 'border:2px dashed var(--bord);border-radius:8px;padding:20px;text-align:center;cursor:pointer;color:var(--tx3);';
@@ -209,13 +219,13 @@ function showNewChecklistModal() {
     try {
       const lernziele = await extrahiereChecklist(uploadedImgs, statusEl);
       if (!lernziele.length) throw new Error('Keine Lernziele erkannt.');
-      const cl = { id: uid(), titel, lernziele, erstellt: new Date().toISOString() };
+      const cl = { id: uid(), titel, jahrgang: jahrgangSel.value || null, lernziele, erstellt: new Date().toISOString() };
       CHECKLISTDB.push(cl);
       saveChecklistDB();
       PR.aktCheckId = cl.id; PR.view = 'checkliste'; PR.aktId = null;
       close(); renderPr();
     } catch(e) {
-      statusEl.textContent = '⚠ ' + e.message;
+      showKIError(statusEl, e);
       saveBtn.disabled = false;
     }
   };

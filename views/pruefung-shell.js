@@ -142,6 +142,7 @@ function buildPrContent() {
 }
 
 function buildPrEmpty() {
+  const hasPruefungen = PRUEFUNGSDB.length > 0;
   const wrap = mk('div', '');
   wrap.style.cssText = 'max-width:480px;margin:60px auto;text-align:center;';
   const ico = tx('div', '', '📋');
@@ -150,10 +151,12 @@ function buildPrEmpty() {
   const h = tx('div', '', 'Prüfungsplaner');
   h.style.cssText = 'font-size:28px;font-weight:700;color:var(--pri);margin:16px 0 8px;';
   wrap.appendChild(h);
-  const p = tx('p', '', 'Erstelle Klassenarbeiten und Klausuren auf Basis deiner Schulbücher, Materialien und Lernziel-Checklisten.');
+  const p = tx('p', '', hasPruefungen
+    ? 'Wähle links eine Prüfung aus oder lege eine neue an.'
+    : 'Erstelle Klassenarbeiten und Klausuren auf Basis deiner Schulbücher, Materialien und Lernziel-Checklisten.');
   p.style.cssText = 'color:var(--tx2);line-height:1.6;margin-bottom:24px;';
   wrap.appendChild(p);
-  const b = btn('+ Erste Prüfung anlegen', 'btn btn-pri');
+  const b = btn(hasPruefungen ? '+ Neue Prüfung anlegen' : '+ Erste Prüfung anlegen', 'btn btn-pri');
   b.onclick = () => showNewPruefungModal();
   wrap.appendChild(b);
   return wrap;

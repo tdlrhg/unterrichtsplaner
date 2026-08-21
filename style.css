@@ -20,7 +20,7 @@ body { font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif; back
 
 /* ── Topbar ── */
 .topbar { background: linear-gradient(135deg, #0f0618 0%, #7b1150 55%, #be185d 100%); color: #fff; height: 52px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 16px rgba(190,24,93,.4); position: sticky; top: 0; z-index: 100; }
-.topbar-title { font-size: 17px; font-weight: 700; font-family: 'Playfair Display', serif; letter-spacing: .02em; background: linear-gradient(90deg, #ffffff 0%, #f9a8d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.topbar-title { font-size: 17px; font-weight: 700; letter-spacing: .02em; background: linear-gradient(90deg, #ffffff 0%, #f9a8d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .topbar-app-link { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.55); text-decoration: none; letter-spacing: .02em; transition: color .15s; white-space: nowrap; }
 .topbar-app-link:hover { color: rgba(255,255,255,.9); }
 .topbar-nav { display: flex; align-items: center; gap: 20px; }

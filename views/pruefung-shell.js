@@ -148,7 +148,7 @@ function buildPrEmpty() {
   ico.style.fontSize = '48px';
   wrap.appendChild(ico);
   const h = tx('div', '', 'Prüfungsplaner');
-  h.style.cssText = 'font-family:"Playfair Display",serif;font-size:28px;font-weight:700;color:var(--pri);margin:16px 0 8px;';
+  h.style.cssText = 'font-size:28px;font-weight:700;color:var(--pri);margin:16px 0 8px;';
   wrap.appendChild(h);
   const p = tx('p', '', 'Erstelle Klassenarbeiten und Klausuren auf Basis deiner Schulbücher, Materialien und Lernziel-Checklisten.');
   p.style.cssText = 'color:var(--tx2);line-height:1.6;margin-bottom:24px;';

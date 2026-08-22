@@ -26,11 +26,52 @@ function showKIError(el, err, prefix) {
   }
 }
 
+// ── Usage-Tracking ────────────────────────────────────────────────
+// Protokolliert jeden API-Call (Modell, Label, Token-Zahlen) lokal,
+// damit Modellwahl-Entscheidungen auf echten Zahlen statt Vermutungen beruhen.
+const KI_USAGE_KEY = 'ki_usage_log';
+const KI_USAGE_MAX = 1000;
+
+function logKIUsage(model, label, usage) {
+  if (!usage) return;
+  try {
+    const log = JSON.parse(localStorage.getItem(KI_USAGE_KEY) || '[]');
+    log.push({
+      t: Date.now(),
+      model,
+      label: label || null,
+      input: usage.input_tokens || 0,
+      output: usage.output_tokens || 0,
+      cacheWrite: usage.cache_creation_input_tokens || 0,
+      cacheRead: usage.cache_read_input_tokens || 0,
+    });
+    if (log.length > KI_USAGE_MAX) log.splice(0, log.length - KI_USAGE_MAX);
+    localStorage.setItem(KI_USAGE_KEY, JSON.stringify(log));
+  } catch(e) { /* localStorage voll o.ä. — Tracking ist best-effort */ }
+}
+
+// Aggregiert das Usage-Log nach Modell und Label.
+function getKIUsageSummary() {
+  let log = [];
+  try { log = JSON.parse(localStorage.getItem(KI_USAGE_KEY) || '[]'); } catch(e) {}
+  const byModel = {};
+  log.forEach(e => {
+    const key = e.model + '|' + (e.label || '(ohne Label)');
+    if (!byModel[key]) byModel[key] = { model: e.model, label: e.label || '(ohne Label)', calls: 0, input: 0, output: 0, cacheWrite: 0, cacheRead: 0 };
+    const b = byModel[key];
+    b.calls++; b.input += e.input; b.output += e.output; b.cacheWrite += e.cacheWrite; b.cacheRead += e.cacheRead;
+  });
+  return { total: log.length, rows: Object.values(byModel).sort((a,b) => (b.input+b.output) - (a.input+a.output)) };
+}
+
+function clearKIUsageLog() { localStorage.removeItem(KI_USAGE_KEY); }
+
 // prompt    : String  → wird als Text-Block verpackt
 //             Array   → Content-Blocks direkt (Multimodal, z.B. mit Bildern)
 // maxTokens : Tokenlimit (default 1024)
 // model     : Modell-ID (default KI_MODEL_SONNET)
-async function callKI(prompt, { model = KI_MODEL_SONNET, maxTokens = 1024 } = {}) {
+// label     : Kurzname des Aufrufers für die Usage-Auswertung (z.B. 'checkliste-import')
+async function callKI(prompt, { model = KI_MODEL_SONNET, maxTokens = 1024, label = null } = {}) {
   const antKey = localStorage.getItem('ant_key');
   if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
   const content = typeof prompt === 'string'
@@ -51,13 +92,14 @@ async function callKI(prompt, { model = KI_MODEL_SONNET, maxTokens = 1024 } = {}
     throw new Error(err?.error?.message || res.statusText);
   }
   const data = await res.json();
+  logKIUsage(model, label, data.usage);
   return data.content?.[0]?.text || '';
 }
 
 // Multi-turn Agent-Aufruf mit Tool-Use und Gesprächshistorie.
 // messages: vollständige Anthropic-Message-Array (wird extern verwaltet).
 // Gibt das vollständige API-Response-Objekt zurück (nicht nur Text).
-async function callKIAgent({ messages, tools = [], system = '', model = KI_MODEL_SONNET, maxTokens = 8192 } = {}) {
+async function callKIAgent({ messages, tools = [], system = '', model = KI_MODEL_SONNET, maxTokens = 8192, label = null } = {}) {
   const antKey = localStorage.getItem('ant_key');
   if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
   const body = { model, max_tokens: maxTokens, messages };
@@ -77,5 +119,7 @@ async function callKIAgent({ messages, tools = [], system = '', model = KI_MODEL
     const err = await res.json().catch(() => ({}));
     throw new Error(err?.error?.message || res.statusText);
   }
-  return await res.json();
+  const json = await res.json();
+  logKIUsage(model, label, json.usage);
+  return json;
 }

@@ -374,7 +374,7 @@ function buildImportView(container) {
         { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: resized.split(',')[1] } },
         { type: 'text', text: detPrompt }
       ];
-      var raw = await callKI(blocks, { model: KI_MODEL_HAIKU, maxTokens: 200 });
+      var raw = await callKI(blocks, { model: KI_MODEL_HAIKU, maxTokens: 200, label: 'import-typ-erkennung' });
       var m = raw.match(/\{[\s\S]*\}/);
       if (!m) throw new Error('Keine Antwort');
       var res = JSON.parse(m[0]);
@@ -627,7 +627,7 @@ function buildImportView(container) {
       // Kontext nur für ersten Batch übergeben (erste Seite dieser Datei)
       blocks.push({ type: 'text', text: impPromptFor(typSel.value, bi === 0 ? contextNr : null) });
 
-      var raw = await callKI(blocks, { maxTokens: 16000 });
+      var raw = await callKI(blocks, { maxTokens: 16000, label: 'import-seite-analysieren' });
       var parsed = parseKiJson(raw);
       var batchAufg = parsed.aufgaben || [];
       var batchSeite = fileSeite != null ? fileSeite + bi * batchSize : null;

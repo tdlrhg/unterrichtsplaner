@@ -278,7 +278,7 @@ function showNeueAlteArbeitModal() {
           ]).flat(),
           { type:'text', text: KI_PROMPT_ALTE_ARBEIT }
         ];
-        const raw = await callKI(blocks, { maxTokens: 6000 });
+        const raw = await callKI(blocks, { maxTokens: 6000, label: 'alte-arbeit-import' });
         let parsed;
         try { parsed = robustJsonParsePr(raw); }
         catch(e) { throw new Error('KI-Antwort konnte nicht gelesen werden (Seiten ' + (i+1) + '–' + end + ')'); }

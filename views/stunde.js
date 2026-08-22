@@ -163,7 +163,7 @@ ${stunde.lernziel ? 'Stundenbeschreibung (Kontext):\n' + stunde.lernziel : ''}
 Antworte NUR als JSON-Array von Strings:
 ["Die SuS können … und zeigen dies, indem sie …"]`;
 
-      const text = await callKI(prompt, { maxTokens: 800 });
+      const text = await callKI(prompt, { maxTokens: 800, label: 'lernziele-generieren' });
       const parsed = safeParseArray(text.match(/\[[\s\S]*\]/)?.[0] || '[]');
       if (!parsed.length) throw new Error('Keine Lernziele erhalten');
       const neu = parsed.map(z => ({ id: uid(), text: typeof z === 'string' ? z : (z.text || '') }));
@@ -549,7 +549,7 @@ Antworte NUR als JSON-Objekt. WICHTIG: Keine Zeilenumbrüche innerhalb von Strin
     { "titel": "Einstieg", "inhalt": "Konkrete Beschreibung in einem Satz ohne Zeilenumbruch", "methode": "z.B. Unterrichtsgespräch", "sozialform": "z.B. Plenum", "minuten": 10 }
   ]
 }`;
-      const text = await callKI(prompt, { maxTokens: 1400 });
+      const text = await callKI(prompt, { maxTokens: 1400, label: 'stunde-vorschlag' });
       const raw = text.match(/\{[\s\S]*\}/)?.[0] || '{}';
       const sanitized = raw.replace(/[\r\n\t]+/g, ' ');
       const parsed = JSON.parse(sanitized);

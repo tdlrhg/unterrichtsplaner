@@ -77,6 +77,50 @@ function viewEinstellungen() {
   aiCard.appendChild(aib);
   div.appendChild(aiCard);
 
+  // ── KI-Nutzung (Token-Verbrauch pro Modell/Aufruf) ─────────────
+  const usageCard = mk('div', 'card');
+  usageCard.appendChild(cardHdr('KI-Nutzung'));
+  const usageBody = mk('div', 'card-body');
+
+  function renderUsage() {
+    usageBody.innerHTML = '';
+    const { total, rows } = getKIUsageSummary();
+    if (!total) {
+      usageBody.appendChild(gray('Noch keine protokollierten Aufrufe.'));
+    } else {
+      const table = mk('table', ''); table.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;';
+      const thead = mk('tr', '');
+      ['Modell', 'Label', 'Calls', 'Input', 'Output', 'Cache-Write', 'Cache-Read'].forEach(h => {
+        const th = document.createElement('th'); th.textContent = h;
+        th.style.cssText = 'text-align:left;padding:4px 8px;border-bottom:1px solid var(--bord);color:var(--tx3);font-weight:600;';
+        thead.appendChild(th);
+      });
+      table.appendChild(thead);
+      rows.forEach(r => {
+        const tr = mk('tr', '');
+        [r.model, r.label, r.calls, r.input, r.output, r.cacheWrite, r.cacheRead].forEach(v => {
+          const td = document.createElement('td'); td.textContent = v;
+          td.style.cssText = 'padding:4px 8px;border-bottom:1px solid var(--bord);';
+          tr.appendChild(td);
+        });
+        table.appendChild(tr);
+      });
+      const wrap = mk('div', ''); wrap.style.cssText = 'overflow-x:auto;';
+      wrap.appendChild(table);
+      usageBody.appendChild(wrap);
+      const hint = tx('div', '', total + ' protokollierte Aufrufe insgesamt (max. ' + KI_USAGE_MAX + ' werden gespeichert).');
+      hint.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:8px;';
+      usageBody.appendChild(hint);
+    }
+    const clearBtn = btn('Log löschen', 'btn btn-ghost btn-sm');
+    clearBtn.style.marginTop = '10px';
+    clearBtn.onclick = () => { if (confirm('Usage-Log wirklich löschen?')) { clearKIUsageLog(); renderUsage(); } };
+    usageBody.appendChild(clearBtn);
+  }
+  renderUsage();
+  usageCard.appendChild(usageBody);
+  div.appendChild(usageCard);
+
   // R2-Zugangsdaten
   const r2Card = mk('div', 'card');
   r2Card.appendChild(cardHdr('Cloudflare R2 – Materialspeicher'));

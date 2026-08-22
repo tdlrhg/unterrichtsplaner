@@ -280,7 +280,7 @@ function modalHandlerKurse(type, data, m) {
     async function callClaude(prompt) {
       const key = localStorage.getItem('ant_key');
       if (!key) return 'Kein Anthropic API-Key hinterlegt. Bitte in den Einstellungen eintragen.';
-      return await callKI(prompt, { maxTokens: 1000 });
+      return await callKI(prompt, { maxTokens: 1000, label: 'lerngruppenanalyse' });
     }
 
     async function callGPT(prompt) {

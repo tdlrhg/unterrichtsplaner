@@ -491,7 +491,7 @@ Die Seiten des Artikels sind als Bilder beigefügt.`;
         })),
         { type: 'text', text: prompt }
       ];
-      const rawText = await callKI(_blocks, { maxTokens: 8000 });
+      const rawText = await callKI(_blocks, { maxTokens: 8000, label: 'didaktik-import' });
       let jsonStr = rawText.match(/\{[\s\S]*\}/)?.[0] || '{}';
       // Robuste Bereinigung: trailing commas, abgeschnittene Arrays/Objekte schließen
       jsonStr = jsonStr

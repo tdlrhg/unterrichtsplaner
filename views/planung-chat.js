@@ -489,7 +489,7 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
 
   try {
     while (true) {
-      const resp = await callKIAgent({ messages: _pcApi, tools, system, maxTokens: 8192 });
+      const resp = await callKIAgent({ messages: _pcApi, tools, system, maxTokens: 8192, label: 'planungs-agent' });
 
       _pcApi.push({ role: 'assistant', content: resp.content });
 

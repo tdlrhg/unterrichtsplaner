@@ -506,7 +506,7 @@ materialtyp: aus ["Kein Material","Texte","Karten","Arbeitsblätter","Experiment
           ...images.map(img => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: img.dataUrl.split(',')[1] } })),
           { type: 'text', text: prompt },
         ];
-        const raw = await callKI(contentBlocks, { maxTokens: 8000 });
+        const raw = await callKI(contentBlocks, { maxTokens: 8000, label: 'methoden-import' });
         let jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] || '{}';
         jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
         let parsed;

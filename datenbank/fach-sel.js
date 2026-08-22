@@ -120,7 +120,7 @@ async function _analyzeFingerprint(g) {
       }).join(',')
     + ']}';
 
-  var raw = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 1200 });
+  var raw = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 1200, label: 'fach-sel-vorschlag' });
   var m = raw.match(/\{[\s\S]*\}/);
   if (!m) throw new Error('Kein JSON erhalten');
   return JSON.parse(m[0]);

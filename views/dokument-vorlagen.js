@@ -111,6 +111,11 @@ function dvBauFeld(feld, v, gesperrt) {
     cb.type = 'checkbox'; cb.checked = !!wert; cb.disabled = gesperrt;
     cb.onchange = function () {
       dvFeldGeaendert(feld.pfad, cb.checked);
+      // Punkte-Spalte an ⇒ Inline-Punkteanzeige aus, sonst steht der Wert
+      // doppelt da (einmal in der Spalte, einmal im Aufgabentext).
+      if (feld.pfad === 'punkteSpalte.zeigen' && cb.checked) {
+        dvFeldGeaendert('aufgabe.punkte', 'keine');
+      }
       dvVorlagenPanelNeu(); // abhängige Felder (von: feld.pfad) sofort ein-/ausblenden
     };
     lbl.appendChild(cb);

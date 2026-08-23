@@ -108,7 +108,7 @@
   position: absolute; left: 0; right: 0; overflow: hidden;
   display: flex; align-items: flex-end; justify-content: flex-end;
   padding-bottom: 1mm; padding-right: 0mm; font-size: var(--dv-punkte-schriftgroesse);
-  font-weight: 700; color: #1c1917;
+  color: #1c1917;
 }
 .dv-punkte-gesamt {
   position: absolute; left: 2mm; right: 0;
@@ -193,6 +193,7 @@
 .dv-teil-leader { flex: 1 1 0; align-self: flex-end; min-width: 4mm; margin: 0 1.5mm 1.1mm; border-bottom: 1.2pt dotted #a8a29e; }
 .dv-teil-hdr .dv-punkte-kasten, .dv-teil-hdr .dv-punkte-klammer { margin-left: 0; }
 .dv-teil-body { }
+.dv-fortsetzung-hinweis { font-size: .8em; font-weight: 400; font-style: italic; color: #78716c; }
 
 /* Fließtext */
 .dv-p { margin-bottom: var(--dv-abs); }

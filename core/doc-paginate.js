@@ -52,8 +52,15 @@ function dvAbschneiden(el, box, minKinder) {
     if (pk) pk.remove();
     var ti = kopie.querySelector('.dv-aufgabe-titel, .dv-teil-titel');
     if (ti) ti.remove();
-    var lbl = kopie.querySelector('.dv-aufgabe-label, .dv-teil-marke');
-    if (lbl && lbl.textContent.indexOf('(Fortsetzung)') < 0) lbl.textContent = lbl.textContent + ' (Fortsetzung)';
+    var lead = kopie.querySelector('.dv-teil-leader');
+    if (lead) lead.remove();
+    // Als eigenes Element anhängen statt in die Marke ("c)") hineinzuschreiben:
+    // deren Spalte ist bei Teilaufgaben schmal auf den Buchstaben zugeschnitten
+    // und würde den Hinweistext abschneiden bzw. umbrechen.
+    var zeile = kopie.classList.contains('dv-teil-hdr') ? kopie : kopie.querySelector('.dv-aufgabe-kopfzeile');
+    if (zeile && !zeile.querySelector('.dv-fortsetzung-hinweis')) {
+      zeile.appendChild(tx('span', 'dv-fortsetzung-hinweis', '(Fortsetzung)'));
+    }
     rest.appendChild(kopie);
   }
   var restBody = body.cloneNode(false);

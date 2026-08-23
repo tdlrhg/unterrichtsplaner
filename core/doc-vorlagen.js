@@ -63,15 +63,22 @@ function dvApplyVorlage(el, v) {
   s.setProperty('--dv-hoehe', fmt.hoehe + 'mm');
   // Bei aktivem Seitenrahmen dürfen Ränder nie schmaler sein als Rahmen-
   // abstand + Linienstärke + Innenabstand, sonst klebt der Inhalt am Rahmen.
-  // Größere, selbst gesetzte Ränder bleiben unangetastet (Math.max).
-  var randMin = 0;
+  // Größere, selbst gesetzte Ränder bleiben unangetastet (Math.max). Der
+  // Titelblock bekommt eigene, unangetastete Ränder (nur Rahmenabstand +
+  // Linienstärke) – der soll bewusst nah am Rahmen bleiben, nicht den
+  // zusätzlichen Innenabstand des übrigen Inhalts übernehmen.
+  var randMinInhalt = 0, randMinTitel = 0;
   if (v.seite.rahmen) {
-    randMin = (v.seite.rahmenAbstand || 8) + (v.seite.rahmenStaerke || 1.2) * 0.3528 + (v.seite.rahmenInnenabstand || 0);
+    var rahmenStaerkeMm = (v.seite.rahmenStaerke || 1.2) * 0.3528;
+    randMinTitel = (v.seite.rahmenAbstand || 8) + rahmenStaerkeMm;
+    randMinInhalt = randMinTitel + (v.seite.rahmenInnenabstand || 0);
   }
-  s.setProperty('--dv-rand-o', Math.max(r.oben, randMin) + 'mm');
-  s.setProperty('--dv-rand-u', Math.max(r.unten, randMin) + 'mm');
-  s.setProperty('--dv-rand-l', Math.max(r.links, randMin) + 'mm');
-  s.setProperty('--dv-rand-r', Math.max(r.rechts, randMin) + 'mm');
+  s.setProperty('--dv-rand-o', Math.max(r.oben, randMinInhalt) + 'mm');
+  s.setProperty('--dv-rand-u', Math.max(r.unten, randMinInhalt) + 'mm');
+  s.setProperty('--dv-rand-l', Math.max(r.links, randMinInhalt) + 'mm');
+  s.setProperty('--dv-rand-r', Math.max(r.rechts, randMinInhalt) + 'mm');
+  s.setProperty('--dv-titel-rand-l', Math.max(r.links, randMinTitel) + 'mm');
+  s.setProperty('--dv-titel-rand-r', Math.max(r.rechts, randMinTitel) + 'mm');
   s.setProperty('--dv-kaestchen-groesse', (v.seite.kaestchenGroesse || 5) + 'mm');
   s.setProperty('--dv-rahmen-abstand', (v.seite.rahmenAbstand || 8) + 'mm');
   s.setProperty('--dv-rahmen-staerke', (v.seite.rahmenStaerke || 1.2) + 'pt');

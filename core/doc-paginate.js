@@ -150,8 +150,8 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
     // Spalte hinweg) und schiebt Inhalt + Punkte-Spalte erst darunter.
     if (nr === 1 && titelblock) {
       titelblock.style.position = 'absolute';
-      titelblock.style.left = 'var(--dv-rand-l)';
-      titelblock.style.right = 'var(--dv-rand-r)';
+      titelblock.style.left = 'var(--dv-titel-rand-l)';
+      titelblock.style.right = 'var(--dv-titel-rand-r)';
       titelblock.style.top = v.seite.rahmen ? 'calc(var(--dv-rahmen-abstand) + 1mm)' : obenStart;
       seite.appendChild(titelblock);
       obenStart = (titelblock.offsetTop + titelblock.offsetHeight + 6 * DV_PX_PRO_MM) + 'px';

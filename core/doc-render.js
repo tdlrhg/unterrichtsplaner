@@ -184,11 +184,8 @@ function dvTitelblock(doc, v) {
     if (m.klasse) grid.appendChild(tx('div', 'dv-tb-meta-links', 'Klasse ' + m.klasse));
     if (m.schuljahr) grid.appendChild(tx('div', 'dv-tb-meta-links dv-tb-meta-re', 'Schuljahr ' + m.schuljahr));
     if (werte.datum) grid.appendChild(tx('div', 'dv-tb-meta-links', 'Datum: ' + werte.datum));
-    if (m.zeit) grid.appendChild(tx('div', 'dv-tb-meta-links dv-tb-meta-re', 'Bearbeitungszeit: ' + m.zeit + (/\D/.test(m.zeit) ? '' : ' Minuten')));
+    if (m.zeit) grid.appendChild(tx('div', 'dv-tb-meta-links dv-tb-meta-re', m.zeit + (/\D/.test(m.zeit) ? '' : ' Minuten')));
     if (grid.children.length) links.appendChild(grid);
-    if (gp != null && v.aufgabe.punkte !== 'keine') {
-      links.appendChild(tx('div', 'dv-tb-meta-links', 'Erreichbare Punkte: ' + dvZahl(gp)));
-    }
   }
   zeile1.appendChild(links);
 
@@ -205,6 +202,12 @@ function dvTitelblock(doc, v) {
   }
   zeile1.appendChild(rechts);
   box.appendChild(zeile1);
+
+  // Große Seitenzahl gehört in den Titelkasten, nicht in eine eigene
+  // Lücke davor – sonst bleibt Platz ungenutzt.
+  if (v.seitenzahlGross && v.seitenzahlGross.zeigen && (v.seitenzahlGross.abSeite || 1) <= 1) {
+    box.appendChild(tx('div', 'dv-sz-gross dv-sz-gross-imkasten', '1'));
+  }
 
   if (v.titelblock.namensfeld && !kompaktesLabel) {
     var nf = mk('div', 'dv-tb-namensfeld');

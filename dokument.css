@@ -124,8 +124,9 @@
 
 /* Titelblock */
 .dv-titelblock { margin-bottom: 6mm; text-align: left; }
-.dv-titelblock-kasten { border: .8pt solid #57534e; padding: 3mm 4mm; }
-.dv-titelblock-linie { border-bottom: 1.6pt solid var(--dv-auf-farbe); padding-bottom: 2mm; }
+.dv-titelblock-kasten { border: .8pt solid #57534e; padding: 3mm 4mm; position: relative; }
+.dv-titelblock-linie { border-bottom: 1.6pt solid var(--dv-auf-farbe); padding-bottom: 2mm; position: relative; }
+.dv-sz-gross.dv-sz-gross-imkasten { top: 1mm; right: 2mm; }
 .dv-tb-zeile1 { display: flex; align-items: stretch; gap: 8mm; }
 .dv-tb-links { flex: 1 1 0; min-width: 0; }
 .dv-tb-rechts { text-align: right; flex: 0 0 auto; }

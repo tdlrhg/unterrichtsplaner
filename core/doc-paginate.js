@@ -137,15 +137,9 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
     if (kopfDa) seite.appendChild(dvBand('kopf', v.kopf));
     var obenStart = kopfDa ? 'calc(var(--dv-rand-o) + var(--dv-kopf-h))' : 'var(--dv-rand-o)';
 
-    // Große Seitenzahl bei aktivem Rahmen VOR dem Titelblock platzieren
-    // und messen: der Titelblock rutscht direkt darunter, ohne Lücke.
-    var szGrossDa = v.seitenzahlGross && v.seitenzahlGross.zeigen && nr >= (v.seitenzahlGross.abSeite || 1);
-    var szGrossFrueh = false;
-    if (nr === 1 && titelblock && v.seite.rahmen && szGrossDa) {
-      var szEl = tx('div', 'dv-sz-gross', String(nr));
-      seite.appendChild(szEl);
-      szGrossFrueh = true;
-    }
+    // Wenn die große Seitenzahl in den Titelkasten eingebettet ist
+    // (siehe dvTitelblock), braucht die Seite selbst keine eigene mehr.
+    var szImTitelblock = nr === 1 && titelblock && v.seitenzahlGross && v.seitenzahlGross.zeigen && (v.seitenzahlGross.abSeite || 1) <= 1;
 
     // Titelblock läuft über die VOLLE Breite (auch über die Punkte-
     // Spalte hinweg) und schiebt Inhalt + Punkte-Spalte erst darunter.
@@ -153,13 +147,7 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
       titelblock.style.position = 'absolute';
       titelblock.style.left = 'var(--dv-rand-l)';
       titelblock.style.right = 'var(--dv-rand-r)';
-      if (szGrossFrueh) {
-        titelblock.style.top = (szEl.offsetTop + szEl.offsetHeight + 2 * DV_PX_PRO_MM) + 'px';
-      } else if (v.seite.rahmen) {
-        titelblock.style.top = 'calc(var(--dv-rahmen-abstand) + 3mm)';
-      } else {
-        titelblock.style.top = obenStart;
-      }
+      titelblock.style.top = v.seite.rahmen ? 'calc(var(--dv-rahmen-abstand) + 3mm)' : obenStart;
       seite.appendChild(titelblock);
       obenStart = (titelblock.offsetTop + titelblock.offsetHeight + 6 * DV_PX_PRO_MM) + 'px';
     }
@@ -176,7 +164,7 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
       seite.appendChild(spalte);
     }
     if (fussDa) seite.appendChild(dvBand('fuss', v.fuss));
-    if (szGrossDa && !szGrossFrueh) {
+    if (v.seitenzahlGross && v.seitenzahlGross.zeigen && nr >= (v.seitenzahlGross.abSeite || 1) && !szImTitelblock) {
       seite.appendChild(tx('div', 'dv-sz-gross', String(nr)));
     }
     seiten.push(seite);

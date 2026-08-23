@@ -162,7 +162,15 @@ function dvDateiLaden(file) {
 async function dvBildEinfuegen(file, cursorPos) {
   if (!file || !mediaIsImage(file.name)) { alert('Bitte eine Bilddatei wählen (jpg, png, gif, webp).'); return; }
   var ta = document.getElementById('dv-ta');
-  var pos = cursorPos != null ? cursorPos : (ta ? ta.selectionStart : DV.quelle.length);
+  // Cursor-Position nur vertrauen, wenn sie explizit übergeben wurde (Drag&Drop)
+  // oder das Textfeld gerade wirklich fokussiert ist. Sonst (z.B. Klick auf den
+  // "Bild einfügen"-Button ohne vorheriges Klicken ins Textfeld) stünde
+  // selectionStart auf 0 – das Bild würde sonst vor den Dokumentkopf (---)
+  // rutschen und die Metadaten kaputt machen. Dann lieber ans Ende anhängen.
+  var pos;
+  if (cursorPos != null) pos = cursorPos;
+  else if (ta && document.activeElement === ta) pos = ta.selectionStart;
+  else pos = DV.quelle.length;
 
   var dataUrl;
   try {

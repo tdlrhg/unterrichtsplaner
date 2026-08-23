@@ -32,6 +32,7 @@ var DV_FELDER = [
   { pfad: 'seite.rahmenAbstand', label: 'Abstand vom Rand', typ: 'zahl', min: 2, max: 20, schritt: 0.5, einheit: 'mm', halb: true, von: 'seite.rahmen' },
   { pfad: 'seite.rahmenStaerke', label: 'Linienstärke', typ: 'zahl', min: 0.5, max: 5, schritt: 0.25, einheit: 'pt', halb: true, von: 'seite.rahmen' },
   { pfad: 'seite.rahmenFarbe',   label: 'Farbe', typ: 'farbe', halb: true, von: 'seite.rahmen' },
+  { pfad: 'seite.rahmenInnenabstand', label: 'Innenabstand zum Inhalt', typ: 'zahl', min: 0, max: 20, schritt: 0.5, einheit: 'mm', halb: true, von: 'seite.rahmen' },
 
   { gruppe: 'Schrift' },
   { pfad: 'typo.font', label: 'Schriftart', typ: 'select', optionen: DV_SCHRIFTEN },

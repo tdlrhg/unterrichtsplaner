@@ -14,7 +14,7 @@ var DV_VORLAGEN = [
     id: 'ka-klassisch',
     name: 'Klassenarbeit klassisch',
     beschreibung: 'Kopfzeile mit Namensfeld, Punktekästchen rechts, Fußzeile mit Seitenzahl.',
-    seite: { format: 'A4', rand: { oben: 16, unten: 15, links: 22, rechts: 18 }, kaestchen: false, kaestchenGroesse: 5, rahmen: false, rahmenAbstand: 8, rahmenStaerke: 1.2, rahmenFarbe: '#1c1917' },
+    seite: { format: 'A4', rand: { oben: 16, unten: 15, links: 22, rechts: 18 }, kaestchen: false, kaestchenGroesse: 5, rahmen: false, rahmenAbstand: 8, rahmenStaerke: 1.2, rahmenFarbe: '#1c1917', rahmenInnenabstand: 3 },
     typo: {
       font: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
       groesse: 11, zeilenabstand: 1.45, absatzabstand: 3.2, ausrichtung: 'left'
@@ -32,7 +32,7 @@ var DV_VORLAGEN = [
     id: 'ab-schlicht',
     name: 'Arbeitsblatt schlicht',
     beschreibung: 'Enge Ränder, Aufgaben ohne Punkte, große Schrift – für Arbeitsblätter.',
-    seite: { format: 'A4', rand: { oben: 14, unten: 14, links: 18, rechts: 16 }, kaestchen: false, kaestchenGroesse: 5, rahmen: false, rahmenAbstand: 8, rahmenStaerke: 1.2, rahmenFarbe: '#1c1917' },
+    seite: { format: 'A4', rand: { oben: 14, unten: 14, links: 18, rechts: 16 }, kaestchen: false, kaestchenGroesse: 5, rahmen: false, rahmenAbstand: 8, rahmenStaerke: 1.2, rahmenFarbe: '#1c1917', rahmenInnenabstand: 3 },
     typo: {
       font: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
       groesse: 12, zeilenabstand: 1.55, absatzabstand: 3.6, ausrichtung: 'left'
@@ -61,10 +61,17 @@ function dvApplyVorlage(el, v) {
   var s = el.style;
   s.setProperty('--dv-breite', fmt.breite + 'mm');
   s.setProperty('--dv-hoehe', fmt.hoehe + 'mm');
-  s.setProperty('--dv-rand-o', r.oben + 'mm');
-  s.setProperty('--dv-rand-u', r.unten + 'mm');
-  s.setProperty('--dv-rand-l', r.links + 'mm');
-  s.setProperty('--dv-rand-r', r.rechts + 'mm');
+  // Bei aktivem Seitenrahmen dürfen Ränder nie schmaler sein als Rahmen-
+  // abstand + Linienstärke + Innenabstand, sonst klebt der Inhalt am Rahmen.
+  // Größere, selbst gesetzte Ränder bleiben unangetastet (Math.max).
+  var randMin = 0;
+  if (v.seite.rahmen) {
+    randMin = (v.seite.rahmenAbstand || 8) + (v.seite.rahmenStaerke || 1.2) * 0.3528 + (v.seite.rahmenInnenabstand || 0);
+  }
+  s.setProperty('--dv-rand-o', Math.max(r.oben, randMin) + 'mm');
+  s.setProperty('--dv-rand-u', Math.max(r.unten, randMin) + 'mm');
+  s.setProperty('--dv-rand-l', Math.max(r.links, randMin) + 'mm');
+  s.setProperty('--dv-rand-r', Math.max(r.rechts, randMin) + 'mm');
   s.setProperty('--dv-kaestchen-groesse', (v.seite.kaestchenGroesse || 5) + 'mm');
   s.setProperty('--dv-rahmen-abstand', (v.seite.rahmenAbstand || 8) + 'mm');
   s.setProperty('--dv-rahmen-staerke', (v.seite.rahmenStaerke || 1.2) + 'pt');

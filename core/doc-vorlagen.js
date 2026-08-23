@@ -24,7 +24,8 @@ var DV_VORLAGEN = [
     fuss: { zeigen: true, abSeite: 1, links: 'Name: ________________________', mitte: '', rechts: 'Seite {{seite}} von {{seiten}}', linie: true },
     aufgabe: { label: 'Aufgabe {{nr}}', punkte: 'kasten', abstand: 7, trennlinie: false, farbe: '#1c1917' },
     teil: { marke: '{{marke}}', einzug: 8 },
-    kasten: { rahmen: true, fuellung: '#f5f2ed' }
+    kasten: { rahmen: true, fuellung: '#f5f2ed' },
+    punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true }
   },
   {
     id: 'ab-schlicht',
@@ -40,7 +41,8 @@ var DV_VORLAGEN = [
     fuss: { zeigen: true, abSeite: 2, links: '{{titel}}', mitte: '', rechts: '{{seite}}', linie: false },
     aufgabe: { label: '{{nr}}', punkte: 'keine', abstand: 9, trennlinie: false, farbe: '#be185d' },
     teil: { marke: '{{marke}}', einzug: 10 },
-    kasten: { rahmen: false, fuellung: '#f1ede7' }
+    kasten: { rahmen: false, fuellung: '#f1ede7' },
+    punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true }
   }
 ];
 
@@ -62,6 +64,7 @@ function dvApplyVorlage(el, v) {
   s.setProperty('--dv-rand-l', r.links + 'mm');
   s.setProperty('--dv-rand-r', r.rechts + 'mm');
   s.setProperty('--dv-kaestchen-groesse', (v.seite.kaestchenGroesse || 5) + 'mm');
+  s.setProperty('--dv-punkte-breite', ((v.punkteSpalte && v.punkteSpalte.breite) || 16) + 'mm');
   s.setProperty('--dv-kopf-h', kopfH + 'mm');
   s.setProperty('--dv-fuss-h', fussH + 'mm');
   s.setProperty('--dv-font', v.typo.font);

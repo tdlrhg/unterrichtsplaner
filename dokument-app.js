@@ -77,7 +77,7 @@ function dvUpdate() {
   var pages = document.getElementById('dv-pages');
   if (!pages) return;
 
-  var seiten = docPaginate(pages, nodes, v, doc.meta);
+  var seiten = docPaginate(pages, nodes, v, doc.meta, dvAufgabenSummen(doc.blocks));
   pages.style.setProperty('--dv-zoom', String(DV.zoom));
 
   DV.seiten = seiten.length;

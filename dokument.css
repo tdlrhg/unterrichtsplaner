@@ -75,6 +75,22 @@
   background-size: var(--dv-kaestchen-groesse) var(--dv-kaestchen-groesse);
 }
 
+/* Punkte-Spalte */
+.dv-punkte-spalte { position: absolute; right: var(--dv-rand-r); width: var(--dv-punkte-breite); }
+.dv-punkte-trennlinie { border-left: .4pt solid #b9b2a7; }
+.dv-punkte-zelle {
+  position: absolute; left: 0; right: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8.5pt; color: #57534e;
+}
+.dv-punkte-gesamt {
+  position: absolute; left: 2mm; right: 0;
+  border: .7pt solid #1c1917; border-radius: .8mm;
+  text-align: center; padding: 1.8mm 0;
+}
+.dv-punkte-gesamt-label { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .3pt; }
+.dv-punkte-gesamt-wert { font-size: 1.35em; font-weight: 800; margin-top: .5mm; }
+
 .dv-band { position: absolute; left: var(--dv-rand-l); right: var(--dv-rand-r); height: var(--dv-kopf-h); display: flex; align-items: center; gap: 10px; font-size: 8.5pt; color: #57534e; }
 .dv-band-kopf { top: var(--dv-rand-o); }
 .dv-band-fuss { bottom: var(--dv-rand-u); height: var(--dv-fuss-h); }

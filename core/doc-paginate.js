@@ -41,6 +41,10 @@ function dvAbschneiden(el, box, minKinder) {
   }
 
   var rest = el.cloneNode(false);
+  // Punktwert nur auf dem ersten Fragment zeigen – sonst doppelt in der
+  // Punkte-Spalte. Die Aufgabennummer bleibt erhalten (data-aufgabe-nr),
+  // die wird für die Gesamtbox über alle Fragmente hinweg gebraucht.
+  rest.removeAttribute('data-punkte');
   var hdr = el.firstElementChild;
   if (hdr && (hdr.classList.contains('dv-aufgabe-hdr') || hdr.classList.contains('dv-teil-hdr'))) {
     var kopie = hdr.cloneNode(true);
@@ -58,10 +62,67 @@ function dvAbschneiden(el, box, minKinder) {
   return rest;
 }
 
+// ── Punkte-Spalte füllen ─────────────────────────────────────────
+// Läuft NACH der Seitenaufteilung über das fertige DOM: sucht pro Seite
+// alle Elemente mit Punktwert (Teilaufgaben, oder Aufgaben ohne Teile)
+// und setzt daneben eine Zelle in Höhe des jeweiligen Blocks. Wenn eine
+// Aufgabe auf einer Seite endgültig fertig ist (kein späteres Fortsetzung-
+// Fragment mehr), kommt zusätzlich eine Gesamtbox mit der Summe.
+function dvPunkteSpalteFuellen(seiten, v, aufgabenSummen) {
+  seiten.forEach(function (seite) {
+    var spalte = seite.querySelector('.dv-punkte-spalte');
+    var content = seite.querySelector('.dv-content');
+    if (!spalte || !content) return;
+    var contentRect = content.getBoundingClientRect();
+
+    // Nur "Blätter" der Punkte-Hierarchie zeigen: wenn eine Aufgabe UND ihre
+    // Teile beide Punkte tragen, zählen die feineren Teile, nicht die Summe
+    // der Aufgabe selbst (die steht ohnehin in der Gesamtbox).
+    var zellen = Array.prototype.filter.call(content.querySelectorAll('[data-punkte]'), function (el) {
+      return !el.querySelector('[data-punkte]');
+    });
+    zellen.forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      var zelle = mk('div', 'dv-punkte-zelle');
+      zelle.style.top = (r.top - contentRect.top) + 'px';
+      zelle.style.height = Math.max(r.height, 1) + 'px';
+      zelle.appendChild(tx('span', '', '/' + dvZahl(el.getAttribute('data-punkte'))));
+      spalte.appendChild(zelle);
+    });
+  });
+
+  if (!v.punkteSpalte.gesamtbox) return;
+
+  // Letztes Fragment jeder Aufgabennummer über alle Seiten hinweg finden.
+  var letztesFragment = {};
+  seiten.forEach(function (seite) {
+    seite.querySelectorAll('.dv-aufgabe[data-aufgabe-nr]').forEach(function (el) {
+      letztesFragment[el.getAttribute('data-aufgabe-nr')] = { seite: seite, el: el };
+    });
+  });
+
+  Object.keys(letztesFragment).forEach(function (nr) {
+    var summe = aufgabenSummen[nr];
+    if (summe == null) return;
+    var f = letztesFragment[nr];
+    var spalte = f.seite.querySelector('.dv-punkte-spalte');
+    var content = f.seite.querySelector('.dv-content');
+    if (!spalte || !content) return;
+    var contentRect = content.getBoundingClientRect();
+    var elRect = f.el.getBoundingClientRect();
+    var box = mk('div', 'dv-punkte-gesamt');
+    box.style.top = (elRect.bottom - contentRect.top) + 'px';
+    box.appendChild(tx('div', 'dv-punkte-gesamt-label', 'Aufgabe ' + nr));
+    box.appendChild(tx('div', 'dv-punkte-gesamt-wert', '/' + dvZahl(summe)));
+    spalte.appendChild(box);
+  });
+}
+
 // ── Hauptfunktion ────────────────────────────────────────────────
-function docPaginate(container, nodes, v, meta) {
+function docPaginate(container, nodes, v, meta, aufgabenSummen) {
   container.innerHTML = '';
   dvApplyVorlage(container, v);
+  var punkteAn = !!(v.punkteSpalte && v.punkteSpalte.zeigen);
 
   var seiten = [];
   var box = null;
@@ -75,7 +136,14 @@ function docPaginate(container, nodes, v, meta) {
     var content = mk('div', 'dv-content' + (v.seite.kaestchen ? ' dv-kaestchen' : ''));
     content.style.top = kopfDa ? 'calc(var(--dv-rand-o) + var(--dv-kopf-h))' : 'var(--dv-rand-o)';
     content.style.bottom = fussDa ? 'calc(var(--dv-rand-u) + var(--dv-fuss-h))' : 'var(--dv-rand-u)';
+    if (punkteAn) content.style.right = 'calc(var(--dv-rand-r) + var(--dv-punkte-breite))';
     seite.appendChild(content);
+    if (punkteAn) {
+      var spalte = mk('div', 'dv-punkte-spalte' + (v.punkteSpalte.trennlinie ? ' dv-punkte-trennlinie' : ''));
+      spalte.style.top = content.style.top;
+      spalte.style.bottom = content.style.bottom;
+      seite.appendChild(spalte);
+    }
     if (fussDa) seite.appendChild(dvBand('fuss', v.fuss));
     container.appendChild(seite);
     seiten.push(seite);
@@ -130,6 +198,8 @@ function docPaginate(container, nodes, v, meta) {
       e.textContent = dvFuellen(e.getAttribute('data-tpl'), werte);
     });
   });
+
+  if (punkteAn) dvPunkteSpalteFuellen(seiten, v, aufgabenSummen || {});
 
   return seiten;
 }

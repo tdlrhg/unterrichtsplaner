@@ -12,12 +12,33 @@ function dvGesamtpunkte(blocks) {
   var summe = 0, gefunden = false;
   blocks.forEach(function (b) {
     if (b.t !== 'aufgabe') return;
-    if (b.punkte != null) { summe += b.punkte; gefunden = true; return; }
-    (b.kinder || []).forEach(function (k) {
-      if (k.t === 'teil' && k.punkte != null) { summe += k.punkte; gefunden = true; }
-    });
+    var s = dvAufgabeSumme(b);
+    if (s != null) { summe += s; gefunden = true; }
   });
   return gefunden ? summe : null;
+}
+
+// Punktesumme einer einzelnen Aufgabe (eigene Punkte oder Summe ihrer Teile).
+function dvAufgabeSumme(aufgabe) {
+  var summe = 0, gefunden = false;
+  if (aufgabe.punkte != null) { summe += aufgabe.punkte; gefunden = true; }
+  (aufgabe.kinder || []).forEach(function (k) {
+    if (k.t === 'teil' && k.punkte != null) { summe += k.punkte; gefunden = true; }
+  });
+  return gefunden ? summe : null;
+}
+
+// Aufgabennummer → Gesamtpunktzahl. Wird VOR der Seitenaufteilung aus dem
+// unzerteilten Dokumentmodell berechnet, damit die Summe stimmt, egal wie
+// eine Aufgabe später über mehrere Seiten verteilt wird.
+function dvAufgabenSummen(blocks) {
+  var map = {};
+  blocks.forEach(function (b) {
+    if (b.t !== 'aufgabe') return;
+    var s = dvAufgabeSumme(b);
+    if (s != null) map[b.nr] = s;
+  });
+  return map;
 }
 
 // ── Punkteanzeige ────────────────────────────────────────────────
@@ -104,6 +125,7 @@ function dvBlock(b, v) {
     var kopfz = mk('div', 'dv-teil-hdr');
     kopfz.appendChild(tx('span', 'dv-teil-marke', dvFuellen(v.teil.marke, { marke: b.marke })));
     if (b.titel) { var tt = mk('span', 'dv-teil-titel'); tt.innerHTML = docInline(b.titel); kopfz.appendChild(tt); }
+    if (b.punkte != null) te.setAttribute('data-punkte', b.punkte);
     var tp = dvPunkteEl(b.punkte, v);
     if (tp) kopfz.appendChild(tp);
     te.appendChild(kopfz);
@@ -119,6 +141,8 @@ function dvBlock(b, v) {
     var hdr = mk('div', 'dv-aufgabe-hdr');
     hdr.appendChild(tx('span', 'dv-aufgabe-label', dvFuellen(v.aufgabe.label, { nr: b.nr })));
     if (b.titel) { var at = mk('span', 'dv-aufgabe-titel'); at.innerHTML = docInline(b.titel); hdr.appendChild(at); }
+    a.setAttribute('data-aufgabe-nr', b.nr);
+    if (b.punkte != null) a.setAttribute('data-punkte', b.punkte);
     var ap = dvPunkteEl(b.punkte, v);
     if (ap) hdr.appendChild(ap);
     a.appendChild(hdr);

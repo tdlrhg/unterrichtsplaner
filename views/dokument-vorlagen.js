@@ -65,7 +65,13 @@ var DV_FELDER = [
 
   { gruppe: 'Kästen', hinweis: 'Betrifft ::: merke, ::: hinweis, ::: material, ::: loesung' },
   { pfad: 'kasten.rahmen',   label: 'Rahmen', typ: 'check', halb: true },
-  { pfad: 'kasten.fuellung', label: 'Füllfarbe', typ: 'farbe', halb: true }
+  { pfad: 'kasten.fuellung', label: 'Füllfarbe', typ: 'farbe', halb: true },
+
+  { gruppe: 'Punkte-Spalte', hinweis: 'Durchlaufende Spalte am rechten Rand statt Punkte im Text' },
+  { pfad: 'punkteSpalte.zeigen',     label: 'Punkte-Spalte anzeigen', typ: 'check', halb: true },
+  { pfad: 'punkteSpalte.breite',     label: 'Breite',                typ: 'zahl', min: 10, max: 40, schritt: 1, einheit: 'mm', halb: true },
+  { pfad: 'punkteSpalte.trennlinie', label: 'Trennlinie',            typ: 'check', halb: true },
+  { pfad: 'punkteSpalte.gesamtbox',  label: 'Summen-Kasten je Aufgabe', typ: 'check', halb: true }
 ];
 
 // ── Formular-Bausteine ───────────────────────────────────────────

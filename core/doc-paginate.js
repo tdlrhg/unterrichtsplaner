@@ -147,7 +147,7 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
       titelblock.style.position = 'absolute';
       titelblock.style.left = 'var(--dv-rand-l)';
       titelblock.style.right = 'var(--dv-rand-r)';
-      titelblock.style.top = v.seite.rahmen ? 'calc(var(--dv-rahmen-abstand) + 3mm)' : obenStart;
+      titelblock.style.top = v.seite.rahmen ? 'calc(var(--dv-rahmen-abstand) + 1mm)' : obenStart;
       seite.appendChild(titelblock);
       obenStart = (titelblock.offsetTop + titelblock.offsetHeight + 6 * DV_PX_PRO_MM) + 'px';
     }

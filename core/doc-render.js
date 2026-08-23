@@ -162,7 +162,10 @@ function dvBlock(b, v) {
 // ── Titelblock ───────────────────────────────────────────────────
 function dvTitelblock(doc, v) {
   var m = doc.meta;
-  var tb = mk('div', 'dv-titelblock dv-titelblock-' + v.titelblock.variante);
+  var tb = mk('div', 'dv-titelblock');
+  // Der umrandete/unterstrichene Kasten fasst NUR Titel+Meta+Namensfeld.
+  // Hinweistext und schräger Zusatztext stehen außerhalb, offen auf der Seite.
+  var box = mk('div', 'dv-titelblock-' + v.titelblock.variante);
 
   var kompaktesLabel = v.titelblock.namensfeld && v.titelblock.namensfeldStil === 'label';
   var werte = dvPlatzhalter(v, m);
@@ -170,15 +173,19 @@ function dvTitelblock(doc, v) {
   var zeile1 = mk('div', 'dv-tb-zeile1');
   var links = mk('div', 'dv-tb-links');
   links.appendChild(tx('div', 'dv-tb-titel', m.titel || 'Ohne Titel'));
-  var sub = [m.fach, m.klasse].filter(Boolean).join(' · ');
+  var sub = kompaktesLabel ? (m.fach || '') : [m.fach, m.klasse].filter(Boolean).join(' · ');
   if (sub) links.appendChild(tx('div', 'dv-tb-sub', sub));
 
   var gp = dvGesamtpunkte(doc.blocks);
   if (kompaktesLabel) {
-    // Datum/Zeit/Punkte stehen links unter dem Titel, rechts bleibt frei
-    // für das Namensfeld (siehe unten).
-    if (werte.datum) links.appendChild(tx('div', 'dv-tb-meta-links', werte.datum));
-    if (m.zeit) links.appendChild(tx('div', 'dv-tb-meta-links', 'Bearbeitungszeit: ' + m.zeit + (/\D/.test(m.zeit) ? '' : ' Minuten')));
+    // Klasse/Schuljahr/Datum/Bearbeitungszeit als 2×2-Raster unter dem
+    // Titel; rechts bleibt frei für das Namensfeld (siehe unten).
+    var grid = mk('div', 'dv-tb-datengrid');
+    if (m.klasse) grid.appendChild(tx('div', 'dv-tb-meta-links', 'Klasse ' + m.klasse));
+    if (m.schuljahr) grid.appendChild(tx('div', 'dv-tb-meta-links dv-tb-meta-re', 'Schuljahr ' + m.schuljahr));
+    if (werte.datum) grid.appendChild(tx('div', 'dv-tb-meta-links', 'Datum: ' + werte.datum));
+    if (m.zeit) grid.appendChild(tx('div', 'dv-tb-meta-links dv-tb-meta-re', 'Bearbeitungszeit: ' + m.zeit + (/\D/.test(m.zeit) ? '' : ' Minuten')));
+    if (grid.children.length) links.appendChild(grid);
     if (gp != null && v.aufgabe.punkte !== 'keine') {
       links.appendChild(tx('div', 'dv-tb-meta-links', 'Erreichbare Punkte: ' + dvZahl(gp)));
     }
@@ -197,7 +204,7 @@ function dvTitelblock(doc, v) {
     }
   }
   zeile1.appendChild(rechts);
-  tb.appendChild(zeile1);
+  box.appendChild(zeile1);
 
   if (v.titelblock.namensfeld && !kompaktesLabel) {
     var nf = mk('div', 'dv-tb-namensfeld');
@@ -207,17 +214,21 @@ function dvTitelblock(doc, v) {
     nf.appendChild(mk('span', 'dv-tb-nf-kurz'));
     nf.appendChild(tx('span', 'dv-tb-nf-label', 'Note:'));
     nf.appendChild(mk('span', 'dv-tb-nf-kurz'));
-    tb.appendChild(nf);
+    box.appendChild(nf);
   }
+  tb.appendChild(box);
 
-  if (v.titelblock.hinweistext) {
-    var hinweis = mk('div', 'dv-tb-hinweis');
-    hinweis.innerHTML = docInline(dvFuellen(v.titelblock.hinweistext, werte));
-    tb.appendChild(hinweis);
-  }
-
-  if (v.titelblock.vielErfolg) {
-    tb.appendChild(tx('div', 'dv-tb-schraeg', v.titelblock.vielErfolg));
+  if (v.titelblock.hinweistext || v.titelblock.vielErfolg) {
+    var unten = mk('div', 'dv-tb-unten');
+    if (v.titelblock.hinweistext) {
+      var hinweis = mk('div', 'dv-tb-hinweis');
+      hinweis.innerHTML = docInline(dvFuellen(v.titelblock.hinweistext, werte));
+      unten.appendChild(hinweis);
+    }
+    if (v.titelblock.vielErfolg) {
+      unten.appendChild(tx('div', 'dv-tb-schraeg', v.titelblock.vielErfolg));
+    }
+    tb.appendChild(unten);
   }
 
   return tb;

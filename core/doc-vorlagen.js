@@ -69,6 +69,16 @@ function dvApplyVorlage(el, v) {
   s.setProperty('--dv-rahmen-abstand', (v.seite.rahmenAbstand || 8) + 'mm');
   s.setProperty('--dv-rahmen-staerke', (v.seite.rahmenStaerke || 1.2) + 'pt');
   s.setProperty('--dv-rahmen-farbe', v.seite.rahmenFarbe || '#1c1917');
+  // Große Seitenzahl: bei aktivem Rahmen innen sauber daneben setzen,
+  // statt ihn mittig zu durchschneiden.
+  if (v.seite.rahmen) {
+    var szBasis = v.seite.rahmenAbstand || 8;
+    s.setProperty('--dv-sz-gross-top', (szBasis + 3) + 'mm');
+    s.setProperty('--dv-sz-gross-right', (szBasis + 4) + 'mm');
+  } else {
+    s.setProperty('--dv-sz-gross-top', '4mm');
+    s.setProperty('--dv-sz-gross-right', '6mm');
+  }
   s.setProperty('--dv-punkte-breite', ((v.punkteSpalte && v.punkteSpalte.breite) || 16) + 'mm');
   s.setProperty('--dv-sz-gross-groesse', ((v.seitenzahlGross && v.seitenzahlGross.groesse) || 40) + 'pt');
   s.setProperty('--dv-sz-gross-farbe', (v.seitenzahlGross && v.seitenzahlGross.farbe) || '#d4cec2');
@@ -94,6 +104,7 @@ function dvPlatzhalter(vorlage, meta) {
   }
   return {
     titel: meta.titel || '', fach: meta.fach || '', klasse: meta.klasse || '',
+    schuljahr: meta.schuljahr || '',
     datum: datum, zeit: meta.zeit || '', name: meta.name || '', lehrer: meta.lehrer || '',
     punkte: '', seite: '', seiten: ''
   };

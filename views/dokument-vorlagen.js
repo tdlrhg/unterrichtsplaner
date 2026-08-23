@@ -40,7 +40,7 @@ var DV_FELDER = [
   { pfad: 'typo.absatzabstand', label: 'Absatzabstand', typ: 'zahl', min: 0, max: 12, schritt: 0.2, einheit: 'mm', halb: true },
   { pfad: 'typo.ausrichtung',   label: 'Ausrichtung',   typ: 'select', halb: true, optionen: [['left', 'Linksbündig'], ['justify', 'Blocksatz']] },
 
-  { gruppe: 'Titelblock', hinweis: 'Platzhalter: {{titel}} {{fach}} {{klasse}} {{datum}} {{zeit}}. Erscheint nur einmal, am Dokumentanfang.' },
+  { gruppe: 'Titelblock', hinweis: 'Platzhalter: {{titel}} {{fach}} {{klasse}} {{schuljahr}} {{datum}} {{zeit}}. Erscheint nur einmal, am Dokumentanfang.' },
   { pfad: 'titelblock.zeigen',     label: 'Titelblock anzeigen', typ: 'check' },
   { pfad: 'titelblock.variante',   label: 'Darstellung', typ: 'select', optionen: [['kasten', 'Umrandeter Kasten'], ['linie', 'Nur Trennlinie']], von: 'titelblock.zeigen' },
   { pfad: 'titelblock.namensfeld', label: 'Namensfeld anzeigen', typ: 'check', halb: true, von: 'titelblock.zeigen' },

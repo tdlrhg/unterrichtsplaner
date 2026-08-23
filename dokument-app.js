@@ -159,6 +159,7 @@ function dvDateiLaden(file) {
 // ── Reiter umschalten ────────────────────────────────────────────
 function dvTab(name) {
   DV.tab = name;
+  localStorage.setItem('dv_tab', name);
   var ip = document.getElementById('dv-inhalt-pane');
   var vp = document.getElementById('dv-vorlage-pane');
   if (ip) ip.style.display = name === 'inhalt' ? 'flex' : 'none';
@@ -349,6 +350,8 @@ async function dvCheckVersion() {
   if (!DV_VORLAGEN.some(function (v) { return v.id === DV.vorlageId; })) DV.vorlageId = DV_VORLAGEN[0].id;
   var z = parseFloat(localStorage.getItem('dv_zoom'));
   if (z) DV.zoom = z;
+  var gespeicherterTab = localStorage.getItem('dv_tab');
+  if (gespeicherterTab === 'inhalt' || gespeicherterTab === 'vorlage') DV.tab = gespeicherterTab;
 
   dvRenderApp();
   dvSelectAktualisieren();

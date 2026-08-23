@@ -108,7 +108,7 @@
 
 /* Große Seitenzahl */
 .dv-sz-gross {
-  position: absolute; top: 4mm; right: 6mm;
+  position: absolute; top: var(--dv-sz-gross-top); right: var(--dv-sz-gross-right);
   font-size: var(--dv-sz-gross-groesse); font-weight: 800; line-height: 1;
   color: var(--dv-sz-gross-farbe); pointer-events: none;
 }
@@ -123,26 +123,30 @@
 .dv-band-rechts { flex: 1; text-align: right; }
 
 /* Titelblock */
-.dv-titelblock { margin-bottom: 6mm; text-align: left; position: relative; }
+.dv-titelblock { margin-bottom: 6mm; text-align: left; }
 .dv-titelblock-kasten { border: .8pt solid #57534e; padding: 3mm 4mm; }
 .dv-titelblock-linie { border-bottom: 1.6pt solid var(--dv-auf-farbe); padding-bottom: 2mm; }
 .dv-tb-zeile1 { display: flex; align-items: stretch; gap: 8mm; }
-.dv-tb-links { flex: 1; min-width: 0; }
-.dv-tb-rechts { text-align: right; flex-shrink: 0; }
-.dv-tb-rechts-geteilt { text-align: left; border-left: .8pt solid #57534e; padding-left: 6mm; }
+.dv-tb-links { flex: 1 1 0; min-width: 0; }
+.dv-tb-rechts { text-align: right; flex: 0 0 auto; }
+/* mit Trennlinie: gleich breit wie links → Trennlinie sitzt mittig */
+.dv-tb-rechts-geteilt { flex: 1 1 0; text-align: left; border-left: .8pt solid #57534e; padding-left: 6mm; }
 .dv-tb-titel { font-size: 1.35em; font-weight: 800; line-height: 1.2; }
 .dv-tb-sub { font-size: .9em; color: #57534e; margin-top: 1mm; }
 .dv-tb-meta { font-size: .82em; color: #57534e; line-height: 1.5; white-space: nowrap; }
 .dv-tb-meta-links { font-size: .82em; color: #57534e; line-height: 1.5; }
+.dv-tb-datengrid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8mm; margin-top: 1mm; }
+.dv-tb-meta-re { text-align: right; }
 .dv-tb-nf-label-kompakt { font-weight: 800; font-size: 1em; color: #1c1917; white-space: nowrap; margin-bottom: 1.5mm; }
 .dv-tb-nf-kompakt-flaeche { min-width: 55mm; height: 18mm; }
 .dv-tb-namensfeld { display: flex; align-items: flex-end; gap: 3mm; margin-top: 5mm; font-size: .85em; }
 .dv-tb-nf-label { color: #57534e; white-space: nowrap; }
 .dv-tb-nf-linie { flex: 1; border-bottom: .6pt solid #44403c; height: 4mm; }
 .dv-tb-nf-kurz { width: 18mm; border-bottom: .6pt solid #44403c; height: 4mm; }
-.dv-tb-hinweis { font-size: .82em; line-height: 1.55; color: #292524; margin-top: 4mm; max-width: 72%; }
+.dv-tb-unten { position: relative; margin-top: 4mm; }
+.dv-tb-hinweis { font-size: .82em; line-height: 1.55; color: #292524; max-width: 72%; }
 .dv-tb-schraeg {
-  position: absolute; top: 2mm; right: 4mm; max-width: 26%;
+  position: absolute; top: -2mm; right: 4mm; max-width: 26%;
   font-size: 1.5em; font-weight: 700; color: #a8a29e;
   font-family: 'Segoe Script', 'Brush Script MT', cursive;
   transform: rotate(-9deg); text-align: center; line-height: 1.1;

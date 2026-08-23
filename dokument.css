@@ -117,8 +117,9 @@
 .dv-tb-titel { font-size: 1.35em; font-weight: 800; line-height: 1.2; }
 .dv-tb-sub { font-size: .9em; color: #57534e; margin-top: 1mm; }
 .dv-tb-meta { font-size: .82em; color: #57534e; line-height: 1.5; white-space: nowrap; }
+.dv-tb-meta-links { font-size: .82em; color: #57534e; line-height: 1.5; }
 .dv-tb-nf-label-kompakt { font-weight: 800; font-size: 1em; color: #1c1917; white-space: nowrap; margin-bottom: 1.5mm; }
-.dv-tb-nf-kompakt-linie { min-width: 55mm; height: 5mm; border-bottom: .6pt solid #44403c; margin-bottom: 2mm; }
+.dv-tb-nf-kompakt-flaeche { min-width: 55mm; height: 18mm; border-bottom: .6pt solid #44403c; }
 .dv-tb-namensfeld { display: flex; align-items: flex-end; gap: 3mm; margin-top: 5mm; font-size: .85em; }
 .dv-tb-nf-label { color: #57534e; white-space: nowrap; }
 .dv-tb-nf-linie { flex: 1; border-bottom: .6pt solid #44403c; height: 4mm; }

@@ -119,7 +119,7 @@ function dvPunkteSpalteFuellen(seiten, v, aufgabenSummen) {
 }
 
 // ── Hauptfunktion ────────────────────────────────────────────────
-function docPaginate(container, nodes, v, meta, aufgabenSummen) {
+function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
   container.innerHTML = '';
   dvApplyVorlage(container, v);
   var punkteAn = !!(v.punkteSpalte && v.punkteSpalte.zeigen);
@@ -130,11 +130,25 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen) {
   function neueSeite() {
     var nr = seiten.length + 1;
     var seite = mk('div', 'dv-page');
+    container.appendChild(seite); // sofort anhängen: offsetHeight-Messungen unten brauchen ein verbundenes Element
     var kopfDa = v.kopf.zeigen && nr >= (v.kopf.abSeite || 1);
     var fussDa = v.fuss.zeigen && nr >= (v.fuss.abSeite || 1);
     if (kopfDa) seite.appendChild(dvBand('kopf', v.kopf));
+    var obenStart = kopfDa ? 'calc(var(--dv-rand-o) + var(--dv-kopf-h))' : 'var(--dv-rand-o)';
+
+    // Titelblock läuft über die VOLLE Breite (auch über die Punkte-
+    // Spalte hinweg) und schiebt Inhalt + Punkte-Spalte erst darunter.
+    if (nr === 1 && titelblock) {
+      titelblock.style.position = 'absolute';
+      titelblock.style.left = 'var(--dv-rand-l)';
+      titelblock.style.right = 'var(--dv-rand-r)';
+      titelblock.style.top = obenStart;
+      seite.appendChild(titelblock);
+      obenStart = (titelblock.offsetTop + titelblock.offsetHeight + 6 * DV_PX_PRO_MM) + 'px';
+    }
+
     var content = mk('div', 'dv-content' + (v.seite.kaestchen ? ' dv-kaestchen' : ''));
-    content.style.top = kopfDa ? 'calc(var(--dv-rand-o) + var(--dv-kopf-h))' : 'var(--dv-rand-o)';
+    content.style.top = obenStart;
     content.style.bottom = fussDa ? 'calc(var(--dv-rand-u) + var(--dv-fuss-h))' : 'var(--dv-rand-u)';
     if (punkteAn) content.style.right = 'calc(var(--dv-rand-r) + var(--dv-punkte-breite))';
     seite.appendChild(content);
@@ -148,7 +162,6 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen) {
     if (v.seitenzahlGross && v.seitenzahlGross.zeigen && nr >= (v.seitenzahlGross.abSeite || 1)) {
       seite.appendChild(tx('div', 'dv-sz-gross', String(nr)));
     }
-    container.appendChild(seite);
     seiten.push(seite);
     box = content;
   }

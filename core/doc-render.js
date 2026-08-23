@@ -164,25 +164,37 @@ function dvTitelblock(doc, v) {
   var m = doc.meta;
   var tb = mk('div', 'dv-titelblock dv-titelblock-' + v.titelblock.variante);
 
+  var kompaktesLabel = v.titelblock.namensfeld && v.titelblock.namensfeldStil === 'label';
+  var werte = dvPlatzhalter(v, m);
+
   var zeile1 = mk('div', 'dv-tb-zeile1');
   var links = mk('div', 'dv-tb-links');
   links.appendChild(tx('div', 'dv-tb-titel', m.titel || 'Ohne Titel'));
   var sub = [m.fach, m.klasse].filter(Boolean).join(' · ');
   if (sub) links.appendChild(tx('div', 'dv-tb-sub', sub));
+
+  var gp = dvGesamtpunkte(doc.blocks);
+  if (kompaktesLabel) {
+    // Datum/Zeit/Punkte stehen links unter dem Titel, rechts bleibt frei
+    // für das Namensfeld (siehe unten).
+    if (werte.datum) links.appendChild(tx('div', 'dv-tb-meta-links', werte.datum));
+    if (m.zeit) links.appendChild(tx('div', 'dv-tb-meta-links', 'Bearbeitungszeit: ' + m.zeit + (/\D/.test(m.zeit) ? '' : ' Minuten')));
+    if (gp != null && v.aufgabe.punkte !== 'keine') {
+      links.appendChild(tx('div', 'dv-tb-meta-links', 'Erreichbare Punkte: ' + dvZahl(gp)));
+    }
+  }
   zeile1.appendChild(links);
 
   var rechts = mk('div', 'dv-tb-rechts');
-  var kompaktesLabel = v.titelblock.namensfeld && v.titelblock.namensfeldStil === 'label';
   if (kompaktesLabel) {
     rechts.appendChild(tx('div', 'dv-tb-nf-label-kompakt', 'Nach-, Vorname:'));
-    rechts.appendChild(mk('div', 'dv-tb-nf-kompakt-linie'));
-  }
-  var werte = dvPlatzhalter(v, m);
-  if (werte.datum) rechts.appendChild(tx('div', 'dv-tb-meta', werte.datum));
-  if (m.zeit) rechts.appendChild(tx('div', 'dv-tb-meta', 'Bearbeitungszeit: ' + m.zeit + (/\D/.test(m.zeit) ? '' : ' Minuten')));
-  var gp = dvGesamtpunkte(doc.blocks);
-  if (gp != null && v.aufgabe.punkte !== 'keine') {
-    rechts.appendChild(tx('div', 'dv-tb-meta', 'Erreichbare Punkte: ' + dvZahl(gp)));
+    rechts.appendChild(mk('div', 'dv-tb-nf-kompakt-flaeche'));
+  } else {
+    if (werte.datum) rechts.appendChild(tx('div', 'dv-tb-meta', werte.datum));
+    if (m.zeit) rechts.appendChild(tx('div', 'dv-tb-meta', 'Bearbeitungszeit: ' + m.zeit + (/\D/.test(m.zeit) ? '' : ' Minuten')));
+    if (gp != null && v.aufgabe.punkte !== 'keine') {
+      rechts.appendChild(tx('div', 'dv-tb-meta', 'Erreichbare Punkte: ' + dvZahl(gp)));
+    }
   }
   zeile1.appendChild(rechts);
   tb.appendChild(zeile1);
@@ -211,10 +223,15 @@ function dvTitelblock(doc, v) {
   return tb;
 }
 
-// ── Dokument → Array von Fluss-Elementen ─────────────────────────
+// ── Dokument → Titelblock (separat) + Array von Fluss-Elementen ──
+// Der Titelblock wird NICHT mit in den Fluss gehängt: er soll über die
+// volle Seitenbreite gehen, auch wenn die Punkte-Spalte den restlichen
+// Inhalt schmaler macht. docPaginate() platziert ihn deshalb gesondert.
 function docRender(doc, v) {
   var nodes = [];
-  if (v.titelblock.zeigen) nodes.push(dvTitelblock(doc, v));
   doc.blocks.forEach(function (b) { nodes.push(dvBlock(b, v)); });
-  return nodes;
+  return {
+    titelblock: v.titelblock.zeigen ? dvTitelblock(doc, v) : null,
+    nodes: nodes
+  };
 }

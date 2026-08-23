@@ -73,11 +73,11 @@ Ein Grundstück hat die unten skizzierte Form. Es soll neu eingezäunt und mit R
 function dvUpdate() {
   var v = dvVorlage(DV.vorlageId);
   var doc = docParse(DV.quelle);
-  var nodes = docRender(doc, v);
+  var gerendert = docRender(doc, v);
   var pages = document.getElementById('dv-pages');
   if (!pages) return;
 
-  var seiten = docPaginate(pages, nodes, v, doc.meta, dvAufgabenSummen(doc.blocks));
+  var seiten = docPaginate(pages, gerendert.nodes, v, doc.meta, dvAufgabenSummen(doc.blocks), gerendert.titelblock);
   pages.style.setProperty('--dv-zoom', String(DV.zoom));
 
   DV.seiten = seiten.length;

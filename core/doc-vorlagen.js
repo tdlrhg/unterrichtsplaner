@@ -22,7 +22,7 @@ var DV_VORLAGEN = [
     titelblock: { zeigen: true, variante: 'kasten', namensfeld: true, namensfeldStil: 'zeile', hinweistext: '', vielErfolg: '' },
     kopf: { zeigen: true, abSeite: 2, links: '{{fach}} · {{klasse}}', mitte: '', rechts: '{{titel}}', linie: true },
     fuss: { zeigen: true, abSeite: 1, links: 'Name: ________________________', mitte: '', rechts: 'Seite {{seite}} von {{seiten}}', linie: true },
-    aufgabe: { label: 'Aufgabe {{nr}}', punkte: 'kasten', abstand: 7, trennlinie: false, farbe: '#1c1917' },
+    aufgabe: { label: 'Aufgabe {{nr}}', punkte: 'kasten', abstand: 7, trennlinie: false, farbe: '#1c1917', zentriert: false, schriftgroesse: 1 },
     teil: { marke: '{{marke}}', einzug: 8 },
     kasten: { rahmen: true, fuellung: '#f5f2ed' },
     punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true },
@@ -40,7 +40,7 @@ var DV_VORLAGEN = [
     titelblock: { zeigen: true, variante: 'linie', namensfeld: false, namensfeldStil: 'zeile', hinweistext: '', vielErfolg: '' },
     kopf: { zeigen: false, abSeite: 2, links: '', mitte: '', rechts: '', linie: false },
     fuss: { zeigen: true, abSeite: 2, links: '{{titel}}', mitte: '', rechts: '{{seite}}', linie: false },
-    aufgabe: { label: '{{nr}}', punkte: 'keine', abstand: 9, trennlinie: false, farbe: '#be185d' },
+    aufgabe: { label: '{{nr}}', punkte: 'keine', abstand: 9, trennlinie: false, farbe: '#be185d', zentriert: false, schriftgroesse: 1 },
     teil: { marke: '{{marke}}', einzug: 10 },
     kasten: { rahmen: false, fuellung: '#f1ede7' },
     punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true },
@@ -91,6 +91,7 @@ function dvApplyVorlage(el, v) {
   s.setProperty('--dv-align', v.typo.ausrichtung);
   s.setProperty('--dv-auf-abstand', v.aufgabe.abstand + 'mm');
   s.setProperty('--dv-auf-farbe', v.aufgabe.farbe);
+  s.setProperty('--dv-auf-schriftgroesse', (v.aufgabe.schriftgroesse || 1) + 'em');
   s.setProperty('--dv-teil-einzug', v.teil.einzug + 'mm');
   s.setProperty('--dv-kasten-bg', v.kasten.fuellung);
   s.setProperty('--dv-kasten-rahmen', v.kasten.rahmen ? '1px solid #cfc8bd' : 'none');

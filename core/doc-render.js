@@ -141,7 +141,7 @@ function dvBlock(b, v) {
 
   if (b.t === 'aufgabe') {
     var a = mk('section', 'dv-aufgabe' + (v.aufgabe.trennlinie ? ' dv-aufgabe-linie' : ''));
-    var hdr = mk('div', 'dv-aufgabe-hdr');
+    var hdr = mk('div', 'dv-aufgabe-hdr' + (v.aufgabe.zentriert ? ' dv-aufgabe-hdr-zentriert' : ''));
     hdr.appendChild(tx('span', 'dv-aufgabe-label', dvFuellen(v.aufgabe.label, { nr: b.nr })));
     if (b.titel) { var at = mk('span', 'dv-aufgabe-titel'); at.innerHTML = docInline(b.titel); hdr.appendChild(at); }
     a.setAttribute('data-aufgabe-nr', b.nr);

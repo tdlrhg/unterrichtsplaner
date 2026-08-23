@@ -169,12 +169,17 @@
 .dv-aufgabe { margin-bottom: var(--dv-auf-abstand); }
 .dv-aufgabe-linie { border-top: .4pt solid #d8d2c8; padding-top: 3mm; }
 .dv-aufgabe-hdr { display: flex; align-items: baseline; gap: 2.5mm; margin-bottom: 1.8mm; }
-.dv-aufgabe-label { font-weight: 800; color: var(--dv-auf-farbe); white-space: nowrap; }
-.dv-aufgabe-titel { font-weight: 700; }
+.dv-aufgabe-hdr-zentriert { display: block; text-align: center; }
+.dv-aufgabe-hdr-zentriert > * { display: inline; margin-left: 2.5mm; }
+.dv-aufgabe-hdr-zentriert > *:first-child { margin-left: 0; }
+.dv-aufgabe-label { font-weight: 800; color: var(--dv-auf-farbe); white-space: nowrap; font-size: var(--dv-auf-schriftgroesse); }
+.dv-aufgabe-titel { font-weight: 700; font-size: var(--dv-auf-schriftgroesse); }
 .dv-punkte-kasten { margin-left: auto; display: flex; align-items: center; gap: 1.5mm; white-space: nowrap; }
 .dv-punkte-feld { display: inline-block; width: 11mm; height: 5.5mm; border: .6pt solid #78716c; }
 .dv-punkte-max { font-size: .8em; color: #57534e; }
 .dv-punkte-klammer { margin-left: auto; font-size: .85em; color: #57534e; white-space: nowrap; }
+.dv-aufgabe-hdr-zentriert .dv-punkte-kasten { display: inline-flex; margin-left: 2.5mm; }
+.dv-aufgabe-hdr-zentriert .dv-punkte-klammer { margin-left: 2.5mm; }
 
 /* Teilaufgaben */
 .dv-teil { margin: 2.5mm 0 2.5mm var(--dv-teil-einzug); }

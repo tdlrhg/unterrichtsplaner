@@ -70,6 +70,8 @@ var DV_FELDER = [
   { pfad: 'aufgabe.abstand',    label: 'Abstand danach', typ: 'zahl', min: 0, max: 30, schritt: 0.5, einheit: 'mm', halb: true },
   { pfad: 'aufgabe.farbe',      label: 'Akzentfarbe',    typ: 'farbe', halb: true },
   { pfad: 'aufgabe.trennlinie', label: 'Trennlinie vor jeder Aufgabe', typ: 'check' },
+  { pfad: 'aufgabe.zentriert',     label: 'Titel zentrieren', typ: 'check', halb: true },
+  { pfad: 'aufgabe.schriftgroesse', label: 'Schriftgröße', typ: 'zahl', min: 0.7, max: 2.5, schritt: 0.1, einheit: '×', halb: true },
 
   { gruppe: 'Teilaufgaben', hinweis: 'Platzhalter in der Marke: {{marke}} (a, b, c …)' },
   { pfad: 'teil.marke',  label: 'Marke',  typ: 'text', halb: true },

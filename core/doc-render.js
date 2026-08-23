@@ -130,7 +130,7 @@ function dvBlock(b, v) {
     if (b.titel) { var tt = mk('span', 'dv-teil-titel'); tt.innerHTML = docInline(b.titel); kopfz.appendChild(tt); }
     if (b.punkte != null) te.setAttribute('data-punkte', b.punkte);
     var tp = dvPunkteEl(b.punkte, v);
-    if (tp) kopfz.appendChild(tp);
+    if (tp) { kopfz.appendChild(mk('span', 'dv-teil-leader')); kopfz.appendChild(tp); }
     te.appendChild(kopfz);
     var tbody2 = mk('div', 'dv-teil-body');
     tbody2.setAttribute('data-splitbody', '1');
@@ -141,13 +141,20 @@ function dvBlock(b, v) {
 
   if (b.t === 'aufgabe') {
     var a = mk('section', 'dv-aufgabe' + (v.aufgabe.trennlinie ? ' dv-aufgabe-linie' : ''));
+    var titelUnten = !!v.aufgabe.titelUnten;
     var hdr = mk('div', 'dv-aufgabe-hdr' + (v.aufgabe.zentriert ? ' dv-aufgabe-hdr-zentriert' : ''));
-    hdr.appendChild(tx('span', 'dv-aufgabe-label', dvFuellen(v.aufgabe.label, { nr: b.nr })));
-    if (b.titel) { var at = mk('span', 'dv-aufgabe-titel'); at.innerHTML = docInline(b.titel); hdr.appendChild(at); }
+    var kopfzeile = mk('div', 'dv-aufgabe-kopfzeile');
+    kopfzeile.appendChild(tx('span', 'dv-aufgabe-label', dvFuellen(v.aufgabe.label, { nr: b.nr })));
+    if (b.titel && !titelUnten) { var at = mk('span', 'dv-aufgabe-titel'); at.innerHTML = docInline(b.titel); kopfzeile.appendChild(at); }
     a.setAttribute('data-aufgabe-nr', b.nr);
     if (b.punkte != null) a.setAttribute('data-punkte', b.punkte);
     var ap = dvPunkteEl(b.punkte, v);
-    if (ap) hdr.appendChild(ap);
+    if (ap) kopfzeile.appendChild(ap);
+    hdr.appendChild(kopfzeile);
+    if (b.titel && titelUnten) {
+      var atUnten = mk('div', 'dv-aufgabe-titel-unten'); atUnten.innerHTML = docInline(b.titel);
+      hdr.appendChild(atUnten);
+    }
     a.appendChild(hdr);
     var abody = mk('div', 'dv-aufgabe-body');
     abody.setAttribute('data-splitbody', '1');

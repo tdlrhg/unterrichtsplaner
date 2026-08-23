@@ -72,10 +72,12 @@ var DV_FELDER = [
   { pfad: 'aufgabe.trennlinie', label: 'Trennlinie vor jeder Aufgabe', typ: 'check' },
   { pfad: 'aufgabe.zentriert',     label: 'Titel zentrieren', typ: 'check', halb: true },
   { pfad: 'aufgabe.schriftgroesse', label: 'Schriftgröße', typ: 'zahl', min: 0.7, max: 2.5, schritt: 0.1, einheit: '×', halb: true },
+  { pfad: 'aufgabe.titelUnten', label: 'Thema in eigener Zeile', typ: 'check', halb: true },
 
   { gruppe: 'Teilaufgaben', hinweis: 'Platzhalter in der Marke: {{marke}} (a, b, c …)' },
   { pfad: 'teil.marke',  label: 'Marke',  typ: 'text', halb: true },
   { pfad: 'teil.einzug', label: 'Einzug', typ: 'zahl', min: 0, max: 30, schritt: 1, einheit: 'mm', halb: true },
+  { pfad: 'teil.aussenrand', label: 'Abstand zum Rand', typ: 'zahl', min: 0, max: 30, schritt: 1, einheit: 'mm', halb: true },
 
   { gruppe: 'Kästen', hinweis: 'Betrifft ::: merke, ::: hinweis, ::: material, ::: loesung' },
   { pfad: 'kasten.rahmen',   label: 'Rahmen', typ: 'check', halb: true },

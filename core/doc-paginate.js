@@ -73,19 +73,19 @@ function dvPunkteSpalteFuellen(seiten, v, aufgabenSummen) {
     var spalte = seite.querySelector('.dv-punkte-spalte');
     var content = seite.querySelector('.dv-content');
     if (!spalte || !content) return;
-    var contentRect = content.getBoundingClientRect();
-
-    // Nur "Blätter" der Punkte-Hierarchie zeigen: wenn eine Aufgabe UND ihre
-    // Teile beide Punkte tragen, zählen die feineren Teile, nicht die Summe
-    // der Aufgabe selbst (die steht ohnehin in der Gesamtbox).
+    // offsetTop/offsetHeight statt getBoundingClientRect(): Letzteres liefert
+    // bereits mit dem Seiten-Zoom (transform:scale) skalierte Werte – als
+    // Inline-px erneut gesetzt, würde die Zoom-Skalierung der Seite das ein
+    // zweites Mal anwenden und die Zelle bei jedem Zoom ≠ 100% verschieben.
+    // offsetTop/-Height sind transform-unabhängige Layout-Werte, offsetParent
+    // von [data-punkte]-Elementen ist .dv-content (position: absolute).
     var zellen = Array.prototype.filter.call(content.querySelectorAll('[data-punkte]'), function (el) {
       return !el.querySelector('[data-punkte]');
     });
     zellen.forEach(function (el) {
-      var r = el.getBoundingClientRect();
       var zelle = mk('div', 'dv-punkte-zelle');
-      zelle.style.top = (r.top - contentRect.top) + 'px';
-      zelle.style.height = Math.max(r.height, 1) + 'px';
+      zelle.style.top = el.offsetTop + 'px';
+      zelle.style.height = Math.max(el.offsetHeight, 1) + 'px';
       zelle.appendChild(tx('span', '', '/' + dvZahl(el.getAttribute('data-punkte'))));
       spalte.appendChild(zelle);
     });
@@ -108,10 +108,8 @@ function dvPunkteSpalteFuellen(seiten, v, aufgabenSummen) {
     var spalte = f.seite.querySelector('.dv-punkte-spalte');
     var content = f.seite.querySelector('.dv-content');
     if (!spalte || !content) return;
-    var contentRect = content.getBoundingClientRect();
-    var elRect = f.el.getBoundingClientRect();
     var box = mk('div', 'dv-punkte-gesamt');
-    box.style.top = (elRect.bottom - contentRect.top) + 'px';
+    box.style.top = (f.el.offsetTop + f.el.offsetHeight) + 'px';
     box.appendChild(tx('div', 'dv-punkte-gesamt-label', 'Aufgabe ' + nr));
     box.appendChild(tx('div', 'dv-punkte-gesamt-wert', '/' + dvZahl(summe)));
     spalte.appendChild(box);

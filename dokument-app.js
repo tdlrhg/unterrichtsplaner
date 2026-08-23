@@ -262,6 +262,71 @@ function dvBildAusDokumentEntfernen(src) {
   dvUpdate();
 }
 
+function dvBildSrcErsetzen(altSrc, neuerSrc) {
+  var zeilen = DV.quelle.split('\n');
+  for (var i = 0; i < zeilen.length; i++) {
+    var m = zeilen[i].match(DV_BILD_MUSTER);
+    if (m && m[2] === altSrc) {
+      zeilen[i] = dvBildZeileBauen(m[1], neuerSrc, m[3] ? parseInt(m[3], 10) : null, m[4] || 'mitte');
+      break;
+    }
+  }
+  DV.quelle = zeilen.join('\n');
+  var ta = document.getElementById('dv-ta');
+  if (ta) ta.value = DV.quelle;
+  localStorage.setItem('dv_quelle', DV.quelle);
+  dvUpdate();
+}
+
+// Erkennt und entfernt einfarbigen/transparenten Rand automatisch – kein
+// externes Bildbearbeitungsprogramm nötig. callback(neueDataUrl, fehler).
+function dvBildWeissraumErkennenUndZuschneiden(src, callback) {
+  var img = new Image();
+  img.onload = function () {
+    var breite = img.naturalWidth, hoehe = img.naturalHeight;
+    var canvas = document.createElement('canvas');
+    canvas.width = breite; canvas.height = hoehe;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    var daten;
+    try { daten = ctx.getImageData(0, 0, breite, hoehe).data; }
+    catch (e) { callback(null, 'Bild kann nicht analysiert werden (Herkunft blockiert Zugriff).'); return; }
+
+    var SCHWELLE = 248; // ab diesem Helligkeitswert gilt ein Pixel als "leer"
+    function istLeer(x, y) {
+      var i = (y * breite + x) * 4;
+      if (daten[i + 3] < 10) return true; // transparent
+      return daten[i] >= SCHWELLE && daten[i + 1] >= SCHWELLE && daten[i + 2] >= SCHWELLE;
+    }
+
+    var oben = 0, unten = hoehe - 1, links = 0, rechts = breite - 1;
+    var x, y, gefunden;
+    for (; oben < hoehe; oben++) { gefunden = false; for (x = 0; x < breite; x++) if (!istLeer(x, oben)) { gefunden = true; break; } if (gefunden) break; }
+    for (; unten > oben; unten--) { gefunden = false; for (x = 0; x < breite; x++) if (!istLeer(x, unten)) { gefunden = true; break; } if (gefunden) break; }
+    for (; links < breite; links++) { gefunden = false; for (y = oben; y <= unten; y++) if (!istLeer(links, y)) { gefunden = true; break; } if (gefunden) break; }
+    for (; rechts > links; rechts--) { gefunden = false; for (y = oben; y <= unten; y++) if (!istLeer(rechts, y)) { gefunden = true; break; } if (gefunden) break; }
+
+    var POLSTER = 6;
+    oben = Math.max(0, oben - POLSTER);
+    links = Math.max(0, links - POLSTER);
+    unten = Math.min(hoehe - 1, unten + POLSTER);
+    rechts = Math.min(breite - 1, rechts + POLSTER);
+    var neueBreite = rechts - links + 1, neueHoehe = unten - oben + 1;
+
+    if (neueBreite >= breite - 2 * POLSTER + 1 && neueHoehe >= hoehe - 2 * POLSTER + 1) {
+      callback(null, 'Kein nennenswerter Weißraum gefunden.');
+      return;
+    }
+
+    var aus = document.createElement('canvas');
+    aus.width = neueBreite; aus.height = neueHoehe;
+    aus.getContext('2d').drawImage(canvas, links, oben, neueBreite, neueHoehe, 0, 0, neueBreite, neueHoehe);
+    callback(aus.toDataURL('image/png'), null);
+  };
+  img.onerror = function () { callback(null, 'Bild konnte nicht geladen werden.'); };
+  img.src = src;
+}
+
 var DV_BILD_BREITEN = [['', 'Originalgröße'], ['25', '25%'], ['50', '50%'], ['75', '75%'], ['100', '100%']];
 var DV_BILD_AUSRICHTUNGEN = [['links', 'Links'], ['mitte', 'Mitte'], ['rechts', 'Rechts']];
 
@@ -315,6 +380,21 @@ function dvBilderPanelAktualisieren() {
     regler.appendChild(ausrichtungSel);
     mitte.appendChild(regler);
     row.appendChild(mitte);
+
+    var schneidenBtn = btn('✂', 'btn btn-ghost btn-xs');
+    schneidenBtn.title = 'Weißraum am Rand automatisch zuschneiden';
+    schneidenBtn.onclick = function () {
+      schneidenBtn.disabled = true;
+      var vorherText = schneidenBtn.textContent;
+      schneidenBtn.textContent = '…';
+      dvBildWeissraumErkennenUndZuschneiden(b.src, function (neuerSrc, fehler) {
+        schneidenBtn.disabled = false;
+        schneidenBtn.textContent = vorherText;
+        if (fehler) { alert(fehler); return; }
+        dvBildSrcErsetzen(b.src, neuerSrc);
+      });
+    };
+    row.appendChild(schneidenBtn);
 
     var delBtn = btn('✕', 'btn btn-danger btn-xs');
     delBtn.title = 'Bild entfernen';

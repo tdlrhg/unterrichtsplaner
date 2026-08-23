@@ -73,7 +73,13 @@ var DV_FELDER = [
   { pfad: 'punkteSpalte.zeigen',     label: 'Punkte-Spalte anzeigen', typ: 'check', halb: true },
   { pfad: 'punkteSpalte.breite',     label: 'Breite',                typ: 'zahl', min: 10, max: 40, schritt: 1, einheit: 'mm', halb: true },
   { pfad: 'punkteSpalte.trennlinie', label: 'Trennlinie',            typ: 'check', halb: true },
-  { pfad: 'punkteSpalte.gesamtbox',  label: 'Summen-Kasten je Aufgabe', typ: 'check', halb: true }
+  { pfad: 'punkteSpalte.gesamtbox',  label: 'Summen-Kasten je Aufgabe', typ: 'check', halb: true },
+
+  { gruppe: 'Große Seitenzahl', hinweis: 'Statt oder zusätzlich zur Fußzeile mit Seitenzahl' },
+  { pfad: 'seitenzahlGross.zeigen',  label: 'Große Seitenzahl anzeigen', typ: 'check', halb: true },
+  { pfad: 'seitenzahlGross.abSeite', label: 'Erst ab Seite', typ: 'zahl', min: 1, max: 9, schritt: 1, einheit: '', halb: true },
+  { pfad: 'seitenzahlGross.groesse', label: 'Größe', typ: 'zahl', min: 14, max: 80, schritt: 1, einheit: 'pt', halb: true },
+  { pfad: 'seitenzahlGross.farbe',   label: 'Farbe', typ: 'farbe', halb: true }
 ];
 
 // ── Formular-Bausteine ───────────────────────────────────────────

@@ -145,6 +145,9 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen) {
       seite.appendChild(spalte);
     }
     if (fussDa) seite.appendChild(dvBand('fuss', v.fuss));
+    if (v.seitenzahlGross && v.seitenzahlGross.zeigen && nr >= (v.seitenzahlGross.abSeite || 1)) {
+      seite.appendChild(tx('div', 'dv-sz-gross', String(nr)));
+    }
     container.appendChild(seite);
     seiten.push(seite);
     box = content;

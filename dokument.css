@@ -91,6 +91,13 @@
 .dv-punkte-gesamt-label { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .3pt; }
 .dv-punkte-gesamt-wert { font-size: 1.35em; font-weight: 800; margin-top: .5mm; }
 
+/* Große Seitenzahl */
+.dv-sz-gross {
+  position: absolute; top: 4mm; right: 6mm;
+  font-size: var(--dv-sz-gross-groesse); font-weight: 800; line-height: 1;
+  color: var(--dv-sz-gross-farbe); pointer-events: none;
+}
+
 .dv-band { position: absolute; left: var(--dv-rand-l); right: var(--dv-rand-r); height: var(--dv-kopf-h); display: flex; align-items: center; gap: 10px; font-size: 8.5pt; color: #57534e; }
 .dv-band-kopf { top: var(--dv-rand-o); }
 .dv-band-fuss { bottom: var(--dv-rand-u); height: var(--dv-fuss-h); }

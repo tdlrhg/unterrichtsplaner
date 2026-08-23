@@ -25,7 +25,8 @@ var DV_VORLAGEN = [
     aufgabe: { label: 'Aufgabe {{nr}}', punkte: 'kasten', abstand: 7, trennlinie: false, farbe: '#1c1917' },
     teil: { marke: '{{marke}}', einzug: 8 },
     kasten: { rahmen: true, fuellung: '#f5f2ed' },
-    punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true }
+    punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true },
+    seitenzahlGross: { zeigen: false, abSeite: 1, groesse: 40, farbe: '#d4cec2' }
   },
   {
     id: 'ab-schlicht',
@@ -42,7 +43,8 @@ var DV_VORLAGEN = [
     aufgabe: { label: '{{nr}}', punkte: 'keine', abstand: 9, trennlinie: false, farbe: '#be185d' },
     teil: { marke: '{{marke}}', einzug: 10 },
     kasten: { rahmen: false, fuellung: '#f1ede7' },
-    punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true }
+    punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true },
+    seitenzahlGross: { zeigen: false, abSeite: 1, groesse: 40, farbe: '#d4cec2' }
   }
 ];
 
@@ -65,6 +67,8 @@ function dvApplyVorlage(el, v) {
   s.setProperty('--dv-rand-r', r.rechts + 'mm');
   s.setProperty('--dv-kaestchen-groesse', (v.seite.kaestchenGroesse || 5) + 'mm');
   s.setProperty('--dv-punkte-breite', ((v.punkteSpalte && v.punkteSpalte.breite) || 16) + 'mm');
+  s.setProperty('--dv-sz-gross-groesse', ((v.seitenzahlGross && v.seitenzahlGross.groesse) || 40) + 'pt');
+  s.setProperty('--dv-sz-gross-farbe', (v.seitenzahlGross && v.seitenzahlGross.farbe) || '#d4cec2');
   s.setProperty('--dv-kopf-h', kopfH + 'mm');
   s.setProperty('--dv-fuss-h', fussH + 'mm');
   s.setProperty('--dv-font', v.typo.font);
@@ -139,13 +143,28 @@ function dvVorlagenCacheLaden() {
   } catch (e) { /* defekter Cache wird ignoriert */ }
 }
 
+// sbDownload() setzt kein cache:'no-store' – der Browser kann eine
+// veraltete (z.B. leere) Antwort aus dem HTTP-Cache liefern. Für die
+// Vorlagen wäre das fatal: eine gerade gespeicherte Vorlage würde beim
+// nächsten Laden durch den alten Cache-Stand wieder gelöscht aussehen.
+// Deshalb hier ein eigener, cache-loser Download statt sbDownload().
+async function dvVorlagenFrischLaden() {
+  var url = _URL + '/storage/v1/object/' + BUCKET + '/vorlagen.json?_=' + Date.now();
+  var res = await fetch(url, {
+    cache: 'no-store',
+    headers: { apikey: _KEY, Authorization: 'Bearer ' + _KEY }
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
+
 // Aus Supabase nachladen (Quelle der Wahrheit). Gibt true zurück,
 // wenn sich der Bestand gegenüber dem Cache geändert hat.
 async function dvVorlagenVonCloudLaden() {
   var vorher = JSON.stringify(dvEigene());
   var cloud;
   try {
-    cloud = await sbDownload('vorlagen.json');
+    cloud = await dvVorlagenFrischLaden();
   } catch (e) { return false; } // offline: lokaler Cache bleibt gültig
 
   if (!Array.isArray(cloud)) {

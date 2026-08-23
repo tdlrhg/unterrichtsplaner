@@ -77,8 +77,15 @@ function dvUpdate() {
   var pages = document.getElementById('dv-pages');
   if (!pages) return;
 
+  // docPaginate baut #dv-pages komplett neu auf – dabei schrumpft der Inhalt
+  // kurzzeitig auf 0, wodurch der Browser die Scroll-Position der Vorschau
+  // zurücksetzt. Also merken und danach wiederherstellen.
+  var vorschau = document.querySelector('.dv-preview');
+  var scrollVorher = vorschau ? vorschau.scrollTop : 0;
+
   var seiten = docPaginate(pages, gerendert.nodes, v, doc.meta, dvAufgabenSummen(doc.blocks), gerendert.titelblock);
   pages.style.setProperty('--dv-zoom', String(DV.zoom));
+  if (vorschau) vorschau.scrollTop = scrollVorher;
 
   DV.seiten = seiten.length;
   DV.warnungen = doc.warnungen;

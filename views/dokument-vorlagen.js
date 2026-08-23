@@ -14,6 +14,11 @@ var DV_SCHRIFTEN = [
 ];
 
 // ── Feldbeschreibung ─────────────────────────────────────────────
+// Akkordeon-Zustand: welche Gruppe gerade offen ist (persistiert über
+// dvVorlagenPanelNeu()-Neubauten hinweg, z.B. wenn eine Checkbox
+// abhängige Felder ein-/ausblendet).
+var _dvOffeneGruppe = 'Seite';
+
 var DV_FELDER = [
   { gruppe: 'Seite' },
   { pfad: 'seite.format', label: 'Format', typ: 'select', optionen: [['A4', 'A4 hoch'], ['A4quer', 'A4 quer'], ['A5', 'A5']] },
@@ -267,20 +272,31 @@ function dvVorlagenPanel() {
   }
   panel.appendChild(kopf);
 
-  // Felder gruppenweise
+  // Felder gruppenweise, als Akkordeon (nur eine Gruppe offen)
   var gruppe = null;
+  var gruppeOffen = false;
   DV_FELDER.forEach(function (feld) {
     if (feld.gruppe) {
-      gruppe = mk('div', 'dv-gruppe');
-      gruppe.appendChild(tx('div', 'dv-gruppe-titel', feld.gruppe));
-      if (feld.hinweis) gruppe.appendChild(tx('div', 'dv-gruppe-hinweis', feld.hinweis));
-      var felder = mk('div', 'dv-gruppe-felder');
-      gruppe.appendChild(felder);
-      gruppe.__felder = felder;
+      gruppeOffen = feld.gruppe === _dvOffeneGruppe;
+      gruppe = mk('div', 'dv-gruppe' + (gruppeOffen ? ' dv-gruppe-offen' : ''));
+      var titelZeile = mk('div', 'dv-gruppe-titel');
+      titelZeile.appendChild(tx('span', 'dv-gruppe-pfeil', gruppeOffen ? '▾' : '▸'));
+      titelZeile.appendChild(tx('span', '', feld.gruppe));
+      titelZeile.onclick = function () {
+        _dvOffeneGruppe = gruppeOffen ? null : feld.gruppe;
+        dvVorlagenPanelNeu();
+      };
+      gruppe.appendChild(titelZeile);
+      if (gruppeOffen) {
+        if (feld.hinweis) gruppe.appendChild(tx('div', 'dv-gruppe-hinweis', feld.hinweis));
+        var felder = mk('div', 'dv-gruppe-felder');
+        gruppe.appendChild(felder);
+        gruppe.__felder = felder;
+      }
       panel.appendChild(gruppe);
       return;
     }
-    if (!gruppe) return;
+    if (!gruppe || !gruppeOffen) return;
     if (feld.von && !dvHole(v, feld.von)) return; // Hauptschalter aus → Feld ausblenden
     gruppe.__felder.appendChild(dvBauFeld(feld, v, standard));
   });

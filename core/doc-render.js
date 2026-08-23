@@ -185,7 +185,7 @@ function dvTitelblock(doc, v) {
   }
   zeile1.appendChild(links);
 
-  var rechts = mk('div', 'dv-tb-rechts');
+  var rechts = mk('div', 'dv-tb-rechts' + (kompaktesLabel ? ' dv-tb-rechts-geteilt' : ''));
   if (kompaktesLabel) {
     rechts.appendChild(tx('div', 'dv-tb-nf-label-kompakt', 'Nach-, Vorname:'));
     rechts.appendChild(mk('div', 'dv-tb-nf-kompakt-flaeche'));

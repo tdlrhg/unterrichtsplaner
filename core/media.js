@@ -68,3 +68,20 @@ async function bufToDataURLs(filename, buf, { maxPages = Infinity, longEdge = MA
 async function fileToDataURLs(file, opts = {}) {
   return bufToDataURLs(file.name, await file.arrayBuffer(), opts);
 }
+
+// ── Bilddatei verkleinern & komprimieren ──────────────────────────
+// Für Bilder, die direkt (nicht per KI-Analyse) in Dokumente eingebettet
+// werden – Fotos vom Handy sind sonst mehrere MB groß als Data-URL.
+async function resizeImageFile(file, { longEdge = 1600, quality = 0.85 } = {}) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, longEdge / Math.max(bitmap.width, bitmap.height));
+  const w = Math.round(bitmap.width * scale), h = Math.round(bitmap.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+  const mime = (file.type === 'image/png' && scale === 1) ? 'image/png' : 'image/jpeg';
+  const dataUrl = canvas.toDataURL(mime, quality);
+  canvas.width = 0; canvas.height = 0;
+  return dataUrl;
+}

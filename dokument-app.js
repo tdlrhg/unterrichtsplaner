@@ -156,6 +156,40 @@ function dvDateiLaden(file) {
   r.readAsText(file, 'utf-8');
 }
 
+// ── Bild einfügen (Upload oder Drag&Drop) ─────────────────────────
+// Bettet das Bild als Data-URL direkt im Dokumenttext ein – kein
+// Cloud-Upload nötig, funktioniert mit jeder lokalen Datei.
+async function dvBildEinfuegen(file, cursorPos) {
+  if (!file || !mediaIsImage(file.name)) { alert('Bitte eine Bilddatei wählen (jpg, png, gif, webp).'); return; }
+  var ta = document.getElementById('dv-ta');
+  var pos = cursorPos != null ? cursorPos : (ta ? ta.selectionStart : DV.quelle.length);
+
+  var dataUrl;
+  try {
+    dataUrl = await resizeImageFile(file);
+  } catch (e) {
+    alert('Bild konnte nicht geladen werden: ' + e.message);
+    return;
+  }
+
+  var alt = file.name.replace(/\.[^.]+$/, '');
+  var markdown = '![' + alt + '](' + dataUrl + ')\n';
+  var vorher = DV.quelle.slice(0, pos);
+  var nachher = DV.quelle.slice(pos);
+  // Auf eigener Zeile einfügen, mit Leerzeile davor falls nötig
+  if (vorher && !/\n\n$/.test(vorher)) markdown = (/\n$/.test(vorher) ? '\n' : '\n\n') + markdown;
+  DV.quelle = vorher + markdown + nachher;
+
+  if (ta) {
+    ta.value = DV.quelle;
+    var neuePos = (vorher + markdown).length;
+    ta.setSelectionRange(neuePos, neuePos);
+    ta.focus();
+  }
+  localStorage.setItem('dv_quelle', DV.quelle);
+  dvUpdate();
+}
+
 // ── Reiter umschalten ────────────────────────────────────────────
 function dvTab(name) {
   DV.tab = name;
@@ -222,6 +256,17 @@ function dvRenderApp() {
   ladeBtn.onclick = function () { fileInp.click(); };
   edHdr.appendChild(ladeBtn);
 
+  var bildInp = document.createElement('input');
+  bildInp.type = 'file';
+  bildInp.accept = 'image/*';
+  bildInp.style.display = 'none';
+  bildInp.onchange = function (e) { dvBildEinfuegen(e.target.files[0]); e.target.value = ''; };
+  edHdr.appendChild(bildInp);
+
+  var bildBtn = btn('🖼 Bild einfügen', 'btn btn-ghost btn-sm');
+  bildBtn.onclick = function () { bildInp.click(); };
+  edHdr.appendChild(bildBtn);
+
   var demoBtn = btn('Beispiel', 'btn btn-ghost btn-sm');
   demoBtn.onclick = function () {
     if (DV.quelle.trim() && !confirm('Aktuellen Inhalt durch das Beispiel ersetzen?')) return;
@@ -244,7 +289,9 @@ function dvRenderApp() {
   ta.addEventListener('drop', function (e) {
     if (!e.dataTransfer.files.length) return;
     e.preventDefault();
-    dvDateiLaden(e.dataTransfer.files[0]);
+    var datei = e.dataTransfer.files[0];
+    if (mediaIsImage(datei.name)) dvBildEinfuegen(datei, ta.selectionStart);
+    else dvDateiLaden(datei);
   });
   inhalt.appendChild(ta);
 

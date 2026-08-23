@@ -5,6 +5,8 @@
 var DV = {
   tab: 'inhalt',
   quelle: '',
+  bilder: {}, // Bild-ID → Data-URL, getrennt vom Text gehalten (sonst wird der
+              // Editor bei jedem Bild durch eine riesige Base64-Zeile unbedienbar)
   vorlageId: 'ka-klassisch',
   zoom: 0.72,
   seiten: 0,
@@ -70,9 +72,19 @@ Ein Grundstück hat die unten skizzierte Form. Es soll neu eingezäunt und mit R
 `;
 
 // ── Vorschau neu aufbauen ────────────────────────────────────────
+// Ersetzt Bild-IDs im geparsten Baum durch die tatsächliche Data-URL aus
+// DV.bilder. Im Text steht nur die kurze ID (siehe dvBildEinfuegen).
+function dvBilderInBlocksAufloesen(blocks) {
+  (blocks || []).forEach(function (b) {
+    if (b.t === 'bild' && DV.bilder[b.src] != null) b.src = DV.bilder[b.src];
+    if (b.kinder) dvBilderInBlocksAufloesen(b.kinder);
+  });
+}
+
 function dvUpdate() {
   var v = dvVorlage(DV.vorlageId);
   var doc = docParse(DV.quelle);
+  dvBilderInBlocksAufloesen(doc.blocks);
   var gerendert = docRender(doc, v);
   var pages = document.getElementById('dv-pages');
   if (!pages) return;
@@ -148,10 +160,11 @@ function dvDateiLaden(file) {
   if (!file) return;
   var r = new FileReader();
   r.onload = function () {
-    DV.quelle = String(r.result || '');
+    DV.quelle = dvBilderAusTextAuslagern(String(r.result || ''));
     var ta = document.getElementById('dv-ta');
     if (ta) ta.value = DV.quelle;
     localStorage.setItem('dv_quelle', DV.quelle);
+    localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder));
     dvUpdate();
   };
   r.readAsText(file, 'utf-8');
@@ -201,7 +214,10 @@ async function dvBildEinfuegen(file, cursorPos) {
   }
 
   var alt = file.name.replace(/\.[^.]+$/, '');
-  var markdown = '![' + alt + '](' + dataUrl + ')\n';
+  var id = dvBildNeueId();
+  DV.bilder[id] = dataUrl;
+  localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder));
+  var markdown = '![' + alt + '](' + id + ')\n';
   var vorher = DV.quelle.slice(0, pos);
   var nachher = DV.quelle.slice(pos);
   // Auf eigener Zeile einfügen, mit Leerzeile davor falls nötig
@@ -222,10 +238,35 @@ async function dvBildEinfuegen(file, cursorPos) {
 // Muss zum Bild-Muster in core/doc-parser.js passen (dort die Referenz).
 var DV_BILD_MUSTER = /^!\[([^\]]*)\]\(([^)\s]+)(?:\s+(\d+)%)?(?:\s+(links|mitte|rechts))?\)$/;
 
+function dvBildNeueId() {
+  var max = 0;
+  Object.keys(DV.bilder).forEach(function (k) {
+    var m = k.match(/^b(\d+)$/);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  });
+  return 'b' + (max + 1);
+}
+
+// Alte/importierte Dokumente können Bilder noch als eingebettete Data-URL im
+// Text haben (eine riesige Base64-Zeile) – vor dem Anzeigen im Editor in
+// DV.bilder auslagern und im Text durch eine kurze ID ersetzen.
+function dvBilderAusTextAuslagern(text) {
+  return text.split('\n').map(function (zeile) {
+    var m = zeile.match(DV_BILD_MUSTER);
+    if (!m || m[2].indexOf('data:') !== 0) return zeile;
+    var id = dvBildNeueId();
+    DV.bilder[id] = m[2];
+    return dvBildZeileBauen(m[1], id, m[3] ? parseInt(m[3], 10) : null, m[4] || 'mitte');
+  }).join('\n');
+}
+
 function dvBilderImText() {
   return DV.quelle.split('\n').reduce(function (liste, zeile) {
     var m = zeile.match(DV_BILD_MUSTER);
-    if (m) liste.push({ alt: m[1], src: m[2], breite: m[3] ? parseInt(m[3], 10) : null, ausrichtung: m[4] || 'mitte' });
+    if (m) liste.push({
+      alt: m[1], src: m[2], anzeigeSrc: DV.bilder[m[2]] || m[2],
+      breite: m[3] ? parseInt(m[3], 10) : null, ausrichtung: m[4] || 'mitte'
+    });
     return liste;
   }, []);
 }
@@ -256,25 +297,11 @@ function dvBildAusDokumentEntfernen(src) {
     var m = zeile.match(DV_BILD_MUSTER);
     return !(m && m[2] === src);
   }).join('\n');
+  delete DV.bilder[src];
   var ta = document.getElementById('dv-ta');
   if (ta) ta.value = DV.quelle;
   localStorage.setItem('dv_quelle', DV.quelle);
-  dvUpdate();
-}
-
-function dvBildSrcErsetzen(altSrc, neuerSrc) {
-  var zeilen = DV.quelle.split('\n');
-  for (var i = 0; i < zeilen.length; i++) {
-    var m = zeilen[i].match(DV_BILD_MUSTER);
-    if (m && m[2] === altSrc) {
-      zeilen[i] = dvBildZeileBauen(m[1], neuerSrc, m[3] ? parseInt(m[3], 10) : null, m[4] || 'mitte');
-      break;
-    }
-  }
-  DV.quelle = zeilen.join('\n');
-  var ta = document.getElementById('dv-ta');
-  if (ta) ta.value = DV.quelle;
-  localStorage.setItem('dv_quelle', DV.quelle);
+  localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder));
   dvUpdate();
 }
 
@@ -344,7 +371,7 @@ function dvBilderPanelAktualisieren() {
     var row = mk('div', 'dv-bild-row');
 
     var thumb = document.createElement('img');
-    thumb.src = b.src; thumb.className = 'dv-bild-thumb';
+    thumb.src = b.anzeigeSrc; thumb.className = 'dv-bild-thumb';
     row.appendChild(thumb);
 
     var mitte = mk('div', 'dv-bild-row-mitte');
@@ -387,11 +414,13 @@ function dvBilderPanelAktualisieren() {
       schneidenBtn.disabled = true;
       var vorherText = schneidenBtn.textContent;
       schneidenBtn.textContent = '…';
-      dvBildWeissraumErkennenUndZuschneiden(b.src, function (neuerSrc, fehler) {
+      dvBildWeissraumErkennenUndZuschneiden(b.anzeigeSrc, function (neuerSrc, fehler) {
         schneidenBtn.disabled = false;
         schneidenBtn.textContent = vorherText;
         if (fehler) { alert(fehler); return; }
-        dvBildSrcErsetzen(b.src, neuerSrc);
+        DV.bilder[b.src] = neuerSrc;
+        localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder));
+        dvUpdate();
       });
     };
     row.appendChild(schneidenBtn);
@@ -620,6 +649,15 @@ async function dvCheckVersion() {
 (async function () {
   DV.quelle = localStorage.getItem('dv_quelle');
   if (DV.quelle == null) DV.quelle = DV_DEMO;
+  try { DV.bilder = JSON.parse(localStorage.getItem('dv_bilder')) || {}; } catch (e) { DV.bilder = {}; }
+  // Bestehende Dokumente aus der Zeit vor der Bild-ID-Trennung migrieren:
+  // eingebettete Data-URLs im Text nach DV.bilder auslagern.
+  var quelleVorher = DV.quelle;
+  DV.quelle = dvBilderAusTextAuslagern(DV.quelle);
+  if (DV.quelle !== quelleVorher) {
+    localStorage.setItem('dv_quelle', DV.quelle);
+    localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder));
+  }
 
   dvVorlagenCacheLaden(); // sofort verfügbar, ohne auf das Netz zu warten
   var gewuenschteVorlageId = localStorage.getItem('dv_vorlage') || 'ka-klassisch';

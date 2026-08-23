@@ -107,7 +107,7 @@
 .dv-punkte-zelle {
   position: absolute; left: 0; right: 0; overflow: hidden;
   display: flex; align-items: flex-end; justify-content: flex-end;
-  padding-bottom: 1mm; padding-right: 1.5mm; font-size: var(--dv-punkte-schriftgroesse);
+  padding-bottom: 1mm; padding-right: 0mm; font-size: var(--dv-punkte-schriftgroesse);
   font-weight: 700; color: #1c1917;
 }
 .dv-punkte-gesamt {

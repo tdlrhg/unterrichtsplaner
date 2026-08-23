@@ -175,6 +175,8 @@ function docParse(src) {
 
     // ── Bild: ![Alt](src), optional Breite und/oder Ausrichtung:
     // ![Alt](src 60%) · ![Alt](src links) · ![Alt](src 60% rechts) ──
+    // Gleiches Muster als DV_BILD_MUSTER in dokument-app.js (Bilder-Panel) –
+    // bei Änderung hier bitte dort mitziehen.
     var img = line.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+(\d+)%)?(?:\s+(links|mitte|rechts))?\)$/);
     if (img) {
       ziel().push({

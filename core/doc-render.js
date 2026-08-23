@@ -109,12 +109,15 @@ function dvBlock(b, v) {
   }
 
   if (b.t === 'bild') {
+    // Alt-Text ist nur fürs img-alt-Attribut (Barrierefreiheit) gedacht,
+    // erscheint NICHT als sichtbare Unterschrift im Dokument. Wer eine
+    // echte Bildunterschrift will, schreibt sie als normalen Absatz
+    // direkt unter das Bild in den Text.
     var bw = mk('div', 'dv-bild dv-bild-' + (b.ausrichtung || 'mitte'));
     var img = document.createElement('img');
     img.src = b.src; img.alt = b.alt || '';
     if (b.breite) img.style.width = b.breite + '%';
     bw.appendChild(img);
-    if (b.alt) bw.appendChild(tx('div', 'dv-bild-bu', b.alt));
     return bw;
   }
 

@@ -96,6 +96,7 @@ function dvUpdate() {
   if (st) st.textContent = '@page { size: ' + fmt.breite + 'mm ' + fmt.hoehe + 'mm; margin: 0; }';
 
   dvStatus(doc, v);
+  dvBilderPanelAktualisieren();
 }
 
 function dvStatus(doc, v) {
@@ -217,6 +218,113 @@ async function dvBildEinfuegen(file, cursorPos) {
   dvUpdate();
 }
 
+// ── Bilder-Panel: Breite/Ausrichtung per Auswahlfeld statt Text-Fummelei ──
+// Muss zum Bild-Muster in core/doc-parser.js passen (dort die Referenz).
+var DV_BILD_MUSTER = /^!\[([^\]]*)\]\(([^)\s]+)(?:\s+(\d+)%)?(?:\s+(links|mitte|rechts))?\)$/;
+
+function dvBilderImText() {
+  return DV.quelle.split('\n').reduce(function (liste, zeile) {
+    var m = zeile.match(DV_BILD_MUSTER);
+    if (m) liste.push({ alt: m[1], src: m[2], breite: m[3] ? parseInt(m[3], 10) : null, ausrichtung: m[4] || 'mitte' });
+    return liste;
+  }, []);
+}
+
+function dvBildZeileBauen(alt, src, breite, ausrichtung) {
+  var klammer = src;
+  if (breite) klammer += ' ' + breite + '%';
+  if (ausrichtung && ausrichtung !== 'mitte') klammer += ' ' + ausrichtung;
+  return '![' + alt + '](' + klammer + ')';
+}
+
+function dvBildUebernehmen(src, breite, ausrichtung) {
+  var zeilen = DV.quelle.split('\n');
+  for (var i = 0; i < zeilen.length; i++) {
+    var m = zeilen[i].match(DV_BILD_MUSTER);
+    if (m && m[2] === src) { zeilen[i] = dvBildZeileBauen(m[1], src, breite, ausrichtung); break; }
+  }
+  DV.quelle = zeilen.join('\n');
+  var ta = document.getElementById('dv-ta');
+  if (ta) ta.value = DV.quelle;
+  localStorage.setItem('dv_quelle', DV.quelle);
+  dvUpdate();
+}
+
+function dvBildAusDokumentEntfernen(src) {
+  if (!confirm('Dieses Bild aus dem Dokument entfernen?')) return;
+  DV.quelle = DV.quelle.split('\n').filter(function (zeile) {
+    var m = zeile.match(DV_BILD_MUSTER);
+    return !(m && m[2] === src);
+  }).join('\n');
+  var ta = document.getElementById('dv-ta');
+  if (ta) ta.value = DV.quelle;
+  localStorage.setItem('dv_quelle', DV.quelle);
+  dvUpdate();
+}
+
+var DV_BILD_BREITEN = [['', 'Originalgröße'], ['25', '25%'], ['50', '50%'], ['75', '75%'], ['100', '100%']];
+var DV_BILD_AUSRICHTUNGEN = [['links', 'Links'], ['mitte', 'Mitte'], ['rechts', 'Rechts']];
+
+function dvBilderPanelAktualisieren() {
+  var wrap = document.getElementById('dv-bilder-panel');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  var bilder = dvBilderImText();
+  if (!bilder.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+
+  wrap.appendChild(tx('div', 'dv-bilder-titel', '🖼 Bilder im Dokument (' + bilder.length + ')'));
+
+  bilder.forEach(function (b) {
+    var row = mk('div', 'dv-bild-row');
+
+    var thumb = document.createElement('img');
+    thumb.src = b.src; thumb.className = 'dv-bild-thumb';
+    row.appendChild(thumb);
+
+    var mitte = mk('div', 'dv-bild-row-mitte');
+    mitte.appendChild(tx('div', 'dv-bild-row-alt', b.alt || '(ohne Beschreibung)'));
+
+    var regler = mk('div', 'dv-bild-row-regler');
+
+    var breiteSel = document.createElement('select');
+    breiteSel.className = 'finp';
+    DV_BILD_BREITEN.forEach(function (o) {
+      var op = document.createElement('option');
+      op.value = o[0]; op.textContent = o[1];
+      if (String(b.breite || '') === o[0]) op.selected = true;
+      breiteSel.appendChild(op);
+    });
+
+    var ausrichtungSel = document.createElement('select');
+    ausrichtungSel.className = 'finp';
+    DV_BILD_AUSRICHTUNGEN.forEach(function (o) {
+      var op = document.createElement('option');
+      op.value = o[0]; op.textContent = o[1];
+      if (b.ausrichtung === o[0]) op.selected = true;
+      ausrichtungSel.appendChild(op);
+    });
+
+    var uebernehmen = function () {
+      dvBildUebernehmen(b.src, breiteSel.value ? parseInt(breiteSel.value, 10) : null, ausrichtungSel.value);
+    };
+    breiteSel.onchange = uebernehmen;
+    ausrichtungSel.onchange = uebernehmen;
+
+    regler.appendChild(breiteSel);
+    regler.appendChild(ausrichtungSel);
+    mitte.appendChild(regler);
+    row.appendChild(mitte);
+
+    var delBtn = btn('✕', 'btn btn-danger btn-xs');
+    delBtn.title = 'Bild entfernen';
+    delBtn.onclick = function () { dvBildAusDokumentEntfernen(b.src); };
+    row.appendChild(delBtn);
+
+    wrap.appendChild(row);
+  });
+}
+
 // ── Reiter umschalten ────────────────────────────────────────────
 function dvTab(name) {
   DV.tab = name;
@@ -313,6 +421,11 @@ function dvRenderApp() {
   };
   edHdr.appendChild(demoBtn);
   inhalt.appendChild(edHdr);
+
+  var bilderPanel = mk('div', 'dv-bilder-panel');
+  bilderPanel.id = 'dv-bilder-panel';
+  bilderPanel.style.display = 'none';
+  inhalt.appendChild(bilderPanel);
 
   var ta = document.createElement('textarea');
   ta.id = 'dv-ta';

@@ -100,11 +100,11 @@ function docParse(src) {
         ziel().push({ t: 'linien', anzahl: parseInt(opt.n || opt.anzahl || fence[2].trim(), 10) || 5 });
         continue;
       }
-      if (name === 'raster' || name === 'kaestchen' || name === 'zeichnung' || name === 'platz' || name === 'leerraum') {
-        // platz/leerraum/zeichnung: reine Leerfläche ohne eigenes Gitter –
-        // gedacht für Seiten mit Kästchenpapier-Hintergrund, wo die Zeilen
-        // schon da sind und ein zweites Gitter nur stören würde.
-        var ohneGitter = name === 'zeichnung' || name === 'platz' || name === 'leerraum';
+      if (name === 'raster' || name === 'kaestchen' || name === 'zeichnung' || name === 'platz' || name === 'leerraum' || name === 'leerzeile' || name === 'leerzeilen') {
+        // platz/leerraum/leerzeile(n)/zeichnung: reine Leerfläche ohne
+        // eigenes Gitter – gedacht für Seiten mit Kästchenpapier-Hintergrund,
+        // wo die Zeilen schon da sind und ein zweites Gitter nur stören würde.
+        var ohneGitter = name !== 'raster' && name !== 'kaestchen';
         ziel().push({ t: 'raster', hoehe: parseInt(opt.h || opt.hoehe || 60, 10), gitter: !ohneGitter });
         continue;
       }

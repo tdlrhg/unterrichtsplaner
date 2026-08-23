@@ -86,6 +86,7 @@ var DV_FELDER = [
   { pfad: 'punkteSpalte.breite',     label: 'Breite',                typ: 'zahl', min: 10, max: 40, schritt: 1, einheit: 'mm', halb: true, von: 'punkteSpalte.zeigen' },
   { pfad: 'punkteSpalte.trennlinie', label: 'Trennlinie',            typ: 'check', halb: true, von: 'punkteSpalte.zeigen' },
   { pfad: 'punkteSpalte.gesamtbox',  label: 'Summen-Kasten je Aufgabe', typ: 'check', halb: true, von: 'punkteSpalte.zeigen' },
+  { pfad: 'punkteSpalte.schriftgroesse', label: 'Schriftgröße Zellen', typ: 'zahl', min: 0.7, max: 2.5, schritt: 0.1, einheit: '×', halb: true, von: 'punkteSpalte.zeigen' },
 
   { gruppe: 'Große Seitenzahl', hinweis: 'Statt oder zusätzlich zur Fußzeile mit Seitenzahl' },
   { pfad: 'seitenzahlGross.zeigen',  label: 'Große Seitenzahl anzeigen', typ: 'check', halb: true },

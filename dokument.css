@@ -106,8 +106,8 @@
 .dv-punkte-trennlinie { border-left: .4pt solid #b9b2a7; }
 .dv-punkte-zelle {
   position: absolute; left: 0; right: 0; overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 8.5pt; color: #57534e;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 1mm; font-size: var(--dv-punkte-schriftgroesse); color: #57534e;
 }
 .dv-punkte-gesamt {
   position: absolute; left: 2mm; right: 0;

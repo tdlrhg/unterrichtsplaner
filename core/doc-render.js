@@ -183,7 +183,7 @@ function dvTitelblock(doc, v) {
   var zeile1 = mk('div', 'dv-tb-zeile1');
   var links = mk('div', 'dv-tb-links');
   links.appendChild(tx('div', 'dv-tb-titel', m.titel || 'Ohne Titel'));
-  var sub = kompaktesLabel ? (m.fach || '') : [m.fach, m.klasse].filter(Boolean).join(' · ');
+  var sub = kompaktesLabel ? '' : (m.klasse || '');
   if (sub) links.appendChild(tx('div', 'dv-tb-sub', sub));
 
   var gp = dvGesamtpunkte(doc.blocks);

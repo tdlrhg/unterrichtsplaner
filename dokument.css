@@ -87,9 +87,13 @@
 }
 .dv-content { position: absolute; left: var(--dv-rand-l); right: var(--dv-rand-r); overflow: hidden; text-align: var(--dv-align); }
 .dv-content.dv-kaestchen {
+  /* 1px statt der vormaligen 0.5pt: eine Subpixel-Linienstärke verblasst bei
+     vielen Wiederholungen (repeating linear-gradient über viele Kacheln)
+     unregelmäßig bis zur Unsichtbarkeit – das Gitter "endete" dadurch
+     optisch mitten auf der Seite statt bis zum Seitenrand zu reichen. */
   background-image:
-    linear-gradient(to right, #d7d0c4 .5pt, transparent .5pt),
-    linear-gradient(to bottom, #d7d0c4 .5pt, transparent .5pt);
+    linear-gradient(to right, #d7d0c4 1px, transparent 1px),
+    linear-gradient(to bottom, #d7d0c4 1px, transparent 1px);
   background-size: var(--dv-kaestchen-groesse) var(--dv-kaestchen-groesse);
 }
 

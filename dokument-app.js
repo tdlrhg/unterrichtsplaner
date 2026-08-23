@@ -160,7 +160,13 @@ function dvDateiLaden(file) {
 // Bettet das Bild als Data-URL direkt im Dokumenttext ein – kein
 // Cloud-Upload nötig, funktioniert mit jeder lokalen Datei.
 async function dvBildEinfuegen(file, cursorPos) {
-  if (!file || !mediaIsImage(file.name)) { alert('Bitte eine Bilddatei wählen (jpg, png, gif, webp).'); return; }
+  // Dem vom Browser erkannten MIME-Typ vertrauen, wenn vorhanden – deckt
+  // z.B. HEIC (iPhone-Fotos) und andere Formate ab, die nicht in der
+  // festen Endungsliste von mediaIsImage() stehen. Nur wenn der Browser
+  // gar keinen Typ liefert (manche Drag&Drop-Quellen), auf die Endung
+  // zurückfallen.
+  var istBild = file && (file.type ? file.type.indexOf('image/') === 0 : mediaIsImage(file.name));
+  if (!istBild) { alert('„' + (file ? file.name : '') + '" wird nicht als Bild erkannt. Unterstützt werden z.B. jpg, png, gif, webp, heic.'); return; }
   var ta = document.getElementById('dv-ta');
   // Cursor-Position nur vertrauen, wenn sie explizit übergeben wurde (Drag&Drop)
   // oder das Textfeld gerade wirklich fokussiert ist. Sonst (z.B. Klick auf den
@@ -172,9 +178,23 @@ async function dvBildEinfuegen(file, cursorPos) {
   else if (ta && document.activeElement === ta) pos = ta.selectionStart;
   else pos = DV.quelle.length;
 
+  var istSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name);
   var dataUrl;
   try {
-    dataUrl = await resizeImageFile(file);
+    // SVG ist Vektorgrafik – direkt einlesen statt rastern, sonst geht
+    // die Schärfe verloren (wichtig z.B. bei GeoGebra-Exporten).
+    dataUrl = istSvg ? await new Promise(function (resolve, reject) {
+      var r = new FileReader();
+      r.onload = function () {
+        // Data-URL selbst bauen (statt readAsDataURL): manche Systeme
+        // melden für .svg keinen oder einen falschen MIME-Typ, dann
+        // würde der Browser das eingebettete Bild nicht anzeigen.
+        var b64 = btoa(unescape(encodeURIComponent(String(r.result))));
+        resolve('data:image/svg+xml;base64,' + b64);
+      };
+      r.onerror = function () { reject(new Error('Datei konnte nicht gelesen werden.')); };
+      r.readAsText(file);
+    }) : await resizeImageFile(file);
   } catch (e) {
     alert('Bild konnte nicht geladen werden: ' + e.message);
     return;
@@ -298,7 +318,8 @@ function dvRenderApp() {
     if (!e.dataTransfer.files.length) return;
     e.preventDefault();
     var datei = e.dataTransfer.files[0];
-    if (mediaIsImage(datei.name)) dvBildEinfuegen(datei, ta.selectionStart);
+    var istBild = datei.type ? datei.type.indexOf('image/') === 0 : mediaIsImage(datei.name);
+    if (istBild) dvBildEinfuegen(datei, ta.selectionStart);
     else dvDateiLaden(datei);
   });
   inhalt.appendChild(ta);

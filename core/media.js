@@ -7,7 +7,7 @@ const MAT_ANALYSIS_LONG_EDGE = 1568;
 
 // ── Hilfsfunktionen ───────────────────────────────────────────────
 
-const _IMG_EXTS = new Set(['jpg','jpeg','png','gif','webp','bmp','tif','tiff']);
+const _IMG_EXTS = new Set(['jpg','jpeg','png','gif','webp','bmp','tif','tiff','svg','heic','heif']);
 const _MIME_MAP = {
   png:'image/png', gif:'image/gif', webp:'image/webp', bmp:'image/bmp',
   jpg:'image/jpeg', jpeg:'image/jpeg', tif:'image/jpeg', tiff:'image/jpeg',

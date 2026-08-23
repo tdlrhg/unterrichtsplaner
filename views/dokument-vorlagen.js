@@ -31,10 +31,12 @@ var DV_FELDER = [
   { pfad: 'typo.absatzabstand', label: 'Absatzabstand', typ: 'zahl', min: 0, max: 12, schritt: 0.2, einheit: 'mm', halb: true },
   { pfad: 'typo.ausrichtung',   label: 'Ausrichtung',   typ: 'select', halb: true, optionen: [['left', 'Linksbündig'], ['justify', 'Blocksatz']] },
 
-  { gruppe: 'Titelblock' },
+  { gruppe: 'Titelblock', hinweis: 'Platzhalter: {{titel}} {{fach}} {{klasse}} {{datum}} {{zeit}}. Erscheint nur einmal, am Dokumentanfang.' },
   { pfad: 'titelblock.zeigen',     label: 'Titelblock anzeigen', typ: 'check' },
   { pfad: 'titelblock.variante',   label: 'Darstellung', typ: 'select', optionen: [['kasten', 'Umrandeter Kasten'], ['linie', 'Nur Trennlinie']] },
   { pfad: 'titelblock.namensfeld', label: 'Zeile für Name / Punkte / Note', typ: 'check' },
+  { pfad: 'titelblock.hinweistext', label: 'Hinweistext', typ: 'mehrzeilig' },
+  { pfad: 'titelblock.vielErfolg', label: 'Schräger Zusatztext (leer = aus)', typ: 'text' },
 
   { gruppe: 'Kopfzeile', hinweis: 'Platzhalter: {{titel}} {{fach}} {{klasse}} {{datum}} {{zeit}} {{seite}} {{seiten}}' },
   { pfad: 'kopf.zeigen',  label: 'Kopfzeile anzeigen', typ: 'check', halb: true },
@@ -140,6 +142,15 @@ function dvBauFeld(feld, v, gesperrt) {
     };
     fwrap.appendChild(ci); fwrap.appendChild(ct);
     return dvFeldHuelle(feld.label, fwrap, feld.halb);
+  }
+
+  if (feld.typ === 'mehrzeilig') {
+    var ta = document.createElement('textarea');
+    ta.className = 'finp'; ta.rows = 4; ta.style.resize = 'vertical';
+    ta.value = wert == null ? '' : wert;
+    ta.disabled = gesperrt;
+    ta.oninput = function () { dvFeldGeaendert(feld.pfad, ta.value); };
+    return dvFeldHuelle(feld.label, ta, feld.halb);
   }
 
   // Text

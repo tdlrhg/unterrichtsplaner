@@ -19,7 +19,7 @@ var DV_VORLAGEN = [
       font: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
       groesse: 11, zeilenabstand: 1.45, absatzabstand: 3.2, ausrichtung: 'left'
     },
-    titelblock: { zeigen: true, variante: 'kasten', namensfeld: true },
+    titelblock: { zeigen: true, variante: 'kasten', namensfeld: true, hinweistext: '', vielErfolg: '' },
     kopf: { zeigen: true, abSeite: 2, links: '{{fach}} · {{klasse}}', mitte: '', rechts: '{{titel}}', linie: true },
     fuss: { zeigen: true, abSeite: 1, links: 'Name: ________________________', mitte: '', rechts: 'Seite {{seite}} von {{seiten}}', linie: true },
     aufgabe: { label: 'Aufgabe {{nr}}', punkte: 'kasten', abstand: 7, trennlinie: false, farbe: '#1c1917' },
@@ -36,7 +36,7 @@ var DV_VORLAGEN = [
       font: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
       groesse: 12, zeilenabstand: 1.55, absatzabstand: 3.6, ausrichtung: 'left'
     },
-    titelblock: { zeigen: true, variante: 'linie', namensfeld: false },
+    titelblock: { zeigen: true, variante: 'linie', namensfeld: false, hinweistext: '', vielErfolg: '' },
     kopf: { zeigen: false, abSeite: 2, links: '', mitte: '', rechts: '', linie: false },
     fuss: { zeigen: true, abSeite: 2, links: '{{titel}}', mitte: '', rechts: '{{seite}}', linie: false },
     aufgabe: { label: '{{nr}}', punkte: 'keine', abstand: 9, trennlinie: false, farbe: '#be185d' },

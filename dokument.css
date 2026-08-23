@@ -101,7 +101,7 @@
 .dv-band-rechts { flex: 1; text-align: right; }
 
 /* Titelblock */
-.dv-titelblock { margin-bottom: 6mm; text-align: left; }
+.dv-titelblock { margin-bottom: 6mm; text-align: left; position: relative; }
 .dv-titelblock-kasten { border: .8pt solid #57534e; padding: 3mm 4mm; }
 .dv-titelblock-linie { border-bottom: 1.6pt solid var(--dv-auf-farbe); padding-bottom: 2mm; }
 .dv-tb-zeile1 { display: flex; align-items: flex-start; gap: 8mm; }
@@ -114,6 +114,14 @@
 .dv-tb-nf-label { color: #57534e; white-space: nowrap; }
 .dv-tb-nf-linie { flex: 1; border-bottom: .6pt solid #44403c; height: 4mm; }
 .dv-tb-nf-kurz { width: 18mm; border-bottom: .6pt solid #44403c; height: 4mm; }
+.dv-tb-hinweis { font-size: .82em; line-height: 1.55; color: #292524; margin-top: 4mm; max-width: 72%; }
+.dv-tb-schraeg {
+  position: absolute; top: 2mm; right: 4mm; max-width: 26%;
+  font-size: 1.5em; font-weight: 700; color: #a8a29e;
+  font-family: 'Segoe Script', 'Brush Script MT', cursive;
+  transform: rotate(-9deg); text-align: center; line-height: 1.1;
+  pointer-events: none;
+}
 
 /* Aufgaben */
 .dv-aufgabe { margin-bottom: var(--dv-auf-abstand); }

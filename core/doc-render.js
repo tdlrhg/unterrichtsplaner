@@ -193,6 +193,16 @@ function dvTitelblock(doc, v) {
     tb.appendChild(nf);
   }
 
+  if (v.titelblock.hinweistext) {
+    var hinweis = mk('div', 'dv-tb-hinweis');
+    hinweis.innerHTML = docInline(dvFuellen(v.titelblock.hinweistext, werte));
+    tb.appendChild(hinweis);
+  }
+
+  if (v.titelblock.vielErfolg) {
+    tb.appendChild(tx('div', 'dv-tb-schraeg', v.titelblock.vielErfolg));
+  }
+
   return tb;
 }
 

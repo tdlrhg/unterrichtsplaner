@@ -131,6 +131,7 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
     var nr = seiten.length + 1;
     var seite = mk('div', 'dv-page');
     container.appendChild(seite); // sofort anhängen: offsetHeight-Messungen unten brauchen ein verbundenes Element
+    if (v.seite.rahmen) seite.appendChild(mk('div', 'dv-seiten-rahmen'));
     var kopfDa = v.kopf.zeigen && nr >= (v.kopf.abSeite || 1);
     var fussDa = v.fuss.zeigen && nr >= (v.fuss.abSeite || 1);
     if (kopfDa) seite.appendChild(dvBand('kopf', v.kopf));

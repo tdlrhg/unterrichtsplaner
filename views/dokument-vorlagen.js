@@ -22,7 +22,11 @@ var DV_FELDER = [
   { pfad: 'seite.rand.links',  label: 'Rand links',  typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', halb: true },
   { pfad: 'seite.rand.rechts', label: 'Rand rechts', typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', halb: true },
   { pfad: 'seite.kaestchen',       label: 'Kästchenpapier als Hintergrund', typ: 'check', halb: true },
-  { pfad: 'seite.kaestchenGroesse', label: 'Kästchengröße', typ: 'zahl', min: 2, max: 15, schritt: 0.5, einheit: 'mm', halb: true },
+  { pfad: 'seite.kaestchenGroesse', label: 'Kästchengröße', typ: 'zahl', min: 2, max: 15, schritt: 0.5, einheit: 'mm', halb: true, von: 'seite.kaestchen' },
+  { pfad: 'seite.rahmen',        label: 'Rahmen um die Seite', typ: 'check', halb: true },
+  { pfad: 'seite.rahmenAbstand', label: 'Abstand vom Rand', typ: 'zahl', min: 2, max: 20, schritt: 0.5, einheit: 'mm', halb: true, von: 'seite.rahmen' },
+  { pfad: 'seite.rahmenStaerke', label: 'Linienstärke', typ: 'zahl', min: 0.5, max: 5, schritt: 0.25, einheit: 'pt', halb: true, von: 'seite.rahmen' },
+  { pfad: 'seite.rahmenFarbe',   label: 'Farbe', typ: 'farbe', halb: true, von: 'seite.rahmen' },
 
   { gruppe: 'Schrift' },
   { pfad: 'typo.font', label: 'Schriftart', typ: 'select', optionen: DV_SCHRIFTEN },
@@ -33,27 +37,27 @@ var DV_FELDER = [
 
   { gruppe: 'Titelblock', hinweis: 'Platzhalter: {{titel}} {{fach}} {{klasse}} {{datum}} {{zeit}}. Erscheint nur einmal, am Dokumentanfang.' },
   { pfad: 'titelblock.zeigen',     label: 'Titelblock anzeigen', typ: 'check' },
-  { pfad: 'titelblock.variante',   label: 'Darstellung', typ: 'select', optionen: [['kasten', 'Umrandeter Kasten'], ['linie', 'Nur Trennlinie']] },
-  { pfad: 'titelblock.namensfeld', label: 'Namensfeld anzeigen', typ: 'check', halb: true },
-  { pfad: 'titelblock.namensfeldStil', label: 'Namensfeld-Stil', typ: 'select', halb: true, optionen: [['zeile', 'Zeile: Name / Punkte / Note'], ['label', 'Kompaktes Label oben rechts']] },
-  { pfad: 'titelblock.hinweistext', label: 'Hinweistext', typ: 'mehrzeilig' },
-  { pfad: 'titelblock.vielErfolg', label: 'Schräger Zusatztext (leer = aus)', typ: 'text' },
+  { pfad: 'titelblock.variante',   label: 'Darstellung', typ: 'select', optionen: [['kasten', 'Umrandeter Kasten'], ['linie', 'Nur Trennlinie']], von: 'titelblock.zeigen' },
+  { pfad: 'titelblock.namensfeld', label: 'Namensfeld anzeigen', typ: 'check', halb: true, von: 'titelblock.zeigen' },
+  { pfad: 'titelblock.namensfeldStil', label: 'Namensfeld-Stil', typ: 'select', halb: true, optionen: [['zeile', 'Zeile: Name / Punkte / Note'], ['label', 'Kompaktes Label oben rechts']], von: 'titelblock.namensfeld' },
+  { pfad: 'titelblock.hinweistext', label: 'Hinweistext', typ: 'mehrzeilig', von: 'titelblock.zeigen' },
+  { pfad: 'titelblock.vielErfolg', label: 'Schräger Zusatztext (leer = aus)', typ: 'text', von: 'titelblock.zeigen' },
 
   { gruppe: 'Kopfzeile', hinweis: 'Platzhalter: {{titel}} {{fach}} {{klasse}} {{datum}} {{zeit}} {{seite}} {{seiten}}' },
   { pfad: 'kopf.zeigen',  label: 'Kopfzeile anzeigen', typ: 'check', halb: true },
-  { pfad: 'kopf.abSeite', label: 'Erst ab Seite',      typ: 'zahl', min: 1, max: 9, schritt: 1, einheit: '', halb: true },
-  { pfad: 'kopf.links',   label: 'Links',  typ: 'text' },
-  { pfad: 'kopf.mitte',   label: 'Mitte',  typ: 'text' },
-  { pfad: 'kopf.rechts',  label: 'Rechts', typ: 'text' },
-  { pfad: 'kopf.linie',   label: 'Trennlinie darunter', typ: 'check' },
+  { pfad: 'kopf.abSeite', label: 'Erst ab Seite',      typ: 'zahl', min: 1, max: 9, schritt: 1, einheit: '', halb: true, von: 'kopf.zeigen' },
+  { pfad: 'kopf.links',   label: 'Links',  typ: 'text', von: 'kopf.zeigen' },
+  { pfad: 'kopf.mitte',   label: 'Mitte',  typ: 'text', von: 'kopf.zeigen' },
+  { pfad: 'kopf.rechts',  label: 'Rechts', typ: 'text', von: 'kopf.zeigen' },
+  { pfad: 'kopf.linie',   label: 'Trennlinie darunter', typ: 'check', von: 'kopf.zeigen' },
 
   { gruppe: 'Fußzeile' },
   { pfad: 'fuss.zeigen',  label: 'Fußzeile anzeigen', typ: 'check', halb: true },
-  { pfad: 'fuss.abSeite', label: 'Erst ab Seite',     typ: 'zahl', min: 1, max: 9, schritt: 1, einheit: '', halb: true },
-  { pfad: 'fuss.links',   label: 'Links',  typ: 'text' },
-  { pfad: 'fuss.mitte',   label: 'Mitte',  typ: 'text' },
-  { pfad: 'fuss.rechts',  label: 'Rechts', typ: 'text' },
-  { pfad: 'fuss.linie',   label: 'Trennlinie darüber', typ: 'check' },
+  { pfad: 'fuss.abSeite', label: 'Erst ab Seite',     typ: 'zahl', min: 1, max: 9, schritt: 1, einheit: '', halb: true, von: 'fuss.zeigen' },
+  { pfad: 'fuss.links',   label: 'Links',  typ: 'text', von: 'fuss.zeigen' },
+  { pfad: 'fuss.mitte',   label: 'Mitte',  typ: 'text', von: 'fuss.zeigen' },
+  { pfad: 'fuss.rechts',  label: 'Rechts', typ: 'text', von: 'fuss.zeigen' },
+  { pfad: 'fuss.linie',   label: 'Trennlinie darüber', typ: 'check', von: 'fuss.zeigen' },
 
   { gruppe: 'Aufgaben', hinweis: 'Platzhalter in der Beschriftung: {{nr}}' },
   { pfad: 'aufgabe.label',      label: 'Beschriftung', typ: 'text' },
@@ -72,15 +76,15 @@ var DV_FELDER = [
 
   { gruppe: 'Punkte-Spalte', hinweis: 'Durchlaufende Spalte am rechten Rand statt Punkte im Text' },
   { pfad: 'punkteSpalte.zeigen',     label: 'Punkte-Spalte anzeigen', typ: 'check', halb: true },
-  { pfad: 'punkteSpalte.breite',     label: 'Breite',                typ: 'zahl', min: 10, max: 40, schritt: 1, einheit: 'mm', halb: true },
-  { pfad: 'punkteSpalte.trennlinie', label: 'Trennlinie',            typ: 'check', halb: true },
-  { pfad: 'punkteSpalte.gesamtbox',  label: 'Summen-Kasten je Aufgabe', typ: 'check', halb: true },
+  { pfad: 'punkteSpalte.breite',     label: 'Breite',                typ: 'zahl', min: 10, max: 40, schritt: 1, einheit: 'mm', halb: true, von: 'punkteSpalte.zeigen' },
+  { pfad: 'punkteSpalte.trennlinie', label: 'Trennlinie',            typ: 'check', halb: true, von: 'punkteSpalte.zeigen' },
+  { pfad: 'punkteSpalte.gesamtbox',  label: 'Summen-Kasten je Aufgabe', typ: 'check', halb: true, von: 'punkteSpalte.zeigen' },
 
   { gruppe: 'Große Seitenzahl', hinweis: 'Statt oder zusätzlich zur Fußzeile mit Seitenzahl' },
   { pfad: 'seitenzahlGross.zeigen',  label: 'Große Seitenzahl anzeigen', typ: 'check', halb: true },
-  { pfad: 'seitenzahlGross.abSeite', label: 'Erst ab Seite', typ: 'zahl', min: 1, max: 9, schritt: 1, einheit: '', halb: true },
-  { pfad: 'seitenzahlGross.groesse', label: 'Größe', typ: 'zahl', min: 14, max: 80, schritt: 1, einheit: 'pt', halb: true },
-  { pfad: 'seitenzahlGross.farbe',   label: 'Farbe', typ: 'farbe', halb: true }
+  { pfad: 'seitenzahlGross.abSeite', label: 'Erst ab Seite', typ: 'zahl', min: 1, max: 9, schritt: 1, einheit: '', halb: true, von: 'seitenzahlGross.zeigen' },
+  { pfad: 'seitenzahlGross.groesse', label: 'Größe', typ: 'zahl', min: 14, max: 80, schritt: 1, einheit: 'pt', halb: true, von: 'seitenzahlGross.zeigen' },
+  { pfad: 'seitenzahlGross.farbe',   label: 'Farbe', typ: 'farbe', halb: true, von: 'seitenzahlGross.zeigen' }
 ];
 
 // ── Formular-Bausteine ───────────────────────────────────────────
@@ -98,7 +102,10 @@ function dvBauFeld(feld, v, gesperrt) {
     var lbl = mk('label', 'dv-check');
     var cb = document.createElement('input');
     cb.type = 'checkbox'; cb.checked = !!wert; cb.disabled = gesperrt;
-    cb.onchange = function () { dvFeldGeaendert(feld.pfad, cb.checked); };
+    cb.onchange = function () {
+      dvFeldGeaendert(feld.pfad, cb.checked);
+      dvVorlagenPanelNeu(); // abhängige Felder (von: feld.pfad) sofort ein-/ausblenden
+    };
     lbl.appendChild(cb);
     lbl.appendChild(tx('span', '', feld.label));
     var fg = mk('div', 'dv-fg' + (feld.halb ? ' halb' : ''));
@@ -274,6 +281,7 @@ function dvVorlagenPanel() {
       return;
     }
     if (!gruppe) return;
+    if (feld.von && !dvHole(v, feld.von)) return; // Hauptschalter aus → Feld ausblenden
     gruppe.__felder.appendChild(dvBauFeld(feld, v, standard));
   });
 

@@ -75,6 +75,14 @@
   background-size: var(--dv-kaestchen-groesse) var(--dv-kaestchen-groesse);
 }
 
+.dv-seiten-rahmen {
+  position: absolute;
+  top: var(--dv-rahmen-abstand); left: var(--dv-rahmen-abstand);
+  right: var(--dv-rahmen-abstand); bottom: var(--dv-rahmen-abstand);
+  border: var(--dv-rahmen-staerke) solid var(--dv-rahmen-farbe);
+  pointer-events: none;
+}
+
 /* Punkte-Spalte */
 .dv-punkte-spalte { position: absolute; right: var(--dv-rand-r); width: var(--dv-punkte-breite); }
 .dv-punkte-trennlinie { border-left: .4pt solid #b9b2a7; }

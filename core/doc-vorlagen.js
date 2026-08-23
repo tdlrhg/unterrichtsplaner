@@ -14,7 +14,7 @@ var DV_VORLAGEN = [
     id: 'ka-klassisch',
     name: 'Klassenarbeit klassisch',
     beschreibung: 'Kopfzeile mit Namensfeld, Punktekästchen rechts, Fußzeile mit Seitenzahl.',
-    seite: { format: 'A4', rand: { oben: 16, unten: 15, links: 22, rechts: 18 }, kaestchen: false, kaestchenGroesse: 5 },
+    seite: { format: 'A4', rand: { oben: 16, unten: 15, links: 22, rechts: 18 }, kaestchen: false, kaestchenGroesse: 5, rahmen: false, rahmenAbstand: 8, rahmenStaerke: 1.2, rahmenFarbe: '#1c1917' },
     typo: {
       font: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
       groesse: 11, zeilenabstand: 1.45, absatzabstand: 3.2, ausrichtung: 'left'
@@ -32,7 +32,7 @@ var DV_VORLAGEN = [
     id: 'ab-schlicht',
     name: 'Arbeitsblatt schlicht',
     beschreibung: 'Enge Ränder, Aufgaben ohne Punkte, große Schrift – für Arbeitsblätter.',
-    seite: { format: 'A4', rand: { oben: 14, unten: 14, links: 18, rechts: 16 }, kaestchen: false, kaestchenGroesse: 5 },
+    seite: { format: 'A4', rand: { oben: 14, unten: 14, links: 18, rechts: 16 }, kaestchen: false, kaestchenGroesse: 5, rahmen: false, rahmenAbstand: 8, rahmenStaerke: 1.2, rahmenFarbe: '#1c1917' },
     typo: {
       font: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
       groesse: 12, zeilenabstand: 1.55, absatzabstand: 3.6, ausrichtung: 'left'
@@ -66,6 +66,9 @@ function dvApplyVorlage(el, v) {
   s.setProperty('--dv-rand-l', r.links + 'mm');
   s.setProperty('--dv-rand-r', r.rechts + 'mm');
   s.setProperty('--dv-kaestchen-groesse', (v.seite.kaestchenGroesse || 5) + 'mm');
+  s.setProperty('--dv-rahmen-abstand', (v.seite.rahmenAbstand || 8) + 'mm');
+  s.setProperty('--dv-rahmen-staerke', (v.seite.rahmenStaerke || 1.2) + 'pt');
+  s.setProperty('--dv-rahmen-farbe', v.seite.rahmenFarbe || '#1c1917');
   s.setProperty('--dv-punkte-breite', ((v.punkteSpalte && v.punkteSpalte.breite) || 16) + 'mm');
   s.setProperty('--dv-sz-gross-groesse', ((v.seitenzahlGross && v.seitenzahlGross.groesse) || 40) + 'pt');
   s.setProperty('--dv-sz-gross-farbe', (v.seitenzahlGross && v.seitenzahlGross.farbe) || '#d4cec2');

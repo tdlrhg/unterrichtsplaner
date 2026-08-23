@@ -34,6 +34,7 @@ function buildAppNav(current) {
     { key: 'up', label: '📐 Unterrichtsplaner', href: 'index.html' },
     { key: 'pr', label: '📋 Prüfungsplaner',    href: 'pruefung.html' },
     { key: 'db', label: '📚 Datenbank',          href: 'datenbank.html' },
+    { key: 'dok', label: '📄 Dokumente',        href: 'dokument.html' },
   ].forEach(function(item) {
     if (item.key === current) {
       nav.appendChild(tx('span', 'topbar-nav-current', item.label));

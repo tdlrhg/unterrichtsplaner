@@ -1,0 +1,373 @@
+// ── Dokumentgenerator: Seiten-App ────────────────────────────────
+// Werkstatt links (Quelltext), Vorschau rechts. Die Vorschau ist
+// bereits das Druckergebnis – gedruckt wird exakt dieses DOM.
+
+var DV = {
+  tab: 'inhalt',
+  quelle: '',
+  vorlageId: 'ka-klassisch',
+  zoom: 0.72,
+  seiten: 0,
+  warnungen: [],
+  version: null
+};
+
+var DV_PX_PRO_MM = 96 / 25.4;
+
+var DV_DEMO = `---
+titel: Klassenarbeit Nr. 2 – Flächeninhalte
+fach: Mathematik
+klasse: 8b
+datum: 2026-09-14
+zeit: 45
+---
+
+## Aufgabe 1: Grundlagen [6P]
+Kreuze an, welche Formel zum jeweiligen Körper gehört.
+
+| Figur | Formel |
+|---|---|
+| Rechteck | A = a · b |
+| Dreieck | A = ½ · g · h |
+| Parallelogramm | A = g · h |
+
+### a) Erkläre in einem Satz, warum im Dreieck der Faktor ½ steht. [2P]
+::: linien n=3
+
+### b) Zeichne in das Parallelogramm die Höhe h ein. [1P]
+::: raster h=45
+
+## Aufgabe 2: Berechnungen [8P]
+Ein Parallelogramm hat die Grundseite g = 7,5 cm und die Höhe h = 4 cm.
+
+### a) Berechne den Flächeninhalt. [3P]
+::: linien n=4
+
+### b) Die Grundseite wird verdoppelt. Begründe, wie sich der Flächeninhalt verändert. [3P]
+::: linien n=5
+
+### c) Gib ein Beispiel für ein Parallelogramm mit demselben Flächeninhalt, aber anderen Maßen. [2P]
+::: linien n=3
+
+::: hinweis titel="Hinweis"
+Alle Ergebnisse müssen mit Rechenweg und Einheit angegeben werden.
+:::
+
+## Aufgabe 3: Anwendung [10P]
+Ein Grundstück hat die unten skizzierte Form. Es soll neu eingezäunt und mit Rasen bepflanzt werden.
+
+- Der Zaun kostet 24 € pro laufendem Meter.
+- Der Rasen kostet 8 € pro Quadratmeter.
+
+### a) Berechne den Flächeninhalt des Grundstücks. Zerlege es dazu in Teilflächen. [5P]
+::: linien n=8
+
+### b) Berechne die Gesamtkosten. [3P]
+::: linien n=5
+
+### c) Beurteile, ob eine Zerlegung in Dreiecke hier sinnvoller gewesen wäre. [2P]
+::: linien n=4
+`;
+
+// ── Vorschau neu aufbauen ────────────────────────────────────────
+function dvUpdate() {
+  var v = dvVorlage(DV.vorlageId);
+  var doc = docParse(DV.quelle);
+  var nodes = docRender(doc, v);
+  var pages = document.getElementById('dv-pages');
+  if (!pages) return;
+
+  var seiten = docPaginate(pages, nodes, v, doc.meta);
+  pages.style.setProperty('--dv-zoom', String(DV.zoom));
+
+  DV.seiten = seiten.length;
+  DV.warnungen = doc.warnungen;
+
+  // @page passend zum Format der Vorlage
+  var fmt = DV_FORMATE[v.seite.format] || DV_FORMATE.A4;
+  var st = document.getElementById('dv-print-rule');
+  if (st) st.textContent = '@page { size: ' + fmt.breite + 'mm ' + fmt.hoehe + 'mm; margin: 0; }';
+
+  dvStatus(doc, v);
+}
+
+function dvStatus(doc, v) {
+  var el = document.getElementById('dv-status');
+  if (!el) return;
+  el.innerHTML = '';
+  var aufgaben = doc.blocks.filter(function (b) { return b.t === 'aufgabe'; }).length;
+  var gp = dvGesamtpunkte(doc.blocks);
+  var teile = [
+    DV.seiten + (DV.seiten === 1 ? ' Seite' : ' Seiten'),
+    aufgaben + (aufgaben === 1 ? ' Aufgabe' : ' Aufgaben')
+  ];
+  if (gp != null) teile.push(dvZahl(gp) + ' Punkte');
+  el.appendChild(tx('span', '', teile.join(' · ')));
+  if (DV.warnungen.length) {
+    el.appendChild(tx('span', 'dv-warn', '⚠ ' + DV.warnungen[0]));
+  }
+}
+
+var _dvTimer = null;
+function dvUpdateSpaeter() {
+  clearTimeout(_dvTimer);
+  _dvTimer = setTimeout(function () {
+    localStorage.setItem('dv_quelle', DV.quelle);
+    dvUpdate();
+  }, 250);
+}
+
+// ── Zoom ─────────────────────────────────────────────────────────
+function dvSetZoom(z) {
+  DV.zoom = Math.min(1.5, Math.max(0.25, z));
+  localStorage.setItem('dv_zoom', String(DV.zoom));
+  var pages = document.getElementById('dv-pages');
+  if (pages) pages.style.setProperty('--dv-zoom', String(DV.zoom));
+  var lbl = document.getElementById('dv-zoom-lbl');
+  if (lbl) lbl.textContent = Math.round(DV.zoom * 100) + ' %';
+}
+
+function dvZoomAnpassen() {
+  var pv = document.querySelector('.dv-preview');
+  var v = dvVorlage(DV.vorlageId);
+  var fmt = DV_FORMATE[v.seite.format] || DV_FORMATE.A4;
+  if (!pv) return;
+  dvSetZoom((pv.clientWidth - 60) / (fmt.breite * DV_PX_PRO_MM));
+}
+
+// ── Datei importieren ────────────────────────────────────────────
+function dvDateiLaden(file) {
+  if (!file) return;
+  var r = new FileReader();
+  r.onload = function () {
+    DV.quelle = String(r.result || '');
+    var ta = document.getElementById('dv-ta');
+    if (ta) ta.value = DV.quelle;
+    localStorage.setItem('dv_quelle', DV.quelle);
+    dvUpdate();
+  };
+  r.readAsText(file, 'utf-8');
+}
+
+// ── Reiter umschalten ────────────────────────────────────────────
+function dvTab(name) {
+  DV.tab = name;
+  var ip = document.getElementById('dv-inhalt-pane');
+  var vp = document.getElementById('dv-vorlage-pane');
+  if (ip) ip.style.display = name === 'inhalt' ? 'flex' : 'none';
+  if (vp) vp.style.display = name === 'vorlage' ? 'block' : 'none';
+  document.querySelectorAll('.dv-tab').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-tab') === name);
+  });
+}
+
+// ── Oberfläche ───────────────────────────────────────────────────
+function dvRenderApp() {
+  var root = document.getElementById('root');
+  root.innerHTML = '';
+
+  // Topbar
+  var bar = mk('div', 'topbar');
+  bar.appendChild(buildAppNav('dok'));
+  var right = mk('div', 'topbar-right');
+  if (DV.version) {
+    var d = new Date(DV.version);
+    var vs = tx('span', 'topbar-version', d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' ✓');
+    vs.style.cursor = 'pointer';
+    vs.onclick = function () { location.reload(true); };
+    right.appendChild(vs);
+  }
+  bar.appendChild(right);
+  root.appendChild(bar);
+
+  var layout = mk('div', 'dv-layout');
+
+  // ── Links: Reiter „Inhalt" / „Vorlage" ──
+  var ed = mk('div', 'dv-editor');
+
+  var tabs = mk('div', 'dv-tabs');
+  [['inhalt', '📝 Inhalt'], ['vorlage', '🎨 Vorlage']].forEach(function (t) {
+    var b = btn(t[1], 'dv-tab' + (DV.tab === t[0] ? ' active' : ''));
+    b.setAttribute('data-tab', t[0]);
+    b.onclick = function () { dvTab(t[0]); };
+    tabs.appendChild(b);
+  });
+  ed.appendChild(tabs);
+
+  // Reiter 1: Quelltext
+  var inhalt = mk('div', 'dv-pane-inhalt');
+  inhalt.id = 'dv-inhalt-pane';
+
+  var edHdr = mk('div', 'dv-editor-hdr');
+  edHdr.appendChild(tx('span', 'fl', 'Inhalt'));
+  var sep1 = mk('div', ''); sep1.style.flex = '1'; edHdr.appendChild(sep1);
+
+  var fileInp = document.createElement('input');
+  fileInp.type = 'file';
+  fileInp.accept = '.md,.markdown,.txt,text/plain';
+  fileInp.style.display = 'none';
+  fileInp.onchange = function (e) { dvDateiLaden(e.target.files[0]); e.target.value = ''; };
+  edHdr.appendChild(fileInp);
+
+  var ladeBtn = btn('📂 Datei laden', 'btn btn-ghost btn-sm');
+  ladeBtn.onclick = function () { fileInp.click(); };
+  edHdr.appendChild(ladeBtn);
+
+  var demoBtn = btn('Beispiel', 'btn btn-ghost btn-sm');
+  demoBtn.onclick = function () {
+    if (DV.quelle.trim() && !confirm('Aktuellen Inhalt durch das Beispiel ersetzen?')) return;
+    DV.quelle = DV_DEMO;
+    document.getElementById('dv-ta').value = DV.quelle;
+    localStorage.setItem('dv_quelle', DV.quelle);
+    dvUpdate();
+  };
+  edHdr.appendChild(demoBtn);
+  inhalt.appendChild(edHdr);
+
+  var ta = document.createElement('textarea');
+  ta.id = 'dv-ta';
+  ta.className = 'dv-editor-ta';
+  ta.spellcheck = false;
+  ta.value = DV.quelle;
+  ta.placeholder = '# Titel\n\n## Aufgabe 1 [5P]\nAufgabentext …\n\n::: linien n=4';
+  ta.oninput = function (e) { DV.quelle = e.target.value; dvUpdateSpaeter(); };
+  ta.addEventListener('dragover', function (e) { e.preventDefault(); });
+  ta.addEventListener('drop', function (e) {
+    if (!e.dataTransfer.files.length) return;
+    e.preventDefault();
+    dvDateiLaden(e.dataTransfer.files[0]);
+  });
+  inhalt.appendChild(ta);
+
+  var edFuss = mk('div', 'dv-editor-fuss');
+  edFuss.appendChild(tx('span', '', '## Aufgabe · ### a) · [8P] · ::: linien n=5 · ::: raster h=60 · +++ Seitenumbruch'));
+  inhalt.appendChild(edFuss);
+  ed.appendChild(inhalt);
+
+  // Reiter 2: Vorlagen-Editor
+  var vpane = dvVorlagenPanel();
+  vpane.id = 'dv-vorlage-pane';
+  ed.appendChild(vpane);
+
+  layout.appendChild(ed);
+
+  // ── Rechts: Vorlage + Vorschau ──
+  var rechts = mk('div', 'dv-right');
+
+  var tb = mk('div', 'dv-toolbar');
+  tb.appendChild(tx('span', 'fl', 'Vorlage'));
+
+  var sel = document.createElement('select');
+  sel.className = 'finp';
+  sel.id = 'dv-vorlage-sel';
+  var info = tx('div', 'dv-vorlage-info', '');
+  info.id = 'dv-vorlage-info';
+  sel.onchange = function () {
+    DV.vorlageId = sel.value;
+    localStorage.setItem('dv_vorlage', DV.vorlageId);
+    dvSelectAktualisieren();
+    dvVorlagenPanelNeu();
+    dvUpdate();
+  };
+  tb.appendChild(sel);
+  tb.appendChild(info);
+  tb.appendChild(mk('div', 'dv-toolbar-sep'));
+
+  var zoom = mk('div', 'dv-zoom');
+  var zMinus = btn('–', 'btn btn-ghost btn-xs');
+  zMinus.onclick = function () { dvSetZoom(DV.zoom - 0.1); };
+  var zLbl = tx('span', '', Math.round(DV.zoom * 100) + ' %');
+  zLbl.id = 'dv-zoom-lbl';
+  zLbl.style.minWidth = '42px';
+  zLbl.style.textAlign = 'center';
+  var zPlus = btn('+', 'btn btn-ghost btn-xs');
+  zPlus.onclick = function () { dvSetZoom(DV.zoom + 0.1); };
+  var zFit = btn('Breite', 'btn btn-ghost btn-xs');
+  zFit.onclick = dvZoomAnpassen;
+  zoom.appendChild(zMinus); zoom.appendChild(zLbl); zoom.appendChild(zPlus); zoom.appendChild(zFit);
+  tb.appendChild(zoom);
+
+  var status = tx('div', 'dv-editor-fuss', '');
+  status.id = 'dv-status';
+  status.style.cssText = 'border:none;padding:0;gap:12px;';
+  tb.appendChild(status);
+
+  var hinweis = tx('div', 'dv-vorlage-info', 'Druckdialog: Ränder „Keine", Hintergrundgrafiken an');
+  hinweis.style.maxWidth = '150px';
+  tb.appendChild(hinweis);
+
+  var printBtn = btn('🖨 Drucken / PDF', 'btn btn-pri btn-sm');
+  printBtn.title = 'Im Druckdialog: Ränder auf „Keine" und Hintergrundgrafiken aktivieren';
+  printBtn.onclick = function () { window.print(); };
+  tb.appendChild(printBtn);
+  rechts.appendChild(tb);
+
+  var pv = mk('div', 'dv-preview');
+  var pages = mk('div', 'dv-pages');
+  pages.id = 'dv-pages';
+  pv.appendChild(pages);
+  rechts.appendChild(pv);
+
+  layout.appendChild(rechts);
+  root.appendChild(layout);
+
+  var pr = document.createElement('style');
+  pr.id = 'dv-print-rule';
+  document.head.appendChild(pr);
+}
+
+// ── Version ──────────────────────────────────────────────────────
+async function dvCheckVersion() {
+  var v = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).catch(function () { return null; });
+  if (v && v.built !== DV.version) {
+    DV.version = v.built;
+    var el = document.querySelector('.topbar-version');
+    if (el) {
+      var d = new Date(v.built);
+      el.textContent = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' ✓';
+    }
+  }
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+(async function () {
+  DV.quelle = localStorage.getItem('dv_quelle');
+  if (DV.quelle == null) DV.quelle = DV_DEMO;
+
+  dvVorlagenCacheLaden(); // sofort verfügbar, ohne auf das Netz zu warten
+  var gewuenschteVorlageId = localStorage.getItem('dv_vorlage') || 'ka-klassisch';
+  DV.vorlageId = gewuenschteVorlageId;
+  if (!DV_VORLAGEN.some(function (v) { return v.id === DV.vorlageId; })) DV.vorlageId = DV_VORLAGEN[0].id;
+  var z = parseFloat(localStorage.getItem('dv_zoom'));
+  if (z) DV.zoom = z;
+
+  dvRenderApp();
+  dvSelectAktualisieren();
+  dvTab(DV.tab);
+  dvUpdate();
+
+  var wTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(wTimer);
+    wTimer = setTimeout(dvUpdate, 200);
+  });
+
+  dvCheckVersion();
+
+  // Cloud-Stand nachladen (z.B. Vorlagen von einem anderen Gerät)
+  var geaendert = await dvVorlagenVonCloudLaden();
+  if (geaendert) {
+    // Ursprünglich gewünschte Vorlage erneut versuchen – sie kann erst
+    // durch den Cloud-Abgleich aufgetaucht sein (z.B. auf einem neuen Gerät).
+    if (DV_VORLAGEN.some(function (v) { return v.id === gewuenschteVorlageId; })) {
+      DV.vorlageId = gewuenschteVorlageId;
+    } else if (!DV_VORLAGEN.some(function (v) { return v.id === DV.vorlageId; })) {
+      DV.vorlageId = DV_VORLAGEN[0].id;
+    }
+    dvSelectAktualisieren();
+    dvVorlagenPanelNeu();
+    dvUpdate();
+  }
+})();

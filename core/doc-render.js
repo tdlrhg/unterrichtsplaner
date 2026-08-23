@@ -190,11 +190,14 @@ function dvTitelblock(doc, v) {
   if (kompaktesLabel) {
     // Klasse/Schuljahr/Datum/Bearbeitungszeit als 2×2-Raster unter dem
     // Titel; rechts bleibt frei für das Namensfeld (siehe unten).
+    // Feste Position je Feld (grid-area in CSS) statt Reihenfolge im DOM –
+    // sonst rutscht z.B. das Datum in die Schuljahr-Zelle, sobald kein
+    // Schuljahr eingetragen ist (CSS-Grid-Auto-Placement füllt die Lücke).
     var grid = mk('div', 'dv-tb-datengrid');
-    if (m.klasse) grid.appendChild(tx('div', 'dv-tb-meta-links', 'Klasse ' + m.klasse));
-    if (m.schuljahr) grid.appendChild(tx('div', 'dv-tb-meta-links dv-tb-meta-re', 'Schuljahr ' + m.schuljahr));
-    if (werte.datum) grid.appendChild(tx('div', 'dv-tb-meta-links', 'Datum: ' + werte.datum));
-    if (m.zeit) grid.appendChild(tx('div', 'dv-tb-meta-links dv-tb-meta-re', m.zeit + (/\D/.test(m.zeit) ? '' : ' Minuten')));
+    if (m.klasse) grid.appendChild(tx('div', 'dv-tb-meta-links dv-tb-meta-klasse', 'Klasse ' + m.klasse));
+    if (m.schuljahr) grid.appendChild(tx('div', 'dv-tb-meta-links dv-tb-meta-schuljahr', 'Schuljahr ' + m.schuljahr));
+    if (werte.datum) grid.appendChild(tx('div', 'dv-tb-meta-links dv-tb-meta-datum', 'Datum: ' + werte.datum));
+    if (m.zeit) grid.appendChild(tx('div', 'dv-tb-meta-links dv-tb-meta-zeit', m.zeit + (/\D/.test(m.zeit) ? '' : ' Minuten')));
     if (grid.children.length) links.appendChild(grid);
   }
   zeile1.appendChild(links);

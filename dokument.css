@@ -153,7 +153,10 @@
 .dv-tb-meta { font-size: .82em; color: #57534e; line-height: 1.5; white-space: nowrap; }
 .dv-tb-meta-links { font-size: .82em; color: #57534e; line-height: 1.5; }
 .dv-tb-datengrid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8mm; margin-top: 1mm; }
-.dv-tb-meta-re { text-align: right; }
+.dv-tb-meta-klasse    { grid-column: 1; grid-row: 1; }
+.dv-tb-meta-schuljahr { grid-column: 2; grid-row: 1; text-align: right; }
+.dv-tb-meta-datum     { grid-column: 1; grid-row: 2; }
+.dv-tb-meta-zeit      { grid-column: 2; grid-row: 2; text-align: right; }
 .dv-tb-nf-label-kompakt { font-weight: 800; font-size: 1em; color: #1c1917; white-space: nowrap; margin-bottom: 1.5mm; }
 .dv-tb-nf-kompakt-flaeche { min-width: 55mm; height: 18mm; }
 .dv-tb-namensfeld { display: flex; align-items: flex-end; gap: 3mm; margin-top: 5mm; font-size: .85em; }

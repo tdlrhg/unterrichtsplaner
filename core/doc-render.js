@@ -172,6 +172,8 @@ function dvTitelblock(doc, v) {
   zeile1.appendChild(links);
 
   var rechts = mk('div', 'dv-tb-rechts');
+  var kompaktesLabel = v.titelblock.namensfeld && v.titelblock.namensfeldStil === 'label';
+  if (kompaktesLabel) rechts.appendChild(tx('div', 'dv-tb-nf-label-kompakt', 'Nach-, Vorname:'));
   var werte = dvPlatzhalter(v, m);
   if (werte.datum) rechts.appendChild(tx('div', 'dv-tb-meta', werte.datum));
   if (m.zeit) rechts.appendChild(tx('div', 'dv-tb-meta', 'Bearbeitungszeit: ' + m.zeit + (/\D/.test(m.zeit) ? '' : ' Minuten')));
@@ -182,7 +184,7 @@ function dvTitelblock(doc, v) {
   zeile1.appendChild(rechts);
   tb.appendChild(zeile1);
 
-  if (v.titelblock.namensfeld) {
+  if (v.titelblock.namensfeld && !kompaktesLabel) {
     var nf = mk('div', 'dv-tb-namensfeld');
     nf.appendChild(tx('span', 'dv-tb-nf-label', 'Name:'));
     nf.appendChild(mk('span', 'dv-tb-nf-linie'));

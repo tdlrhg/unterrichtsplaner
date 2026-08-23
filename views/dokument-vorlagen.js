@@ -34,7 +34,8 @@ var DV_FELDER = [
   { gruppe: 'Titelblock', hinweis: 'Platzhalter: {{titel}} {{fach}} {{klasse}} {{datum}} {{zeit}}. Erscheint nur einmal, am Dokumentanfang.' },
   { pfad: 'titelblock.zeigen',     label: 'Titelblock anzeigen', typ: 'check' },
   { pfad: 'titelblock.variante',   label: 'Darstellung', typ: 'select', optionen: [['kasten', 'Umrandeter Kasten'], ['linie', 'Nur Trennlinie']] },
-  { pfad: 'titelblock.namensfeld', label: 'Zeile für Name / Punkte / Note', typ: 'check' },
+  { pfad: 'titelblock.namensfeld', label: 'Namensfeld anzeigen', typ: 'check', halb: true },
+  { pfad: 'titelblock.namensfeldStil', label: 'Namensfeld-Stil', typ: 'select', halb: true, optionen: [['zeile', 'Zeile: Name / Punkte / Note'], ['label', 'Kompaktes Label oben rechts']] },
   { pfad: 'titelblock.hinweistext', label: 'Hinweistext', typ: 'mehrzeilig' },
   { pfad: 'titelblock.vielErfolg', label: 'Schräger Zusatztext (leer = aus)', typ: 'text' },
 

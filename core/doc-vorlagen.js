@@ -25,7 +25,7 @@ var DV_VORLAGEN = [
     aufgabe: { label: 'Aufgabe {{nr}}', punkte: 'kasten', abstand: 7, trennlinie: false, farbe: '#1c1917', zentriert: false, schriftgroesse: 1, titelUnten: false },
     teil: { marke: '{{marke}}', einzug: 8, aussenrand: 6 },
     kasten: { rahmen: true, fuellung: '#f5f2ed' },
-    punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true, schriftgroesse: 1.3 },
+    punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true, schriftgroesse: 1.7 },
     seitenzahlGross: { zeigen: false, abSeite: 1, groesse: 40, farbe: '#d4cec2' }
   },
   {
@@ -43,7 +43,7 @@ var DV_VORLAGEN = [
     aufgabe: { label: '{{nr}}', punkte: 'keine', abstand: 9, trennlinie: false, farbe: '#be185d', zentriert: false, schriftgroesse: 1, titelUnten: false },
     teil: { marke: '{{marke}}', einzug: 10, aussenrand: 6 },
     kasten: { rahmen: false, fuellung: '#f1ede7' },
-    punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true, schriftgroesse: 1.3 },
+    punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true, schriftgroesse: 1.7 },
     seitenzahlGross: { zeigen: false, abSeite: 1, groesse: 40, farbe: '#d4cec2' }
   }
 ];
@@ -80,7 +80,7 @@ function dvApplyVorlage(el, v) {
     s.setProperty('--dv-sz-gross-right', '6mm');
   }
   s.setProperty('--dv-punkte-breite', ((v.punkteSpalte && v.punkteSpalte.breite) || 16) + 'mm');
-  s.setProperty('--dv-punkte-schriftgroesse', ((v.punkteSpalte && v.punkteSpalte.schriftgroesse) || 1.3) + 'em');
+  s.setProperty('--dv-punkte-schriftgroesse', ((v.punkteSpalte && v.punkteSpalte.schriftgroesse) || 1.7) + 'em');
   s.setProperty('--dv-sz-gross-groesse', ((v.seitenzahlGross && v.seitenzahlGross.groesse) || 40) + 'pt');
   s.setProperty('--dv-sz-gross-farbe', (v.seitenzahlGross && v.seitenzahlGross.farbe) || '#d4cec2');
   s.setProperty('--dv-kopf-h', kopfH + 'mm');

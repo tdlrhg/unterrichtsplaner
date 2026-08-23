@@ -191,8 +191,9 @@
 /* Antwortraum */
 .dv-linien { margin: 2mm 0 var(--dv-abs); }
 .dv-linie { border-bottom: .5pt solid #a8a29e; height: 8.5mm; }
-.dv-raster { border: .5pt solid #a8a29e; margin: 2mm 0 var(--dv-abs); }
+.dv-raster { margin: 2mm 0 var(--dv-abs); }
 .dv-raster-gitter {
+  border: .5pt solid #a8a29e;
   background-image:
     repeating-linear-gradient(to right, #dcd6cb 0 .3pt, transparent .3pt 5mm),
     repeating-linear-gradient(to bottom, #dcd6cb 0 .3pt, transparent .3pt 5mm);

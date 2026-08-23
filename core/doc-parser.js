@@ -100,8 +100,12 @@ function docParse(src) {
         ziel().push({ t: 'linien', anzahl: parseInt(opt.n || opt.anzahl || fence[2].trim(), 10) || 5 });
         continue;
       }
-      if (name === 'raster' || name === 'kaestchen' || name === 'zeichnung') {
-        ziel().push({ t: 'raster', hoehe: parseInt(opt.h || opt.hoehe || 60, 10), gitter: name !== 'zeichnung' });
+      if (name === 'raster' || name === 'kaestchen' || name === 'zeichnung' || name === 'platz' || name === 'leerraum') {
+        // platz/leerraum/zeichnung: reine Leerfläche ohne eigenes Gitter –
+        // gedacht für Seiten mit Kästchenpapier-Hintergrund, wo die Zeilen
+        // schon da sind und ein zweites Gitter nur stören würde.
+        var ohneGitter = name === 'zeichnung' || name === 'platz' || name === 'leerraum';
+        ziel().push({ t: 'raster', hoehe: parseInt(opt.h || opt.hoehe || 60, 10), gitter: !ohneGitter });
         continue;
       }
       if (name === 'kasten' || name === 'merke' || name === 'material' || name === 'hinweis' || name === 'loesung') {
@@ -169,9 +173,17 @@ function docParse(src) {
     var mk2 = line.match(/^::\s*([\wäöüÄÖÜß.-]+)\s*:\s*(.*)$/);
     if (mk2) { meta[mk2[1].toLowerCase()] = mk2[2].trim(); continue; }
 
-    // ── Bild ──
-    var img = line.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+(\d+)%?)?\)$/);
-    if (img) { ziel().push({ t: 'bild', alt: img[1], src: img[2], breite: img[3] ? parseInt(img[3], 10) : null }); continue; }
+    // ── Bild: ![Alt](src), optional Breite und/oder Ausrichtung:
+    // ![Alt](src 60%) · ![Alt](src links) · ![Alt](src 60% rechts) ──
+    var img = line.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+(\d+)%)?(?:\s+(links|mitte|rechts))?\)$/);
+    if (img) {
+      ziel().push({
+        t: 'bild', alt: img[1], src: img[2],
+        breite: img[3] ? parseInt(img[3], 10) : null,
+        ausrichtung: img[4] || null
+      });
+      continue;
+    }
 
     // ── Tabelle ──
     if (line.indexOf('|') === 0 || /\|.*\|/.test(line) && lines[i + 1] && /^\s*\|?[\s:|-]+\|/.test(lines[i + 1])) {

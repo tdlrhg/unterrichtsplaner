@@ -109,7 +109,7 @@ function dvBlock(b, v) {
   }
 
   if (b.t === 'bild') {
-    var bw = mk('div', 'dv-bild');
+    var bw = mk('div', 'dv-bild dv-bild-' + (b.ausrichtung || 'mitte'));
     var img = document.createElement('img');
     img.src = b.src; img.alt = b.alt || '';
     if (b.breite) img.style.width = b.breite + '%';

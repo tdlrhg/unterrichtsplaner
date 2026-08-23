@@ -205,7 +205,10 @@
 .dv-tabelle th { background: #f5f2ed; font-weight: 700; }
 
 /* Bilder */
-.dv-bild { margin-bottom: var(--dv-abs); text-align: center; }
+.dv-bild { margin-bottom: var(--dv-abs); }
+.dv-bild-mitte { text-align: center; }
+.dv-bild-links { text-align: left; }
+.dv-bild-rechts { text-align: right; }
 .dv-bild img { max-width: 100%; }
 .dv-bild-bu { font-size: .8em; color: #57534e; margin-top: 1mm; }
 

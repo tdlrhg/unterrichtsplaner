@@ -168,15 +168,14 @@ async function dvBildEinfuegen(file, cursorPos) {
   var istBild = file && (file.type ? file.type.indexOf('image/') === 0 : mediaIsImage(file.name));
   if (!istBild) { alert('„' + (file ? file.name : '') + '" wird nicht als Bild erkannt. Unterstützt werden z.B. jpg, png, gif, webp, heic.'); return; }
   var ta = document.getElementById('dv-ta');
-  // Cursor-Position nur vertrauen, wenn sie explizit übergeben wurde (Drag&Drop)
-  // oder das Textfeld gerade wirklich fokussiert ist. Sonst (z.B. Klick auf den
-  // "Bild einfügen"-Button ohne vorheriges Klicken ins Textfeld) stünde
-  // selectionStart auf 0 – das Bild würde sonst vor den Dokumentkopf (---)
-  // rutschen und die Metadaten kaputt machen. Dann lieber ans Ende anhängen.
-  var pos;
-  if (cursorPos != null) pos = cursorPos;
-  else if (ta && document.activeElement === ta) pos = ta.selectionStart;
-  else pos = DV.quelle.length;
+  var pos = cursorPos != null ? cursorPos : (ta ? ta.selectionStart : DV.quelle.length);
+  // Position 0 nur akzeptieren, wenn dort kein Frontmatter (---...---) steht –
+  // sonst rutscht das Bild davor und zerstört die Metadaten. Stattdessen
+  // direkt hinter das Frontmatter setzen.
+  if (pos === 0) {
+    var fm = DV.quelle.match(/^---\n[\s\S]*?\n---\n?/);
+    if (fm) pos = fm[0].length;
+  }
 
   var istSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name);
   var dataUrl;
@@ -288,11 +287,20 @@ function dvRenderApp() {
   bildInp.type = 'file';
   bildInp.accept = 'image/*';
   bildInp.style.display = 'none';
-  bildInp.onchange = function (e) { dvBildEinfuegen(e.target.files[0]); e.target.value = ''; };
+  // Cursor-Position, die beim Klick auf den Button galt – der Button nimmt
+  // beim Öffnen des Dateidialogs den Fokus weg, danach ist selectionStart
+  // nicht mehr verlässlich. Deshalb hier merken statt erst im onchange lesen.
+  bildInp.onchange = function (e) {
+    dvBildEinfuegen(e.target.files[0], bildInp.__cursorPos);
+    e.target.value = '';
+  };
   edHdr.appendChild(bildInp);
 
   var bildBtn = btn('🖼 Bild einfügen', 'btn btn-ghost btn-sm');
-  bildBtn.onclick = function () { bildInp.click(); };
+  bildBtn.onclick = function () {
+    bildInp.__cursorPos = ta.selectionStart;
+    bildInp.click();
+  };
   edHdr.appendChild(bildBtn);
 
   var demoBtn = btn('Beispiel', 'btn btn-ghost btn-sm');

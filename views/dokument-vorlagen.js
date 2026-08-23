@@ -21,6 +21,8 @@ var DV_FELDER = [
   { pfad: 'seite.rand.unten',  label: 'Rand unten',  typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', halb: true },
   { pfad: 'seite.rand.links',  label: 'Rand links',  typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', halb: true },
   { pfad: 'seite.rand.rechts', label: 'Rand rechts', typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', halb: true },
+  { pfad: 'seite.kaestchen',       label: 'Kästchenpapier als Hintergrund', typ: 'check', halb: true },
+  { pfad: 'seite.kaestchenGroesse', label: 'Kästchengröße', typ: 'zahl', min: 2, max: 15, schritt: 0.5, einheit: 'mm', halb: true },
 
   { gruppe: 'Schrift' },
   { pfad: 'typo.font', label: 'Schriftart', typ: 'select', optionen: DV_SCHRIFTEN },

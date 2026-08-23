@@ -72,7 +72,7 @@ function docPaginate(container, nodes, v, meta) {
     var kopfDa = v.kopf.zeigen && nr >= (v.kopf.abSeite || 1);
     var fussDa = v.fuss.zeigen && nr >= (v.fuss.abSeite || 1);
     if (kopfDa) seite.appendChild(dvBand('kopf', v.kopf));
-    var content = mk('div', 'dv-content');
+    var content = mk('div', 'dv-content' + (v.seite.kaestchen ? ' dv-kaestchen' : ''));
     content.style.top = kopfDa ? 'calc(var(--dv-rand-o) + var(--dv-kopf-h))' : 'var(--dv-rand-o)';
     content.style.bottom = fussDa ? 'calc(var(--dv-rand-u) + var(--dv-fuss-h))' : 'var(--dv-rand-u)';
     seite.appendChild(content);

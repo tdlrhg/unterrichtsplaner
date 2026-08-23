@@ -14,7 +14,7 @@ var DV_VORLAGEN = [
     id: 'ka-klassisch',
     name: 'Klassenarbeit klassisch',
     beschreibung: 'Kopfzeile mit Namensfeld, Punktekästchen rechts, Fußzeile mit Seitenzahl.',
-    seite: { format: 'A4', rand: { oben: 16, unten: 15, links: 22, rechts: 18 } },
+    seite: { format: 'A4', rand: { oben: 16, unten: 15, links: 22, rechts: 18 }, kaestchen: false, kaestchenGroesse: 5 },
     typo: {
       font: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
       groesse: 11, zeilenabstand: 1.45, absatzabstand: 3.2, ausrichtung: 'left'
@@ -30,7 +30,7 @@ var DV_VORLAGEN = [
     id: 'ab-schlicht',
     name: 'Arbeitsblatt schlicht',
     beschreibung: 'Enge Ränder, Aufgaben ohne Punkte, große Schrift – für Arbeitsblätter.',
-    seite: { format: 'A4', rand: { oben: 14, unten: 14, links: 18, rechts: 16 } },
+    seite: { format: 'A4', rand: { oben: 14, unten: 14, links: 18, rechts: 16 }, kaestchen: false, kaestchenGroesse: 5 },
     typo: {
       font: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
       groesse: 12, zeilenabstand: 1.55, absatzabstand: 3.6, ausrichtung: 'left'
@@ -61,6 +61,7 @@ function dvApplyVorlage(el, v) {
   s.setProperty('--dv-rand-u', r.unten + 'mm');
   s.setProperty('--dv-rand-l', r.links + 'mm');
   s.setProperty('--dv-rand-r', r.rechts + 'mm');
+  s.setProperty('--dv-kaestchen-groesse', (v.seite.kaestchenGroesse || 5) + 'mm');
   s.setProperty('--dv-kopf-h', kopfH + 'mm');
   s.setProperty('--dv-fuss-h', fussH + 'mm');
   s.setProperty('--dv-font', v.typo.font);

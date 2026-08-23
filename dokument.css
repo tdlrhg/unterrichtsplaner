@@ -68,6 +68,11 @@
   margin-bottom: calc(var(--dv-hoehe) * (var(--dv-zoom) - 1) + 20px);
 }
 .dv-content { position: absolute; left: var(--dv-rand-l); right: var(--dv-rand-r); overflow: hidden; text-align: var(--dv-align); }
+.dv-content.dv-kaestchen {
+  background-image:
+    repeating-linear-gradient(to right, #d7d0c4 0 .3pt, transparent .3pt var(--dv-kaestchen-groesse)),
+    repeating-linear-gradient(to bottom, #d7d0c4 0 .3pt, transparent .3pt var(--dv-kaestchen-groesse));
+}
 
 .dv-band { position: absolute; left: var(--dv-rand-l); right: var(--dv-rand-r); height: var(--dv-kopf-h); display: flex; align-items: center; gap: 10px; font-size: 8.5pt; color: #57534e; }
 .dv-band-kopf { top: var(--dv-rand-o); }

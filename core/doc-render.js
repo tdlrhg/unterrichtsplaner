@@ -173,7 +173,10 @@ function dvTitelblock(doc, v) {
 
   var rechts = mk('div', 'dv-tb-rechts');
   var kompaktesLabel = v.titelblock.namensfeld && v.titelblock.namensfeldStil === 'label';
-  if (kompaktesLabel) rechts.appendChild(tx('div', 'dv-tb-nf-label-kompakt', 'Nach-, Vorname:'));
+  if (kompaktesLabel) {
+    rechts.appendChild(tx('div', 'dv-tb-nf-label-kompakt', 'Nach-, Vorname:'));
+    rechts.appendChild(mk('div', 'dv-tb-nf-kompakt-linie'));
+  }
   var werte = dvPlatzhalter(v, m);
   if (werte.datum) rechts.appendChild(tx('div', 'dv-tb-meta', werte.datum));
   if (m.zeit) rechts.appendChild(tx('div', 'dv-tb-meta', 'Bearbeitungszeit: ' + m.zeit + (/\D/.test(m.zeit) ? '' : ' Minuten')));

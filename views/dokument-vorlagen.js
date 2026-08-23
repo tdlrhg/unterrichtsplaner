@@ -216,19 +216,6 @@ function dvVorlagenPanel() {
     nameFg.appendChild(nameInp);
     kopf.appendChild(nameFg);
 
-    var beschrFg = mk('div', 'dv-fg');
-    beschrFg.appendChild(tx('label', 'fl', 'Kurzbeschreibung'));
-    var beschrInp = document.createElement('input');
-    beschrInp.type = 'text'; beschrInp.className = 'finp'; beschrInp.value = v.beschreibung || '';
-    beschrInp.placeholder = 'Wofür ist diese Vorlage gedacht?';
-    beschrInp.oninput = function () {
-      v.beschreibung = beschrInp.value;
-      clearTimeout(_dvFormTimer);
-      _dvFormTimer = setTimeout(function () { dvVorlagenSpeichern(); dvSelectAktualisieren(); }, 200);
-    };
-    beschrFg.appendChild(beschrInp);
-    kopf.appendChild(beschrFg);
-
     var aktionen = mk('div', 'dv-form-aktionen');
     var dupBtn = btn('Duplizieren', 'btn btn-ghost btn-sm');
     dupBtn.onclick = function () {

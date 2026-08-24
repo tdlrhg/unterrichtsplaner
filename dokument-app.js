@@ -81,7 +81,119 @@ function dvBilderInBlocksAufloesen(blocks) {
   });
 }
 
+// ── Syntax-Einfärbung im Quelltext-Editor ────────────────────────
+// Backdrop-Technik: hinter dem Textfeld (Textfarbe transparent, nur der
+// Cursor bleibt sichtbar) liegt ein div mit denselben Schrift- und Box-
+// Maßen, das denselben Text eingefärbt rendert. Deshalb dürfen hier NUR
+// Eigenschaften gesetzt werden, die die Textmetrik nicht verändern:
+// Farbe, Hintergrund und – bei Monospace – font-weight. font-size,
+// letter-spacing oder Innenabstände würden den Zeilenumbruch von Textfeld
+// und Backdrop auseinanderlaufen lassen.
+function dvEscapeHtml(s) {
+  return s.replace(/[&<>]/g, function (c) {
+    return c === '&' ? '&amp;' : (c === '<' ? '&lt;' : '&gt;');
+  });
+}
+
+function dvPunkteMarkieren(escaped) {
+  return escaped.replace(/(\[|\()\s*\d+(?:[.,]\d+)?\s*P?\s*(\]|\))/gi, '<span class="hl-punkte">$&</span>');
+}
+
+function dvQuelleHervorheben(text) {
+  var zeilen = text.split('\n');
+  var imFm = false, fmFertig = false;
+  var raus = [];
+
+  for (var i = 0; i < zeilen.length; i++) {
+    var z = zeilen[i], t = z.trim(), e = dvEscapeHtml(z);
+
+    // Frontmatter (--- … ---) ganz am Anfang
+    if (!fmFertig && !imFm && i === 0 && t === '---') { imFm = true; raus.push('<span class="hl-meta">' + e + '</span>'); continue; }
+    if (imFm) {
+      if (t === '---') { imFm = false; fmFertig = true; }
+      raus.push('<span class="hl-meta">' + e + '</span>');
+      continue;
+    }
+
+    var cls = null;
+    if (/^:::/.test(t)) cls = 'hl-fence';
+    else if (/^###\s/.test(t)) cls = 'hl-teil';
+    else if (/^##\s/.test(t)) cls = 'hl-aufgabe';
+    else if (/^#\s/.test(t)) cls = 'hl-titel';
+    else if (/^\+\+\+$/.test(t)) cls = 'hl-brk';
+    else if (/^!\[/.test(t)) cls = 'hl-bild';
+    else if (/^(-{3,}|\*{3,}|_{3,})$/.test(t)) cls = 'hl-hr';
+    else if (/^\|/.test(t)) cls = 'hl-tabelle';
+    else if (/^([-*+]\s|\d+[.)]\s)/.test(t)) cls = 'hl-liste';
+    else if (/^>/.test(t)) cls = 'hl-zitat';
+
+    var inhalt = (cls === 'hl-aufgabe' || cls === 'hl-teil') ? dvPunkteMarkieren(e) : e;
+    raus.push(cls ? '<span class="' + cls + '">' + inhalt + '</span>' : inhalt);
+  }
+  // Ein Textfeld zeigt nach einem abschließenden Zeilenumbruch noch eine
+  // leere Zeile, ein div erzeugt dafür keine Zeilenbox mehr. Ohne dieses
+  // Leerzeichen wäre das Backdrop am Ende eine Zeile kürzer und die
+  // Einfärbung liefe beim Scrollen gegen Ende aus dem Takt.
+  return raus.join('\n') + (/\n$/.test(text) ? ' ' : '');
+}
+
+function dvHighlightAktualisieren() {
+  var hl = document.getElementById('dv-ed-hl');
+  var ta = document.getElementById('dv-ta');
+  if (!hl || !ta) return;
+  hl.innerHTML = dvQuelleHervorheben(ta.value);
+  hl.parentNode.scrollTop = ta.scrollTop;
+  hl.parentNode.scrollLeft = ta.scrollLeft;
+}
+
+// ── Formatier-Bausteine (Einfüge-Leiste) ─────────────────────────
+// DV_CURSOR markiert, wo der Cursor nach dem Einfügen stehen soll; das
+// Zeichen selbst wird beim Einfügen entfernt. Ohne Marke landet der Cursor
+// am Ende des Bausteins.
+var DV_CURSOR = '\u00ab';
+var DV_BAUSTEINE = [
+  { label: 'Aufgabe',    titel: 'Neue Aufgabe (##)',                       text: '## Aufgabe ' + DV_CURSOR + '[P]\n' },
+  { label: 'a)',         titel: 'Neue Teilaufgabe (###)',                  text: '### ' + DV_CURSOR + '[P]\n' },
+  { label: 'Absatz',     titel: 'Absatz ohne eigene Teilaufgabe (::: text)', text: '::: text\n' + DV_CURSOR + '\n:::\n' },
+  { trenner: true },
+  { label: 'Linien',     titel: 'Schreiblinien (::: linien)',              text: '::: linien n=4\n' },
+  { label: 'Platz',      titel: 'Freiraum ohne eigenes Gitter (::: platz)', text: '::: platz h=30\n' },
+  { label: 'Kästchen',   titel: 'Kästchenfläche (::: raster)',             text: '::: raster h=60\n' },
+  { trenner: true },
+  { label: 'Hinweis',    titel: 'Hinweiskasten (::: hinweis)',             text: '::: hinweis titel="Hinweis"\n' + DV_CURSOR + '\n:::\n' },
+  { label: 'Tabelle',    titel: 'Tabelle',                                 text: '| ' + DV_CURSOR + 'Spalte 1 | Spalte 2 |\n|---|---|\n| Zelle | Zelle |\n' },
+  { label: 'Seite',      titel: 'Seitenumbruch (+++)',                     text: '+++\n' }
+];
+
+// Baustein an der Cursorposition einfügen – immer auf eigener Zeile,
+// damit der Parser ihn als Block erkennt.
+function dvBausteinEinfuegen(vorlage) {
+  var ta = document.getElementById('dv-ta');
+  if (!ta) return;
+  var start = ta.selectionStart, ende = ta.selectionEnd;
+  var vorher = ta.value.slice(0, start);
+  var nachher = ta.value.slice(ende);
+
+  var cursorRel = vorlage.indexOf(DV_CURSOR);
+  var text = vorlage.replace(DV_CURSOR, '');
+  if (cursorRel < 0) cursorRel = text.length;
+
+  var davor = (vorher && !/\n$/.test(vorher)) ? '\n' : '';
+  var danach = (nachher && !/^\n/.test(nachher)) ? '\n' : '';
+  text = davor + text + danach;
+  cursorRel += davor.length;
+
+  DV.quelle = vorher + text + nachher;
+  ta.value = DV.quelle;
+  var pos = vorher.length + cursorRel;
+  ta.setSelectionRange(pos, pos);
+  ta.focus();
+  localStorage.setItem('dv_quelle', DV.quelle);
+  dvUpdate();
+}
+
 function dvUpdate() {
+  dvHighlightAktualisieren();
   var v = dvVorlage(DV.vorlageId);
   var doc = docParse(DV.quelle);
   dvBilderInBlocksAufloesen(doc.blocks);
@@ -536,13 +648,35 @@ function dvRenderApp() {
   bilderPanel.style.display = 'none';
   inhalt.appendChild(bilderPanel);
 
+  var formatLeiste = mk('div', 'dv-format-leiste');
+  DV_BAUSTEINE.forEach(function (b) {
+    if (b.trenner) { formatLeiste.appendChild(mk('span', 'dv-format-trenner')); return; }
+    var fb = btn(b.label, 'btn btn-ghost btn-xs dv-format-btn');
+    fb.title = b.titel;
+    fb.onclick = function () { dvBausteinEinfuegen(b.text); };
+    formatLeiste.appendChild(fb);
+  });
+  inhalt.appendChild(formatLeiste);
+
+  // Textfeld + farbiges Backdrop (siehe dvQuelleHervorheben)
+  var edWrap = mk('div', 'dv-ed-wrap');
+  var backdrop = mk('div', 'dv-ed-backdrop');
+  var hl = mk('div', 'dv-ed-hl');
+  hl.id = 'dv-ed-hl';
+  backdrop.appendChild(hl);
+  edWrap.appendChild(backdrop);
+
   var ta = document.createElement('textarea');
   ta.id = 'dv-ta';
   ta.className = 'dv-editor-ta';
   ta.spellcheck = false;
   ta.value = DV.quelle;
   ta.placeholder = '# Titel\n\n## Aufgabe 1 [5P]\nAufgabentext …\n\n::: linien n=4';
-  ta.oninput = function (e) { DV.quelle = e.target.value; dvUpdateSpaeter(); };
+  ta.oninput = function (e) { DV.quelle = e.target.value; dvHighlightAktualisieren(); dvUpdateSpaeter(); };
+  ta.addEventListener('scroll', function () {
+    backdrop.scrollTop = ta.scrollTop;
+    backdrop.scrollLeft = ta.scrollLeft;
+  });
   ta.addEventListener('dragover', function (e) { e.preventDefault(); });
   ta.addEventListener('drop', function (e) {
     if (!e.dataTransfer.files.length) return;
@@ -552,7 +686,8 @@ function dvRenderApp() {
     if (istBild) dvBildEinfuegen(datei, ta.selectionStart);
     else dvDateiLaden(datei);
   });
-  inhalt.appendChild(ta);
+  edWrap.appendChild(ta);
+  inhalt.appendChild(edWrap);
 
   var edFuss = mk('div', 'dv-editor-fuss');
   edFuss.appendChild(tx('span', '', '## Aufgabe · ### a) · [8P] · ::: linien n=5 · ::: raster h=60 · +++ Seitenumbruch'));

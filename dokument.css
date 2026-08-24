@@ -45,11 +45,50 @@
 .dv-check input { width: 15px; height: 15px; accent-color: var(--pri); cursor: pointer; }
 .dv-editor-hdr { padding: 10px 14px; border-bottom: 1px solid var(--bord); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .dv-editor-hdr .fl { margin: 0; }
-.dv-editor-ta {
-  flex: 1; width: 100%; border: none; outline: none; resize: none;
-  padding: 14px; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-  font-size: 12.5px; line-height: 1.65; color: var(--tx); background: #fdfcfa; tab-size: 2;
+/* Einfüge-Leiste für Formatier-Bausteine */
+.dv-format-leiste { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding: 7px 14px; border-bottom: 1px solid var(--bord); background: var(--surf2); flex-shrink: 0; }
+.dv-format-btn { font-size: 11px; padding: 3px 8px; }
+.dv-format-trenner { width: 1px; height: 16px; background: var(--bord); margin: 0 3px; }
+
+/* Quelltext-Editor mit Syntax-Einfärbung.
+   Das Textfeld liegt (mit transparenter Schrift) über einem Backdrop, das
+   denselben Text eingefärbt rendert. Die mit * markierten Eigenschaften
+   MÜSSEN in beiden Elementen identisch sein, sonst laufen die Zeilenumbrüche
+   von Textfeld und Einfärbung auseinander. */
+.dv-ed-wrap { flex: 1; position: relative; overflow: hidden; }
+/* scrollbar-gutter in BEIDEN Scroll-Containern: sonst ist das Textfeld um die
+   Scrollbreite schmaler als das Backdrop und die Zeilen brechen unterschiedlich um. */
+.dv-ed-backdrop { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: #fdfcfa; scrollbar-gutter: stable; }
+.dv-ed-hl, .dv-editor-ta {
+  /* * */ padding: 14px; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  /* * */ font-size: 12.5px; line-height: 1.65; tab-size: 2;
+  /* * */ white-space: pre-wrap; overflow-wrap: break-word; word-break: normal;
+  /* * */ box-sizing: border-box; border: 0;
 }
+.dv-ed-hl { margin: 0; min-height: 100%; color: var(--tx); }
+.dv-editor-ta {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  outline: none; resize: none; background: transparent;
+  color: transparent; caret-color: var(--tx);
+  overflow-y: scroll; scrollbar-gutter: stable;
+}
+.dv-editor-ta::placeholder { color: var(--tx3); }
+.dv-editor-ta::selection { background: rgba(190, 24, 93, .22); }
+
+/* Farben: nur Farbe/Gewicht – Monospace behält bei bold dieselbe Laufweite,
+   Schriftgröße oder Abstände dürfen hier NICHT verändert werden. */
+.hl-meta    { color: #8a8175; }
+.hl-titel   { color: #1c1917; font-weight: 700; }
+.hl-aufgabe { color: #be185d; font-weight: 700; }
+.hl-teil    { color: #9d174d; font-weight: 700; }
+.hl-fence   { color: #0e7490; }
+.hl-bild    { color: #7c3aed; }
+.hl-brk     { color: #b45309; font-weight: 700; }
+.hl-hr      { color: #a8a29e; }
+.hl-tabelle { color: #57534e; }
+.hl-liste   { color: #57534e; }
+.hl-zitat   { color: #6b7280; }
+.hl-punkte  { color: #047857; font-weight: 700; }
 .dv-editor-fuss { padding: 8px 14px; border-top: 1px solid var(--bord); font-size: 11px; color: var(--tx3); display: flex; justify-content: space-between; gap: 8px; }
 .dv-warn { color: var(--red); }
 

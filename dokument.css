@@ -94,7 +94,14 @@
 
 /* Bilder-Panel */
 .dv-bilder-panel { flex-shrink: 0; max-height: 220px; overflow-y: auto; padding: 10px 14px; background: var(--surf2); border-bottom: 1px solid var(--bord); }
-.dv-bilder-titel { font-size: 11px; font-weight: 700; color: var(--pri); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.dv-bilder-panel.dv-bilder-eingeklappt { max-height: none; overflow-y: visible; padding-bottom: 10px; }
+.dv-bilder-titel {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  font-size: 11px; font-weight: 700; color: var(--pri); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px;
+}
+.dv-bilder-eingeklappt .dv-bilder-titel { margin-bottom: 0; }
+.dv-bilder-titel:hover { opacity: .8; }
+.dv-bilder-pfeil { font-size: 9px; width: 10px; flex-shrink: 0; }
 .dv-bild-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .dv-bild-row:last-child { margin-bottom: 0; }
 .dv-bild-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 5px; border: 1px solid var(--bord); flex-shrink: 0; background: #fff; }

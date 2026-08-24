@@ -469,6 +469,8 @@ function dvBildWeissraumErkennenUndZuschneiden(src, callback) {
 var DV_BILD_BREITEN = [['', 'Originalgröße'], ['25', '25%'], ['50', '50%'], ['75', '75%'], ['100', '100%']];
 var DV_BILD_AUSRICHTUNGEN = [['links', 'Links'], ['mitte', 'Mitte'], ['rechts', 'Rechts']];
 
+var _dvBilderOffen = localStorage.getItem('dv_bilder_offen') !== 'false';
+
 function dvBilderPanelAktualisieren() {
   var wrap = document.getElementById('dv-bilder-panel');
   if (!wrap) return;
@@ -476,8 +478,18 @@ function dvBilderPanelAktualisieren() {
   var bilder = dvBilderImText();
   if (!bilder.length) { wrap.style.display = 'none'; return; }
   wrap.style.display = '';
+  wrap.classList.toggle('dv-bilder-eingeklappt', !_dvBilderOffen);
 
-  wrap.appendChild(tx('div', 'dv-bilder-titel', '🖼 Bilder im Dokument (' + bilder.length + ')'));
+  var titelZeile = mk('div', 'dv-bilder-titel');
+  titelZeile.appendChild(tx('span', 'dv-bilder-pfeil', _dvBilderOffen ? '▾' : '▸'));
+  titelZeile.appendChild(tx('span', '', '🖼 Bilder im Dokument (' + bilder.length + ')'));
+  titelZeile.onclick = function () {
+    _dvBilderOffen = !_dvBilderOffen;
+    localStorage.setItem('dv_bilder_offen', String(_dvBilderOffen));
+    dvBilderPanelAktualisieren();
+  };
+  wrap.appendChild(titelZeile);
+  if (!_dvBilderOffen) return;
 
   bilder.forEach(function (b) {
     var row = mk('div', 'dv-bild-row');

@@ -152,6 +152,9 @@ function dvHighlightAktualisieren() {
 // am Ende des Bausteins.
 var DV_CURSOR = '\u00ab';
 var DV_BAUSTEINE = [
+  { label: 'Fett',    titel: 'Fett (**Text**) – markierten Text umschließen',   wrap: '**', cls: 'dv-format-fett' },
+  { label: 'Kursiv',  titel: 'Kursiv (*Text*) – markierten Text umschließen',   wrap: '*',  cls: 'dv-format-kursiv' },
+  { trenner: true },
   { label: 'Aufgabe',    titel: 'Neue Aufgabe (##)',                       text: '## Aufgabe ' + DV_CURSOR + '[P]\n' },
   { label: 'a)',         titel: 'Neue Teilaufgabe (###)',                  text: '### ' + DV_CURSOR + '[P]\n' },
   { label: 'Absatz',     titel: 'Absatz ohne eigene Teilaufgabe (::: text)', text: '::: text\n' + DV_CURSOR + '\n:::\n' },
@@ -187,6 +190,25 @@ function dvBausteinEinfuegen(vorlage) {
   ta.value = DV.quelle;
   var pos = vorher.length + cursorRel;
   ta.setSelectionRange(pos, pos);
+  ta.focus();
+  localStorage.setItem('dv_quelle', DV.quelle);
+  dvUpdate();
+}
+
+// Markierten Text im Editor mit einem Zeichenpaar umschließen (z.B. ** für
+// fett). Ohne Auswahl wird ein Platzhaltertext eingefügt und markiert,
+// damit man direkt weitertippen kann.
+function dvFormatUmschliessen(marker) {
+  var ta = document.getElementById('dv-ta');
+  if (!ta) return;
+  var start = ta.selectionStart, ende = ta.selectionEnd;
+  var ausgewaehlt = ta.value.slice(start, ende) || 'Text';
+  var text = marker + ausgewaehlt + marker;
+
+  DV.quelle = ta.value.slice(0, start) + text + ta.value.slice(ende);
+  ta.value = DV.quelle;
+  var neuStart = start + marker.length;
+  ta.setSelectionRange(neuStart, neuStart + ausgewaehlt.length);
   ta.focus();
   localStorage.setItem('dv_quelle', DV.quelle);
   dvUpdate();
@@ -663,9 +685,9 @@ function dvRenderApp() {
   var formatLeiste = mk('div', 'dv-format-leiste');
   DV_BAUSTEINE.forEach(function (b) {
     if (b.trenner) { formatLeiste.appendChild(mk('span', 'dv-format-trenner')); return; }
-    var fb = btn(b.label, 'btn btn-ghost btn-xs dv-format-btn');
+    var fb = btn(b.label, 'btn btn-ghost btn-xs dv-format-btn' + (b.cls ? ' ' + b.cls : ''));
     fb.title = b.titel;
-    fb.onclick = function () { dvBausteinEinfuegen(b.text); };
+    fb.onclick = b.wrap ? function () { dvFormatUmschliessen(b.wrap); } : function () { dvBausteinEinfuegen(b.text); };
     formatLeiste.appendChild(fb);
   });
   inhalt.appendChild(formatLeiste);

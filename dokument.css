@@ -49,6 +49,8 @@
 .dv-format-leiste { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding: 7px 14px; border-bottom: 1px solid var(--bord); background: var(--surf2); flex-shrink: 0; }
 .dv-format-btn { font-size: 11px; padding: 3px 8px; }
 .dv-format-trenner { width: 1px; height: 16px; background: var(--bord); margin: 0 3px; }
+.dv-format-fett { font-weight: 800; }
+.dv-format-kursiv { font-style: italic; }
 
 /* Quelltext-Editor mit Syntax-Einfärbung.
    Das Textfeld liegt (mit transparenter Schrift) über einem Backdrop, das
@@ -215,7 +217,7 @@
 .dv-tb-unten { position: relative; margin-top: 4mm; }
 .dv-tb-hinweis { font-size: .82em; line-height: 1.55; color: #292524; max-width: 72%; }
 .dv-tb-schraeg {
-  position: absolute; top: -2mm; right: 4mm; max-width: 26%;
+  position: absolute; top: 6mm; right: 4mm; max-width: 26%;
   font-size: 1.5em; font-weight: 700; color: #a8a29e;
   font-family: 'Segoe Script', 'Brush Script MT', cursive;
   transform: rotate(-9deg); text-align: center; line-height: 1.1;
@@ -232,7 +234,7 @@
 .dv-aufgabe-hdr-zentriert .dv-aufgabe-kopfzeile > *:first-child { margin-left: 0; }
 .dv-aufgabe-label { font-weight: 800; color: var(--dv-auf-farbe); white-space: nowrap; font-size: var(--dv-auf-schriftgroesse); }
 .dv-aufgabe-titel { font-weight: 700; font-size: var(--dv-auf-schriftgroesse); }
-.dv-aufgabe-titel-unten { font-size: .85em; color: #57534e; font-weight: 400; margin-top: .8mm; }
+.dv-aufgabe-titel-unten { font-size: calc(var(--dv-auf-schriftgroesse) * .85); color: #57534e; font-weight: 400; margin-top: .8mm; }
 .dv-aufgabe-hdr-zentriert .dv-aufgabe-titel-unten { text-align: center; }
 .dv-punkte-kasten { margin-left: auto; display: flex; align-items: center; gap: 1.5mm; white-space: nowrap; }
 .dv-punkte-feld { display: inline-block; width: 11mm; height: 5.5mm; border: .6pt solid #78716c; }

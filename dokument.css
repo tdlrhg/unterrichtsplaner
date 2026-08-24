@@ -130,7 +130,10 @@
 }
 
 .dv-band { position: absolute; left: var(--dv-rand-l); right: var(--dv-rand-r); height: var(--dv-kopf-h); display: flex; align-items: center; gap: 10px; font-size: 8.5pt; color: #57534e; }
-.dv-band-kopf { top: var(--dv-rand-o); }
+/* Linksbündig exakt auf Höhe des Titeltexts der Titelbox (deren eigener
+   Innenabstand-links zählt mit, sonst steht der Titel hier ein Stück
+   weiter links als auf Seite 1). */
+.dv-band-kopf { top: var(--dv-rand-o); left: calc(var(--dv-titel-rand-l) + 3.5mm); font-size: 1.55em; font-weight: 800; color: #1c1917; }
 .dv-band-fuss { bottom: var(--dv-rand-u); height: var(--dv-fuss-h); }
 .dv-band-kopf.dv-band-linie { border-bottom: .4pt solid #b9b2a7; }
 .dv-band-fuss.dv-band-linie { border-top: .4pt solid #b9b2a7; }
@@ -148,7 +151,7 @@
 .dv-tb-rechts { text-align: right; flex: 0 0 auto; }
 /* mit Trennlinie: gleich breit wie links → Trennlinie sitzt mittig */
 .dv-tb-rechts-geteilt { flex: 1 1 0; text-align: left; border-left: .8pt solid #57534e; padding-left: 6mm; }
-.dv-tb-titel { font-size: 1.18em; font-weight: 800; line-height: 1.2; }
+.dv-tb-titel { font-size: 1.55em; font-weight: 800; line-height: 1.2; }
 .dv-tb-sub { font-size: .9em; color: #57534e; margin-top: 1mm; }
 .dv-tb-meta { font-size: .82em; color: #57534e; line-height: 1.5; white-space: nowrap; }
 .dv-tb-meta-links { font-size: .82em; color: #57534e; line-height: 1.5; }

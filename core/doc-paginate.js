@@ -11,9 +11,13 @@ function dvUeberlauf(box) {
 // ── Kopf-/Fußband ────────────────────────────────────────────────
 function dvBand(art, cfg) {
   var band = mk('div', 'dv-band dv-band-' + art + (cfg.linie ? ' dv-band-linie' : ''));
+  // Leere Spalten gar nicht erst anlegen – sonst beansprucht z.B. eine leere
+  // "rechts"-Spalte trotzdem ihr flex:1 und drängt "links" auf ein Drittel
+  // der Breite zusammen, obwohl der Platz ungenutzt bliebe.
   ['links', 'mitte', 'rechts'].forEach(function (pos) {
+    if (!cfg[pos]) return;
     var el = tx('div', 'dv-band-' + pos, '');
-    el.setAttribute('data-tpl', cfg[pos] || '');
+    el.setAttribute('data-tpl', cfg[pos]);
     band.appendChild(el);
   });
   return band;

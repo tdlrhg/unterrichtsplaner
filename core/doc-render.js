@@ -93,6 +93,7 @@ function dvBlock(b, v) {
       th.appendChild(trh); t.appendChild(th);
     }
     var tb = mk('tbody', '');
+    tb.setAttribute('data-splitbody', '1');
     b.zeilen.forEach(function (row) {
       var tr = mk('tr', '');
       row.forEach(function (c) { var e = mk('td', ''); e.innerHTML = c; tr.appendChild(e); });

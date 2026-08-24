@@ -88,6 +88,22 @@ function dvAbschneiden(el, box) {
     else body.removeChild(erstes);
   }
 
+  // Tabellen haben eine andere Struktur (wrap > table > thead?/tbody) als
+  // Aufgabe/Teil (el > hdr?/body als direkte Kinder) – eigener Zusammenbau
+  // statt der generischen Kopf-Logik unten, sonst landet die verschobene
+  // tbody ungültig direkt im wrap statt in einer neuen <table>.
+  if (body.tagName === 'TBODY') {
+    var tabelleRest = el.cloneNode(false);
+    var neueTabelle = mk('table', 'dv-tabelle');
+    var theadOriginal = el.querySelector('thead');
+    if (theadOriginal) neueTabelle.appendChild(theadOriginal.cloneNode(true));
+    var neueTbody = mk('tbody', '');
+    verschoben.forEach(function (k) { neueTbody.appendChild(k); });
+    neueTabelle.appendChild(neueTbody);
+    tabelleRest.appendChild(neueTabelle);
+    return tabelleRest;
+  }
+
   var rest = el.cloneNode(false);
   // Punktwert nur auf dem LETZTEN Fragment zeigen – dort, wo die Aufgabe/
   // Teilaufgabe endgültig endet. Sonst doppelt in der Punkte-Spalte, und die

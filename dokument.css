@@ -324,6 +324,11 @@
 /* ── 3. Druck ── */
 @media print {
   body { background: #fff; }
+  /* Ohne das lassen manche Browser CSS-Hintergründe (Kästchenpapier, Kästen-
+     Füllfarben, Gitter in ::: raster) beim Drucken weg oder verändern ihre
+     Farbe, selbst wenn im Druckdialog "Hintergrundgrafiken" aktiviert ist –
+     diese Option bitte trotzdem zusätzlich anlassen, sie bleibt nötig. */
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .topbar, .dv-editor, .dv-toolbar, .dv-editor-fuss { display: none !important; }
   .dv-layout { display: block; height: auto; overflow: visible; }
   .dv-right { display: block; }

@@ -103,8 +103,14 @@ function dvAbschneiden(el, box) {
   // kommentarlos weiter, ohne Marke/Titel/"(Fortsetzung)" erneut zu nennen.
   var nurLeerraum = verschoben.every(dvIstNurLeerraum);
 
+  // Auf Aufgabe-Ebene nie einen wiederholten Kopf zeigen (kein "Aufgabe X
+  // (Fortsetzung)") - trägt keine Information, die die Teilaufgaben-Marke
+  // ("a) (Fortsetzung)") nicht schon liefert. Auf Teilaufgaben-Ebene bleibt
+  // der Hinweis (dort ist er die einzige Orientierung, welcher Buchstabe
+  // weiterläuft).
   var hdr = el.firstElementChild;
-  if (!nurLeerraum && hdr && (hdr.classList.contains('dv-aufgabe-hdr') || hdr.classList.contains('dv-teil-hdr'))) {
+  var istTeilHdr = hdr && hdr.classList.contains('dv-teil-hdr');
+  if (!nurLeerraum && istTeilHdr) {
     var kopie = hdr.cloneNode(true);
     var pk = kopie.querySelector('.dv-punkte-kasten, .dv-punkte-klammer');
     if (pk) pk.remove();

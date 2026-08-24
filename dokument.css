@@ -205,8 +205,15 @@
 .dv-teil-body { }
 .dv-fortsetzung-hinweis { font-size: .8em; font-weight: 400; font-style: italic; color: #78716c; }
 
-/* Absatz mit Teilaufgaben-Einzug, aber ohne Buchstabe/Punkte (::: text) */
+/* Absatz mit Teilaufgaben-Einzug, aber ohne Buchstabe/Punkte (::: text).
+   Zwei Fälle: direkt unter einer Aufgabe (kein Teil davor) auf Höhe der
+   Buchstaben-Spalte (Aussenrand). Innerhalb einer Teilaufgabe (::: text
+   nach ### x)) steckt es im .dv-teil-body, der über .dv-teil bereits den
+   vollen Buchstaben-Einzug mitbringt – dort reicht die Lücke (2mm) obendrauf,
+   damit es mit dem Fließtext der Teilaufgabe fluchtet statt mit deren
+   Buchstabe (sonst würde Einzug+Lücke doppelt gezählt). */
 .dv-teiltext { margin: 2.5mm 0 2.5mm var(--dv-teil-aussenrand); }
+.dv-teil-body .dv-teiltext { margin-left: 2mm; }
 
 /* Fließtext */
 .dv-p { margin-bottom: var(--dv-abs); }

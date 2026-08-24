@@ -42,7 +42,7 @@ function dvIstNurLeerraum(el) {
 function dvAbschneiden(el, box) {
   var body = el.querySelector('[data-splitbody]');
   var min = 1;
-  if (!body || body.children.length <= min) return null;
+  if (!body || !body.children.length) return null;
 
   var verschoben = [];
   while (body.children.length > min && dvUeberlauf(box)) {
@@ -50,18 +50,38 @@ function dvAbschneiden(el, box) {
     body.removeChild(letztes);
     verschoben.unshift(letztes);
   }
+
+  // Reicht grobes Verschieben nicht (oder war gar nicht möglich, weil nur
+  // 1 Kind da ist – z.B. eine Aufgabe mit nur einer Teilaufgabe): das
+  // letzte verbliebene Kind selbst rekursiv auftrennen, falls es einen
+  // eigenen [data-splitbody] hat (Text/Bild bleiben dann auf der Seite,
+  // nur der überschüssige Rest – meist Leerraum – wandert weiter).
+  if (dvUeberlauf(box) && body.lastElementChild) {
+    var kandidat = body.lastElementChild;
+    if (kandidat.querySelector && kandidat.querySelector('[data-splitbody]')) {
+      var kindRest = dvAbschneiden(kandidat, box);
+      if (kindRest) { kindRest.__kindRest = true; verschoben.unshift(kindRest); }
+    }
+  }
+
   if (!verschoben.length || dvUeberlauf(box)) {
-    verschoben.forEach(function (k) { body.appendChild(k); });
+    // Nur echte body-Kinder zurücklegen – ein kindRest-Fragment war nie
+    // Kind von body (dessen Ursprung "kandidat" bleibt selbst im body und
+    // wurde von seinem eigenen dvAbschneiden()-Aufruf bereits korrekt
+    // gekürzt, dafür ist dort nichts zurückzulegen).
+    verschoben.forEach(function (k) { if (!k.__kindRest) body.appendChild(k); });
     return null;
   }
 
-  // Feinschliff: Das zuletzt verschobene Kind (direkt am Seitenende) hat
-  // selbst evtl. einen eigenen [data-splitbody] (z.B. eine Teilaufgabe mit
-  // Text, Bild und Leerraum). Statt es komplett auf die nächste Seite zu
-  // schieben, testweise zurückholen und selbst auftrennen – dann bleibt
+  // Feinschliff: Das zuerst grob verschobene Kind (direkt am Seitenende)
+  // hat selbst evtl. einen eigenen [data-splitbody] (z.B. eine Teilaufgabe
+  // mit Text, Bild und Leerraum). Statt es komplett auf die nächste Seite
+  // zu schieben, testweise zurückholen und selbst auftrennen – dann bleibt
   // z.B. Text+Bild auf der Seite und nur der überschüssige Leerraum wandert.
+  // (Ein bereits rekursiv aufgetrenntes kindRest-Fragment hier zu übergehen
+  // ist richtig: das steckt nicht mehr im body und wurde schon behandelt.)
   var erstes = verschoben[0];
-  if (erstes.querySelector && erstes.querySelector('[data-splitbody]')) {
+  if (!erstes.__kindRest && erstes.querySelector && erstes.querySelector('[data-splitbody]')) {
     body.appendChild(erstes);
     var feinRest = dvAbschneiden(erstes, box);
     if (feinRest) verschoben[0] = feinRest;

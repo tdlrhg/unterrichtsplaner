@@ -8,6 +8,14 @@ function dvZahl(n) {
   return String(n).replace('.', ',');
 }
 
+// Standardtext für ::: abschluss, wenn kein eigener Inhalt angegeben wird.
+var DV_ABSCHLUSS_STANDARDTEXT = [
+  'der mathematischen Form (FB: nicht gekürzt, Höhe Bruchstrich; FF: vereinbarte Lösungsform; FR: Rundungszeichen fehlt, falsch gerundet; FZ: Kettenrechnung, Zeichen falsch gesetzt; FE: Messgröße/Einheit falsch verwendet)',
+  '(fach-)sprachlichen Fehlern, fehlender Fachsprache, Ausdruck (FS, A)',
+  'unsauberen Ausführungen (Lesbarkeit der Schrift, Übersichtlichkeit, Ordentlichkeit – auch der Streichungen)',
+  'fehlenden Antwortsätzen, wo nötig.'
+];
+
 function dvGesamtpunkte(blocks) {
   var summe = 0, gefunden = false;
   blocks.forEach(function (b) {
@@ -101,6 +109,43 @@ function dvBlock(b, v) {
     });
     t.appendChild(tb); wrap.appendChild(t);
     return wrap;
+  }
+
+  if (b.t === 'abschluss') {
+    var ab = mk('div', 'dv-abschluss');
+
+    var formfehler = mk('div', 'dv-abschluss-formfehler');
+    if (b.kinder && b.kinder.length) {
+      b.kinder.forEach(function (k) { formfehler.appendChild(dvBlock(k, v)); });
+    } else {
+      formfehler.appendChild(tx('p', '', 'Abzüge für Formfehler kann es geben bei:'));
+      var ul = mk('ul', 'dv-liste');
+      DV_ABSCHLUSS_STANDARDTEXT.forEach(function (t) {
+        var li = mk('li', ''); li.innerHTML = docInline(t); ul.appendChild(li);
+      });
+      formfehler.appendChild(ul);
+    }
+    ab.appendChild(formfehler);
+
+    var tabelle = mk('div', 'dv-abschluss-tabelle');
+    var punkteZelle = mk('div', 'dv-abschluss-zelle dv-abschluss-punkte');
+    punkteZelle.appendChild(tx('div', 'dv-abschluss-label', 'Gesamtpunktzahl:'));
+    punkteZelle.appendChild(tx('div', 'dv-abschluss-punktewert', '/' + (b.gesamtpunkte != null ? dvZahl(b.gesamtpunkte) : '')));
+    tabelle.appendChild(punkteZelle);
+
+    tabelle.appendChild(tx('div', 'dv-abschluss-zelle', 'Note:'));
+
+    var notenschluessel = mk('div', 'dv-abschluss-zelle dv-abschluss-notenschluessel');
+    notenschluessel.appendChild(tx('div', '', 'deine Note ab ______ Punkte'));
+    notenschluessel.appendChild(tx('div', '', 'bessere Note ab ______ Punkte'));
+    tabelle.appendChild(notenschluessel);
+
+    tabelle.appendChild(tx('div', 'dv-abschluss-zelle', 'Datum:'));
+    tabelle.appendChild(tx('div', 'dv-abschluss-zelle', 'Signatur:'));
+    ab.appendChild(tabelle);
+
+    ab.appendChild(tx('div', 'dv-abschluss-unterschrift', 'Datum, Unterschrift Erziehungsberechtigter:'));
+    return ab;
   }
 
   if (b.t === 'teiltext') {
@@ -285,7 +330,11 @@ function dvTitelblock(doc, v) {
 // Inhalt schmaler macht. docPaginate() platziert ihn deshalb gesondert.
 function docRender(doc, v) {
   var nodes = [];
-  doc.blocks.forEach(function (b) { nodes.push(dvBlock(b, v)); });
+  var gesamt = dvGesamtpunkte(doc.blocks);
+  doc.blocks.forEach(function (b) {
+    if (b.t === 'abschluss') b.gesamtpunkte = gesamt;
+    nodes.push(dvBlock(b, v));
+  });
   return {
     titelblock: v.titelblock.zeigen ? dvTitelblock(doc, v) : null,
     nodes: nodes

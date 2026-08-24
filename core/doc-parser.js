@@ -116,6 +116,21 @@ function docParse(src) {
         ziel().push({ t: 'raster', hoehe: autoHoehe ? null : (isNaN(hoeheZahl) ? 60 : hoeheZahl), autoHoehe: autoHoehe, gitter: !ohneGitter });
         continue;
       }
+      if (name === 'abschluss') {
+        // Bewertungs-/Abschlussseite: Formfehler-Hinweis (Standardtext,
+        // durch eigenen Inhalt zwischen ::: abschluss und ::: überschreibbar)
+        // plus feste Punkte/Note/Datum/Signatur-Zeile, siehe doc-render.js.
+        // Immer auf Dokumentebene, unabhängig davon in welcher Aufgabe/
+        // Teilaufgabe der Fence-Start steht - sonst landet der Block als
+        // Kind der zuletzt offenen Aufgabe statt in doc.blocks, und
+        // docRender() findet ihn dort nicht für die Gesamtpunktzahl.
+        zurueckAufWurzel();
+        var abschluss = { t: 'abschluss', kinder: [] };
+        ziel().push(abschluss);
+        abschluss.kinder.__fence = true;
+        stack.push(abschluss.kinder);
+        continue;
+      }
       if (name === 'text' || name === 'absatz') {
         // Absatz mit demselben Einzug wie eine Teilaufgabe, aber ohne
         // Buchstabe/Punkte und ohne die Buchstaben-Zählung zu beeinflussen –

@@ -232,16 +232,20 @@ function docParse(src) {
       continue;
     }
 
-    // ── Liste ──
+    // ── Liste (auch Ankreuzoptionen: - [ ] Text / - [x] Text) ──
     if (/^([-*+]|\d+[.)])\s+/.test(line)) {
       var ordered = /^\d/.test(line);
       var items = [];
+      var mc = false;
       while (i < lines.length && /^\s*([-*+]|\d+[.)])\s+/.test(lines[i])) {
-        items.push(docInline(lines[i].trim().replace(/^([-*+]|\d+[.)])\s+/, '')));
+        var roh = lines[i].trim().replace(/^([-*+]|\d+[.)])\s+/, '');
+        var mcM = roh.match(/^\[([ xX])\]\s+(.*)$/);
+        if (mcM) { mc = true; items.push({ text: docInline(mcM[2]), angekreuzt: /x/i.test(mcM[1]) }); }
+        else items.push({ text: docInline(roh), angekreuzt: false });
         i++;
       }
       i--;
-      ziel().push({ t: 'liste', ordered: ordered, items: items });
+      ziel().push({ t: 'liste', ordered: ordered, items: items, mc: mc });
       continue;
     }
 

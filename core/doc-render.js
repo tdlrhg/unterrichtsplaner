@@ -64,8 +64,19 @@ function dvBlock(b, v) {
   }
 
   if (b.t === 'liste') {
-    var l = mk(b.ordered ? 'ol' : 'ul', 'dv-liste');
-    b.items.forEach(function (it) { var li = mk('li', ''); li.innerHTML = it; l.appendChild(li); });
+    var l = mk(b.ordered ? 'ol' : 'ul', 'dv-liste' + (b.mc ? ' dv-liste-mc' : ''));
+    b.items.forEach(function (it) {
+      var li = mk('li', '');
+      if (b.mc) {
+        li.appendChild(mk('span', 'dv-mc-kaestchen' + (it.angekreuzt ? ' dv-mc-angekreuzt' : '')));
+        var text = mk('span', '');
+        text.innerHTML = it.text;
+        li.appendChild(text);
+      } else {
+        li.innerHTML = it.text;
+      }
+      l.appendChild(li);
+    });
     return l;
   }
 

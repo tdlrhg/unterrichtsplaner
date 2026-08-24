@@ -165,6 +165,7 @@ var DV_BAUSTEINE = [
   { trenner: true },
   { label: 'Hinweis',    titel: 'Hinweiskasten (::: hinweis)',             text: '::: hinweis titel="Hinweis"\n' + DV_CURSOR + '\n:::\n' },
   { label: 'Tabelle',    titel: 'Tabelle',                                 text: '| ' + DV_CURSOR + 'Spalte 1 | Spalte 2 |\n|---|---|\n| Zelle | Zelle |\n' },
+  { label: 'Ankreuzen',  titel: 'Ankreuzoptionen (MC): - [ ] Text',        text: '- [ ] ' + DV_CURSOR + 'Option A\n- [ ] Option B\n- [ ] Option C\n' },
   { label: 'Seite',      titel: 'Seitenumbruch (+++)',                     text: '+++\n' }
 ];
 

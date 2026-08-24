@@ -276,6 +276,14 @@
 .dv-h1 { font-size: 1.25em; font-weight: 800; margin: 4mm 0 2mm; }
 .dv-liste { margin: 0 0 var(--dv-abs) 6mm; }
 .dv-liste li { margin-bottom: 1mm; }
+/* Ankreuzoptionen (MC): - [ ] Text / - [x] Text */
+.dv-liste-mc { list-style: none; margin-left: 0; }
+.dv-liste-mc li { display: flex; align-items: baseline; gap: 2.5mm; margin-bottom: 2mm; }
+.dv-mc-kaestchen {
+  display: inline-block; width: 4mm; height: 4mm; flex-shrink: 0;
+  border: .7pt solid #57534e; border-radius: 1px; transform: translateY(.4mm);
+}
+.dv-mc-angekreuzt { background: #57534e; }
 .dv-hr { border-top: .4pt solid #b9b2a7; margin: 3mm 0; }
 .dv-page code { font-family: 'SFMono-Regular', Consolas, monospace; font-size: .92em; background: #f5f2ed; padding: 0 .8mm; }
 .dv-luecke { display: inline-block; min-width: 28mm; border-bottom: .6pt solid #44403c; }

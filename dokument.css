@@ -218,11 +218,11 @@
 .dv-tb-nf-linie { flex: 1; border-bottom: .6pt solid #44403c; height: 4mm; }
 .dv-tb-nf-kurz { width: 18mm; border-bottom: .6pt solid #44403c; height: 4mm; }
 .dv-tb-unten { position: relative; margin-top: 4mm; }
-.dv-tb-hinweis { font-size: .82em; line-height: 1.55; color: #292524; max-width: 100%; }
+.dv-tb-hinweis { font-size: .82em; line-height: 1.55; color: #292524; max-width: calc(100% - 3mm); margin-left: 3mm; }
 /* Nur einschränken, wenn tatsächlich ein schräger Zusatztext daneben steht –
    reserviert dann genau dessen Breite (eigenes max-width + rechter Abstand),
    statt frei geraten zu sein. Ohne vielErfolg bleibt die volle Breite nutzbar. */
-.dv-tb-unten:has(.dv-tb-schraeg) .dv-tb-hinweis { max-width: calc(74% - 4mm); }
+.dv-tb-unten:has(.dv-tb-schraeg) .dv-tb-hinweis { max-width: calc(74% - 7mm); }
 .dv-tb-schraeg {
   position: absolute; top: 6mm; right: 4mm; max-width: 26%;
   font-size: 1.5em; font-weight: 700; color: #a8a29e;

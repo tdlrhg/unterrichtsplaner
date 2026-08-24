@@ -44,6 +44,19 @@ function dvAbschneiden(el, box) {
     return null;
   }
 
+  // Feinschliff: Das zuletzt verschobene Kind (direkt am Seitenende) hat
+  // selbst evtl. einen eigenen [data-splitbody] (z.B. eine Teilaufgabe mit
+  // Text, Bild und Leerraum). Statt es komplett auf die nächste Seite zu
+  // schieben, testweise zurückholen und selbst auftrennen – dann bleibt
+  // z.B. Text+Bild auf der Seite und nur der überschüssige Leerraum wandert.
+  var erstes = verschoben[0];
+  if (erstes.querySelector && erstes.querySelector('[data-splitbody]')) {
+    body.appendChild(erstes);
+    var feinRest = dvAbschneiden(erstes, box);
+    if (feinRest) verschoben[0] = feinRest;
+    else body.removeChild(erstes);
+  }
+
   var rest = el.cloneNode(false);
   // Punktwert nur auf dem ersten Fragment zeigen – sonst doppelt in der
   // Punkte-Spalte. Die Aufgabennummer bleibt erhalten (data-aufgabe-nr),

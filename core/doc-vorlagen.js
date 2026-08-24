@@ -79,6 +79,11 @@ function dvApplyVorlage(el, v) {
   s.setProperty('--dv-rand-r', Math.max(r.rechts, randMinInhalt) + 'mm');
   s.setProperty('--dv-titel-rand-l', Math.max(r.links, randMinTitel) + 'mm');
   s.setProperty('--dv-titel-rand-r', Math.max(r.rechts, randMinTitel) + 'mm');
+  // Muss exakt zur Top-Position des Titelblocks passen (siehe doc-paginate.js,
+  // dort bei aktivem Rahmen bewusst nah am Rahmen statt am (größeren) Rand
+  // oben) – sonst steht der Kopfzeilen-Titel ab Seite 2 vertikal woanders
+  // als der Titel auf Seite 1.
+  s.setProperty('--dv-titel-rand-o', v.seite.rahmen ? 'calc(var(--dv-rahmen-abstand) + 1mm)' : (Math.max(r.oben, randMinInhalt) + 'mm'));
   s.setProperty('--dv-kaestchen-groesse', (v.seite.kaestchenGroesse || 5) + 'mm');
   s.setProperty('--dv-rahmen-abstand', (v.seite.rahmenAbstand || 8) + 'mm');
   s.setProperty('--dv-rahmen-staerke', (v.seite.rahmenStaerke || 1.2) + 'pt');

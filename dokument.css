@@ -206,7 +206,7 @@
 .dv-fortsetzung-hinweis { font-size: .8em; font-weight: 400; font-style: italic; color: #78716c; }
 
 /* Absatz mit Teilaufgaben-Einzug, aber ohne Buchstabe/Punkte (::: text) */
-.dv-teiltext { margin: 2.5mm 0 2.5mm calc(var(--dv-teil-aussenrand) + var(--dv-teil-einzug)); }
+.dv-teiltext { margin: 2.5mm 0 2.5mm var(--dv-teil-aussenrand); }
 
 /* Fließtext */
 .dv-p { margin-bottom: var(--dv-abs); }

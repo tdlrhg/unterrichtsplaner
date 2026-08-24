@@ -254,6 +254,20 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
     seiten.pop();
   }
 
+  // Leerraum mit h=auto (::: platz/raster/kaestchen) bis zum unteren Rand
+  // des Inhaltsbereichs strecken – dort ist er jetzt final platziert, also
+  // steht fest, wie viel Platz bis zur Seite (bzw. bis zum Rahmen) noch
+  // übrig ist. Nur der jeweils letzte Auto-Block einer Seite wird gestreckt,
+  // das deckt den üblichen Fall (Leerraum als letztes Element) ab.
+  seiten.forEach(function (seite) {
+    var content = seite.querySelector('.dv-content');
+    var autoBloecke = content.querySelectorAll('[data-auto-hoehe]');
+    if (!autoBloecke.length) return;
+    var letzterBlock = autoBloecke[autoBloecke.length - 1];
+    var verfuegbar = content.clientHeight - letzterBlock.offsetTop;
+    if (verfuegbar > letzterBlock.offsetHeight) letzterBlock.style.height = verfuegbar + 'px';
+  });
+
   // Platzhalter inkl. Seitenzahlen füllen
   var basis = dvPlatzhalter(v, meta);
   seiten.forEach(function (s, idx) {

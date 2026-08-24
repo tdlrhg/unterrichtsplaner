@@ -110,7 +110,14 @@ function dvBlock(b, v) {
 
   if (b.t === 'raster') {
     var r = mk('div', 'dv-raster' + (b.gitter ? ' dv-raster-gitter' : ''));
-    r.style.height = b.hoehe + 'mm';
+    if (b.autoHoehe) {
+      // Platzhalterhöhe für die Seitenaufteilung – docPaginate streckt
+      // diesen Block danach auf die tatsächlich verfügbare Resthöhe.
+      r.setAttribute('data-auto-hoehe', '1');
+      r.style.height = '20mm';
+    } else {
+      r.style.height = b.hoehe + 'mm';
+    }
     return r;
   }
 

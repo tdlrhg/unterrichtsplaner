@@ -105,7 +105,12 @@ function docParse(src) {
         // eigenes Gitter – gedacht für Seiten mit Kästchenpapier-Hintergrund,
         // wo die Zeilen schon da sind und ein zweites Gitter nur stören würde.
         var ohneGitter = name !== 'raster' && name !== 'kaestchen';
-        ziel().push({ t: 'raster', hoehe: parseInt(opt.h || opt.hoehe || 60, 10), gitter: !ohneGitter });
+        // h=auto: Höhe wird erst bei der Seitenaufteilung final bestimmt –
+        // füllt automatisch bis zum unteren Rand der Seite, statt eine
+        // feste mm-Zahl erraten zu müssen.
+        var hoeheRoh = opt.h || opt.hoehe;
+        var autoHoehe = hoeheRoh === 'auto';
+        ziel().push({ t: 'raster', hoehe: autoHoehe ? null : (parseInt(hoeheRoh, 10) || 60), autoHoehe: autoHoehe, gitter: !ohneGitter });
         continue;
       }
       if (name === 'text' || name === 'absatz') {

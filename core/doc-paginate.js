@@ -154,10 +154,26 @@ function dvPunkteSpalteFuellen(seiten, v, aufgabenSummen) {
     var content = f.seite.querySelector('.dv-content');
     if (!spalte || !content) return;
     var box = mk('div', 'dv-punkte-gesamt');
-    box.style.top = (f.el.offsetTop + f.el.offsetHeight) + 'px';
+    var boxTop = f.el.offsetTop + f.el.offsetHeight;
+    box.style.top = boxTop + 'px';
     box.appendChild(tx('div', 'dv-punkte-gesamt-label', 'Aufgabe ' + nr));
     box.appendChild(tx('div', 'dv-punkte-gesamt-wert', '/' + dvZahl(summe)));
     spalte.appendChild(box);
+
+    // Falls im Hauptinhalt direkt danach schon der nächste Block beginnt
+    // (z.B. die nächste Aufgabe), bevor die Gesamtbox in der Punkte-Spalte
+    // fertig ist, dessen Abstand nach oben vergrößern – sonst wirkt es so,
+    // als würde die nächste Aufgabe schon anfangen, während die Box der
+    // vorherigen noch nicht zu Ende ist. Direkt auf den gewünschten
+    // Gesamtabstand setzen (nicht addieren!): angrenzende vertikale Margins
+    // kollabieren in CSS zum GRÖSSEREN der beiden statt sich zu summieren,
+    // daher reicht max(bisheriger Abstand, Boxhöhe) als neuer marginTop.
+    var naechstes = f.el.nextElementSibling;
+    if (naechstes) {
+      var bisherigerAbstand = naechstes.offsetTop - boxTop;
+      var benoetigterAbstand = Math.max(bisherigerAbstand, box.offsetHeight);
+      if (benoetigterAbstand > bisherigerAbstand) naechstes.style.marginTop = benoetigterAbstand + 'px';
+    }
   });
 }
 

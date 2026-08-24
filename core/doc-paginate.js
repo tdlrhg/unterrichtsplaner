@@ -171,7 +171,7 @@ function dvPunkteSpalteFuellen(seiten, v, aufgabenSummen) {
     var naechstes = f.el.nextElementSibling;
     if (naechstes) {
       var bisherigerAbstand = naechstes.offsetTop - boxTop;
-      var benoetigterAbstand = Math.max(bisherigerAbstand, box.offsetHeight);
+      var benoetigterAbstand = Math.max(bisherigerAbstand, box.offsetHeight + 4 * DV_PX_PRO_MM);
       if (benoetigterAbstand > bisherigerAbstand) naechstes.style.marginTop = benoetigterAbstand + 'px';
     }
   });

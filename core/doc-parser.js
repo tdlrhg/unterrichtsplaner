@@ -110,7 +110,10 @@ function docParse(src) {
         // feste mm-Zahl erraten zu müssen.
         var hoeheRoh = opt.h || opt.hoehe;
         var autoHoehe = hoeheRoh === 'auto';
-        ziel().push({ t: 'raster', hoehe: autoHoehe ? null : (parseInt(hoeheRoh, 10) || 60), autoHoehe: autoHoehe, gitter: !ohneGitter });
+        // Nicht "parseInt(x) || 60": die Zahl 0 ist falsy in JS, h=0 würde
+        // sonst fälschlich zu 60 – stattdessen explizit auf NaN prüfen.
+        var hoeheZahl = parseInt(hoeheRoh, 10);
+        ziel().push({ t: 'raster', hoehe: autoHoehe ? null : (isNaN(hoeheZahl) ? 60 : hoeheZahl), autoHoehe: autoHoehe, gitter: !ohneGitter });
         continue;
       }
       if (name === 'text' || name === 'absatz') {

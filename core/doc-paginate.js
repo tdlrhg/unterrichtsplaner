@@ -90,6 +90,10 @@ function dvAbschneiden(el, box) {
     if (pk) pk.remove();
     var ti = kopie.querySelector('.dv-aufgabe-titel, .dv-teil-titel');
     if (ti) ti.remove();
+    // Themen-Titel (bei aktivem titelUnten unter Label+Punkten) trägt keine
+    // neue Information – nie wiederholen, egal was danach folgt.
+    var tu = kopie.querySelector('.dv-aufgabe-titel-unten');
+    if (tu) tu.remove();
     var lead = kopie.querySelector('.dv-teil-leader');
     if (lead) lead.remove();
     // Als eigenes Element anhängen statt in die Marke ("c)") hineinzuschreiben:

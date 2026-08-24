@@ -24,13 +24,13 @@ function dvBand(art, cfg) {
 }
 
 // ── Block am Seitenende auftrennen ───────────────────────────────
-// Schiebt so lange Kinder aus dem Block heraus, bis der Kopfteil auf
-// die Seite passt. "minKinder" verhindert Schusterjungen: solange oben
-// nicht genug stehen bleibt, wird lieber der ganze Block umbrochen.
-// Gibt das Reststück mit wiederholtem Kopf zurück, oder null.
-function dvAbschneiden(el, box, minKinder) {
+// Schiebt so lange Kinder aus dem Block heraus, bis der Kopfteil auf die
+// Seite passt. Trennt sobald nötig, auch wenn dadurch nur ein einzelnes
+// Kind oben oder unten allein steht (keine Schusterjungen/Waisenkind-
+// Mindestzahl). Gibt das Reststück mit wiederholtem Kopf zurück, oder null.
+function dvAbschneiden(el, box) {
   var body = el.querySelector('[data-splitbody]');
-  var min = Math.max(1, minKinder || 1);
+  var min = 1;
   if (!body || body.children.length <= min) return null;
 
   var verschoben = [];
@@ -196,11 +196,11 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
     box.appendChild(el);
     if (!dvUeberlauf(box)) continue;
 
-    // 1) Auf dieser Seite trennen – nur wenn oben ein sinnvoller Rest bleibt
-    var rest = dvAbschneiden(el, box, 2);
+    // 1) Auf dieser Seite trennen, sobald nötig
+    var rest = dvAbschneiden(el, box);
     if (rest) { queue.unshift(rest); continue; }
 
-    // 2) Sonst den ganzen Block auf die nächste Seite umbrechen
+    // 2) Nicht trennbar (0-1 Kinder) → ganzen Block auf die nächste Seite
     if (box.children.length > 1) {
       box.removeChild(el);
       neueSeite();
@@ -208,8 +208,8 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
       if (!dvUeberlauf(box)) continue;
     }
 
-    // 3) Auch allein zu groß → jetzt notfalls überall trennen
-    rest = dvAbschneiden(el, box, 1);
+    // 3) Auch allein zu groß → auf der neuen Seite trennen
+    rest = dvAbschneiden(el, box);
     if (rest) queue.unshift(rest);
   }
 

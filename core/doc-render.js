@@ -20,12 +20,16 @@ function dvGesamtpunkte(blocks) {
 
 // Punktesumme einer einzelnen Aufgabe (eigene Punkte oder Summe ihrer Teile).
 function dvAufgabeSumme(aufgabe) {
-  var summe = 0, gefunden = false;
-  if (aufgabe.punkte != null) { summe += aufgabe.punkte; gefunden = true; }
+  // Punkte der Teilaufgaben ersetzen die eigene Punktzahl der Aufgabe, statt
+  // dazuaddiert zu werden: "## Aufgabe 1 [8P]" mit "### a) [5P]" + "### b)
+  // [3P]" ergibt 8, nicht 16 - die [8P] an der Aufgabe ist dann nur die
+  // (redundante) Gesamtangabe, keine zusätzlichen Punkte obendrauf.
+  var summeTeile = 0, gefundenTeile = false;
   (aufgabe.kinder || []).forEach(function (k) {
-    if (k.t === 'teil' && k.punkte != null) { summe += k.punkte; gefunden = true; }
+    if (k.t === 'teil' && k.punkte != null) { summeTeile += k.punkte; gefundenTeile = true; }
   });
-  return gefunden ? summe : null;
+  if (gefundenTeile) return summeTeile;
+  return aufgabe.punkte != null ? aufgabe.punkte : null;
 }
 
 // Aufgabennummer → Gesamtpunktzahl. Wird VOR der Seitenaufteilung aus dem

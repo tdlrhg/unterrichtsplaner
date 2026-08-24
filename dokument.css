@@ -140,7 +140,7 @@
 
 /* Titelblock */
 .dv-titelblock { margin-bottom: 6mm; text-align: left; }
-.dv-titelblock-kasten { border: .8pt solid #57534e; padding: 3mm 4mm; position: relative; }
+.dv-titelblock-kasten { border: .8pt solid #57534e; padding: 2mm 3.5mm; position: relative; }
 .dv-titelblock-linie { border-bottom: 1.6pt solid var(--dv-auf-farbe); padding-bottom: 2mm; position: relative; }
 .dv-sz-gross.dv-sz-gross-imkasten { top: 1mm; right: 2mm; }
 .dv-tb-zeile1 { display: flex; align-items: stretch; gap: 8mm; }
@@ -148,7 +148,7 @@
 .dv-tb-rechts { text-align: right; flex: 0 0 auto; }
 /* mit Trennlinie: gleich breit wie links → Trennlinie sitzt mittig */
 .dv-tb-rechts-geteilt { flex: 1 1 0; text-align: left; border-left: .8pt solid #57534e; padding-left: 6mm; }
-.dv-tb-titel { font-size: 1.35em; font-weight: 800; line-height: 1.2; }
+.dv-tb-titel { font-size: 1.18em; font-weight: 800; line-height: 1.2; }
 .dv-tb-sub { font-size: .9em; color: #57534e; margin-top: 1mm; }
 .dv-tb-meta { font-size: .82em; color: #57534e; line-height: 1.5; white-space: nowrap; }
 .dv-tb-meta-links { font-size: .82em; color: #57534e; line-height: 1.5; }
@@ -158,7 +158,7 @@
 .dv-tb-meta-datum     { grid-column: 1; grid-row: 2; }
 .dv-tb-meta-zeit      { grid-column: 2; grid-row: 2; text-align: right; }
 .dv-tb-nf-label-kompakt { font-weight: 800; font-size: 1em; color: #1c1917; white-space: nowrap; margin-bottom: 1.5mm; }
-.dv-tb-nf-kompakt-flaeche { min-width: 55mm; height: 18mm; }
+.dv-tb-nf-kompakt-flaeche { min-width: 55mm; height: 14mm; }
 .dv-tb-namensfeld { display: flex; align-items: flex-end; gap: 3mm; margin-top: 5mm; font-size: .85em; }
 .dv-tb-nf-label { color: #57534e; white-space: nowrap; }
 .dv-tb-nf-linie { flex: 1; border-bottom: .6pt solid #44403c; height: 4mm; }

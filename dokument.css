@@ -23,25 +23,28 @@
 .dv-form-kopf { margin-bottom: 6px; }
 .dv-form-aktionen { display: flex; gap: 8px; margin-bottom: 8px; }
 .dv-banner { background: #fdf6e9; border: 1px solid #e6d5b0; border-radius: var(--r); padding: 12px; margin-bottom: 12px; font-size: 12px; color: #7a5c17; line-height: 1.5; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
-.dv-gruppe { margin-bottom: 4px; border-bottom: 1px solid var(--bord); }
+.dv-gruppe { margin-bottom: 2px; border-bottom: 1px solid var(--bord); }
 .dv-gruppe-titel {
   font-size: 11px; font-weight: 700; color: var(--tx2); text-transform: uppercase; letter-spacing: .5px;
-  padding: 9px 2px; cursor: pointer; display: flex; align-items: center; gap: 7px;
+  padding: 6px 2px; cursor: pointer; display: flex; align-items: center; gap: 7px;
   user-select: none; transition: color .15s;
 }
 .dv-gruppe-titel:hover { color: var(--pri); }
 .dv-gruppe-offen .dv-gruppe-titel { color: var(--pri); }
 .dv-gruppe-pfeil { font-size: 9px; width: 10px; flex-shrink: 0; }
-.dv-gruppe-hinweis { font-size: 10.5px; color: var(--tx3); margin: -4px 0 10px; line-height: 1.5; font-family: 'SFMono-Regular', Consolas, monospace; }
-.dv-gruppe-felder { display: flex; flex-wrap: wrap; gap: 0 10px; padding-bottom: 14px; }
-.dv-form .dv-fg { flex: 1 1 100%; margin-bottom: 12px; }
+.dv-gruppe-hinweis { font-size: 10.5px; color: var(--tx3); margin: -2px 0 7px; line-height: 1.4; font-family: 'SFMono-Regular', Consolas, monospace; }
+.dv-gruppe-felder { display: flex; flex-wrap: wrap; gap: 0 10px; padding-bottom: 8px; }
+.dv-form .dv-fg { flex: 1 1 100%; margin-bottom: 7px; }
 .dv-form .dv-fg.halb { flex: 1 1 calc(50% - 5px); min-width: 130px; }
-.dv-form .fl { margin-bottom: 4px; }
+.dv-form .fl { margin-bottom: 3px; font-size: 10px; }
+/* Kompaktere Eingabefelder nur hier – .finp/.fl sind globale Klassen, die
+   auch in Prüfungsplaner & Co. verwendet werden, dort unangetastet lassen. */
+.dv-form .finp { padding: 5px 8px; font-size: 12px; }
 .dv-form .finp:disabled { background: var(--surf2); color: var(--tx3); cursor: not-allowed; }
 .dv-zahl-wrap { display: flex; align-items: center; gap: 6px; }
 .dv-einheit { font-size: 11px; color: var(--tx3); flex-shrink: 0; min-width: 16px; }
-.dv-farbe { width: 34px; height: 32px; padding: 2px; border: 1px solid var(--bord); border-radius: 6px; background: #fff; cursor: pointer; flex-shrink: 0; }
-.dv-check { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--tx); cursor: pointer; padding: 6px 0; }
+.dv-farbe { width: 30px; height: 26px; padding: 2px; border: 1px solid var(--bord); border-radius: 6px; background: #fff; cursor: pointer; flex-shrink: 0; }
+.dv-check { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--tx); cursor: pointer; padding: 3px 0; }
 .dv-check input { width: 15px; height: 15px; accent-color: var(--pri); cursor: pointer; }
 .dv-editor-hdr { padding: 10px 14px; border-bottom: 1px solid var(--bord); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .dv-editor-hdr .fl { margin: 0; }

@@ -108,6 +108,17 @@ function docParse(src) {
         ziel().push({ t: 'raster', hoehe: parseInt(opt.h || opt.hoehe || 60, 10), gitter: !ohneGitter });
         continue;
       }
+      if (name === 'text' || name === 'absatz') {
+        // Absatz mit demselben Einzug wie eine Teilaufgabe, aber ohne
+        // Buchstabe/Punkte und ohne die Buchstaben-Zählung zu beeinflussen –
+        // für Zusatztext, der zu einer Teilaufgabe gehört, aber selbst
+        // keine eigene (bewertete) Teilaufgabe sein soll.
+        var teiltext = { t: 'teiltext', kinder: [] };
+        ziel().push(teiltext);
+        teiltext.kinder.__fence = true;
+        stack.push(teiltext.kinder);
+        continue;
+      }
       if (name === 'kasten' || name === 'merke' || name === 'material' || name === 'hinweis' || name === 'loesung') {
         var kasten = { t: 'kasten', variante: name, titel: opt.titel || '', kinder: [] };
         ziel().push(kasten);

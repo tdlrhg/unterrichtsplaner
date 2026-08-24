@@ -87,6 +87,12 @@ function dvBlock(b, v) {
     return wrap;
   }
 
+  if (b.t === 'teiltext') {
+    var tt = mk('div', 'dv-teiltext');
+    (b.kinder || []).forEach(function (k) { tt.appendChild(dvBlock(k, v)); });
+    return tt;
+  }
+
   if (b.t === 'kasten') {
     var kb = mk('div', 'dv-kasten dv-kasten-' + b.variante);
     if (b.titel) kb.appendChild(tx('div', 'dv-kasten-titel', b.titel));

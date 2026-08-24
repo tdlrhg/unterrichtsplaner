@@ -102,6 +102,15 @@ function dvApplyVorlage(el, v) {
   s.setProperty('--dv-punkte-schriftgroesse', ((v.punkteSpalte && v.punkteSpalte.schriftgroesse) || 1.7) + 'em');
   s.setProperty('--dv-sz-gross-groesse', ((v.seitenzahlGross && v.seitenzahlGross.groesse) || 40) + 'pt');
   s.setProperty('--dv-sz-gross-farbe', (v.seitenzahlGross && v.seitenzahlGross.farbe) || '#d4cec2');
+  // Die Kopfzeile ab Seite 2 sitzt bei aktivem Rahmen nah am Rahmen (siehe
+  // --dv-titel-rand-o) – dort würde ihre Trennlinie sonst mitten durch die
+  // (deutlich tiefer reichende) große Seitenzahl laufen. Kopf-Höhe in dem
+  // Fall so weit vergrößern, dass die Trennlinie unterhalb der Seitenzahl
+  // landet, statt sie zu durchschneiden.
+  if (v.kopf.zeigen && v.seite.rahmen && v.seitenzahlGross && v.seitenzahlGross.zeigen) {
+    var szGroesseMm = ((v.seitenzahlGross.groesse || 40)) * 0.3528;
+    kopfH = Math.max(kopfH, 4 + szGroesseMm);
+  }
   s.setProperty('--dv-kopf-h', kopfH + 'mm');
   s.setProperty('--dv-fuss-h', fussH + 'mm');
   s.setProperty('--dv-font', v.typo.font);

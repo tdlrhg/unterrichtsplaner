@@ -23,6 +23,17 @@ function dvBand(art, cfg) {
   return band;
 }
 
+// Erkennt, ob ein (evtl. selbst wieder aufgetrenntes) Element nur noch aus
+// Leerraum besteht (::: linien/platz/raster), ohne echten neuen Aufgaben-
+// text – rekursiv, weil eine Teilaufgabe, die selbst schon aufgetrennt
+// wurde, wieder nur ihren restBody mit reinem Leerraum enthalten kann.
+function dvIstNurLeerraum(el) {
+  if (el.classList && el.classList.contains('dv-raster')) return true;
+  var body = el.querySelector && el.querySelector('[data-splitbody]');
+  if (!body) return false;
+  return Array.prototype.every.call(body.children, dvIstNurLeerraum);
+}
+
 // ── Block am Seitenende auftrennen ───────────────────────────────
 // Schiebt so lange Kinder aus dem Block heraus, bis der Kopfteil auf die
 // Seite passt. Trennt sobald nötig, auch wenn dadurch nur ein einzelnes
@@ -58,12 +69,22 @@ function dvAbschneiden(el, box) {
   }
 
   var rest = el.cloneNode(false);
-  // Punktwert nur auf dem ersten Fragment zeigen – sonst doppelt in der
-  // Punkte-Spalte. Die Aufgabennummer bleibt erhalten (data-aufgabe-nr),
-  // die wird für die Gesamtbox über alle Fragmente hinweg gebraucht.
-  rest.removeAttribute('data-punkte');
+  // Punktwert nur auf dem LETZTEN Fragment zeigen – dort, wo die Aufgabe/
+  // Teilaufgabe endgültig endet. Sonst doppelt in der Punkte-Spalte, und die
+  // Zahl soll ans Ende des zugehörigen Inhalts wandern (kurz vor die
+  // Gesamtbox), nicht mitten auf der Seite hängen bleiben, während der Rest
+  // noch weiterläuft. Aufgabennummer bleibt in jedem Fall erhalten
+  // (data-aufgabe-nr), die wird für die Gesamtbox über alle Fragmente
+  // hinweg gebraucht.
+  el.removeAttribute('data-punkte');
+
+  // Nur Leerraum verschoben (::: linien/platz/raster), kein neuer Aufgaben-
+  // text? Dann keinen wiederholten Kopf zeigen – der Leerraum läuft dann
+  // kommentarlos weiter, ohne Marke/Titel/"(Fortsetzung)" erneut zu nennen.
+  var nurLeerraum = verschoben.every(dvIstNurLeerraum);
+
   var hdr = el.firstElementChild;
-  if (hdr && (hdr.classList.contains('dv-aufgabe-hdr') || hdr.classList.contains('dv-teil-hdr'))) {
+  if (!nurLeerraum && hdr && (hdr.classList.contains('dv-aufgabe-hdr') || hdr.classList.contains('dv-teil-hdr'))) {
     var kopie = hdr.cloneNode(true);
     var pk = kopie.querySelector('.dv-punkte-kasten, .dv-punkte-klammer');
     if (pk) pk.remove();

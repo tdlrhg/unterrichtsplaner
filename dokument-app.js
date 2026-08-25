@@ -154,6 +154,7 @@ var DV_CURSOR = '\u00ab';
 var DV_BAUSTEINE = [
   { label: 'Fett',    titel: 'Fett (**Text**) – markierten Text umschließen',   wrap: '**', cls: 'dv-format-fett' },
   { label: 'Kursiv',  titel: 'Kursiv (*Text*) – markierten Text umschließen',   wrap: '*',  cls: 'dv-format-kursiv' },
+  { label: 'Bruch',   titel: 'Bruch mit Bruchstrich ({Zähler/Nenner})',        aktion: 'bruch' },
   { trenner: true },
   { label: 'Aufgabe',    titel: 'Neue Aufgabe (##)',                       text: '## Aufgabe ' + DV_CURSOR + '[P]\n' },
   { label: 'a)',         titel: 'Neue Teilaufgabe (###)',                  text: '### ' + DV_CURSOR + '[P]\n' },
@@ -211,6 +212,27 @@ function dvFormatUmschliessen(marker) {
   ta.value = DV.quelle;
   var neuStart = start + marker.length;
   ta.setSelectionRange(neuStart, neuStart + ausgewaehlt.length);
+  ta.focus();
+  localStorage.setItem('dv_quelle', DV.quelle);
+  dvUpdate();
+}
+
+// Bruch an der Cursorposition einfügen ({Zähler/Nenner}). Anders als
+// dvFormatUmschliessen (symmetrisches Zeichenpaar) braucht ein Bruch drei
+// unterschiedliche Teile – eine markierte Auswahl wird als Zähler
+// übernommen, der Nenner-Platzhalter danach markiert zum Weitertippen.
+function dvBruchEinfuegen() {
+  var ta = document.getElementById('dv-ta');
+  if (!ta) return;
+  var start = ta.selectionStart, ende = ta.selectionEnd;
+  var zaehler = ta.value.slice(start, ende) || '3';
+  var nenner = '4';
+  var text = '{' + zaehler + '/' + nenner + '}';
+
+  DV.quelle = ta.value.slice(0, start) + text + ta.value.slice(ende);
+  ta.value = DV.quelle;
+  var nennerStart = start + 1 + zaehler.length + 1;
+  ta.setSelectionRange(nennerStart, nennerStart + nenner.length);
   ta.focus();
   localStorage.setItem('dv_quelle', DV.quelle);
   dvUpdate();
@@ -689,7 +711,9 @@ function dvRenderApp() {
     if (b.trenner) { formatLeiste.appendChild(mk('span', 'dv-format-trenner')); return; }
     var fb = btn(b.label, 'btn btn-ghost btn-xs dv-format-btn' + (b.cls ? ' ' + b.cls : ''));
     fb.title = b.titel;
-    fb.onclick = b.wrap ? function () { dvFormatUmschliessen(b.wrap); } : function () { dvBausteinEinfuegen(b.text); };
+    fb.onclick = b.wrap ? function () { dvFormatUmschliessen(b.wrap); }
+      : b.aktion === 'bruch' ? function () { dvBruchEinfuegen(); }
+      : function () { dvBausteinEinfuegen(b.text); };
     formatLeiste.appendChild(fb);
   });
   inhalt.appendChild(formatLeiste);

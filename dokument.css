@@ -312,6 +312,15 @@
 .dv-page code { font-family: 'SFMono-Regular', Consolas, monospace; font-size: .92em; background: #f5f2ed; padding: 0 .8mm; }
 .dv-luecke { display: inline-block; min-width: 28mm; border-bottom: .6pt solid #44403c; }
 
+/* Bruch: {Zähler/Nenner} → gestapelte Darstellung mit Bruchstrich */
+.dv-bruch {
+  display: inline-flex; flex-direction: column; align-items: stretch;
+  vertical-align: middle; text-align: center; font-size: .82em;
+  line-height: 1.25; margin: 0 .3mm;
+}
+.dv-bruch-z { padding: 0 .5mm; border-bottom: .7pt solid currentColor; }
+.dv-bruch-n { padding: 0 .5mm; }
+
 /* Kästen */
 .dv-kasten { background: var(--dv-kasten-bg); border: var(--dv-kasten-rahmen); border-radius: 1mm; padding: 2.5mm 3mm; margin-bottom: var(--dv-abs); }
 .dv-kasten-titel { font-weight: 700; font-size: .9em; margin-bottom: 1.2mm; }

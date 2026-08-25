@@ -11,6 +11,11 @@ function docEsc(s) {
 // ── Inline-Auszeichnung ──────────────────────────────────────────
 function docInline(s) {
   var h = docEsc(s);
+  // Bruch: {Zähler/Nenner} → gestapelte Darstellung mit Bruchstrich (siehe
+  // .dv-bruch in dokument.css). Vor den anderen Regeln, damit z.B. * in
+  // Zähler/Nenner (kaum vorkommend) nicht versehentlich als Kursiv gilt.
+  h = h.replace(/\{([^{}/\n]{1,12})\/([^{}/\n]{1,12})\}/g,
+    '<span class="dv-bruch"><span class="dv-bruch-z">$1</span><span class="dv-bruch-n">$2</span></span>');
   h = h.replace(/`([^`]+)`/g, '<code>$1</code>');
   h = h.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   h = h.replace(/__([^_]+)__/g, '<strong>$1</strong>');

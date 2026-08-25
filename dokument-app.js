@@ -160,7 +160,7 @@ var DV_BAUSTEINE = [
   { label: 'Absatz',     titel: 'Absatz ohne eigene Teilaufgabe (::: text)', text: '::: text\n' + DV_CURSOR + '\n:::\n' },
   { trenner: true },
   { label: 'Linien',     titel: 'Schreiblinien (::: linien)',              text: '::: linien n=4\n' },
-  { label: 'Platz',      titel: 'Freiraum ohne eigenes Gitter, füllt bis zum Seitenende (::: platz h=auto)', text: '::: platz h=auto\n' },
+  { label: 'Platz',      titel: 'Freiraum ohne eigenes Gitter (::: platz h=0)',                              text: '::: platz h=0\n' },
   { label: 'Kästchen',   titel: 'Kästchenfläche, füllt bis zum Seitenende (::: raster h=auto)',             text: '::: raster h=auto\n' },
   { trenner: true },
   { label: 'Hinweis',    titel: 'Hinweiskasten (::: hinweis)',             text: '::: hinweis titel="Hinweis"\n' + DV_CURSOR + '\n:::\n' },

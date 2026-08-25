@@ -254,11 +254,14 @@ function dvBlockRoh(b, v) {
 function dvTitelblock(doc, v) {
   var m = doc.meta;
   var tb = mk('div', 'dv-titelblock');
-  // Der umrandete/unterstrichene Kasten fasst NUR Titel+Meta+Namensfeld.
-  // Hinweistext und schräger Zusatztext stehen außerhalb, offen auf der Seite.
-  var box = mk('div', 'dv-titelblock-' + v.titelblock.variante);
+  // Umrandeter Kasten fasst NUR Titel+Meta+Namensfeld. Hinweistext und
+  // schräger Zusatztext stehen außerhalb, offen auf der Seite. Namensfeld
+  // ist immer an (auf einer Klassenarbeit/einem Arbeitsblatt will man es
+  // praktisch nie ausblenden) – nur der Stil (Zeile vs. kompaktes Label)
+  // bleibt wählbar.
+  var box = mk('div', 'dv-titelblock-kasten');
 
-  var kompaktesLabel = v.titelblock.namensfeld && v.titelblock.namensfeldStil === 'label';
+  var kompaktesLabel = v.titelblock.namensfeldStil === 'label';
   var werte = dvPlatzhalter(v, m);
 
   var zeile1 = mk('div', 'dv-tb-zeile1');
@@ -303,7 +306,7 @@ function dvTitelblock(doc, v) {
     box.appendChild(tx('div', 'dv-sz-gross dv-sz-gross-imkasten', '1'));
   }
 
-  if (v.titelblock.namensfeld && !kompaktesLabel) {
+  if (!kompaktesLabel) {
     var nf = mk('div', 'dv-tb-namensfeld');
     nf.appendChild(tx('span', 'dv-tb-nf-label', 'Name:'));
     nf.appendChild(mk('span', 'dv-tb-nf-linie'));

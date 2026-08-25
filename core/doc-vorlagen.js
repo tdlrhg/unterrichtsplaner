@@ -28,7 +28,7 @@ var DV_VORLAGEN = [
       font: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
       groesse: 11, zeilenabstand: 1.45, absatzabstand: 3.2, ausrichtung: 'left'
     },
-    titelblock: { zeigen: true, variante: 'kasten', namensfeld: true, namensfeldStil: 'zeile', hinweistext: '', vielErfolg: '' },
+    titelblock: { zeigen: true, namensfeldStil: 'zeile', titelGroesse: 1.75, hinweistext: '', vielErfolg: '' },
     kopf: { zeigen: true, abSeite: 2, links: '{{fach}} · {{klasse}}', mitte: '', rechts: '{{titel}}', linie: true },
     fuss: { zeigen: true, abSeite: 1, links: 'Name: ________________________', mitte: '', rechts: 'Seite {{seite}} von {{seiten}}', linie: true },
     aufgabe: { label: 'Aufgabe {{nr}}', punkte: 'kasten', abstand: 7, trennlinie: false, farbe: '#1c1917', zentriert: false, schriftgroesse: 1, titelUnten: false },
@@ -47,7 +47,7 @@ var DV_VORLAGEN = [
       font: "'Plus Jakarta Sans', 'Segoe UI', sans-serif",
       groesse: 12, zeilenabstand: 1.55, absatzabstand: 3.6, ausrichtung: 'left'
     },
-    titelblock: { zeigen: true, variante: 'linie', namensfeld: false, namensfeldStil: 'zeile', hinweistext: '', vielErfolg: '' },
+    titelblock: { zeigen: true, namensfeldStil: 'zeile', titelGroesse: 1.75, hinweistext: '', vielErfolg: '' },
     kopf: { zeigen: false, abSeite: 2, links: '', mitte: '', rechts: '', linie: false },
     fuss: { zeigen: true, abSeite: 2, links: '{{titel}}', mitte: '', rechts: '{{seite}}', linie: false },
     aufgabe: { label: '{{nr}}', punkte: 'keine', abstand: 9, trennlinie: false, farbe: '#be185d', zentriert: false, schriftgroesse: 1, titelUnten: false },
@@ -113,6 +113,7 @@ function dvApplyVorlage(el, v) {
   s.setProperty('--dv-punkte-schriftgroesse', ((v.punkteSpalte && v.punkteSpalte.schriftgroesse) || 1.7) + 'em');
   s.setProperty('--dv-sz-gross-groesse', ((v.seitenzahlGross && v.seitenzahlGross.groesse) || 40) + 'pt');
   s.setProperty('--dv-sz-gross-farbe', (v.seitenzahlGross && v.seitenzahlGross.farbe) || '#d4cec2');
+  s.setProperty('--dv-tb-titel-groesse', ((v.titelblock && v.titelblock.titelGroesse) || 1.75) + 'em');
   // Die Kopfzeile ab Seite 2 sitzt bei aktivem Rahmen nah am Rahmen (siehe
   // --dv-titel-rand-o) – dort würde ihre Trennlinie sonst mitten durch die
   // (deutlich tiefer reichende) große Seitenzahl laufen. Kopf-Höhe in dem

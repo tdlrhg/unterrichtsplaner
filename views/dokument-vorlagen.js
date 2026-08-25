@@ -43,9 +43,8 @@ var DV_FELDER = [
 
   { gruppe: 'Titelblock', hinweis: 'Platzhalter: {{titel}} {{fach}} {{klasse}} {{schuljahr}} {{datum}} {{zeit}}. Erscheint nur einmal, am Dokumentanfang.' },
   { pfad: 'titelblock.zeigen',     label: 'Titelblock anzeigen', typ: 'check' },
-  { pfad: 'titelblock.variante',   label: 'Darstellung', typ: 'select', optionen: [['kasten', 'Umrandeter Kasten'], ['linie', 'Nur Trennlinie']], von: 'titelblock.zeigen' },
-  { pfad: 'titelblock.namensfeld', label: 'Namensfeld anzeigen', typ: 'check', halb: true, von: 'titelblock.zeigen' },
-  { pfad: 'titelblock.namensfeldStil', label: 'Namensfeld-Stil', typ: 'select', halb: true, optionen: [['zeile', 'Zeile: Name / Punkte / Note'], ['label', 'Kompaktes Label oben rechts']], von: 'titelblock.namensfeld' },
+  { pfad: 'titelblock.titelGroesse', label: 'Titelschriftgröße', typ: 'zahl', min: 1, max: 3, schritt: 0.05, einheit: '×', halb: true, von: 'titelblock.zeigen' },
+  { pfad: 'titelblock.namensfeldStil', label: 'Namensfeld-Stil', typ: 'select', halb: true, optionen: [['zeile', 'Zeile: Name / Punkte / Note'], ['label', 'Kompaktes Label oben rechts']], von: 'titelblock.zeigen' },
   { pfad: 'titelblock.hinweistext', label: 'Hinweistext', typ: 'mehrzeilig', von: 'titelblock.zeigen' },
   { pfad: 'titelblock.vielErfolg', label: 'Schräger Zusatztext (leer = aus)', typ: 'text', von: 'titelblock.zeigen' },
 

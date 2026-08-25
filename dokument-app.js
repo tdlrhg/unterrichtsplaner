@@ -821,8 +821,6 @@ function dvRenderApp() {
   var sel = document.createElement('select');
   sel.className = 'finp';
   sel.id = 'dv-vorlage-sel';
-  var info = tx('div', 'dv-vorlage-info', '');
-  info.id = 'dv-vorlage-info';
   sel.onchange = function () {
     DV.vorlageId = sel.value;
     localStorage.setItem('dv_vorlage', DV.vorlageId);
@@ -831,7 +829,6 @@ function dvRenderApp() {
     dvUpdate();
   };
   tb.appendChild(sel);
-  tb.appendChild(info);
   tb.appendChild(mk('div', 'dv-toolbar-sep'));
 
   var zoom = mk('div', 'dv-zoom');

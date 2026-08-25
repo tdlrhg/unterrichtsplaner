@@ -219,8 +219,6 @@ function dvSelectAktualisieren() {
     if (v.id === DV.vorlageId) o.selected = true;
     sel.appendChild(o);
   });
-  var info = document.getElementById('dv-vorlage-info');
-  if (info) info.textContent = dvVorlage(DV.vorlageId).beschreibung || '';
 }
 
 // ── Panel ────────────────────────────────────────────────────────

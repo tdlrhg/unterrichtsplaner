@@ -116,11 +116,11 @@ function docParse(src) {
         pushBlock(ziel(), { t: 'linien', anzahl: parseInt(opt.n || opt.anzahl || fence[2].trim(), 10) || 5 });
         continue;
       }
-      if (name === 'raster' || name === 'kaestchen' || name === 'zeichnung' || name === 'platz' || name === 'leerraum' || name === 'leerzeile' || name === 'leerzeilen') {
-        // platz/leerraum/leerzeile(n)/zeichnung: reine Leerfläche ohne
-        // eigenes Gitter – gedacht für Seiten mit Kästchenpapier-Hintergrund,
-        // wo die Zeilen schon da sind und ein zweites Gitter nur stören würde.
-        var ohneGitter = name !== 'raster' && name !== 'kaestchen';
+      if (name === 'platz' || name === 'leerraum' || name === 'leerzeile' || name === 'leerzeilen' || name === 'zeichnung') {
+        // Reine Leerfläche ohne eigenes Gitter – gedacht für Seiten mit
+        // Kästchenpapier-Hintergrund, wo ein zweites Gitter nur stören würde
+        // (früher gab es dafür ::: raster/kaestchen mit eigenem Gitter,
+        // wieder entfernt: redundant zum seitenweiten Hintergrund).
         // h=auto: Höhe wird erst bei der Seitenaufteilung final bestimmt –
         // füllt automatisch bis zum unteren Rand der Seite, statt eine
         // feste mm-Zahl erraten zu müssen.
@@ -129,7 +129,7 @@ function docParse(src) {
         // Nicht "parseInt(x) || 60": die Zahl 0 ist falsy in JS, h=0 würde
         // sonst fälschlich zu 60 – stattdessen explizit auf NaN prüfen.
         var hoeheZahl = parseInt(hoeheRoh, 10);
-        pushBlock(ziel(), { t: 'raster', hoehe: autoHoehe ? null : (isNaN(hoeheZahl) ? 60 : hoeheZahl), autoHoehe: autoHoehe, gitter: !ohneGitter });
+        pushBlock(ziel(), { t: 'raster', hoehe: autoHoehe ? null : (isNaN(hoeheZahl) ? 60 : hoeheZahl), autoHoehe: autoHoehe });
         continue;
       }
       if (name === 'abschluss') {

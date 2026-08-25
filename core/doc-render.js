@@ -177,7 +177,7 @@ function dvBlockRoh(b, v) {
   }
 
   if (b.t === 'raster') {
-    var r = mk('div', 'dv-raster' + (b.gitter ? ' dv-raster-gitter' : ''));
+    var r = mk('div', 'dv-raster');
     if (b.autoHoehe) {
       // Platzhalterhöhe für die Seitenaufteilung – docPaginate streckt
       // diesen Block danach auf die tatsächlich verfügbare Resthöhe.

@@ -37,7 +37,7 @@ Kreuze an, welche Formel zum jeweiligen Körper gehört.
 ::: linien n=3
 
 ### b) Zeichne in das Parallelogramm die Höhe h ein. [1P]
-::: raster h=45
+::: platz h=45
 
 ## Aufgabe 2: Berechnungen [8P]
 Ein Parallelogramm hat die Grundseite g = 7,5 cm und die Höhe h = 4 cm.
@@ -161,8 +161,7 @@ var DV_BAUSTEINE = [
   { label: 'Absatz',     titel: 'Absatz ohne eigene Teilaufgabe (::: text)', text: '::: text\n' + DV_CURSOR + '\n:::\n' },
   { trenner: true },
   { label: 'Linien',     titel: 'Schreiblinien (::: linien)',              text: '::: linien n=4\n' },
-  { label: 'Platz',      titel: 'Freiraum ohne eigenes Gitter (::: platz h=0)',                              text: '::: platz h=0\n' },
-  { label: 'Kästchen',   titel: 'Kästchenfläche, füllt bis zum Seitenende (::: raster h=auto)',             text: '::: raster h=auto\n' },
+  { label: 'Platz',      titel: 'Freiraum (::: platz), h=0 selbst setzen oder h=auto bis Seitenende', text: '::: platz h=0\n' },
   { trenner: true },
   { label: 'Hinweis',    titel: 'Hinweiskasten (::: hinweis)',             text: '::: hinweis titel="Hinweis"\n' + DV_CURSOR + '\n:::\n' },
   { label: 'Tabelle',    titel: 'Tabelle',                                 text: '| ' + DV_CURSOR + 'Spalte 1 | Spalte 2 |\n|---|---|\n| Zelle | Zelle |\n' },
@@ -802,7 +801,7 @@ function dvRenderApp() {
   inhalt.appendChild(edWrap);
 
   var edFuss = mk('div', 'dv-editor-fuss');
-  edFuss.appendChild(tx('span', '', '## Aufgabe · ### a) · [8P] · ::: linien n=5 · ::: raster h=60 · +++ Seitenumbruch'));
+  edFuss.appendChild(tx('span', '', '## Aufgabe · ### a) · [8P] · ::: linien n=5 · ::: platz h=60 · +++ Seitenumbruch'));
   inhalt.appendChild(edFuss);
   ed.appendChild(inhalt);
 

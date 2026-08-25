@@ -340,15 +340,6 @@
 .dv-linien { margin: 2mm 0 var(--dv-abs); }
 .dv-linie { border-bottom: .5pt solid #a8a29e; height: 8.5mm; }
 .dv-raster { margin: 2mm 0 var(--dv-abs); }
-.dv-raster-gitter {
-  /* 1px statt vormals .3pt – dieselbe Subpixel-Verblassung wie beim
-     Kästchenpapier-Hintergrund (siehe .dv-content.dv-kaestchen), nur hier
-     im Gitter innerhalb von ::: raster/kaestchen-Blöcken. */
-  border: .5pt solid #a8a29e;
-  background-image:
-    repeating-linear-gradient(to right, #dcd6cb 0 1px, transparent 1px 5mm),
-    repeating-linear-gradient(to bottom, #dcd6cb 0 1px, transparent 1px 5mm);
-}
 
 /* Tabellen */
 .dv-tabelle-wrap { margin-bottom: var(--dv-abs); }
@@ -367,9 +358,9 @@
 @media print {
   body { background: #fff; }
   /* Ohne das lassen manche Browser CSS-Hintergründe (Kästchenpapier, Kästen-
-     Füllfarben, Gitter in ::: raster) beim Drucken weg oder verändern ihre
-     Farbe, selbst wenn im Druckdialog "Hintergrundgrafiken" aktiviert ist –
-     diese Option bitte trotzdem zusätzlich anlassen, sie bleibt nötig. */
+     Füllfarben) beim Drucken weg oder verändern ihre Farbe, selbst wenn im
+     Druckdialog "Hintergrundgrafiken" aktiviert ist – diese Option bitte
+     trotzdem zusätzlich anlassen, sie bleibt nötig. */
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   .topbar, .dv-editor, .dv-toolbar, .dv-editor-fuss { display: none !important; }
   .dv-layout { display: block; height: auto; overflow: visible; }

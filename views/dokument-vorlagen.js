@@ -35,11 +35,11 @@ var DV_FELDER = [
   { pfad: 'seite.rahmenInnenabstand', label: 'Innenabstand zum Inhalt', typ: 'zahl', min: 0, max: 20, schritt: 0.5, einheit: 'mm', halb: true, von: 'seite.rahmen' },
 
   { gruppe: 'Schrift' },
-  { pfad: 'typo.font', label: 'Schriftart', typ: 'select', optionen: DV_SCHRIFTEN },
-  { pfad: 'typo.groesse',       label: 'Schriftgröße',  typ: 'zahl', min: 7, max: 20, schritt: 0.5, einheit: 'pt', halb: true },
-  { pfad: 'typo.zeilenabstand', label: 'Zeilenabstand', typ: 'zahl', min: 1, max: 2.5, schritt: 0.05, einheit: '×', halb: true },
-  { pfad: 'typo.absatzabstand', label: 'Absatzabstand', typ: 'zahl', min: 0, max: 12, schritt: 0.2, einheit: 'mm', halb: true },
-  { pfad: 'typo.ausrichtung',   label: 'Ausrichtung',   typ: 'select', halb: true, optionen: [['left', 'Linksbündig'], ['justify', 'Blocksatz']] },
+  { pfad: 'typo.font', label: 'Schriftart', typ: 'select', optionen: DV_SCHRIFTEN, breite: 'zweidrittel' },
+  { pfad: 'typo.groesse',       label: 'Schriftgröße',  typ: 'zahl', min: 7, max: 20, schritt: 0.5, einheit: 'pt', breite: 'drittel' },
+  { pfad: 'typo.zeilenabstand', label: 'Zeilenabstand', typ: 'zahl', min: 1, max: 2.5, schritt: 0.05, einheit: '×', breite: 'drittel' },
+  { pfad: 'typo.absatzabstand', label: 'Absatzabstand', typ: 'zahl', min: 0, max: 12, schritt: 0.2, einheit: 'mm', breite: 'drittel' },
+  { pfad: 'typo.ausrichtung',   label: 'Ausrichtung',   typ: 'select', breite: 'drittel', optionen: [['left', 'Linksbündig'], ['justify', 'Blocksatz']] },
 
   { gruppe: 'Titelblock', hinweis: 'Platzhalter: {{titel}} {{fach}} {{klasse}} {{schuljahr}} {{datum}} {{zeit}}. Erscheint nur einmal, am Dokumentanfang.' },
   { pfad: 'titelblock.zeigen',     label: 'Titelblock anzeigen', typ: 'check' },
@@ -102,8 +102,16 @@ var DV_FELDER = [
 ];
 
 // ── Formular-Bausteine ───────────────────────────────────────────
-function dvFeldHuelle(label, inpEl, halb) {
-  var fg = mk('div', 'dv-fg' + (halb ? ' halb' : ''));
+// Breite eines Feldes in der Gruppe: feld.breite ('drittel'/'zweidrittel')
+// hat Vorrang, sonst das ältere feld.halb (= 50%), sonst volle Breite.
+function dvBreiteKlasse(feld) {
+  if (feld.breite) return ' ' + feld.breite;
+  if (feld.halb) return ' halb';
+  return '';
+}
+
+function dvFeldHuelle(label, inpEl, feld) {
+  var fg = mk('div', 'dv-fg' + dvBreiteKlasse(feld));
   if (label) fg.appendChild(tx('label', 'fl', label));
   fg.appendChild(inpEl);
   return fg;
@@ -127,7 +135,7 @@ function dvBauFeld(feld, v, gesperrt) {
     };
     lbl.appendChild(cb);
     lbl.appendChild(tx('span', '', feld.label));
-    var fg = mk('div', 'dv-fg' + (feld.halb ? ' halb' : ''));
+    var fg = mk('div', 'dv-fg' + dvBreiteKlasse(feld));
     fg.appendChild(lbl);
     return fg;
   }
@@ -142,7 +150,7 @@ function dvBauFeld(feld, v, gesperrt) {
       sel.appendChild(op);
     });
     sel.onchange = function () { dvFeldGeaendert(feld.pfad, sel.value); };
-    return dvFeldHuelle(feld.label, sel, feld.halb);
+    return dvFeldHuelle(feld.label, sel, feld);
   }
 
   if (feld.typ === 'zahl') {
@@ -158,7 +166,7 @@ function dvBauFeld(feld, v, gesperrt) {
     };
     wrap.appendChild(inp);
     if (feld.einheit) wrap.appendChild(tx('span', 'dv-einheit', feld.einheit));
-    return dvFeldHuelle(feld.label, wrap, feld.halb);
+    return dvFeldHuelle(feld.label, wrap, feld);
   }
 
   if (feld.typ === 'farbe') {
@@ -174,7 +182,7 @@ function dvBauFeld(feld, v, gesperrt) {
       if (/^#[0-9a-f]{6}$/i.test(ct.value)) { ci.value = ct.value; dvFeldGeaendert(feld.pfad, ct.value); }
     };
     fwrap.appendChild(ci); fwrap.appendChild(ct);
-    return dvFeldHuelle(feld.label, fwrap, feld.halb);
+    return dvFeldHuelle(feld.label, fwrap, feld);
   }
 
   if (feld.typ === 'mehrzeilig') {
@@ -183,7 +191,7 @@ function dvBauFeld(feld, v, gesperrt) {
     ta.value = wert == null ? '' : wert;
     ta.disabled = gesperrt;
     ta.oninput = function () { dvFeldGeaendert(feld.pfad, ta.value); };
-    return dvFeldHuelle(feld.label, ta, feld.halb);
+    return dvFeldHuelle(feld.label, ta, feld);
   }
 
   // Text
@@ -191,7 +199,7 @@ function dvBauFeld(feld, v, gesperrt) {
   ti.type = 'text'; ti.className = 'finp'; ti.value = wert == null ? '' : wert;
   ti.disabled = gesperrt;
   ti.oninput = function () { dvFeldGeaendert(feld.pfad, ti.value); };
-  return dvFeldHuelle(feld.label, ti, feld.halb);
+  return dvFeldHuelle(feld.label, ti, feld);
 }
 
 // ── Änderung eines Feldes ────────────────────────────────────────

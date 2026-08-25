@@ -341,5 +341,26 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
 
   if (punkteAn) dvPunkteSpalteFuellen(seiten, v, aufgabenSummen || {});
 
+  // Abschlussseite (::: abschluss :::) immer unten an den Inhaltsbereich
+  // andocken statt einfach im Fluss direkt nach der letzten Aufgabe hängen
+  // zu bleiben – sonst reißt sie mitten auf der Seite ab, obwohl bis zum
+  // Rand noch Platz wäre. Muss NACH dvPunkteSpalteFuellen laufen: die
+  // schiebt sonst als "nächstes Element nach der letzten Aufgabe" selbst
+  // an der Box herum (Gesamtbox-Abstand) und würde unseren Wert wieder
+  // überschreiben. Absoluter marginTop-Wert statt Addition: angrenzende
+  // vertikale Margins kollabieren in CSS zum GRÖSSEREN der beiden, nicht
+  // zur Summe (siehe Gesamtbox-Logik oben).
+  seiten.forEach(function (seite) {
+    var content = seite.querySelector('.dv-content');
+    var abschluss = content && content.querySelector('.dv-abschluss');
+    if (!abschluss) return;
+    var vorheriges = abschluss.previousElementSibling;
+    var vorherigeUnterkante = vorheriges ? vorheriges.offsetTop + vorheriges.offsetHeight : 0;
+    var zielTop = content.clientHeight - abschluss.offsetHeight;
+    if (zielTop > abschluss.offsetTop) {
+      abschluss.style.marginTop = (zielTop - vorherigeUnterkante) + 'px';
+    }
+  });
+
   return seiten;
 }

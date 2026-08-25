@@ -8,14 +8,6 @@ function dvZahl(n) {
   return String(n).replace('.', ',');
 }
 
-// Standardtext für ::: abschluss, wenn kein eigener Inhalt angegeben wird.
-var DV_ABSCHLUSS_STANDARDTEXT = [
-  'der mathematischen Form (FB: nicht gekürzt, Höhe Bruchstrich; FF: vereinbarte Lösungsform; FR: Rundungszeichen fehlt, falsch gerundet; FZ: Kettenrechnung, Zeichen falsch gesetzt; FE: Messgröße/Einheit falsch verwendet)',
-  '(fach-)sprachlichen Fehlern, fehlender Fachsprache, Ausdruck (FS, A)',
-  'unsauberen Ausführungen (Lesbarkeit der Schrift, Übersichtlichkeit, Ordentlichkeit – auch der Streichungen)',
-  'fehlenden Antwortsätzen, wo nötig.'
-];
-
 function dvGesamtpunkte(blocks) {
   var summe = 0, gefunden = false;
   blocks.forEach(function (b) {
@@ -130,7 +122,12 @@ function dvBlockRoh(b, v) {
     } else {
       formfehler.appendChild(tx('p', '', 'Abzüge für Formfehler kann es geben bei:'));
       var ul = mk('ul', 'dv-liste');
-      DV_ABSCHLUSS_STANDARDTEXT.forEach(function (t) {
+      // Text kommt aus der Vorlage (Gruppe "Abschluss", Feld Hinweistext),
+      // jede Zeile wird ein eigener Aufzählungspunkt – DV_ABSCHLUSS_STANDARDTEXT
+      // (core/doc-vorlagen.js) nur als Rückfallebene für Vorlagen, die das
+      // Feld (noch) gar nicht kennen.
+      var text = (v.abschluss && v.abschluss.hinweistext) || DV_ABSCHLUSS_STANDARDTEXT;
+      text.split('\n').map(function (t) { return t.trim(); }).filter(Boolean).forEach(function (t) {
         var li = mk('li', ''); li.innerHTML = docInline(t); ul.appendChild(li);
       });
       formfehler.appendChild(ul);
@@ -341,10 +338,18 @@ function dvTitelblock(doc, v) {
 function docRender(doc, v) {
   var nodes = [];
   var gesamt = dvGesamtpunkte(doc.blocks);
+  var hatAbschluss = false;
   doc.blocks.forEach(function (b) {
-    if (b.t === 'abschluss') b.gesamtpunkte = gesamt;
+    if (b.t === 'abschluss') { b.gesamtpunkte = gesamt; hatAbschluss = true; }
     nodes.push(dvBlock(b, v));
   });
+  // Abschlussseite ist – wie der Titelblock – ein Vorlagen-Schalter, kein
+  // manuell einzufügender Baustein: automatisch anhängen, wenn die Vorlage
+  // das vorsieht. Nur wenn nicht schon manuell im Dokument vorhanden
+  // (::: abschluss :::, z.B. in älteren Dokumenten) – sonst doppelt.
+  if (!hatAbschluss && v.abschluss && v.abschluss.zeigen) {
+    nodes.push(dvBlock({ t: 'abschluss', kinder: [], gesamtpunkte: gesamt }, v));
+  }
   return {
     titelblock: v.titelblock.zeigen ? dvTitelblock(doc, v) : null,
     nodes: nodes

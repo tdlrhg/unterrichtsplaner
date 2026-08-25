@@ -95,7 +95,11 @@ var DV_FELDER = [
   { pfad: 'seitenzahlGross.zeigen',  label: 'Große Seitenzahl anzeigen', typ: 'check', halb: true },
   { pfad: 'seitenzahlGross.abSeite', label: 'Erst ab Seite', typ: 'zahl', min: 1, max: 9, schritt: 1, einheit: '', halb: true, von: 'seitenzahlGross.zeigen' },
   { pfad: 'seitenzahlGross.groesse', label: 'Größe', typ: 'zahl', min: 14, max: 80, schritt: 1, einheit: 'pt', halb: true, von: 'seitenzahlGross.zeigen' },
-  { pfad: 'seitenzahlGross.farbe',   label: 'Farbe', typ: 'farbe', halb: true, von: 'seitenzahlGross.zeigen' }
+  { pfad: 'seitenzahlGross.farbe',   label: 'Farbe', typ: 'farbe', halb: true, von: 'seitenzahlGross.zeigen' },
+
+  { gruppe: 'Abschluss', hinweis: 'Formfehler-Hinweis + Punkte/Note/Datum/Signatur, am Ende der letzten Seite. Gesamtpunktzahl wird automatisch berechnet.' },
+  { pfad: 'abschluss.zeigen',      label: 'Abschlussseite anzeigen', typ: 'check' },
+  { pfad: 'abschluss.hinweistext', label: 'Formfehler-Hinweis (eine Zeile = ein Punkt)', typ: 'mehrzeilig', von: 'abschluss.zeigen' }
 ];
 
 // ── Formular-Bausteine ───────────────────────────────────────────

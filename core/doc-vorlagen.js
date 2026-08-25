@@ -3,6 +3,15 @@
 // Custom Properties übersetzt – dadurch ist später ein Vorlagen-
 // Editor mit Live-Vorschau möglich, ohne eine Zeile CSS zu schreiben.
 
+// Standard-Hinweistext für den Formfehler-Hinweis der Abschlussseite (siehe
+// Gruppe "Abschluss" unten und dvBlockRoh() in core/doc-render.js). Jede
+// Zeile wird dort zu einem eigenen Aufzählungspunkt.
+var DV_ABSCHLUSS_STANDARDTEXT =
+  'der mathematischen Form (FB: nicht gekürzt, Höhe Bruchstrich; FF: vereinbarte Lösungsform; FR: Rundungszeichen fehlt, falsch gerundet; FZ: Kettenrechnung, Zeichen falsch gesetzt; FE: Messgröße/Einheit falsch verwendet)\n' +
+  '(fach-)sprachlichen Fehlern, fehlender Fachsprache, Ausdruck (FS, A)\n' +
+  'unsauberen Ausführungen (Lesbarkeit der Schrift, Übersichtlichkeit, Ordentlichkeit – auch der Streichungen)\n' +
+  'fehlenden Antwortsätzen, wo nötig.';
+
 var DV_FORMATE = {
   A4:        { breite: 210, hoehe: 297 },
   A4quer:    { breite: 297, hoehe: 210 },
@@ -26,7 +35,8 @@ var DV_VORLAGEN = [
     teil: { marke: '{{marke}}', einzug: 8, aussenrand: 6 },
     kasten: { rahmen: true, fuellung: '#f5f2ed' },
     punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true, schriftgroesse: 1.7 },
-    seitenzahlGross: { zeigen: false, abSeite: 1, groesse: 40, farbe: '#d4cec2' }
+    seitenzahlGross: { zeigen: false, abSeite: 1, groesse: 40, farbe: '#d4cec2' },
+    abschluss: { zeigen: false, hinweistext: DV_ABSCHLUSS_STANDARDTEXT }
   },
   {
     id: 'ab-schlicht',
@@ -44,7 +54,8 @@ var DV_VORLAGEN = [
     teil: { marke: '{{marke}}', einzug: 10, aussenrand: 6 },
     kasten: { rahmen: false, fuellung: '#f1ede7' },
     punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true, schriftgroesse: 1.7 },
-    seitenzahlGross: { zeigen: false, abSeite: 1, groesse: 40, farbe: '#d4cec2' }
+    seitenzahlGross: { zeigen: false, abSeite: 1, groesse: 40, farbe: '#d4cec2' },
+    abschluss: { zeigen: false, hinweistext: DV_ABSCHLUSS_STANDARDTEXT }
   }
 ];
 

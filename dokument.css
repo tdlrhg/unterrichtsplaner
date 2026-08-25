@@ -202,7 +202,7 @@
 .dv-tb-rechts { text-align: right; flex: 0 0 auto; }
 /* mit Trennlinie: gleich breit wie links → Trennlinie sitzt mittig */
 .dv-tb-rechts-geteilt { flex: 1 1 0; text-align: left; border-left: .8pt solid #57534e; padding-left: 6mm; }
-.dv-tb-titel { font-size: 1.85em; font-weight: 800; line-height: 1.2; }
+.dv-tb-titel { font-size: 1.8em; font-weight: 800; line-height: 1.2; }
 .dv-tb-sub { font-size: .9em; color: #57534e; margin-top: 1mm; }
 .dv-tb-meta { font-size: .82em; color: #57534e; line-height: 1.5; white-space: nowrap; }
 .dv-tb-meta-links { font-size: .82em; color: #57534e; line-height: 1.5; }

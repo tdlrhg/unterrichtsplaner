@@ -288,7 +288,7 @@
 .dv-abschluss-zelle { border-top: .8pt solid #1c1917; border-right: .8pt solid #1c1917; padding: 2mm 3mm; font-size: .85em; }
 .dv-abschluss-zelle:last-child { border-right: none; }
 .dv-abschluss-label { color: #57534e; }
-.dv-abschluss-punktewert { font-size: 1.7em; font-weight: 800; margin-top: 1mm; }
+.dv-abschluss-punktewert { font-size: 1.7em; font-weight: 800; margin-top: 1mm; text-align: right; }
 .dv-abschluss-notenschluessel { font-size: .78em; color: #57534e; line-height: 1.7; }
 .dv-abschluss-unterschrift {
   border: .8pt solid #1c1917; border-top: none; padding: 4mm 3mm 8mm; font-size: .85em;

@@ -21,7 +21,8 @@ var _dvOffeneGruppe = 'Seite';
 
 var DV_FELDER = [
   { gruppe: 'Seite' },
-  { pfad: 'seite.format', label: 'Format', typ: 'select', optionen: [['A4', 'A4 hoch'], ['A4quer', 'A4 quer'], ['A5', 'A5']] },
+  { pfad: 'seite.format', label: 'Format', typ: 'select', halb: true, optionen: [['A4', 'A4 hoch'], ['A4quer', 'A4 quer'], ['A5', 'A5']] },
+  { umbruch: true },
   { pfad: 'seite.rand.oben',   label: 'Rand oben',   typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', halb: true },
   { pfad: 'seite.rand.unten',  label: 'Rand unten',  typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', halb: true },
   { pfad: 'seite.rand.links',  label: 'Rand links',  typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', halb: true },
@@ -317,6 +318,10 @@ function dvVorlagenPanel() {
       return;
     }
     if (!gruppe || !gruppeOffen) return;
+    // Erzwungener Zeilenumbruch (flex-basis:100%-Trick): schmalere Felder
+    // vor/nach dieser Stelle sollen NICHT in dieselbe Zeile rutschen, sonst
+    // verschieben sich alle nachfolgenden halb/drittel-Paare um eins.
+    if (feld.umbruch) { gruppe.__felder.appendChild(mk('div', 'dv-fg-umbruch')); return; }
     if (feld.von && !dvHole(v, feld.von)) return; // Hauptschalter aus → Feld ausblenden
     gruppe.__felder.appendChild(dvBauFeld(feld, v, standard));
   });

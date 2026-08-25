@@ -38,6 +38,10 @@
 .dv-form .dv-fg.halb { flex: 1 1 calc(50% - 5px); min-width: 130px; }
 .dv-form .dv-fg.drittel { flex: 1 1 calc(33.333% - 7px); min-width: 90px; }
 .dv-form .dv-fg.zweidrittel { flex: 1 1 calc(66.667% - 3px); min-width: 160px; }
+/* Erzwingt einen Zeilenumbruch in .dv-gruppe-felder (flex-wrap), damit
+   nachfolgende halb/drittel-Felder nicht in eine Zeile mit einem schmalen
+   Feld ohne passenden Nachbarn rutschen. */
+.dv-fg-umbruch { flex-basis: 100%; width: 0; height: 0; margin: 0; padding: 0; }
 .dv-form .fl { margin-bottom: 3px; font-size: 10px; }
 /* Kompaktere Eingabefelder nur hier – .finp/.fl sind globale Klassen, die
    auch in Prüfungsplaner & Co. verwendet werden, dort unangetastet lassen. */
@@ -297,7 +301,8 @@
 .dv-abschluss-zelle:last-child { border-right: none; }
 .dv-abschluss-label { color: #57534e; }
 .dv-abschluss-punktewert { font-size: 1.7em; font-weight: 800; margin-top: 1mm; text-align: right; }
-.dv-abschluss-notenschluessel { font-size: .78em; color: #57534e; line-height: 1.7; }
+.dv-abschluss-notenschluessel { font-size: .78em; color: #57534e; line-height: 1.7; padding-top: 3mm; }
+.dv-abschluss-notenschluessel div + div { margin-top: 4mm; }
 .dv-abschluss-unterschrift {
   border: .8pt solid #1c1917; border-top: none; padding: 4mm 3mm 8mm; font-size: .85em;
 }

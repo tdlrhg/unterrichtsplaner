@@ -321,6 +321,15 @@
 .dv-bruch-z { padding: 0 .5mm; border-bottom: .7pt solid currentColor; }
 .dv-bruch-n { padding: 0 .5mm; }
 
+/* Editor↔Vorschau-Synchronisation (siehe dvCursorZuVorschau()/
+   dvVorschauZuCursor() in dokument-app.js) */
+[data-zeile] { cursor: text; }
+.dv-sync-blitz { animation: dv-sync-blitz-anim .9s ease-out; }
+@keyframes dv-sync-blitz-anim {
+  0% { background: rgba(190, 24, 93, .16); }
+  100% { background: transparent; }
+}
+
 /* Kästen */
 .dv-kasten { background: var(--dv-kasten-bg); border: var(--dv-kasten-rahmen); border-radius: 1mm; padding: 2.5mm 3mm; margin-bottom: var(--dv-abs); }
 .dv-kasten-titel { font-weight: 700; font-size: .9em; margin-bottom: 1.2mm; }

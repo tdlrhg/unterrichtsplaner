@@ -66,7 +66,17 @@ function dvPunkteEl(punkte, v) {
 }
 
 // ── Einzelne Blöcke ──────────────────────────────────────────────
+// dvBlock() ist ein dünner Wrapper um dvBlockRoh(): markiert jedes erzeugte
+// Element mit data-zeile (Quellzeile aus dem Parser, siehe pushBlock() in
+// doc-parser.js), damit Editor-Cursor ↔ Vorschau in beide Richtungen
+// synchronisiert werden können (siehe dvCursorZuVorschau()/dvVorschauZuCursor()
+// in dokument-app.js).
 function dvBlock(b, v) {
+  var el = dvBlockRoh(b, v);
+  if (el && el.setAttribute && b && b.zeile != null) el.setAttribute('data-zeile', b.zeile);
+  return el;
+}
+function dvBlockRoh(b, v) {
   if (b.t === 'p') {
     var p = mk('p', 'dv-p'); p.innerHTML = b.html; return p;
   }

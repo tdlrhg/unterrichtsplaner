@@ -238,6 +238,57 @@ function dvBruchEinfuegen() {
   dvUpdate();
 }
 
+// ── Editor ↔ Vorschau-Synchronisation ─────────────────────────────
+// Jeder gerenderte Block trägt data-zeile (Quellzeile, siehe pushBlock()
+// in core/doc-parser.js). Cursor im Editor → Vorschau scrollt zum
+// zugehörigen Block; Klick in der Vorschau → Editor springt zur Zeile.
+// _dvSyncAktiv verhindert, dass ein programmatischer Sprung (z.B. das
+// Setzen der Cursorposition beim Vorschau-Klick) sofort den jeweils
+// anderen Handler erneut auslöst (Ping-Pong).
+var _dvSyncAktiv = false;
+var _dvSyncTimer = null;
+
+function dvCursorZuVorschau() {
+  if (_dvSyncAktiv) return;
+  clearTimeout(_dvSyncTimer);
+  _dvSyncTimer = setTimeout(function () {
+    var ta = document.getElementById('dv-ta');
+    var pages = document.getElementById('dv-pages');
+    if (!ta || !pages || document.activeElement !== ta) return;
+    var zeile = ta.value.slice(0, ta.selectionStart).split('\n').length;
+    var bloecke = pages.querySelectorAll('[data-zeile]');
+    var treffer = null;
+    for (var i = 0; i < bloecke.length; i++) {
+      if (parseInt(bloecke[i].getAttribute('data-zeile'), 10) <= zeile) treffer = bloecke[i];
+      else break; // data-zeile-Elemente stehen in Dokumentreihenfolge
+    }
+    if (!treffer) treffer = bloecke[0];
+    if (!treffer) return;
+    // behavior:'smooth' bewusst vermieden: die Animation kann durch danach
+    // laufenden Code (z.B. weitere Events) abgebrochen werden, bevor sie
+    // fertig ist, und das Scrollen bleibt dann sichtbar aus.
+    treffer.scrollIntoView({ block: 'center' });
+    treffer.classList.add('dv-sync-blitz');
+    setTimeout(function () { treffer.classList.remove('dv-sync-blitz'); }, 900);
+  }, 150);
+}
+
+function dvVorschauZuCursor(e) {
+  var ziel = e.target.closest && e.target.closest('[data-zeile]');
+  if (!ziel) return;
+  var zeile = parseInt(ziel.getAttribute('data-zeile'), 10);
+  if (!zeile) return;
+  var ta = document.getElementById('dv-ta');
+  if (!ta) return;
+  var zeilen = ta.value.split('\n');
+  var pos = 0;
+  for (var i = 0; i < zeile - 1 && i < zeilen.length; i++) pos += zeilen[i].length + 1;
+  _dvSyncAktiv = true;
+  ta.focus();
+  ta.setSelectionRange(pos, pos);
+  setTimeout(function () { _dvSyncAktiv = false; }, 300);
+}
+
 function dvUpdate() {
   dvHighlightAktualisieren();
   var v = dvVorlage(DV.vorlageId);
@@ -737,6 +788,8 @@ function dvRenderApp() {
     backdrop.scrollTop = ta.scrollTop;
     backdrop.scrollLeft = ta.scrollLeft;
   });
+  ta.addEventListener('click', dvCursorZuVorschau);
+  ta.addEventListener('keyup', dvCursorZuVorschau);
   ta.addEventListener('dragover', function (e) { e.preventDefault(); });
   ta.addEventListener('drop', function (e) {
     if (!e.dataTransfer.files.length) return;
@@ -815,6 +868,7 @@ function dvRenderApp() {
   var pv = mk('div', 'dv-preview');
   var pages = mk('div', 'dv-pages');
   pages.id = 'dv-pages';
+  pages.addEventListener('click', dvVorschauZuCursor);
   pv.appendChild(pages);
   rechts.appendChild(pv);
 

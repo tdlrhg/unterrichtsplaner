@@ -70,6 +70,16 @@ function docParse(src) {
   var aufgabeNr = 0;
   var teilNr = 0;
 
+  // Aktuelle Quellzeile (1-indiziert), wird jede Schleifen-Iteration unten
+  // aktualisiert – pushBlock() markiert damit jeden Block mit der Zeile
+  // seines Beginns, für die Editor↔Vorschau-Synchronisation (dokument-app.js).
+  var zeileAktuell = 0;
+  function pushBlock(arr, obj) {
+    if (obj && typeof obj === 'object' && obj.zeile == null) obj.zeile = zeileAktuell;
+    arr.push(obj);
+    return obj;
+  }
+
   function ziel() { return stack[stack.length - 1]; }
   function zurueckAufWurzel() { stack = [wurzel]; aktAufgabe = null; aktTeil = null; }
   function zurueckAufAufgabe() {
@@ -81,6 +91,7 @@ function docParse(src) {
   for (; i < lines.length; i++) {
     var raw = lines[i];
     var line = raw.trim();
+    zeileAktuell = i + 1;
 
     // Leerzeile
     if (!line) continue;
@@ -102,7 +113,7 @@ function docParse(src) {
       var opt = docOpts(fence[2]);
 
       if (name === 'linien' || name === 'zeilen') {
-        ziel().push({ t: 'linien', anzahl: parseInt(opt.n || opt.anzahl || fence[2].trim(), 10) || 5 });
+        pushBlock(ziel(), { t: 'linien', anzahl: parseInt(opt.n || opt.anzahl || fence[2].trim(), 10) || 5 });
         continue;
       }
       if (name === 'raster' || name === 'kaestchen' || name === 'zeichnung' || name === 'platz' || name === 'leerraum' || name === 'leerzeile' || name === 'leerzeilen') {
@@ -118,7 +129,7 @@ function docParse(src) {
         // Nicht "parseInt(x) || 60": die Zahl 0 ist falsy in JS, h=0 würde
         // sonst fälschlich zu 60 – stattdessen explizit auf NaN prüfen.
         var hoeheZahl = parseInt(hoeheRoh, 10);
-        ziel().push({ t: 'raster', hoehe: autoHoehe ? null : (isNaN(hoeheZahl) ? 60 : hoeheZahl), autoHoehe: autoHoehe, gitter: !ohneGitter });
+        pushBlock(ziel(), { t: 'raster', hoehe: autoHoehe ? null : (isNaN(hoeheZahl) ? 60 : hoeheZahl), autoHoehe: autoHoehe, gitter: !ohneGitter });
         continue;
       }
       if (name === 'abschluss') {
@@ -131,7 +142,7 @@ function docParse(src) {
         // docRender() findet ihn dort nicht für die Gesamtpunktzahl.
         zurueckAufWurzel();
         var abschluss = { t: 'abschluss', kinder: [] };
-        ziel().push(abschluss);
+        pushBlock(ziel(), abschluss);
         abschluss.kinder.__fence = true;
         stack.push(abschluss.kinder);
         continue;
@@ -142,14 +153,14 @@ function docParse(src) {
         // für Zusatztext, der zu einer Teilaufgabe gehört, aber selbst
         // keine eigene (bewertete) Teilaufgabe sein soll.
         var teiltext = { t: 'teiltext', kinder: [] };
-        ziel().push(teiltext);
+        pushBlock(ziel(), teiltext);
         teiltext.kinder.__fence = true;
         stack.push(teiltext.kinder);
         continue;
       }
       if (name === 'kasten' || name === 'merke' || name === 'material' || name === 'hinweis' || name === 'loesung') {
         var kasten = { t: 'kasten', variante: name, titel: opt.titel || '', kinder: [] };
-        ziel().push(kasten);
+        pushBlock(ziel(), kasten);
         kasten.kinder.__fence = true;
         stack.push(kasten.kinder);
         continue;
@@ -161,12 +172,12 @@ function docParse(src) {
     // ── Seitenumbruch ──
     if (line === '+++' || /^\\(pagebreak|newpage)$/i.test(line)) {
       zurueckAufWurzel();
-      wurzel.push({ t: 'brk' });
+      pushBlock(wurzel, { t: 'brk' });
       continue;
     }
 
     // ── Trennlinie ──
-    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line)) { ziel().push({ t: 'hr' }); continue; }
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line)) { pushBlock(ziel(), { t: 'hr' }); continue; }
 
     // ── Aufgabe (##) ──
     var h2 = line.match(/^##\s+(.*)$/);
@@ -180,7 +191,7 @@ function docParse(src) {
       teilNr = 0;
       zurueckAufWurzel();
       aktAufgabe = { t: 'aufgabe', nr: aufgabeNr, titel: txt, punkte: p2.punkte, kinder: [] };
-      wurzel.push(aktAufgabe);
+      pushBlock(wurzel, aktAufgabe);
       stack = [wurzel, aktAufgabe.kinder];
       continue;
     }
@@ -195,7 +206,7 @@ function docParse(src) {
       else teilNr++;
       zurueckAufAufgabe();
       aktTeil = { t: 'teil', marke: String.fromCharCode(96 + Math.max(1, teilNr)) + ')', titel: t3, punkte: p3.punkte, kinder: [] };
-      ziel().push(aktTeil);
+      pushBlock(ziel(), aktTeil);
       stack.push(aktTeil.kinder);
       continue;
     }
@@ -204,7 +215,7 @@ function docParse(src) {
     var h1 = line.match(/^#\s+(.*)$/);
     if (h1) {
       if (!meta.titel) meta.titel = h1[1].trim();
-      else { zurueckAufWurzel(); wurzel.push({ t: 'h', level: 1, html: docInline(h1[1]) }); }
+      else { zurueckAufWurzel(); pushBlock(wurzel, { t: 'h', level: 1, html: docInline(h1[1]) }); }
       continue;
     }
 
@@ -218,7 +229,7 @@ function docParse(src) {
     // bei Änderung hier bitte dort mitziehen.
     var img = line.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+(\d+)%)?(?:\s+(links|mitte|rechts))?\)$/);
     if (img) {
-      ziel().push({
+      pushBlock(ziel(), {
         t: 'bild', alt: img[1], src: img[2],
         breite: img[3] ? parseInt(img[3], 10) : null,
         ausrichtung: img[4] || null
@@ -237,7 +248,7 @@ function docParse(src) {
         });
         var kopf = null;
         if (zellen[1] && zellen[1].every(function (c) { return /^:?-{2,}:?$/.test(c); })) { kopf = zellen[0]; zellen.splice(0, 2); }
-        ziel().push({
+        pushBlock(ziel(), {
           t: 'tabelle',
           kopf: kopf ? kopf.map(docInline) : null,
           zeilen: zellen.map(function (r) { return r.map(docInline); })
@@ -251,7 +262,7 @@ function docParse(src) {
       var qz = [];
       while (i < lines.length && lines[i].trim().indexOf('>') === 0) { qz.push(lines[i].trim().replace(/^>\s?/, '')); i++; }
       i--;
-      ziel().push({ t: 'kasten', variante: 'merke', titel: '', kinder: [{ t: 'p', html: docInline(qz.join(' ')) }] });
+      pushBlock(ziel(), { t: 'kasten', variante: 'merke', titel: '', kinder: [{ t: 'p', html: docInline(qz.join(' ')) }] });
       continue;
     }
 
@@ -268,7 +279,7 @@ function docParse(src) {
         i++;
       }
       i--;
-      ziel().push({ t: 'liste', ordered: ordered, items: items, mc: mc });
+      pushBlock(ziel(), { t: 'liste', ordered: ordered, items: items, mc: mc });
       continue;
     }
 
@@ -279,7 +290,7 @@ function docParse(src) {
       if (!nx || /^(#|##|###|:::|::|>|\+\+\+|!\[|\||[-*+]\s|\d+[.)]\s)/.test(nx) || /^(-{3,}|_{3,})$/.test(nx)) break;
       abs.push(nx); i++;
     }
-    ziel().push({ t: 'p', html: docInline(abs.join(' ')) });
+    pushBlock(ziel(), { t: 'p', html: docInline(abs.join(' ')) });
   }
 
   return { meta: meta, blocks: wurzel, warnungen: warnungen };

@@ -341,25 +341,27 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
 
   if (punkteAn) dvPunkteSpalteFuellen(seiten, v, aufgabenSummen || {});
 
-  // Abschlussseite (::: abschluss :::) immer unten an den Inhaltsbereich
-  // andocken statt einfach im Fluss direkt nach der letzten Aufgabe hängen
-  // zu bleiben – sonst reißt sie mitten auf der Seite ab, obwohl bis zum
-  // Rand noch Platz wäre. Muss NACH dvPunkteSpalteFuellen laufen: die
-  // schiebt sonst als "nächstes Element nach der letzten Aufgabe" selbst
-  // an der Box herum (Gesamtbox-Abstand) und würde unseren Wert wieder
-  // überschreiben. Absoluter marginTop-Wert statt Addition: angrenzende
-  // vertikale Margins kollabieren in CSS zum GRÖSSEREN der beiden, nicht
-  // zur Summe (siehe Gesamtbox-Logik oben).
+  // Abschlussseite (::: abschluss :::) wie den Titelblock als eigenes,
+  // seitenbreites Element direkt auf die Seite setzen statt im Textfluss
+  // von .dv-content zu bleiben. Vorteil gegenüber reinem marginTop: sie
+  // deckt damit automatisch Kästchenpapier UND Punkte-Spalte vollständig
+  // ab (beides braucht sie nicht) und muss nicht künstlich verbreitert
+  // werden – .dv-content wäre durch die reservierte Punkte-Spalten-Breite
+  // sowieso zu schmal (overflow:hidden schneidet ein breiteres Kind dort
+  // ab). Bündig am unteren Rand: gleicher CSS-Wert wie content.style.bottom,
+  // kein Pixel-Rechnen nötig. Muss NACH dvPunkteSpalteFuellen laufen, sonst
+  // ist die Box beim Verschieben schon aus dem Fluss und deren Höhen-
+  // Messungen (Gesamtbox-Abstand) laufen ins Leere.
   seiten.forEach(function (seite) {
     var content = seite.querySelector('.dv-content');
     var abschluss = content && content.querySelector('.dv-abschluss');
     if (!abschluss) return;
-    var vorheriges = abschluss.previousElementSibling;
-    var vorherigeUnterkante = vorheriges ? vorheriges.offsetTop + vorheriges.offsetHeight : 0;
-    var zielTop = content.clientHeight - abschluss.offsetHeight;
-    if (zielTop > abschluss.offsetTop) {
-      abschluss.style.marginTop = (zielTop - vorherigeUnterkante) + 'px';
-    }
+    abschluss.style.position = 'absolute';
+    abschluss.style.left = 'var(--dv-rand-l)';
+    abschluss.style.right = 'var(--dv-rand-r)';
+    abschluss.style.bottom = content.style.bottom;
+    abschluss.style.marginTop = '0';
+    seite.appendChild(abschluss);
   });
 
   return seiten;

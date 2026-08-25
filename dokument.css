@@ -273,7 +273,7 @@
 /* Abschlussseite (::: abschluss): Formfehler-Hinweis + Punkte/Note/
    Datum/Signatur-Zeile + Unterschriftenfeld, wie am Ende einer echten
    Klassenarbeit. */
-.dv-abschluss { margin-top: var(--dv-abs); border-top: .8pt solid #57534e; padding-top: 3mm; }
+.dv-abschluss { background: #fff; border-top: .8pt solid #57534e; padding-top: 3mm; }
 .dv-abschluss-formfehler {
   border: .8pt dotted #78716c; border-radius: 1mm; padding: 2.5mm 3.5mm;
   font-size: .82em; line-height: 1.5; margin-bottom: 3mm;

@@ -281,6 +281,9 @@
    Buchstabe (sonst würde Einzug+Lücke doppelt gezählt). */
 .dv-teiltext { margin: 2.5mm 0 2.5mm var(--dv-teil-aussenrand); }
 .dv-teil-body .dv-teiltext { margin-left: 2mm; }
+/* ::: frei/zusatz – losgelöst von jeder Aufgabe, daher ohne Teilaufgaben-
+   Einzug (anders als .dv-teiltext), einfach volle Breite wie ein Absatz. */
+.dv-frei { margin: 2.5mm 0; }
 
 /* Abschlussseite (::: abschluss): Formfehler-Hinweis + Punkte/Note/
    Datum/Signatur-Zeile + Unterschriftenfeld, wie am Ende einer echten

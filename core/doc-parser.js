@@ -147,6 +147,20 @@ function docParse(src) {
         stack.push(abschluss.kinder);
         continue;
       }
+      if (name === 'frei' || name === 'zusatz') {
+        // Eigenständiger Block, komplett von der aktuellen Aufgabe/
+        // Teilaufgabe losgelöst (zurück auf Dokumentebene) – z.B. Extra-
+        // Schreibraum am Ende, der nicht mehr zur vorherigen Aufgabe
+        // gehören und nicht vor deren Gesamtpunktzahl erscheinen soll.
+        // Anders als eine neue "## Aufgabe" bekommt er keine Überschrift,
+        // keine Nummer und zählt nicht in die Punkte-Spalte.
+        zurueckAufWurzel();
+        var frei = { t: 'frei', kinder: [] };
+        pushBlock(ziel(), frei);
+        frei.kinder.__fence = true;
+        stack.push(frei.kinder);
+        continue;
+      }
       if (name === 'text' || name === 'absatz') {
         // Absatz mit demselben Einzug wie eine Teilaufgabe, aber ohne
         // Buchstabe/Punkte und ohne die Buchstaben-Zählung zu beeinflussen –

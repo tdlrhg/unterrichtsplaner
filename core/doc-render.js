@@ -161,6 +161,12 @@ function dvBlockRoh(b, v) {
     return tt;
   }
 
+  if (b.t === 'frei') {
+    var frei = mk('div', 'dv-frei');
+    (b.kinder || []).forEach(function (k) { frei.appendChild(dvBlock(k, v)); });
+    return frei;
+  }
+
   if (b.t === 'kasten') {
     var kb = mk('div', 'dv-kasten dv-kasten-' + b.variante);
     if (b.titel) kb.appendChild(tx('div', 'dv-kasten-titel', b.titel));

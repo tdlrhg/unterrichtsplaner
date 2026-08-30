@@ -11,7 +11,8 @@ var DV = {
   zoom: 0.72,
   seiten: 0,
   warnungen: [],
-  version: null
+  version: null,
+  dokumentId: null // id des in "Meine Dokumente" gespeicherten Dokuments (null = noch nicht/neu)
 };
 
 var DV_PX_PRO_MM = 96 / 25.4;
@@ -468,6 +469,56 @@ function dvBilderAusTextAuslagern(text) {
   }).join('\n');
 }
 
+// Gegenstück zu dvBilderAusTextAuslagern(): für den Datei-Export die kurzen
+// Bild-IDs im Text durch ihre echten Data-URLs ersetzen, damit die
+// gespeicherte .md-Datei alle Bilder enthält und auf jedem Gerät wieder
+// vollständig einlesbar ist (dvDateiLaden lagert sie beim Laden erneut aus).
+function dvBilderInTextEinbetten(text) {
+  return text.split('\n').map(function (zeile) {
+    var m = zeile.match(DV_BILD_MUSTER);
+    if (!m || !DV.bilder[m[2]]) return zeile;
+    return dvBildZeileBauen(m[1], DV.bilder[m[2]], m[3] ? parseInt(m[3], 10) : null, m[4] || 'mitte');
+  }).join('\n');
+}
+
+// Aktuellen Dokumentinhalt als eigenständige .md-Datei herunterladen (inkl.
+// eingebetteter Bilder) – zum Archivieren/Weitergeben, und um später mit
+// "Datei laden" an genau dieser Stelle weiterzuarbeiten (die PDF allein
+// lässt sich ja nicht mehr zurück in editierbaren Text verwandeln).
+function dvDateiSpeichern() {
+  var text = dvBilderInTextEinbetten(DV.quelle);
+  var titelMatch = DV.quelle.match(/^titel:\s*(.+)$/m);
+  var dateiname = (titelMatch ? titelMatch[1].trim() : 'Dokument')
+    .replace(/[\\/:*?"<>|]/g, '') || 'Dokument';
+  var blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = dateiname + '.md';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// ── Meine Dokumente (Cloud, siehe core/doc-dokumente.js) ──────────
+function dvDokSelectAktualisieren() {
+  var sel = document.getElementById('dv-dok-sel');
+  if (!sel) return;
+  sel.innerHTML = '';
+  var leer = document.createElement('option');
+  leer.value = ''; leer.textContent = '— Neues Dokument —';
+  sel.appendChild(leer);
+  DV_DOK_INDEX.slice().sort(function (a, b) { return (b.aktualisiert || '').localeCompare(a.aktualisiert || ''); })
+    .forEach(function (e) {
+      var o = document.createElement('option');
+      o.value = e.id; o.textContent = e.titel || 'Ohne Titel';
+      if (e.id === DV.dokumentId) o.selected = true;
+      sel.appendChild(o);
+    });
+  if (!DV.dokumentId) sel.value = '';
+}
+
 function dvBilderImText() {
   return DV.quelle.split('\n').reduce(function (liste, zeile) {
     var m = zeile.match(DV_BILD_MUSTER);
@@ -720,6 +771,11 @@ function dvRenderApp() {
   ladeBtn.onclick = function () { fileInp.click(); };
   edHdr.appendChild(ladeBtn);
 
+  var speichernBtn = btn('💾 Datei speichern', 'btn btn-ghost btn-sm');
+  speichernBtn.title = 'Als .md-Datei herunterladen – zum Archivieren und um später mit "Datei laden" weiterzuarbeiten';
+  speichernBtn.onclick = dvDateiSpeichern;
+  edHdr.appendChild(speichernBtn);
+
   var bildInp = document.createElement('input');
   bildInp.type = 'file';
   bildInp.accept = 'image/*';
@@ -750,6 +806,71 @@ function dvRenderApp() {
   };
   edHdr.appendChild(demoBtn);
   inhalt.appendChild(edHdr);
+
+  // "Meine Dokumente": cloud-gespeicherte Dokumente auswählen/speichern/
+  // löschen – anders als "Datei laden/speichern" (lokale .md-Dateien auf
+  // dem eigenen Rechner) landet das hier in der Cloud, geräteübergreifend
+  // abrufbar, ohne selbst Dateien verwalten zu müssen.
+  var dokRow = mk('div', 'dv-dok-row');
+  var dokSel = document.createElement('select');
+  dokSel.className = 'finp';
+  dokSel.id = 'dv-dok-sel';
+  dokSel.title = 'Gespeichertes Dokument öffnen';
+  dokSel.onchange = async function () {
+    if (!dokSel.value) { DV.dokumentId = null; return; }
+    try {
+      await dvDokumentLaden(dokSel.value);
+      document.getElementById('dv-ta').value = DV.quelle;
+      dvHighlightAktualisieren();
+      dvSelectAktualisieren();
+      dvVorlagenPanelNeu();
+      dvUpdate();
+    } catch (e) {
+      alert('Laden fehlgeschlagen: ' + e.message);
+    }
+  };
+  dokRow.appendChild(dokSel);
+
+  var dokSpeichernBtn = btn('☁️ Speichern', 'btn btn-ghost btn-sm');
+  dokSpeichernBtn.title = 'In "Meine Dokumente" speichern (Cloud) – zum späteren Weiterbearbeiten, geräteübergreifend';
+  dokSpeichernBtn.onclick = async function () {
+    dokSpeichernBtn.disabled = true;
+    try {
+      await dvDokumentSpeichern();
+      dvDokSelectAktualisieren();
+    } catch (e) {
+      alert('Speichern fehlgeschlagen: ' + e.message);
+    } finally {
+      dokSpeichernBtn.disabled = false;
+    }
+  };
+  dokRow.appendChild(dokSpeichernBtn);
+
+  var dokNeuBtn = btn('➕ Neu', 'btn btn-ghost btn-sm');
+  dokNeuBtn.title = 'Leeres neues Dokument beginnen';
+  dokNeuBtn.onclick = function () {
+    if (DV.quelle.trim() && !confirm('Aktuellen Inhalt verwerfen und ein neues Dokument beginnen?')) return;
+    DV.dokumentId = null;
+    DV.quelle = '';
+    document.getElementById('dv-ta').value = '';
+    localStorage.setItem('dv_quelle', '');
+    dvHighlightAktualisieren();
+    dvDokSelectAktualisieren();
+    dvUpdate();
+  };
+  dokRow.appendChild(dokNeuBtn);
+
+  var dokLoeschenBtn = btn('🗑', 'btn btn-ghost btn-sm');
+  dokLoeschenBtn.title = 'Ausgewähltes Dokument löschen';
+  dokLoeschenBtn.onclick = async function () {
+    if (!dokSel.value) return;
+    var eintrag = DV_DOK_INDEX.find(function (e) { return e.id === dokSel.value; });
+    if (!confirm('„' + (eintrag ? eintrag.titel : '') + '" wirklich löschen?')) return;
+    await dvDokumentLoeschen(dokSel.value);
+    dvDokSelectAktualisieren();
+  };
+  dokRow.appendChild(dokLoeschenBtn);
+  inhalt.appendChild(dokRow);
 
   var bilderPanel = mk('div', 'dv-bilder-panel');
   bilderPanel.id = 'dv-bilder-panel';
@@ -905,6 +1026,7 @@ async function dvCheckVersion() {
   }
 
   dvVorlagenCacheLaden(); // sofort verfügbar, ohne auf das Netz zu warten
+  dvDokIndexCacheLaden();
   var gewuenschteVorlageId = localStorage.getItem('dv_vorlage') || 'ka-klassisch';
   DV.vorlageId = gewuenschteVorlageId;
   if (!DV_VORLAGEN.some(function (v) { return v.id === DV.vorlageId; })) DV.vorlageId = DV_VORLAGEN[0].id;
@@ -915,6 +1037,7 @@ async function dvCheckVersion() {
 
   dvRenderApp();
   dvSelectAktualisieren();
+  dvDokSelectAktualisieren();
   dvTab(DV.tab);
   dvUpdate();
 
@@ -940,4 +1063,9 @@ async function dvCheckVersion() {
     dvVorlagenPanelNeu();
     dvUpdate();
   }
+
+  // Dokumente-Index ebenso im Hintergrund nachladen (andere Geräte könnten
+  // zwischenzeitlich Dokumente gespeichert/gelöscht haben).
+  var dokGeaendert = await dvDokIndexVonCloudLaden();
+  if (dokGeaendert) dvDokSelectAktualisieren();
 })();

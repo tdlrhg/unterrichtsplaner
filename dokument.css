@@ -61,6 +61,8 @@
 .dv-check input { width: 15px; height: 15px; accent-color: var(--pri); cursor: pointer; }
 .dv-editor-hdr { padding: 10px 14px; border-bottom: 1px solid var(--bord); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .dv-editor-hdr .fl { margin: 0; }
+.dv-dok-row { padding: 8px 14px; border-bottom: 1px solid var(--bord); background: var(--surf2); display: flex; align-items: center; gap: 8px; }
+.dv-dok-row select { flex: 1; min-width: 0; }
 /* Einfüge-Leiste für Formatier-Bausteine */
 .dv-format-leiste { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding: 7px 14px; border-bottom: 1px solid var(--bord); background: var(--surf2); flex-shrink: 0; }
 .dv-format-btn { font-size: 11px; padding: 3px 8px; }

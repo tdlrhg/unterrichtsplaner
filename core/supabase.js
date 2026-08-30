@@ -27,6 +27,13 @@ async function sbDownload(path) {
   return await res.json();
 }
 
+async function sbLoeschenObjekt(path) {
+  const url = _URL + '/storage/v1/object/' + BUCKET + '/' + path;
+  const headers = { 'apikey': _KEY, 'Authorization': 'Bearer ' + _KEY };
+  const res = await fetch(url, { method: 'DELETE', headers });
+  if (!res.ok) throw new Error(await res.text());
+}
+
 // ── Supabase Tabellen (REST/PostgREST) ───────────────────────────
 
 const _H = () => ({

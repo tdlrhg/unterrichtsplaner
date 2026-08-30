@@ -8,6 +8,17 @@
   const q = v.built ? '?v=' + encodeURIComponent(v.built) : '';
   window.__VERSION_Q__ = q; // für Inline-Funktionen (z.B. pdfjsLib.workerSrc)
 
+  // CSS-<link>-Tags bekamen bisher KEIN Cache-Busting (nur die Scripts oben) –
+  // Browser/CDN konnten dadurch nach einem Deploy noch beliebig lange eine
+  // veraltete dokument.css/style.css ausliefern, obwohl der Build längst
+  // durch war. Href neu setzen erzwingt denselben Re-Fetch wie bei Scripts.
+  if (q) {
+    document.querySelectorAll('link[rel="stylesheet"]').forEach(function (l) {
+      var href = l.getAttribute('href');
+      if (href && !/^https?:/.test(href)) l.href = href.split('?')[0] + q;
+    });
+  }
+
   for (const item of (window.__SCRIPTS__ || [])) {
     await new Promise(function(ok) {
       // Inline-Funktion direkt ausführen

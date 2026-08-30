@@ -22,12 +22,16 @@ var _dvOffeneGruppe = 'Seite';
 var DV_FELDER = [
   { gruppe: 'Seite' },
   { pfad: 'seite.format', label: 'Format', typ: 'select', breite: 'drittel', optionen: [['A4', 'A4 hoch'], ['A4quer', 'A4 quer'], ['A5', 'A5']] },
-  { pfad: 'seite.rand.oben',   label: 'Rand oben',   typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', breite: 'drittel' },
-  { pfad: 'seite.rand.unten',  label: 'Rand unten',  typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', breite: 'drittel' },
-  { pfad: 'seite.rand.links',  label: 'Rand links',  typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', breite: 'drittel' },
-  { pfad: 'seite.rand.rechts', label: 'Rand rechts', typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', breite: 'drittel' },
-  { pfad: 'seite.kaestchen',       label: 'Kästchenpapier als Hintergrund', typ: 'check', breite: 'drittel' },
-  { pfad: 'seite.kaestchenGroesse', label: 'Kästchengröße', typ: 'zahl', min: 2, max: 15, schritt: 0.5, einheit: 'mm', breite: 'drittel', von: 'seite.kaestchen' },
+  { box: 'start' },
+  { pfad: 'seite.rand.oben',   label: 'Rand oben',   typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', halb: true },
+  { pfad: 'seite.rand.unten',  label: 'Rand unten',  typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', halb: true },
+  { pfad: 'seite.rand.links',  label: 'Rand links',  typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', halb: true },
+  { pfad: 'seite.rand.rechts', label: 'Rand rechts', typ: 'zahl', min: 5, max: 60, schritt: 1, einheit: 'mm', halb: true },
+  { box: 'ende' },
+  { box: 'start' },
+  { pfad: 'seite.kaestchen',       label: 'Kästchenpapier als Hintergrund', typ: 'check', halb: true },
+  { pfad: 'seite.kaestchenGroesse', label: 'Kästchengröße', typ: 'zahl', min: 2, max: 15, schritt: 0.5, einheit: 'mm', halb: true, von: 'seite.kaestchen' },
+  { box: 'ende' },
   { pfad: 'seite.rahmen',        label: 'Rahmen um die Seite', typ: 'check', breite: 'drittel' },
   { pfad: 'seite.rahmenAbstand', label: 'Abstand vom Rand', typ: 'zahl', min: 2, max: 20, schritt: 0.5, einheit: 'mm', breite: 'drittel', von: 'seite.rahmen' },
   { pfad: 'seite.rahmenStaerke', label: 'Linienstärke', typ: 'zahl', min: 0.5, max: 5, schritt: 0.25, einheit: 'pt', breite: 'drittel', von: 'seite.rahmen' },
@@ -295,8 +299,10 @@ function dvVorlagenPanel() {
   // Felder gruppenweise, als Akkordeon (nur eine Gruppe offen)
   var gruppe = null;
   var gruppeOffen = false;
+  var boxAktiv = null; // aktueller Rahmen-Container (siehe feld.box), sonst gruppe.__felder
   DV_FELDER.forEach(function (feld) {
     if (feld.gruppe) {
+      boxAktiv = null;
       gruppeOffen = feld.gruppe === _dvOffeneGruppe;
       gruppe = mk('div', 'dv-gruppe' + (gruppeOffen ? ' dv-gruppe-offen' : ''));
       var titelZeile = mk('div', 'dv-gruppe-titel');
@@ -320,9 +326,14 @@ function dvVorlagenPanel() {
     // Erzwungener Zeilenumbruch (flex-basis:100%-Trick): schmalere Felder
     // vor/nach dieser Stelle sollen NICHT in dieselbe Zeile rutschen, sonst
     // verschieben sich alle nachfolgenden halb/drittel-Paare um eins.
-    if (feld.umbruch) { gruppe.__felder.appendChild(mk('div', 'dv-fg-umbruch')); return; }
+    if (feld.umbruch) { (boxAktiv || gruppe.__felder).appendChild(mk('div', 'dv-fg-umbruch')); return; }
+    // Rahmen-Box um zusammengehörige Felder (z.B. die 4 Ränder), damit sie
+    // auch dann als Einheit erkennbar bleiben, wenn andere Felder dazwischen
+    // in derselben Zeile stehen.
+    if (feld.box === 'start') { boxAktiv = mk('div', 'dv-fg-box'); gruppe.__felder.appendChild(boxAktiv); return; }
+    if (feld.box === 'ende') { boxAktiv = null; return; }
     if (feld.von && !dvHole(v, feld.von)) return; // Hauptschalter aus → Feld ausblenden
-    gruppe.__felder.appendChild(dvBauFeld(feld, v, standard));
+    (boxAktiv || gruppe.__felder).appendChild(dvBauFeld(feld, v, standard));
   });
 
   return panel;

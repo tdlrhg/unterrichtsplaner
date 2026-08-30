@@ -42,6 +42,13 @@
    nachfolgende halb/drittel-Felder nicht in eine Zeile mit einem schmalen
    Feld ohne passenden Nachbarn rutschen. */
 .dv-fg-umbruch { flex-basis: 100%; width: 0; height: 0; margin: 0; padding: 0; }
+/* Rahmen-Box um zusammengehörige Felder (feld.box: 'start'/'ende') – nimmt
+   selbst eine volle Zeile ein, Kinder darin verhalten sich wie im
+   übergeordneten Formular (gleiches Flex-Layout, eigene halb/drittel-Klassen). */
+.dv-form .dv-fg-box {
+  flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 0 10px;
+  border: 1px solid var(--bord); border-radius: 6px; padding: 8px 10px 3px; margin-bottom: 7px;
+}
 .dv-form .fl { margin-bottom: 3px; font-size: 10px; }
 /* Kompaktere Eingabefelder nur hier – .finp/.fl sind globale Klassen, die
    auch in Prüfungsplaner & Co. verwendet werden, dort unangetastet lassen. */
@@ -192,6 +199,10 @@
    weiter links als auf Seite 1). */
 .dv-band-kopf {
   top: var(--dv-titel-rand-o); left: calc(var(--dv-titel-rand-l) + 3.5mm);
+  /* right bisher nicht überschrieben (Basis .dv-band nutzt den schmaleren
+     Inhaltsrand --dv-rand-r) – dadurch reichte die Trennlinie unten rechts
+     nicht bis zum Rahmen, links (titel-rand) aber schon: asymmetrisch. */
+  right: var(--dv-titel-rand-r);
   /* Skaliert proportional mit der Titelschriftgröße von Seite 1
      (--dv-tb-titel-groesse, siehe Vorlage → Titelblock) statt eines eigenen,
      unabhängigen Werts – Verhältnis 1.55/1.75 aus der bisherigen Größe. */
@@ -199,7 +210,9 @@
   font-weight: 800; color: #1c1917;
 }
 .dv-band-fuss { bottom: var(--dv-rand-u); height: var(--dv-fuss-h); }
-.dv-band-kopf.dv-band-linie { border-bottom: .4pt solid #b9b2a7; }
+/* Gleicher Stil (Stärke/Farbe) wie der Rahmen um die Seite (Vorlage →
+   Seite → Rahmenfarbe/Linienstärke), statt eines eigenen festen Grautons. */
+.dv-band-kopf.dv-band-linie { border-bottom: var(--dv-rahmen-staerke, .4pt) solid var(--dv-rahmen-farbe, #b9b2a7); }
 .dv-band-fuss.dv-band-linie { border-top: .4pt solid #b9b2a7; }
 .dv-band-links { flex: 1; text-align: left; }
 .dv-band-mitte { flex: 1; text-align: center; }
@@ -324,7 +337,7 @@
   border: .7pt solid #57534e; border-radius: 1px; transform: translateY(.4mm);
 }
 .dv-mc-angekreuzt { background: #57534e; }
-.dv-hr { border-top: .4pt solid #b9b2a7; margin: 3mm 0; }
+.dv-hr { border-top: 1pt solid #1c1917; margin: 4mm 0; }
 .dv-page code { font-family: 'SFMono-Regular', Consolas, monospace; font-size: .92em; background: #f5f2ed; padding: 0 .8mm; }
 .dv-luecke { display: inline-block; min-width: 28mm; border-bottom: .6pt solid #44403c; }
 

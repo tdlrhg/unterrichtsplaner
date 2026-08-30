@@ -501,24 +501,6 @@ function dvDateiSpeichern() {
   URL.revokeObjectURL(url);
 }
 
-// ── Meine Dokumente (Cloud, siehe core/doc-dokumente.js) ──────────
-function dvDokSelectAktualisieren() {
-  var sel = document.getElementById('dv-dok-sel');
-  if (!sel) return;
-  sel.innerHTML = '';
-  var leer = document.createElement('option');
-  leer.value = ''; leer.textContent = '— Neues Dokument —';
-  sel.appendChild(leer);
-  DV_DOK_INDEX.slice().sort(function (a, b) { return (b.aktualisiert || '').localeCompare(a.aktualisiert || ''); })
-    .forEach(function (e) {
-      var o = document.createElement('option');
-      o.value = e.id; o.textContent = e.titel || 'Ohne Titel';
-      if (e.id === DV.dokumentId) o.selected = true;
-      sel.appendChild(o);
-    });
-  if (!DV.dokumentId) sel.value = '';
-}
-
 function dvBilderImText() {
   return DV.quelle.split('\n').reduce(function (liste, zeile) {
     var m = zeile.match(DV_BILD_MUSTER);
@@ -767,14 +749,88 @@ function dvRenderApp() {
   fileInp.onchange = function (e) { dvDateiLaden(e.target.files[0]); e.target.value = ''; };
   edHdr.appendChild(fileInp);
 
-  var ladeBtn = btn('📂 Datei laden', 'btn btn-ghost btn-sm');
-  ladeBtn.onclick = function () { fileInp.click(); };
-  edHdr.appendChild(ladeBtn);
+  // "Datei"-Menü bündelt Neu/Beispiel/Laden/Speichern (lokal + Cloud) hinter
+  // einem einzigen Button statt vieler einzelner Buttons/Zeilen (die waren
+  // zusammen mit "Meine Dokumente" unübersichtlich geworden).
+  var dateiWrap = mk('div', 'dv-datei-wrap');
+  var dateiBtn = btn('📁 Datei', 'btn btn-ghost btn-sm');
+  var dateiMenu = mk('div', 'dv-datei-menu');
+  dateiMenu.style.display = 'none';
 
-  var speichernBtn = btn('💾 Datei speichern', 'btn btn-ghost btn-sm');
-  speichernBtn.title = 'Als .md-Datei herunterladen – zum Archivieren und um später mit "Datei laden" weiterzuarbeiten';
-  speichernBtn.onclick = dvDateiSpeichern;
-  edHdr.appendChild(speichernBtn);
+  function dvDateiMenuAussenKlick(e) {
+    if (!dateiWrap.contains(e.target)) dvDateiMenuSchliessen();
+  }
+  function dvDateiMenuSchliessen() {
+    dateiMenu.style.display = 'none';
+    document.removeEventListener('click', dvDateiMenuAussenKlick);
+  }
+  function dvMenuEintrag(label, aktion, klasse) {
+    var it = tx('div', 'dv-datei-menu-item' + (klasse ? ' ' + klasse : ''), label);
+    it.onclick = function () { dvDateiMenuSchliessen(); aktion(); };
+    return it;
+  }
+  function dvDateiMenuNeuAufbauen() {
+    dateiMenu.innerHTML = '';
+    dateiMenu.appendChild(dvMenuEintrag('➕ Neu', function () {
+      if (DV.quelle.trim() && !confirm('Aktuellen Inhalt verwerfen und ein neues Dokument beginnen?')) return;
+      DV.dokumentId = null;
+      DV.quelle = '';
+      document.getElementById('dv-ta').value = '';
+      localStorage.setItem('dv_quelle', '');
+      dvHighlightAktualisieren();
+      dvUpdate();
+    }));
+    dateiMenu.appendChild(dvMenuEintrag('📄 Beispiel laden', function () {
+      if (DV.quelle.trim() && !confirm('Aktuellen Inhalt durch das Beispiel ersetzen?')) return;
+      DV.dokumentId = null;
+      DV.quelle = DV_DEMO;
+      document.getElementById('dv-ta').value = DV.quelle;
+      localStorage.setItem('dv_quelle', DV.quelle);
+      dvHighlightAktualisieren();
+      dvUpdate();
+    }));
+    dateiMenu.appendChild(mk('div', 'dv-datei-menu-trenner'));
+    dateiMenu.appendChild(dvMenuEintrag('📂 Datei laden…', function () { fileInp.click(); }));
+    dateiMenu.appendChild(dvMenuEintrag('💾 Als Datei speichern', dvDateiSpeichern));
+    dateiMenu.appendChild(mk('div', 'dv-datei-menu-trenner'));
+    dateiMenu.appendChild(dvMenuEintrag('☁️ In der Cloud speichern', function () {
+      dvDokumentSpeichern().catch(function (e) { alert('Speichern fehlgeschlagen: ' + e.message); });
+    }));
+    if (DV.dokumentId) {
+      dateiMenu.appendChild(dvMenuEintrag('🗑 Aus der Cloud löschen', function () {
+        var eintrag = DV_DOK_INDEX.find(function (e) { return e.id === DV.dokumentId; });
+        if (!confirm('„' + (eintrag ? eintrag.titel : '') + '" wirklich löschen?')) return;
+        dvDokumentLoeschen(DV.dokumentId);
+      }));
+    }
+    if (DV_DOK_INDEX.length) {
+      dateiMenu.appendChild(mk('div', 'dv-datei-menu-trenner'));
+      dateiMenu.appendChild(tx('div', 'dv-datei-menu-ueberschrift', 'MEINE DOKUMENTE'));
+      DV_DOK_INDEX.slice().sort(function (a, b) { return (b.aktualisiert || '').localeCompare(a.aktualisiert || ''); })
+        .forEach(function (e) {
+          var aktiv = e.id === DV.dokumentId;
+          dateiMenu.appendChild(dvMenuEintrag((aktiv ? '● ' : '') + (e.titel || 'Ohne Titel'), function () {
+            dvDokumentLaden(e.id).then(function () {
+              document.getElementById('dv-ta').value = DV.quelle;
+              dvHighlightAktualisieren();
+              dvSelectAktualisieren();
+              dvVorlagenPanelNeu();
+              dvUpdate();
+            }).catch(function (err) { alert('Laden fehlgeschlagen: ' + err.message); });
+          }, aktiv ? 'aktiv' : ''));
+        });
+    }
+  }
+  dateiBtn.onclick = function (e) {
+    e.stopPropagation();
+    if (dateiMenu.style.display !== 'none') { dvDateiMenuSchliessen(); return; }
+    dvDateiMenuNeuAufbauen();
+    dateiMenu.style.display = 'block';
+    document.addEventListener('click', dvDateiMenuAussenKlick);
+  };
+  dateiWrap.appendChild(dateiBtn);
+  dateiWrap.appendChild(dateiMenu);
+  edHdr.appendChild(dateiWrap);
 
   var bildInp = document.createElement('input');
   bildInp.type = 'file';
@@ -796,81 +852,7 @@ function dvRenderApp() {
   };
   edHdr.appendChild(bildBtn);
 
-  var demoBtn = btn('Beispiel', 'btn btn-ghost btn-sm');
-  demoBtn.onclick = function () {
-    if (DV.quelle.trim() && !confirm('Aktuellen Inhalt durch das Beispiel ersetzen?')) return;
-    DV.quelle = DV_DEMO;
-    document.getElementById('dv-ta').value = DV.quelle;
-    localStorage.setItem('dv_quelle', DV.quelle);
-    dvUpdate();
-  };
-  edHdr.appendChild(demoBtn);
   inhalt.appendChild(edHdr);
-
-  // "Meine Dokumente": cloud-gespeicherte Dokumente auswählen/speichern/
-  // löschen – anders als "Datei laden/speichern" (lokale .md-Dateien auf
-  // dem eigenen Rechner) landet das hier in der Cloud, geräteübergreifend
-  // abrufbar, ohne selbst Dateien verwalten zu müssen.
-  var dokRow = mk('div', 'dv-dok-row');
-  var dokSel = document.createElement('select');
-  dokSel.className = 'finp';
-  dokSel.id = 'dv-dok-sel';
-  dokSel.title = 'Gespeichertes Dokument öffnen';
-  dokSel.onchange = async function () {
-    if (!dokSel.value) { DV.dokumentId = null; return; }
-    try {
-      await dvDokumentLaden(dokSel.value);
-      document.getElementById('dv-ta').value = DV.quelle;
-      dvHighlightAktualisieren();
-      dvSelectAktualisieren();
-      dvVorlagenPanelNeu();
-      dvUpdate();
-    } catch (e) {
-      alert('Laden fehlgeschlagen: ' + e.message);
-    }
-  };
-  dokRow.appendChild(dokSel);
-
-  var dokSpeichernBtn = btn('☁️ Speichern', 'btn btn-ghost btn-sm');
-  dokSpeichernBtn.title = 'In "Meine Dokumente" speichern (Cloud) – zum späteren Weiterbearbeiten, geräteübergreifend';
-  dokSpeichernBtn.onclick = async function () {
-    dokSpeichernBtn.disabled = true;
-    try {
-      await dvDokumentSpeichern();
-      dvDokSelectAktualisieren();
-    } catch (e) {
-      alert('Speichern fehlgeschlagen: ' + e.message);
-    } finally {
-      dokSpeichernBtn.disabled = false;
-    }
-  };
-  dokRow.appendChild(dokSpeichernBtn);
-
-  var dokNeuBtn = btn('➕ Neu', 'btn btn-ghost btn-sm');
-  dokNeuBtn.title = 'Leeres neues Dokument beginnen';
-  dokNeuBtn.onclick = function () {
-    if (DV.quelle.trim() && !confirm('Aktuellen Inhalt verwerfen und ein neues Dokument beginnen?')) return;
-    DV.dokumentId = null;
-    DV.quelle = '';
-    document.getElementById('dv-ta').value = '';
-    localStorage.setItem('dv_quelle', '');
-    dvHighlightAktualisieren();
-    dvDokSelectAktualisieren();
-    dvUpdate();
-  };
-  dokRow.appendChild(dokNeuBtn);
-
-  var dokLoeschenBtn = btn('🗑', 'btn btn-ghost btn-sm');
-  dokLoeschenBtn.title = 'Ausgewähltes Dokument löschen';
-  dokLoeschenBtn.onclick = async function () {
-    if (!dokSel.value) return;
-    var eintrag = DV_DOK_INDEX.find(function (e) { return e.id === dokSel.value; });
-    if (!confirm('„' + (eintrag ? eintrag.titel : '') + '" wirklich löschen?')) return;
-    await dvDokumentLoeschen(dokSel.value);
-    dvDokSelectAktualisieren();
-  };
-  dokRow.appendChild(dokLoeschenBtn);
-  inhalt.appendChild(dokRow);
 
   var bilderPanel = mk('div', 'dv-bilder-panel');
   bilderPanel.id = 'dv-bilder-panel';
@@ -1037,7 +1019,6 @@ async function dvCheckVersion() {
 
   dvRenderApp();
   dvSelectAktualisieren();
-  dvDokSelectAktualisieren();
   dvTab(DV.tab);
   dvUpdate();
 
@@ -1065,7 +1046,7 @@ async function dvCheckVersion() {
   }
 
   // Dokumente-Index ebenso im Hintergrund nachladen (andere Geräte könnten
-  // zwischenzeitlich Dokumente gespeichert/gelöscht haben).
-  var dokGeaendert = await dvDokIndexVonCloudLaden();
-  if (dokGeaendert) dvDokSelectAktualisieren();
+  // zwischenzeitlich Dokumente gespeichert/gelöscht haben) – wird beim
+  // nächsten Öffnen des Datei-Menüs automatisch neu aufgebaut.
+  await dvDokIndexVonCloudLaden();
 })();

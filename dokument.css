@@ -61,8 +61,18 @@
 .dv-check input { width: 15px; height: 15px; accent-color: var(--pri); cursor: pointer; }
 .dv-editor-hdr { padding: 10px 14px; border-bottom: 1px solid var(--bord); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .dv-editor-hdr .fl { margin: 0; }
-.dv-dok-row { padding: 8px 14px; border-bottom: 1px solid var(--bord); background: var(--surf2); display: flex; align-items: center; gap: 8px; }
-.dv-dok-row select { flex: 1; min-width: 0; }
+/* "Datei"-Menü (Neu/Beispiel/lokale Datei/Cloud, siehe dvDateiMenuNeuAufbauen) */
+.dv-datei-wrap { position: relative; display: inline-block; }
+.dv-datei-menu {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 200; min-width: 220px;
+  background: #fff; border: 1px solid var(--bord); border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12); padding: 4px; max-height: 320px; overflow-y: auto;
+}
+.dv-datei-menu-item { padding: 7px 10px; border-radius: 4px; font-size: 12.5px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dv-datei-menu-item:hover { background: var(--surf2); }
+.dv-datei-menu-item.aktiv { color: var(--pri); font-weight: 600; }
+.dv-datei-menu-trenner { height: 1px; background: var(--bord); margin: 4px 2px; }
+.dv-datei-menu-ueberschrift { padding: 6px 10px 2px; font-size: 10.5px; font-weight: 700; letter-spacing: .3px; color: var(--tx3); }
 /* Einfüge-Leiste für Formatier-Bausteine */
 .dv-format-leiste { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding: 7px 14px; border-bottom: 1px solid var(--bord); background: var(--surf2); flex-shrink: 0; }
 .dv-format-btn { font-size: 11px; padding: 3px 8px; }

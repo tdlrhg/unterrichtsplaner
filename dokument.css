@@ -198,11 +198,17 @@
    Innenabstand-links zählt mit, sonst steht der Titel hier ein Stück
    weiter links als auf Seite 1). */
 .dv-band-kopf {
-  top: var(--dv-titel-rand-o); left: calc(var(--dv-titel-rand-l) + 3.5mm);
+  top: var(--dv-titel-rand-o); left: var(--dv-titel-rand-l);
   /* right bisher nicht überschrieben (Basis .dv-band nutzt den schmaleren
      Inhaltsrand --dv-rand-r) – dadurch reichte die Trennlinie unten rechts
      nicht bis zum Rahmen, links (titel-rand) aber schon: asymmetrisch. */
   right: var(--dv-titel-rand-r);
+  /* Der Text-Einzug (Ausrichtung mit dem Titeltext) kommt jetzt über
+     padding statt über left – dadurch verschiebt sich nur der Text nach
+     rechts, die Trennlinie (Border, siehe unten) bleibt links UND rechts
+     gleich weit vom Rahmen entfernt, statt links einen sichtbar größeren
+     Abstand zu haben. */
+  padding-left: 3.5mm;
   /* Skaliert proportional mit der Titelschriftgröße von Seite 1
      (--dv-tb-titel-groesse, siehe Vorlage → Titelblock) statt eines eigenen,
      unabhängigen Werts – Verhältnis 1.55/1.75 aus der bisherigen Größe. */

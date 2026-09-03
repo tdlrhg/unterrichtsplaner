@@ -113,10 +113,17 @@ function viewKursDetail(kursId) {
   const heute0 = new Date(); heute0.setHours(0,0,0,0);
   const zeigHj = hjEnde && hjEnde >= heute0;
 
-  // Soll-Stunden aus Blöcken (stundenGesamt)
+  // Soll-Stunden eines Blocks: block.stundenGesamt, sonst Summe der Reihen-Schätzungen
+  function blockSoll(block) {
+    const g = parseInt(block.stundenGesamt);
+    if (g > 0) return g;
+    return (block.reihen || []).reduce((s, r) => s + (parseInt(r.stundenAnzahl) || 0), 0);
+  }
+
+  // Soll-Stunden aus Blöcken
   let sollGesamt = 0;
   (fp ? fp.blocks || [] : []).forEach(b => {
-    const g = parseInt(b.stundenGesamt);
+    const g = blockSoll(b);
     if (g > 0) sollGesamt += g;
   });
 
@@ -210,7 +217,7 @@ function viewKursDetail(kursId) {
       const blockId = kursId + '_b_' + block.id;
       const blockOffen = !!S._baumOffen[blockId];
 
-      const soll = parseInt(block.stundenGesamt) || 0;
+      const soll = blockSoll(block);
       const geplant = (block.reihen || []).reduce((s,r) =>
         s + (r.einheiten || []).reduce((s2,e) => s2 + (e.stunden||[]).length, 0), 0);
       const offen = soll > 0 ? soll - geplant : null;

@@ -158,7 +158,7 @@ function buildFpTree(lp, sel) {
   (lp.blocks || []).forEach((block, bi) => {
     const bKey = 'b_' + block.id;
     const rn = (block.reihen || []).length;
-    const angelegte = (block.reihen || []).reduce((s, r) => s + (r.stunden || []).length, 0);
+    const angelegte = (block.reihen || []).reduce((s, r) => s + summeStundenEinheiten(r.stunden), 0);
     const bSub = rn + ' Reihe' + (rn !== 1 ? 'n' : '') +
       (block.stundenGesamt ? ' · ' + angelegte + '/' + parseInt(block.stundenGesamt) + ' Std.' : (angelegte > 0 ? ' · ' + angelegte + ' Std.' : ''));
 
@@ -210,7 +210,7 @@ function buildFpTree(lp, sel) {
 
     (block.reihen || []).forEach((reihe, ri) => {
       const rKey = 'r_' + reihe.id;
-      const sn = (reihe.stunden || []).length;
+      const sn = summeStundenEinheiten(reihe.stunden);
       const gn = (reihe.einheiten || []).length;
       const rSub = (reihe.stundenAnzahl ? sn + '/' + reihe.stundenAnzahl + ' Std.' : sn + ' Stunde' + (sn !== 1 ? 'n' : ''))
                 + (gn > 0 ? ' · ' + gn + ' Gruppe' + (gn !== 1 ? 'n' : '') : '');

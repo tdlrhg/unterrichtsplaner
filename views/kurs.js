@@ -470,27 +470,36 @@ function exportFachplanung(fpId) {
         block.reihen.forEach((reihe, ri) => {
           md += '### ' + (bi+1) + '.' + (ri+1) + ' ' + reihe.titel + '\n\n';
 
-          if (!reihe.einheiten || reihe.einheiten.length === 0) {
-            md += '_Keine Einheiten angelegt._\n\n';
-          } else {
-            reihe.einheiten.forEach((einheit, ei) => {
-              md += '#### ' + (bi+1) + '.' + (ri+1) + '.' + (ei+1) + ' ' + einheit.titel + '\n\n';
-
-              if (!einheit.stunden || einheit.stunden.length === 0) {
-                md += '_Keine Stunden angelegt._\n\n';
-              } else {
-                einheit.stunden.forEach((stunde, si2) => {
-                  const prio = PRIO_LABEL[stunde.prioritaet] || 'Pflicht';
-                  md += '- **' + (si2+1) + '. ' + (stunde.titel || '(ohne Titel)') + '**';
-                  md += ' [' + prio + ']';
-                  if (stunde.lernziel) md += '\n  _Lernziel: ' + stunde.lernziel + '_';
-                  if (stunde.klpInhalt && stunde.klpInhalt.length > 0) md += '\n  KLP Inhalt: ' + stunde.klpInhalt.join(', ');
-                  if (stunde.klpProzess && stunde.klpProzess.length > 0) md += '\n  KLP Prozess: ' + stunde.klpProzess.join(', ');
-                  md += '\n';
-                });
-                md += '\n';
-              }
+          function stundenListe(md, liste) {
+            liste.forEach((stunde, si2) => {
+              const prio = PRIO_LABEL[stunde.prioritaet] || 'Pflicht';
+              md += '- **' + (si2+1) + '. ' + (stunde.titel || '(ohne Titel)') + '**';
+              md += ' [' + prio + ']';
+              if (stunde.lernziel) md += '\n  _Lernziel: ' + stunde.lernziel + '_';
+              if (stunde.klpInhalt && stunde.klpInhalt.length > 0) md += '\n  KLP Inhalt: ' + stunde.klpInhalt.join(', ');
+              if (stunde.klpProzess && stunde.klpProzess.length > 0) md += '\n  KLP Prozess: ' + stunde.klpProzess.join(', ');
+              md += '\n';
             });
+            return md;
+          }
+
+          if (!(reihe.stunden || []).length) {
+            md += '_Keine Stunden angelegt._\n\n';
+          } else {
+            (reihe.einheiten || []).forEach((einheit, ei) => {
+              const stundenInEinheit = (reihe.stunden || []).filter(s => s.einheitId === einheit.id);
+              if (!stundenInEinheit.length) return;
+              md += '#### ' + (bi+1) + '.' + (ri+1) + '.' + (ei+1) + ' ' + einheit.titel + '\n\n';
+              md = stundenListe(md, stundenInEinheit);
+              md += '\n';
+            });
+
+            const ohneGruppe = (reihe.stunden || []).filter(s => !s.einheitId);
+            if (ohneGruppe.length) {
+              if ((reihe.einheiten || []).length) md += '#### ' + (bi+1) + '.' + (ri+1) + '.x Ohne Gruppe\n\n';
+              md = stundenListe(md, ohneGruppe);
+              md += '\n';
+            }
           }
         });
       }

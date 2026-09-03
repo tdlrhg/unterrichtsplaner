@@ -230,11 +230,13 @@ function viewKursDetail(kursId) {
       const reiheRows = [];
       (block.reihen || []).forEach(reihe => {
         const rgeplant = (reihe.einheiten || []).reduce((s,e) => s+(e.stunden||[]).length, 0);
+        const rsoll = parseInt(reihe.stundenAnzahl) || 0;
+        const roffen = rsoll > 0 ? rsoll - rgeplant : null;
         const reiheRow = tblRow([
           { text: '▶ ' + reihe.titel, indent: 24 },
-          { text: '–', align: 'right', color: 'var(--tx3)' },
+          { text: rsoll || '–', align: 'right', color: rsoll ? undefined : 'var(--tx3)' },
           { text: rgeplant, align: 'right' },
-          { text: '–', align: 'right', color: 'var(--tx3)' }
+          { text: roffen !== null ? roffen : '–', align: 'right', color: offenColor(roffen), bold: roffen !== null && roffen !== 0 }
         ], { clickable: true, bg: '#fafafa', onclick: () => {} });
         reiheRow.style.display = 'none';
         tbody.appendChild(reiheRow);

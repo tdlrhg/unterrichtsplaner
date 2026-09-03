@@ -47,14 +47,33 @@ function viewZeitachse(kursId) {
   const stundenGesamt = alleStunden();
 
   // ── Blockdauer ───────────────────────────────────────────────
-  function zaehleBlockStunden(block) {
-    // Geplante Stunden haben Vorrang wenn gesetzt
-    const geplant = parseInt(block.stundenGesamt);
-    if (geplant > 0) return geplant;
-    // Sonst angelegte Stunden zählen
+  // Rohe Anzahl tatsächlich angelegter Stunden (ignoriert stundenGesamt-Schätzung)
+  function zaehleEchteStundenBlock(block) {
     let count = 0;
     (block.reihen || []).forEach(r => (r.einheiten || []).forEach(e => { count += (e.stunden || []).length; }));
     return count;
+  }
+
+  // Geplant/Ist pro Reihe eines Blocks (roh, ohne Max-Kombination)
+  function reihenSegmente(block) {
+    return (block.reihen || []).map(r => {
+      const geplant = parseInt(r.stundenAnzahl) || 0;
+      let echte = 0;
+      (r.einheiten || []).forEach(e => { echte += (e.stunden || []).length; });
+      return { reihe: r, geplant, echte };
+    });
+  }
+
+  // Gesamtdauer eines Blocks für die Zeitachsen-Platzierung: Summe der
+  // Reihen-Segmente (max aus geplant/echt je Reihe), sonst block.stundenGesamt,
+  // sonst tatsächlich angelegte Stunden.
+  function zaehleBlockStunden(block) {
+    const segs = reihenSegmente(block);
+    const sumDauer = segs.reduce((s, x) => s + Math.max(x.geplant, x.echte), 0);
+    if (sumDauer > 0) return sumDauer;
+    const geplant = parseInt(block.stundenGesamt);
+    if (geplant > 0) return geplant;
+    return zaehleEchteStundenBlock(block);
   }
 
   // ── Platzierungen ────────────────────────────────────────────
@@ -122,12 +141,18 @@ function viewZeitachse(kursId) {
       if (frei) break;
       row++;
     }
-    blockLayouts[block.id] = { startW, endW: endWIdx, row };
+    blockLayouts[block.id] = { startW, endW: endWIdx, row, si };
     for (let i = startW; i <= endWIdx; i++) { if (!belegtPerWoche[i]) belegtPerWoche[i]=[]; belegtPerWoche[i].push(row); }
   });
 
   const maxRow = Math.max(0, ...Object.values(blockLayouts).map(l => l.row)) + 1;
   const FARBEN = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
+
+  function pastellize(hex) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    const mix = c => Math.round(c + (255-c)*0.62);
+    return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
+  }
 
   // ── UI ───────────────────────────────────────────────────────
   const div = mk('div', '');
@@ -216,32 +241,69 @@ function viewZeitachse(kursId) {
 
   svg.appendChild(svgEl('line', {x1:0, y1:HEADER_H, x2:totalW, y2:HEADER_H, stroke:'#cbd5e1', 'stroke-width':'2'}));
 
-  // Blöcke zeichnen
+  // Index in stundenGesamt → Wochen-Index (geclampt auf Schuljahresende)
+  function idxToWeekIdx(idx) {
+    if (idx < 0) return -1;
+    const clamped = Math.min(idx, stundenGesamt.length - 1);
+    if (clamped < 0 || !stundenGesamt[clamped]) return -1;
+    const s = stundenGesamt[clamped];
+    return wochen.findIndex(w => w.key === s.kw + '-' + s.year);
+  }
+
+  // Zeichnet einen Geplant/Ist-Balken ab startIdx: Pastell = geplante Dauer,
+  // kräftige Farbe obendrauf = tatsächlich angelegte Stunden.
+  function zeichneGeplantIstBalken(farbe, y, h, startIdx, dauerGeplant, dauerEcht, labelTxt) {
+    const dauer = Math.max(dauerGeplant, dauerEcht);
+    if (dauer <= 0 || startIdx < 0 || startIdx >= stundenGesamt.length) return;
+    const startWIdx = idxToWeekIdx(startIdx);
+    if (startWIdx < 0) return;
+    const x = startWIdx * WBREITE + 2;
+
+    function breite(d) {
+      const endWIdx = idxToWeekIdx(startIdx + d - 1);
+      const endWClamped = endWIdx < 0 ? startWIdx : endWIdx;
+      return (endWClamped - startWIdx + 1) * WBREITE - 4;
+    }
+
+    if (dauerGeplant > 0) {
+      svg.appendChild(svgEl('rect', {x, y, width:Math.max(breite(dauerGeplant),4), height:h, rx:'4', fill:pastellize(farbe)}));
+    }
+    if (dauerEcht > 0) {
+      svg.appendChild(svgEl('rect', {x, y, width:Math.max(breite(dauerEcht),4), height:h, rx:'4', fill:farbe, opacity:'0.9'}));
+    }
+
+    const wTotal = breite(dauer);
+    const maxChars = Math.floor(Math.max(wTotal-10, 0) / 6.5);
+    if (maxChars > 2 && labelTxt) {
+      const txt = labelTxt.length > maxChars ? labelTxt.slice(0, Math.max(maxChars-1,0))+'…' : labelTxt;
+      const lbl = svgEl('text', {x:x+5, y:y+h/2+4, 'font-size':'10', fill:'white', 'font-weight':'700'});
+      lbl.textContent = txt;
+      lbl.style.pointerEvents = 'none';
+      svg.appendChild(lbl);
+    }
+  }
+
+  // Blöcke zeichnen — pro Block in Reihen-Segmente aufgeteilt, wenn Reihen existieren
   (fp.blocks || []).forEach((block, bi) => {
     const layout = blockLayouts[block.id];
     if (!layout) return;
     const farbe = FARBEN[bi % FARBEN.length];
-    const x = layout.startW * WBREITE + 2;
     const y = HEADER_H + layout.row * ZHOEHE + 3;
-    const w = (layout.endW - layout.startW + 1) * WBREITE - 4;
     const h = ZHOEHE - 6;
 
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.style.cursor = 'grab';
+    const segs = reihenSegmente(block).filter(s => Math.max(s.geplant, s.echte) > 0);
 
-    const rect = svgEl('rect', {x, y, width:Math.max(w,4), height:h, rx:'4', fill:farbe, opacity:'0.9'});
-    g.appendChild(rect);
-
-    const maxChars = Math.floor(Math.max(w-10, 0) / 6.5);
-    const titel = block.titel.length > maxChars ? block.titel.slice(0, Math.max(maxChars-1,0))+'…' : block.titel;
-    if (maxChars > 2) {
-      const lbl = svgEl('text', {x:x+5, y:y+h/2+4, 'font-size':'10', fill:'white', 'font-weight':'700'});
-      lbl.textContent = titel;
-      lbl.style.pointerEvents = 'none';
-      g.appendChild(lbl);
+    if (segs.length) {
+      let cursor = layout.si;
+      segs.forEach(seg => {
+        zeichneGeplantIstBalken(farbe, y, h, cursor, seg.geplant, seg.echte, seg.reihe.titel || '');
+        cursor += Math.max(seg.geplant, seg.echte);
+      });
+    } else {
+      const geplantBlock = parseInt(block.stundenGesamt) || 0;
+      const echteBlock = zaehleEchteStundenBlock(block);
+      zeichneGeplantIstBalken(farbe, y, h, layout.si, geplantBlock, echteBlock, block.titel);
     }
-
-    svg.appendChild(g);
   });
 
   container.appendChild(svg);

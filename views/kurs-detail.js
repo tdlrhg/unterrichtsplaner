@@ -18,16 +18,17 @@ function viewKursDetail(kursId) {
   const restHj  = hjEnde ? berechneRestStunden(kurs, fp, schuljahr, ausfalltage, einzelAusfaelle, hjEnde) : null;
   const restSj  = sjEnde ? berechneRestStunden(kurs, fp, schuljahr, ausfalltage, einzelAusfaelle, sjEnde) : null;
 
-  // Geplante Stunden aus Fachplanung zählen
+  // Geplante Stunden aus Fachplanung zählen (Stunden liegen flach in reihe.stunden[])
   let geplantPflicht = 0, geplantOptional = 0, geplantPuffer = 0, geplantKA = 0;
   if (fp) {
-    (fp.blocks || []).forEach(b => (b.reihen || []).forEach(r => (r.einheiten || []).forEach(e => (e.stunden || []).forEach(s => {
+    (fp.blocks || []).forEach(b => (b.reihen || []).forEach(r => (r.stunden || []).forEach(s => {
       const p = s.prioritaet || 'pflicht';
-      if (p === 'pflicht') geplantPflicht++;
-      else if (p === 'optional') geplantOptional++;
-      else if (p === 'puffer') geplantPuffer++;
-      else if (p === 'klassenarbeit' || p === 'rueckgabe') geplantKA++;
-    }))));
+      const n = stundeEinheiten(s);
+      if (p === 'pflicht') geplantPflicht += n;
+      else if (p === 'optional') geplantOptional += n;
+      else if (p === 'puffer') geplantPuffer += n;
+      else if (p === 'klassenarbeit' || p === 'rueckgabe') geplantKA += n;
+    })));
   }
   const geplantGesamt = geplantPflicht + geplantOptional + geplantPuffer + geplantKA;
 
@@ -218,8 +219,7 @@ function viewKursDetail(kursId) {
       const blockOffen = !!S._baumOffen[blockId];
 
       const soll = blockSoll(block);
-      const geplant = (block.reihen || []).reduce((s,r) =>
-        s + (r.einheiten || []).reduce((s2,e) => s2 + (e.stunden||[]).length, 0), 0);
+      const geplant = (block.reihen || []).reduce((s,r) => s + summeStundenEinheiten(r.stunden), 0);
       const offen = soll > 0 ? soll - geplant : null;
       sumSoll += soll; sumGeplant += geplant;
 
@@ -236,7 +236,7 @@ function viewKursDetail(kursId) {
       // Reihen-Zeilen (initial versteckt)
       const reiheRows = [];
       (block.reihen || []).forEach(reihe => {
-        const rgeplant = (reihe.einheiten || []).reduce((s,e) => s+(e.stunden||[]).length, 0);
+        const rgeplant = summeStundenEinheiten(reihe.stunden);
         const rsoll = parseInt(reihe.stundenAnzahl) || 0;
         const roffen = rsoll > 0 ? rsoll - rgeplant : null;
         const reiheRow = tblRow([
@@ -248,12 +248,12 @@ function viewKursDetail(kursId) {
         reiheRow.style.display = 'none';
         tbody.appendChild(reiheRow);
 
-        // Einheit-Zeilen
+        // Einheit-Zeilen (Stunden liegen flach in reihe.stunden[], gefiltert per einheitId)
         const einheitRows = [];
-        (reihe.einheiten || []).forEach(einheit => {
-          const egeplant = (einheit.stunden || []).length;
+        function buildEinheitRow(titel, stundenListe) {
+          const egeplant = summeStundenEinheiten(stundenListe);
           const einheitRow = tblRow([
-            { text: einheit.titel, indent: 48, color: 'var(--tx2)' },
+            { text: titel, indent: 48, color: 'var(--tx2)' },
             { text: '–', align: 'right', color: 'var(--tx3)' },
             { text: egeplant, align: 'right', color: 'var(--tx2)' },
             { text: '–', align: 'right', color: 'var(--tx3)' }
@@ -263,13 +263,14 @@ function viewKursDetail(kursId) {
 
           // Stunden-Zeilen
           const stundenRows = [];
-          (einheit.stunden || []).forEach((stunde, si2) => {
+          stundenListe.forEach((stunde, si2) => {
             const PRIO = {pflicht:'🟢',optional:'🟡',puffer:'🔵',klassenarbeit:'📝',rueckgabe:'📋'};
             const icon = PRIO[stunde.prioritaet||'pflicht'] || '🟢';
+            const dauerLabel = stunde.dauer && stunde.dauer !== 45 ? ' (' + Math.round(stunde.dauer/45) + 'x)' : '';
             const stundeRow = tblRow([
-              { text: icon + ' ' + (si2+1) + '. ' + (stunde.titel||'(ohne Titel)'), indent: 72, color: 'var(--tx3)' },
+              { text: icon + ' ' + (si2+1) + '. ' + (stunde.titel||'(ohne Titel)') + dauerLabel, indent: 72, color: 'var(--tx3)' },
               { text: '–', align: 'right', color: 'var(--tx3)' },
-              { text: '1', align: 'right', color: 'var(--tx3)' },
+              { text: String(stundeEinheiten(stunde)), align: 'right', color: 'var(--tx3)' },
               { text: '–', align: 'right', color: 'var(--tx3)' }
             ], { bg: '#f0f0f0' });
             stundeRow.style.display = 'none';
@@ -284,9 +285,20 @@ function viewKursDetail(kursId) {
           einheitRow.onclick = () => {
             const open = stundenRows.length > 0 && stundenRows[0].style.display !== 'none';
             stundenRows.forEach(r => r.style.display = open ? 'none' : '');
-            einheitRow.cells[0].textContent = (open ? '' : '') + einheit.titel;
+            einheitRow.cells[0].textContent = (open ? '' : '') + titel;
           };
+        }
+
+        (reihe.einheiten || []).forEach(einheit => {
+          const stundenInEinheit = (reihe.stunden || []).filter(s => s.einheitId === einheit.id);
+          buildEinheitRow(einheit.titel, stundenInEinheit);
         });
+
+        // Stunden ohne Gruppen-Zuordnung
+        const ohneGruppe = (reihe.stunden || []).filter(s => !s.einheitId);
+        if (ohneGruppe.length) {
+          buildEinheitRow('Ohne Gruppe', ohneGruppe);
+        }
 
         // Reihe toggle
         reiheRow.onclick = () => {

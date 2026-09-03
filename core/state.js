@@ -57,6 +57,16 @@ function findStunde(fpId, blockId, reiheId, stundeId) {
   return reihe && (reihe.stunden || []).find(s => s.id === stundeId);
 }
 
+// Wieviele 45-Minuten-Einheiten eine Stunde belegt (Doppelstunde = 2)
+function stundeEinheiten(s) {
+  return s && s.dauer >= 90 ? Math.round(s.dauer / 45) : 1;
+}
+
+// Summe der 45-Minuten-Einheiten einer Liste von Stunden
+function summeStundenEinheiten(stunden) {
+  return (stunden || []).reduce((sum, s) => sum + stundeEinheiten(s), 0);
+}
+
 // ── Didaktik-Kontext für KI-Prompts ─────────────────────────────
 // Gibt passende Kernaussagen + Muster aus DIDARTDB als kompakten Text zurück.
 // ebenen: ['reihe','stunde','material','situation'] - welche Planungsebene

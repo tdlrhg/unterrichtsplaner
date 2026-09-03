@@ -47,10 +47,11 @@ function viewZeitachse(kursId) {
   const stundenGesamt = alleStunden();
 
   // ── Blockdauer ───────────────────────────────────────────────
-  // Rohe Anzahl tatsächlich angelegter Stunden (ignoriert stundenGesamt-Schätzung)
+  // Rohe Anzahl tatsächlich angelegter Stunden in 45-Min-Einheiten (Doppelstunde = 2),
+  // ignoriert stundenGesamt-Schätzung. Stunden liegen flach in reihe.stunden[].
   function zaehleEchteStundenBlock(block) {
     let count = 0;
-    (block.reihen || []).forEach(r => (r.einheiten || []).forEach(e => { count += (e.stunden || []).length; }));
+    (block.reihen || []).forEach(r => { count += summeStundenEinheiten(r.stunden); });
     return count;
   }
 
@@ -58,8 +59,7 @@ function viewZeitachse(kursId) {
   function reihenSegmente(block) {
     return (block.reihen || []).map(r => {
       const geplant = parseInt(r.stundenAnzahl) || 0;
-      let echte = 0;
-      (r.einheiten || []).forEach(e => { echte += (e.stunden || []).length; });
+      const echte = summeStundenEinheiten(r.stunden);
       return { reihe: r, geplant, echte };
     });
   }

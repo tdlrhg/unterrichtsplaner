@@ -273,6 +273,9 @@ function viewZeitachse(kursId) {
     }
 
     const wTotal = breite(dauer);
+    // Weißer Rahmen um das gesamte Segment — macht die Grenze zwischen benachbarten
+    // Reihen-Segmenten sichtbar, auch wenn sie sich durch Wochen-Rundung überlappen.
+    svg.appendChild(svgEl('rect', {x, y, width:Math.max(wTotal,4), height:h, rx:'4', fill:'none', stroke:'#fff', 'stroke-width':'1.5'}));
     const maxChars = Math.floor(Math.max(wTotal-10, 0) / 6.5);
     if (maxChars > 2 && labelTxt) {
       const txt = labelTxt.length > maxChars ? labelTxt.slice(0, Math.max(maxChars-1,0))+'…' : labelTxt;

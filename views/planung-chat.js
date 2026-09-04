@@ -1,15 +1,17 @@
-// ── Planungs-Chat (Block- und Reihen-Ebene) ──────────────────────────
+// ── Planungs-Chat (Block-, Reihen- und Einheiten-Ebene) ─────────────
 // Block-Chat: plant Reihen für einen Block (Themensequenzen)
-// Reihen-Chat: plant Stundenthemen und -abfolge für eine Reihe
+// Reihen-Chat: plant Stundenthemen, -abfolge und Materialzuordnung
+// Einheiten-Chat: Feinplanung einzelner Stunden — Didaktik statt Fachlichkeit
 
 const PC_FACH = { M:'Mathematik', Ch:'Chemie', Bio:'Biologie', Ch_GK:'Chemie', Ch_LK:'Chemie', Bio_GK:'Biologie', Bio_LK:'Biologie' };
 
 let _pcMsgs    = [];
 let _pcApi     = [];
-let _pcFpId    = null;
-let _pcBlockId = null;
-let _pcReiheId = null;  // null = Block-Chat, reihe.id = Reihen-Chat
-let _pcRunning = false;
+let _pcFpId      = null;
+let _pcBlockId   = null;
+let _pcReiheId   = null;  // null = Block-Chat, reihe.id = Reihen- oder Einheiten-Chat
+let _pcEinheitId = null;  // gesetzt = Einheiten-Chat (Feinplanung)
+let _pcRunning   = false;
 
 // ── Persistenz ───────────────────────────────────────────────────────
 // Verläufe liegen in der Supabase-Tabelle „chats", adressiert über
@@ -69,8 +71,8 @@ async function _pcPersist(titel) {
   try {
     await sbInsert('chats', [{
       id: _pcChatKey,
-      ebene: _pcReiheId ? 'reihe' : 'block',
-      objekt_id: _pcReiheId || _pcBlockId,
+      ebene: _pcEinheitId ? 'einheit' : (_pcReiheId ? 'reihe' : 'block'),
+      objekt_id: _pcEinheitId || _pcReiheId || _pcBlockId,
       fp_id: _pcFpId,
       titel: titel || '',
       msgs: msgs,
@@ -298,11 +300,167 @@ const PC_STUNDEN_TOOLS = [
   }
 ];
 
+// ── Tools für den Einheiten-Chat (Feinplanung einzelner Stunden) ─────
+// Bewusst ohne readKLP: Auf dieser Ebene tritt die Fachlichkeit zurück.
+const PC_EINHEIT_TOOLS = [
+  {
+    name: 'readPlan',
+    description: 'Liest die Stunden dieser Einheit samt Phasen und zugeordnetem Material, dazu die Nachbarstunden der Reihe.',
+    input_schema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'readMethoden',
+    description: 'Liest die Methodendatenbank. Nutze sie, wenn eine konkrete Form gesucht ist — etwa eine kurze Wiederholung ohne Vorbereitungsaufwand.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        phase:      { type: 'string', description: 'Filter auf Unterrichtsphase (optional)' },
+        sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' }
+      }
+    }
+  },
+  {
+    name: 'readDidaktik',
+    description: 'Liest didaktische Leitlinien aus der Wissensbasis.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        ebenen: { type: 'string', description: 'Kommagetrennte Planungsebenen: reihe, stunde, material, situation (optional)' },
+        themen: { type: 'string', description: 'Kommagetrennte Themen, z.B. differenzierung,motivation (optional)' }
+      }
+    }
+  },
+  {
+    name: 'readDatenbank',
+    description: 'Durchsucht die Materialdatenbank. Nur strukturiert erfasstes Material ist hier zu finden — eigenes Material der Lehrerin steht oft nicht drin.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        thema:      { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort' },
+        jahrgang:   { type: 'string', description: 'Nach Jahrgang filtern (optional)' },
+        inhaltstyp: { type: 'string', description: 'Nach Typ filtern (optional)' }
+      }
+    }
+  },
+  {
+    name: 'updateStunde',
+    description: 'Aktualisiert eine Stunde dieser Einheit. Erst schreiben, wenn ihr euch einig seid.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        stundeId: { type: 'string', description: 'ID der Stunde (aus readPlan)' },
+        titel:    { type: 'string' },
+        lernziel: { type: 'string' },
+        dauer:    { type: 'number', description: '45 oder 90' },
+        intention:{ type: 'string' },
+        methode:  { type: 'string' },
+        notizen:  { type: 'string', description: 'Offene Punkte und Hinweise — für die Lehrerin im Stundenplan sichtbar' }
+      },
+      required: ['stundeId']
+    }
+  },
+  {
+    name: 'setPhasen',
+    description: 'Schreibt den Phasenverlauf einer Stunde. Ersetzt vorhandene Phasen vollständig — lies vorher mit readPlan, was schon da ist.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        stundeId: { type: 'string', description: 'ID der Stunde' },
+        phasen: {
+          type: 'array',
+          description: 'Die Phasen in Reihenfolge',
+          items: {
+            type: 'object',
+            properties: {
+              titel:      { type: 'string', description: 'z.B. Einstieg, Erarbeitung, Sicherung' },
+              inhalt:     { type: 'string', description: 'Was in dieser Phase passiert — und was die Lernenden dabei tun' },
+              methode:    { type: 'string', description: 'Methode oder Form (optional)' },
+              sozialform: { type: 'string', description: 'Plenum, Einzelarbeit, Partnerarbeit, Gruppenarbeit (optional)' },
+              minuten:    { type: 'number', description: 'Dauer in Minuten' }
+            },
+            required: ['titel']
+          }
+        }
+      },
+      required: ['stundeId', 'phasen']
+    }
+  },
+  {
+    name: 'materialZuordnen',
+    description: 'Hält fest, welches Material zu einer Stunde gehört und wie es eingesetzt wird — auch Teilverwendung und nötige Anpassungen. Das Material muss NICHT in der Datenbank stehen.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        stundeId:  { type: 'string', description: 'ID der Stunde' },
+        quelle:    { type: 'string', description: 'Um welches Material es geht, so wie die Lehrerin es nennt' },
+        teile:     { type: 'string', description: 'Welcher Teil verwendet wird, falls nicht alles (optional)' },
+        anpassung: { type: 'string', description: 'Was vorher angepasst werden muss (optional)' }
+      },
+      required: ['stundeId', 'quelle']
+    }
+  },
+  {
+    name: 'materialEntfernen',
+    description: 'Entfernt eine Materialzuordnung von einer Stunde.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        stundeId:   { type: 'string', description: 'ID der Stunde' },
+        materialId: { type: 'string', description: 'ID der Zuordnung (aus readPlan)' }
+      },
+      required: ['stundeId', 'materialId']
+    }
+  },
+  {
+    name: 'createStunde',
+    description: 'Legt eine zusätzliche Stunde in dieser Einheit an. Nur wenn sich in der Feinplanung zeigt, dass eine fehlt — und nur nach Absprache.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        titel:    { type: 'string', description: 'Stundenthema' },
+        lernziel: { type: 'string' },
+        dauer:    { type: 'number', description: '45 oder 90' },
+        notizen:  { type: 'string' }
+      },
+      required: ['titel']
+    }
+  }
+];
+
 async function _pcExecTool(name, input, fp) {
   switch (name) {
 
     case 'readPlan': {
       const blk = (fp.blocks || []).find(b => b.id === _pcBlockId);
+      if (_pcEinheitId) {
+        // Einheiten-Kontext: Stunden dieser Gruppe im Detail, Nachbarn nur als Titel
+        const rei = blk && (blk.reihen || []).find(r => r.id === _pcReiheId);
+        if (!rei) return JSON.stringify({});
+        const einh = (rei.einheiten || []).find(e => e.id === _pcEinheitId);
+        const alleStunden = rei.stunden || [];
+        const eigene = alleStunden.filter(s => s.einheitId === _pcEinheitId);
+        const eigeneIds = new Set(eigene.map(s => s.id));
+        return JSON.stringify({
+          reihe: { titel: rei.titel, stundenAnzahl: rei.stundenAnzahl, notizen: rei.notizen || '' },
+          einheit: { id: _pcEinheitId, titel: einh ? einh.titel : '' },
+          stunden: eigene.map(s => ({
+            id: s.id, titel: s.titel, lernziel: s.lernziel || '',
+            dauer: s.dauer, intention: s.intention || '', methode: s.methode || '',
+            notizen: s.notizen || '',
+            material: (s.material || []).map(m => ({
+              id: m.id, quelle: m.quelle, teile: m.teile || '', anpassung: m.anpassung || ''
+            })),
+            phasen: (s.phasen || []).map(p => ({
+              titel: p.titel || '', inhalt: p.inhalt || '', methode: p.methode || '',
+              sozialform: p.sozialform || '', minuten: p.minuten || 0
+            }))
+          })),
+          nachbarstunden: alleStunden
+            .filter(s => !eigeneIds.has(s.id))
+            .map(s => ({ titel: s.titel, dauer: s.dauer }))
+        });
+      }
+
       if (_pcReiheId) {
         // Reihen-Kontext: diese Reihe samt Nachbarn im Block
         const rei = blk && (blk.reihen || []).find(r => r.id === _pcReiheId);
@@ -426,6 +584,7 @@ async function _pcExecTool(name, input, fp) {
         notizen: input.notizen || '',
         phasen: [], klpInhalt: [], klpProzess: [], material: []
       };
+      if (_pcEinheitId) s.einheitId = _pcEinheitId;  // im Einheiten-Chat der Gruppe zuordnen
       if (!rei.stunden) rei.stunden = [];
       rei.stunden.push(s);
       scheduleSave(); render();
@@ -456,6 +615,26 @@ async function _pcExecTool(name, input, fp) {
       if (rei.stunden.length === before) return JSON.stringify({ error: 'Stunde nicht gefunden: ' + input.stundeId });
       scheduleSave(); render();
       return JSON.stringify({ ok: true });
+    }
+
+    case 'setPhasen': {
+      const blk = (fp.blocks || []).find(b => b.id === _pcBlockId);
+      const rei = blk && (blk.reihen || []).find(r => r.id === _pcReiheId);
+      const stunde = rei && (rei.stunden || []).find(s => s.id === input.stundeId);
+      if (!stunde) return JSON.stringify({ error: 'Stunde nicht gefunden: ' + input.stundeId });
+      if (!Array.isArray(input.phasen)) return JSON.stringify({ error: 'phasen muss eine Liste sein' });
+      stunde.phasen = input.phasen.map(p => ({
+        id: uid(),
+        titel: p.titel || '',
+        inhalt: p.inhalt || '',
+        methode: p.methode || '',
+        sozialform: p.sozialform || '',
+        minuten: parseInt(p.minuten) || 0,
+        materialIds: []
+      }));
+      const summe = stunde.phasen.reduce((s, p) => s + p.minuten, 0);
+      scheduleSave(); render();
+      return JSON.stringify({ ok: true, anzahl: stunde.phasen.length, minutenGesamt: summe });
     }
 
     case 'materialZuordnen': {
@@ -556,9 +735,11 @@ function _pcRender() {
   el.innerHTML = '';
 
   if (!_pcMsgs.length) {
+    const hatPlanAll = !!document.getElementById('pc-planall');
     const leer = tx('div', '', _pcLoading
       ? 'Lade Verlauf …'
-      : 'Noch kein Gespräch. Schreib, woran du gerade arbeitest — oder lass unten in einem Zug durchplanen.');
+      : 'Noch kein Gespräch. Schreib, woran du gerade arbeitest'
+        + (hatPlanAll ? ' — oder lass unten in einem Zug durchplanen.' : '.'));
     leer.style.cssText = 'color:var(--tx3);font-size:13px;padding:10px 2px;line-height:1.5;';
     el.appendChild(leer);
   }
@@ -609,12 +790,156 @@ async function _pcSend(fp, context, text) {
   _pcMsgs.push(thinkMsg);
   _pcRender();
 
-  const { block, reihe } = context;
+  const { block, reihe, einheit } = context;
   const fachName = PC_FACH[fp.fach] || fp.fach;
 
   let tools, system;
 
-  if (reihe) {
+  if (einheit) {
+    // Einheiten-Chat: Feinplanung — Didaktik und Classroom Management im Vordergrund
+    tools = PC_EINHEIT_TOOLS;
+    system = `Du bist Fachleiterin für ${fachName} und berätst eine erfahrene Kollegin an einem
+NRW-Gymnasium. Ihr plant gemeinsam die Einheit „${einheit.titel}" aus der Reihe
+„${reihe.titel}", Jahrgang ${fp.jahrgang}.
+
+Das ist kein Unterrichtsbesuch und keine Prüfungssituation — ihr arbeitet auf
+Augenhöhe an einer Planung, die noch nicht steht. Du bringst den geschulten Blick
+auf Stundenaufbau mit; was die Klasse trägt, weiß sie besser als du.
+
+Worum es grob geht, steht fest: Thema und Reihenfolge kommen aus der Reihenplanung.
+Die inhaltliche Ausgestaltung ist damit aber nicht festgelegt — sie folgt oft erst
+aus den didaktischen Entscheidungen. Wenn eine Methode einen Inhalt anders
+zuschneidet, ein Schwerpunkt wegfällt oder ein Aspekt dazukommt, ist das ein
+legitimes Ergebnis eurer Planung, kein Fehler.
+
+Fachliche Fehler weist du weiterhin hin, bewertest die Planung aber nicht primär
+danach. Du sagst klar, wenn etwas nicht funktionieren wird, und begründest es an
+der konkreten Stelle. Zustimmung sparst du dir, wenn du nichts beizutragen hast.
+
+Worauf du achtest:
+
+1. Was tun die Schülerinnen und Schüler? Wenn eine Planung überwiegend beschreibt,
+   was die Lehrkraft tut, frage nach. Benenne für jede längere Phase, was die
+   Lernenden konkret machen: schreiben, sortieren, erklären, messen, diskutieren.
+   Lehrervortrag ist legitim, wenn er begründet ist — dann reicht ein Hinweis,
+   keine Diskussion.
+
+2. Rhythmisierung. Konzentrationsphasen sind begrenzt — in Jahrgang 5/6 etwa
+   10–15 Minuten, in der Oberstufe länger. Nach einer anstrengenden Phase kommt
+   eine leichtere.
+
+   Doppelstunden sind durch eine 5-Minuten-Pause geteilt. Berücksichtige sie in der
+   Zeitplanung. Ob danach fortgesetzt oder neu angesetzt wird, hängt von der Phase
+   ab: Eine laufende Arbeitsphase kann weiterlaufen; ist ein Gedankengang
+   abgeschlossen, braucht es einen Wiedereinstieg.
+
+3. Sozialformen und Übergänge. Jeder Wechsel der Sozialform kostet real 2–3 Minuten
+   und ist der Ort, an dem Unruhe entsteht: Gruppenbildung, Materialverteilung,
+   Umbau. Plane diese Zeit ein und sag, wie der Übergang organisiert wird.
+
+   Fällt dir am Verlauf etwas auf — sehr lange in einer Sozialform, oder viele
+   Wechsel dicht hintereinander —, sprich es an. Ob es passt, entscheidet sie.
+
+4. Einstieg und Sicherung. Der Einstieg knüpft ans Vorwissen an. Ist er als
+   Hinführung gedacht, halte ihn kurz — fünf Minuten reichen meist. Ist er selbst
+   Teil der Erarbeitung, sag das deutlich, damit die Zeit dafür eingeplant ist.
+
+   Eine gezielte Wiederholung der Vorstunde ist ein legitimer Einstieg. Wenn du
+   dafür eine Form vorschlägst, achte darauf, dass sie in wenigen Minuten läuft und
+   kaum Vorbereitung braucht — readMethoden kennt solche Formate.
+
+   Nicht jeder Einstieg führt zum Thema hin. Wiederkehrende Rituale — Kopfrechnen,
+   Einheiten umrechnen, Fachbegriffe auffrischen — halten Fertigkeiten aus früheren
+   Themen wach und lassen die Klasse ankommen. Das ist ein legitimer Stundenbeginn,
+   gerade weil er themenunabhängig ist; die Länge lässt sich an die verbleibende
+   Zeit anpassen.
+
+   Achte darauf, dass am Ende etwas bleibt, und sag, in welcher Form: Heft, Plakat,
+   mündlich, Foto. Endet eine Stunde bewusst offen und die Sicherung kommt in der
+   nächsten, ist das in Ordnung — dann sollte es aber so geplant sein und nicht aus
+   Zeitmangel passieren.
+
+5. Differenzierung. Der Schwerpunkt liegt bei denen, die schnell fertig sind.
+   Förderung der Schwächeren findet zu großen Teilen an anderer Stelle statt — in
+   Förderstunden und in eigenen Phasen des Schuljahres. Im regulären Unterricht
+   sollen deshalb die Starken in den Blick.
+
+   Das Angebot für sie muss zweierlei zugleich sein: attraktiv genug, dass sich
+   Schnellsein lohnt, und inhaltlich sinnvoll. Also weder mehr Aufgaben derselben
+   Art noch Beschäftigung um ihrer selbst willen — sondern etwas Kniffliges, eine
+   offene Frage, ein Transfer, eine Wahlmöglichkeit, oder die Rolle, anderen etwas
+   zu erklären.
+
+   Bevorzuge wiederkehrende Formate gegenüber Einzellösungen pro Stunde. Ein
+   Angebot, das immer dieselbe Form hat und bei dem nur der Inhalt wechselt, wird
+   durchgehalten; ein neues Konzept pro Stunde nicht.
+
+   Wer nicht mitkommt, braucht zuerst eine Diagnose: Verstehen, Tempo oder Sprache?
+   Danach richtet sich, was hilft. Du kennst diese Lerngruppe nicht — frag nach,
+   wenn sie ein konkretes Problem anspricht, statt allgemeine Vorschläge zu machen.
+
+6. Realistische Zeit. Feste Rahmenzeiten gehen von der Stunde ab: zu Beginn
+   Begrüßungsritual, Material und Anwesenheit, am Ende drei Minuten zum Aufräumen.
+   Rechne unterrichtlich mit 40 Minuten in der Sekundarstufe II und etwa 35 in der
+   Sekundarstufe I. Die Übergangszeiten aus Punkt 3 zählen in dieses Budget hinein,
+   nicht obendrauf.
+
+   In einer Doppelstunde fallen die Rahmenzeiten nur einmal an — abzüglich der
+   Pause bleiben dort spürbar mehr als zwei Einzelstunden hergeben.
+
+   Liegen die Phasenzeiten in Summe darüber, sag es deutlich und benenne, was
+   gekürzt, verschoben oder als „wenn Zeit bleibt" markiert wird. Eine Planung, die
+   auf die Minute aufgeht, geht in der Praxis nicht auf: Plane lieber eine Phase
+   ein, die wegfallen kann, als eine, die unbedingt noch reinmuss.
+
+Material: Vorrang und Reihenfolge
+
+Material, das sie vorschlägt, hat Vorrang. Setze es ein, wenn es trägt.
+
+Hältst du es für ungeeignet, brauchst du einen konkreten, benennbaren Grund — nicht
+„passt nicht recht", sondern woran es scheitert. Und bevor du es verwirfst, prüfst
+du die Anpassung: Lässt sich ein Teil weglassen, eine Aufgabe umformulieren, etwas
+ergänzen? Sag, welche Teile tragen und welche nicht. Erst wenn auch Anpassung nichts
+rettet, sagst du, dass das Material hier nicht funktioniert.
+
+Eigene Vorschläge machst du nicht ungefragt. Erst wenn sie sagt, dass sie nichts hat,
+oder wenn sie an ihrer eigenen Wahl deutlich zweifelt, schaust du mit readDatenbank,
+ob etwas Passendes da ist. Bist du unsicher, ob sie zweifelt, frag nach — „soll ich
+nach Alternativen schauen?" — statt es zu unterstellen.
+
+Material neu zu gestalten ist die letzte Option, nicht die erste.
+
+Hat sie eine eigene Idee für selbst gestaltetes Material, begleitest du sie dabei:
+mitdenken, schärfen, auf Stolperstellen hinweisen. Du entwirfst nicht an ihrer
+Stelle etwas anderes.
+
+So arbeitest du:
+
+- Das ist ein fortlaufendes Gespräch, kein Auftrag. Plane nicht ungefragt die ganze
+  Einheit durch. Warte ab, womit sie einsteigt, und arbeite an dem, was gerade
+  ansteht.
+
+- Stell nicht mehrere Rückfragen auf einmal. Wenn dir etwas fehlt, frag das eine,
+  was dich wirklich blockiert — der Rest klärt sich unterwegs.
+
+- Die Standardausstattung kannst du voraussetzen: Rechner und Beamer, Schülerstrom,
+  iPads, Whiteboard. Frag nur nach, wenn eine Planung darüber hinausgeht — Fachraum,
+  Versuchsmaterial, Räume außerhalb.
+
+- Rufe readPlan zu Beginn einmal auf, um die Stunden dieser Einheit und ihre
+  Nachbarstunden zu sehen. readMethoden und readDidaktik nutzt du gezielt bei einer
+  konkreten Frage, nicht auf Vorrat.
+
+- Änderungen schreibst du erst, wenn ihr euch einig seid: updateStunde für Lernziel,
+  Methode und Notizen, setPhasen für den Phasenverlauf.
+
+- Hat sie eine Entscheidung getroffen, respektiere sie. Widersprich nur, wenn du
+  einen konkreten Grund nennen kannst — nicht aus Prinzip.
+
+- Arbeite an dem, was gerade Thema ist. Du musst nicht bei jeder Antwort alle
+  Kriterien durchgehen — nenne, was an dieser Stelle wirklich auffällt, und lass
+  den Rest weg. Kurze Antworten sind die Regel, lange die Ausnahme.`;
+  } else if (reihe) {
     // Reihen-Chat: Stundenthemen und -abfolge planen
     const reiheInfo = `„${reihe.titel}"${reihe.stundenAnzahl ? ' (' + reihe.stundenAnzahl + ' Stunden)' : ''}`;
     const ctx = [
@@ -729,7 +1054,7 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
 
   _pcRunning = false;
   _pcRender();
-  _pcPersist(reihe ? reihe.titel : block.titel);
+  _pcPersist(einheit ? einheit.titel : (reihe ? reihe.titel : block.titel));
 }
 
 function _pcBuildChatUI(wrap, sendFn, placeholder, planAllFn) {
@@ -772,7 +1097,7 @@ function buildBlockChat(fp, block) {
   const key = _pcKey('block', block.id);
   if (_pcChatKey !== key) {
     _pcChatKey = key;
-    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = null;
+    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = null; _pcEinheitId = null;
     _pcRunning = false;
     _pcLoadedKey = null;
   }
@@ -804,7 +1129,7 @@ function buildReiheChat(fp, block, reihe) {
   const key = _pcKey('reihe', reihe.id);
   if (_pcChatKey !== key) {
     _pcChatKey = key;
-    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = reihe.id;
+    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = reihe.id; _pcEinheitId = null;
     _pcRunning = false;
     _pcLoadedKey = null;
   }
@@ -828,6 +1153,38 @@ function buildReiheChat(fp, block, reihe) {
   });
 
   // Erst zeichnen, wenn das Element im Dokument hängt — beim Bauen ist es noch los.
+  setTimeout(_pcRender, 0);
+  return wrap;
+}
+
+function buildEinheitChat(fp, block, reihe, einheit) {
+  const key = _pcKey('einheit', einheit.id);
+  if (_pcChatKey !== key) {
+    _pcChatKey = key;
+    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = reihe.id; _pcEinheitId = einheit.id;
+    _pcRunning = false;
+    _pcLoadedKey = null;
+  }
+  _pcEnsureLoaded(key);
+
+  const eigene = (reihe.stunden || []).filter(s => s.einheitId === einheit.id);
+  const std = summeStundenEinheiten(eigene);
+
+  const wrap = mk('div', 'pc-wrap card');
+  const hdr = cardHdr('✨ Feinplanung');
+  hdr.appendChild(tx('span', 'pc-hdr-sub',
+    einheit.titel + ' · ' + std + ' Std. · ' + reihe.titel));
+  wrap.appendChild(hdr);
+
+  // Kein „Komplett durchplanen" — auf dieser Ebene wird besprochen, nicht abgearbeitet.
+  _pcBuildChatUI(wrap, () => {
+    const ta = document.getElementById('pc-input');
+    const text = ta ? ta.value.trim() : '';
+    if (!text || _pcRunning) return;
+    ta.value = '';
+    _pcSend(fp, { block, reihe, einheit }, text);
+  }, 'z.B. „Schau dir Stunde 2 an — der Einstieg kommt mir zu lang vor."');
+
   setTimeout(_pcRender, 0);
   return wrap;
 }

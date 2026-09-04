@@ -132,6 +132,17 @@ function buildFpTree(lp, sel) {
     addS.textContent = '+ Stunde'; addS.title = 'Stunde in dieser Gruppe anlegen';
     addS.onclick = () => { S.modal = { type: 'newStunde', data: { fpId, blockId, reiheId: reihe.id, einheitId: gruppe.id } }; render(); };
     acts.appendChild(addS);
+    const chat = mk('button', 'fp-tree-act-btn');
+    chat.textContent = '✨'; chat.title = 'Feinplanung besprechen';
+    chat.onclick = () => {
+      const k = 'einheitChat_' + gruppe.id;
+      // Immer nur ein Einheiten-Chat offen
+      (reihe.einheiten || []).forEach(e => { if (e.id !== gruppe.id) delete S.open['einheitChat_' + e.id]; });
+      S.open[k] = !S.open[k];
+      S.sel = { type: 'reihe', ids: [fpId, blockId, reihe.id] };
+      render();
+    };
+    acts.appendChild(chat);
     const ren = mk('button', 'fp-tree-act-btn');
     ren.textContent = '✏'; ren.title = 'Umbenennen';
     ren.onclick = () => { S.modal = { type: 'umbenennen', data: { obj: gruppe, feld: 'titel', label: 'Gruppe' } }; render(); };
@@ -414,8 +425,16 @@ function viewFachplanung() {
   treePanel.appendChild(buildFpTree(lp, sel));
   div.appendChild(treePanel);
 
+  // ── Einheiten-Chat (Feinplanung, ✨ auf der Gruppenzeile) ────
+  const offeneEinheit = selReihe && (selReihe.einheiten || []).find(e => S.open['einheitChat_' + e.id]);
+  if (offeneEinheit) {
+    const chatEl = buildEinheitChat(lp, selBlock, selReihe, offeneEinheit);
+    div.appendChild(chatEl);
+    setTimeout(() => chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }
+
   // ── Reihen-Chat (wenn aus Modal geöffnet) ───────────────────
-  if (selReihe && S.open['reiheChat_' + selReihe.id]) {
+  else if (selReihe && S.open['reiheChat_' + selReihe.id]) {
     const chatEl = buildReiheChat(lp, selBlock, selReihe);
     div.appendChild(chatEl);
     setTimeout(() => chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);

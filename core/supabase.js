@@ -142,3 +142,45 @@ async function sbDelete(table, id) {
   if (!res.ok) throw new Error(await res.text());
 }
 
+
+// ── Tagessicherung ───────────────────────────────────────────────
+// Legt beim ersten Laden des Tages eine datierte Kopie von data.json unter
+// backups/ ab — also den Stand VOR den Änderungen des Tages. Genau das
+// braucht man, wenn versehentlich etwas gelöscht wurde.
+//
+// Absichtlich streng: Gesichert wird nur, was nachweislich Inhalt hat.
+// Eine fehlgeschlagene Ladung darf niemals eine gute Sicherung überschreiben.
+async function tagessicherung(geladen) {
+  try {
+    if (!geladen || typeof geladen !== 'object') return;
+    const fps = geladen.fachplanungen;
+    if (!Array.isArray(fps) || fps.length === 0) return;
+
+    const heute = new Date().toISOString().slice(0, 10);
+    const marker = 'backup_' + heute;
+    if (localStorage.getItem(marker)) return;   // heute schon gesichert
+
+    await sbUpload('backups/data-' + heute + '.json', geladen);
+    localStorage.setItem(marker, '1');
+    console.log('[Sicherung] Tagesstand abgelegt: backups/data-' + heute + '.json');
+  } catch (e) {
+    console.warn('[Sicherung] fehlgeschlagen:', e.message);
+  }
+}
+
+// Listet vorhandene Sicherungen, neueste zuerst.
+async function sicherungenListe() {
+  const url = _URL + '/storage/v1/object/list/' + BUCKET;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { ..._H() },
+    body: JSON.stringify({ prefix: 'backups/', limit: 200, sortBy: { column: 'name', order: 'desc' } }),
+  });
+  if (!res.ok) return [];
+  const objs = await res.json();
+  return objs.map(o => ({
+    name: 'backups/' + o.name,
+    datum: (o.name.match(/data-(\d{4}-\d{2}-\d{2})/) || [])[1] || '',
+    groesse: (o.metadata || {}).size || 0,
+  }));
+}

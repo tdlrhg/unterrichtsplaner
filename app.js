@@ -150,6 +150,7 @@ function buildSetup() {
     S.data = { fachplanungen: [], kurse: [] };
   }
   S.loaded = true;
+  tagessicherung(loaded);
   restoreNav();
   // Fallback falls gespeicherte IDs nicht mehr existieren
   if (!getFachplanung(S.aktFpId) && S.data.fachplanungen.length > 0) {

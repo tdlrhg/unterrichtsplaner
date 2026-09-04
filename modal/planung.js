@@ -67,17 +67,35 @@ function modalHandlerPlanung(type, data, m) {
       return true;
     }
 
-    const clearBtn = btn('Alle Stunden löschen', 'btn btn-danger');
-    clearBtn.style.marginRight = 'auto';
-    clearBtn.onclick = () => {
-      const n = (reihe.stunden || []).length;
-      if (!n) return;
-      if (!confirm(n + ' Stunde' + (n !== 1 ? 'n' : '') + ' löschen? Die Reihe bleibt erhalten.')) return;
-      reihe.stunden = [];
-      reihe.einheiten = [];
-      S.modal = null; scheduleSave(); render();
-    };
-    if ((reihe.stunden || []).length) footer.appendChild(clearBtn);
+    // Bewusst NICHT in der Fußzeile neben „Stunden planen": Ein Löschknopf
+    // auf dem Weg zum meistgenutzten Knopf ist eine Falle. Er steht jetzt
+    // eingeklappt im Dialogkörper und nennt beim Nachfragen Ross und Reiter.
+    if ((reihe.stunden || []).length) {
+      const gefahr = mk('details', '');
+      gefahr.style.cssText = 'margin-top:14px;border-top:1px solid var(--bord);padding-top:10px;';
+      const gSum = mk('summary', '');
+      gSum.textContent = 'Stunden dieser Reihe löschen';
+      gSum.style.cssText = 'font-size:12px;color:var(--tx3);cursor:pointer;';
+      gefahr.appendChild(gSum);
+
+      const clearBtn = btn('Alle Stunden löschen', 'btn btn-danger btn-sm');
+      clearBtn.style.marginTop = '8px';
+      clearBtn.onclick = () => {
+        const n = (reihe.stunden || []).length;
+        const g = (reihe.einheiten || []).length;
+        if (!n) return;
+        const was = n + ' Stunde' + (n !== 1 ? 'n' : '')
+          + (g ? ' und ' + g + ' Gruppe' + (g !== 1 ? 'n' : '') : '');
+        if (!confirm('In der Reihe „' + reihe.titel + '"\n\n'
+          + was + ' unwiderruflich löschen?\n\n'
+          + 'Die Titel und Inhalte der Stunden gehen dabei verloren.')) return;
+        reihe.stunden = [];
+        reihe.einheiten = [];
+        S.modal = null; scheduleSave(); render();
+      };
+      gefahr.appendChild(clearBtn);
+      m.appendChild(gefahr);
+    }
 
     const sv = btn('Speichern', 'btn btn-ghost');
     sv.onclick = () => { if (!saveFields()) return; S.modal = null; scheduleSave(); render(); };

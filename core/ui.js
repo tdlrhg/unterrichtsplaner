@@ -3,7 +3,9 @@
 // Anwenden-Format und der Form nach ein Spiel. Die Liste ist erweiterbar,
 // ohne dass dafür eine neue Spalte nötig wird.
 const FORMATE = ['Spiel', 'Rätsel', 'Experiment', 'Wettbewerb'];
-const FORMAT_ICON = { 'Spiel': '🎲', 'Rätsel': '🧩', 'Experiment': '🧪', 'Wettbewerb': '🏆' };
+// 🧪 ist als Fach-Symbol für Chemie vergeben, 🔬 für das Phasenmodell
+// „Forschend-entdeckend" — deshalb 🥽 für das Format Experiment.
+const FORMAT_ICON = { 'Spiel': '🎲', 'Rätsel': '🧩', 'Experiment': '🥽', 'Wettbewerb': '🏆' };
 
 // Symbole für eine Formatliste, z.B. "🎲 🧩 "
 function formatIcons(formate) {

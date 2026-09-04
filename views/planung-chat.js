@@ -10,7 +10,8 @@ let _pcApi     = [];
 let _pcFpId      = null;
 let _pcBlockId   = null;
 let _pcReiheId   = null;  // null = Block-Chat, reihe.id = Reihen- oder Einheiten-Chat
-let _pcEinheitId = null;  // gesetzt = Einheiten-Chat (Feinplanung)
+let _pcEinheitId = null;  // Gruppen-ID, oder null = Feinplanung über die ganze Reihe
+let _pcFeinModus = false; // true = Einheiten-Chat (Feinplanung), unabhängig von Gruppen
 let _pcRunning   = false;
 
 // ── Persistenz ───────────────────────────────────────────────────────
@@ -71,7 +72,7 @@ async function _pcPersist(titel) {
   try {
     await sbInsert('chats', [{
       id: _pcChatKey,
-      ebene: _pcEinheitId ? 'einheit' : (_pcReiheId ? 'reihe' : 'block'),
+      ebene: _pcFeinModus ? 'einheit' : (_pcReiheId ? 'reihe' : 'block'),
       objekt_id: _pcEinheitId || _pcReiheId || _pcBlockId,
       fp_id: _pcFpId,
       titel: titel || '',
@@ -432,17 +433,22 @@ async function _pcExecTool(name, input, fp) {
 
     case 'readPlan': {
       const blk = (fp.blocks || []).find(b => b.id === _pcBlockId);
-      if (_pcEinheitId) {
-        // Einheiten-Kontext: Stunden dieser Gruppe im Detail, Nachbarn nur als Titel
+      if (_pcFeinModus) {
+        // Feinplanung: Stunden im Detail, übrige Stunden der Reihe nur als Titel.
+        // Ohne Gruppe umfasst die Feinplanung die ganze Reihe.
         const rei = blk && (blk.reihen || []).find(r => r.id === _pcReiheId);
         if (!rei) return JSON.stringify({});
-        const einh = (rei.einheiten || []).find(e => e.id === _pcEinheitId);
+        const einh = _pcEinheitId && (rei.einheiten || []).find(e => e.id === _pcEinheitId);
         const alleStunden = rei.stunden || [];
-        const eigene = alleStunden.filter(s => s.einheitId === _pcEinheitId);
+        const eigene = _pcEinheitId
+          ? alleStunden.filter(s => s.einheitId === _pcEinheitId)
+          : alleStunden;
         const eigeneIds = new Set(eigene.map(s => s.id));
         return JSON.stringify({
           reihe: { titel: rei.titel, stundenAnzahl: rei.stundenAnzahl, notizen: rei.notizen || '' },
-          einheit: { id: _pcEinheitId, titel: einh ? einh.titel : '' },
+          einheit: _pcEinheitId
+            ? { id: _pcEinheitId, titel: einh ? einh.titel : '' }
+            : { id: null, titel: 'ganze Reihe (keine Gruppen angelegt)' },
           stunden: eigene.map(s => ({
             id: s.id, titel: s.titel, lernziel: s.lernziel || '',
             dauer: s.dauer, intention: s.intention || '', methode: s.methode || '',
@@ -798,9 +804,11 @@ async function _pcSend(fp, context, text) {
   if (einheit) {
     // Einheiten-Chat: Feinplanung — Didaktik und Classroom Management im Vordergrund
     tools = PC_EINHEIT_TOOLS;
+    const gegenstand = einheit.id
+      ? `die Einheit „${einheit.titel}" aus der Reihe „${reihe.titel}"`
+      : `die Stunden der Reihe „${reihe.titel}"`;
     system = `Du bist Fachleiterin für ${fachName} und berätst eine erfahrene Kollegin an einem
-NRW-Gymnasium. Ihr plant gemeinsam die Einheit „${einheit.titel}" aus der Reihe
-„${reihe.titel}", Jahrgang ${fp.jahrgang}.
+NRW-Gymnasium. Ihr plant gemeinsam ${gegenstand}, Jahrgang ${fp.jahrgang}.
 
 Das ist kein Unterrichtsbesuch und keine Prüfungssituation — ihr arbeitet auf
 Augenhöhe an einer Planung, die noch nicht steht. Du bringst den geschulten Blick
@@ -1097,7 +1105,8 @@ function buildBlockChat(fp, block) {
   const key = _pcKey('block', block.id);
   if (_pcChatKey !== key) {
     _pcChatKey = key;
-    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = null; _pcEinheitId = null;
+    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = null;
+    _pcEinheitId = null; _pcFeinModus = false;
     _pcRunning = false;
     _pcLoadedKey = null;
   }
@@ -1129,7 +1138,8 @@ function buildReiheChat(fp, block, reihe) {
   const key = _pcKey('reihe', reihe.id);
   if (_pcChatKey !== key) {
     _pcChatKey = key;
-    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = reihe.id; _pcEinheitId = null;
+    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = reihe.id;
+    _pcEinheitId = null; _pcFeinModus = false;
     _pcRunning = false;
     _pcLoadedKey = null;
   }
@@ -1157,23 +1167,29 @@ function buildReiheChat(fp, block, reihe) {
   return wrap;
 }
 
+// einheit = Gruppen-Objekt, oder null für die Feinplanung der ganzen Reihe
 function buildEinheitChat(fp, block, reihe, einheit) {
-  const key = _pcKey('einheit', einheit.id);
+  const key = _pcKey('einheit', einheit ? einheit.id : reihe.id);
   if (_pcChatKey !== key) {
     _pcChatKey = key;
-    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = reihe.id; _pcEinheitId = einheit.id;
+    _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = reihe.id;
+    _pcEinheitId = einheit ? einheit.id : null;
+    _pcFeinModus = true;
     _pcRunning = false;
     _pcLoadedKey = null;
   }
   _pcEnsureLoaded(key);
 
-  const eigene = (reihe.stunden || []).filter(s => s.einheitId === einheit.id);
+  const eigene = einheit
+    ? (reihe.stunden || []).filter(s => s.einheitId === einheit.id)
+    : (reihe.stunden || []);
   const std = summeStundenEinheiten(eigene);
 
   const wrap = mk('div', 'pc-wrap card');
   const hdr = cardHdr('✨ Feinplanung');
-  hdr.appendChild(tx('span', 'pc-hdr-sub',
-    einheit.titel + ' · ' + std + ' Std. · ' + reihe.titel));
+  hdr.appendChild(tx('span', 'pc-hdr-sub', einheit
+    ? einheit.titel + ' · ' + std + ' Std. · ' + reihe.titel
+    : reihe.titel + ' · ' + std + ' Std. · ganze Reihe'));
   wrap.appendChild(hdr);
 
   // Kein „Komplett durchplanen" — auf dieser Ebene wird besprochen, nicht abgearbeitet.
@@ -1182,7 +1198,8 @@ function buildEinheitChat(fp, block, reihe, einheit) {
     const text = ta ? ta.value.trim() : '';
     if (!text || _pcRunning) return;
     ta.value = '';
-    _pcSend(fp, { block, reihe, einheit }, text);
+    // id: null signalisiert „ganze Reihe" — der Prompt formuliert entsprechend
+    _pcSend(fp, { block, reihe, einheit: einheit || { id: null, titel: reihe.titel } }, text);
   }, 'z.B. „Schau dir Stunde 2 an — der Einstieg kommt mir zu lang vor."');
 
   setTimeout(_pcRender, 0);

@@ -33,7 +33,8 @@ function buildFpTree(lp, sel) {
 
   function makeRow(opts) {
     const { level, title, sub, isActive, hasChildren, openKey, onSelect,
-            dragPayload, dropType, onDrop, onEdit, editLabel, onChat, onUp, onDown, onDelete,
+            dragPayload, dropType, onDrop, onEdit, editLabel, onChat, chatTitle,
+            onFein, onUp, onDown, onDelete,
             isFirst, isLast, onAdd, addLabel, accentColor } = opts;
     const open = openKey ? isOpen(openKey) : false;
 
@@ -75,9 +76,16 @@ function buildFpTree(lp, sel) {
     }
     if (onChat) {
       const cb = mk('button', 'fp-tree-act-btn');
-      cb.textContent = '✨'; cb.title = 'Reihen planen';
+      cb.textContent = '✨'; cb.title = chatTitle || 'Reihen planen';
       cb.onclick = e => { e.stopPropagation(); onChat(); };
       actions.appendChild(cb);
+    }
+    if (onFein) {
+      const fb = mk('button', 'fp-tree-act-btn fp-tree-act-btn--label');
+      fb.textContent = '✨ Fein';
+      fb.title = 'Feinplanung besprechen — Didaktik, Methoden, Phasen';
+      fb.onclick = e => { e.stopPropagation(); onFein(); };
+      actions.appendChild(fb);
     }
     if (onUp !== undefined) {
       const ub = mk('button', 'fp-tree-act-btn'); ub.textContent = '↑'; ub.title = 'Nach oben';
@@ -136,8 +144,9 @@ function buildFpTree(lp, sel) {
     chat.textContent = '✨'; chat.title = 'Feinplanung besprechen';
     chat.onclick = () => {
       const k = 'einheitChat_' + gruppe.id;
-      // Immer nur ein Einheiten-Chat offen
+      // Immer nur ein Feinplanungs-Chat offen
       (reihe.einheiten || []).forEach(e => { if (e.id !== gruppe.id) delete S.open['einheitChat_' + e.id]; });
+      delete S.open['feinChat_' + reihe.id];
       S.open[k] = !S.open[k];
       S.sel = { type: 'reihe', ids: [fpId, blockId, reihe.id] };
       render();
@@ -238,6 +247,15 @@ function buildFpTree(lp, sel) {
         dragPayload: { type: 'reihe', srcBlockId: block.id, reiheId: reihe.id },
         onEdit: () => { S.modal = { type: 'editReihe', data: { reihe, fpId: lp.id, blockId: block.id } }; render(); },
         editLabel: '✏ Bearbeiten',
+        onFein: () => {
+          const k = 'feinChat_' + reihe.id;
+          // Ein Feinplanungs-Chat zur Zeit: Gruppen-Chats dieser Reihe schließen
+          (reihe.einheiten || []).forEach(e => { delete S.open['einheitChat_' + e.id]; });
+          S.open[k] = !S.open[k];
+          S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
+          if (!isOpen(rKey)) S._treeOffen[rKey] = true;
+          render();
+        },
         onUp: () => { swap(block.reihen, ri, ri-1); scheduleSave(); render(); },
         onDown: () => { swap(block.reihen, ri, ri+1); scheduleSave(); render(); },
         isFirst: ri === 0, isLast: ri === block.reihen.length-1,
@@ -425,10 +443,11 @@ function viewFachplanung() {
   treePanel.appendChild(buildFpTree(lp, sel));
   div.appendChild(treePanel);
 
-  // ── Einheiten-Chat (Feinplanung, ✨ auf der Gruppenzeile) ────
+  // ── Feinplanung: pro Gruppe (✨ auf der Gruppenzeile) oder für die ganze Reihe
   const offeneEinheit = selReihe && (selReihe.einheiten || []).find(e => S.open['einheitChat_' + e.id]);
-  if (offeneEinheit) {
-    const chatEl = buildEinheitChat(lp, selBlock, selReihe, offeneEinheit);
+  const feinGanzeReihe = selReihe && !offeneEinheit && S.open['feinChat_' + selReihe.id];
+  if (offeneEinheit || feinGanzeReihe) {
+    const chatEl = buildEinheitChat(lp, selBlock, selReihe, offeneEinheit || null);
     div.appendChild(chatEl);
     setTimeout(() => chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   }

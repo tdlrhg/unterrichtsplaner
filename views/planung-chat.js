@@ -11,6 +11,77 @@ let _pcBlockId = null;
 let _pcReiheId = null;  // null = Block-Chat, reihe.id = Reihen-Chat
 let _pcRunning = false;
 
+// ── Persistenz ───────────────────────────────────────────────────────
+// Verläufe liegen in der Supabase-Tabelle „chats", adressiert über
+// "<ebene>_<objektId>". Dadurch bestehen Block-, Reihen- und später
+// Einheiten-Gespräche unabhängig nebeneinander und überleben einen Reload.
+let _pcChatKey   = null;   // Verlauf, der gerade angezeigt wird
+let _pcLoadedKey = null;   // Verlauf, der bereits geladen ist
+let _pcLoading   = false;
+
+const PC_SAVE_MAX_MSGS = 60;    // ältere Züge werden beim Speichern verworfen
+const PC_SAVE_MAX_TOOL = 4000;  // lange Tool-Ergebnisse werden gekürzt
+
+function _pcKey(ebene, objektId) { return ebene + '_' + objektId; }
+
+// Lädt den Verlauf, sobald ein anderer angezeigt werden soll als geladen ist.
+function _pcEnsureLoaded(key) {
+  if (_pcLoadedKey === key || _pcLoading) return;
+  _pcLoading = true;
+  _pcMsgs = []; _pcApi = [];
+  sbSelect('chats', { filters: { id: key }, limit: 1 })
+    .then(function(rows) {
+      if (_pcChatKey !== key) return;   // inzwischen woanders hingeklickt
+      const row = rows && rows[0];
+      _pcMsgs = row && Array.isArray(row.msgs) ? row.msgs : [];
+      _pcApi  = row && Array.isArray(row.api)  ? row.api  : [];
+      _pcLoadedKey = key;
+    })
+    .catch(function() { _pcLoadedKey = key; })  // ohne Verlauf weiterarbeiten
+    .then(function() { _pcLoading = false; _pcRender(); });
+}
+
+// Kürzt sehr lange Tool-Ergebnisse (readDatenbank liefert schnell 100 kB),
+// damit ein Verlauf nicht unbegrenzt wächst. Die KI kann das Tool bei Bedarf
+// erneut aufrufen.
+function _pcTrimApi(api) {
+  return api.slice(-PC_SAVE_MAX_MSGS).map(function(m) {
+    if (!Array.isArray(m.content)) return m;
+    return {
+      role: m.role,
+      content: m.content.map(function(b) {
+        if (b.type === 'tool_result' && typeof b.content === 'string' && b.content.length > PC_SAVE_MAX_TOOL) {
+          return Object.assign({}, b, {
+            content: b.content.slice(0, PC_SAVE_MAX_TOOL) + '\n… (gekürzt — bei Bedarf Tool erneut aufrufen)'
+          });
+        }
+        return b;
+      })
+    };
+  });
+}
+
+async function _pcPersist(titel) {
+  if (!_pcChatKey) return;
+  const msgs = _pcMsgs.slice(-PC_SAVE_MAX_MSGS).map(function(m) {
+    return { role: m.role, text: m.text || '', toolCalls: m.toolCalls || [] };
+  });
+  try {
+    await sbInsert('chats', [{
+      id: _pcChatKey,
+      ebene: _pcReiheId ? 'reihe' : 'block',
+      objekt_id: _pcReiheId || _pcBlockId,
+      fp_id: _pcFpId,
+      titel: titel || '',
+      msgs: msgs,
+      api: _pcTrimApi(_pcApi),
+      aktualisiert: new Date().toISOString()
+    }]);
+  } catch(e) {
+    console.warn('[Chat] Verlauf konnte nicht gespeichert werden:', e.message);
+  }
+}
+
 // ── Tools für den Block-Chat (plant Reihen) ──────────────────────────
 const PC_TOOLS = [
   {
@@ -400,6 +471,15 @@ function _pcRender() {
   const el = document.getElementById('pc-messages');
   if (!el) return;
   el.innerHTML = '';
+
+  if (!_pcMsgs.length) {
+    const leer = tx('div', '', _pcLoading
+      ? 'Lade Verlauf …'
+      : 'Noch kein Gespräch. Schreib, woran du gerade arbeitest — oder lass unten in einem Zug durchplanen.');
+    leer.style.cssText = 'color:var(--tx3);font-size:13px;padding:10px 2px;line-height:1.5;';
+    el.appendChild(leer);
+  }
+
   _pcMsgs.forEach(m => {
     const d = mk('div', 'pc-msg pc-' + m.role);
     if (m.text) {
@@ -428,22 +508,22 @@ function _pcRender() {
 
   const inp  = document.getElementById('pc-input');
   const sbtn = document.getElementById('pc-send');
+  const pbtn = document.getElementById('pc-planall');
   if (inp)  inp.disabled  = _pcRunning;
   if (sbtn) sbtn.disabled = _pcRunning;
+  if (pbtn) pbtn.disabled = _pcRunning;
 }
 
-async function _pcSend(fp, context, text, autoStart, existingThinkMsg) {
+async function _pcSend(fp, context, text) {
   // context = { block } für Block-Chat, { block, reihe } für Reihen-Chat
   if (_pcRunning || !text.trim()) return;
   _pcRunning = true;
 
-  if (!autoStart) {
-    _pcMsgs.push({ role: 'user', text: text.trim() });
-  }
+  _pcMsgs.push({ role: 'user', text: text.trim() });
   _pcApi.push({ role: 'user', content: text.trim() });
 
-  const thinkMsg = existingThinkMsg || { role: 'assistant', text: '', isThinking: true, toolCalls: [] };
-  if (!existingThinkMsg) _pcMsgs.push(thinkMsg);
+  const thinkMsg = { role: 'assistant', text: '', isThinking: true, toolCalls: [] };
+  _pcMsgs.push(thinkMsg);
   _pcRender();
 
   const { block, reihe } = context;
@@ -521,9 +601,10 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
 
   _pcRunning = false;
   _pcRender();
+  _pcPersist(reihe ? reihe.titel : block.titel);
 }
 
-function _pcBuildChatUI(wrap, sendFn, placeholder) {
+function _pcBuildChatUI(wrap, sendFn, placeholder, planAllFn) {
   const body = mk('div', 'card-body pc-body');
 
   const msgs = mk('div', 'pc-messages');
@@ -543,27 +624,31 @@ function _pcBuildChatUI(wrap, sendFn, placeholder) {
   inputRow.appendChild(ta);
   inputRow.appendChild(sendBtn);
   body.appendChild(inputRow);
+
+  // Der frühere Auto-Start als ausdrückliche Aktion
+  if (planAllFn) {
+    const planRow = mk('div', '');
+    planRow.style.cssText = 'display:flex;justify-content:flex-end;margin-top:6px;';
+    const planBtn = btn('Komplett durchplanen', 'btn btn-ghost btn-xs');
+    planBtn.id = 'pc-planall';
+    planBtn.title = 'Die KI plant in einem Zug durch, ohne Rückfragen.';
+    planBtn.onclick = planAllFn;
+    planRow.appendChild(planBtn);
+    body.appendChild(planRow);
+  }
+
   wrap.appendChild(body);
 }
 
 function buildBlockChat(fp, block) {
-  if (_pcFpId !== fp.id || _pcBlockId !== block.id || _pcReiheId !== null) {
-    _pcMsgs = []; _pcApi = [];
+  const key = _pcKey('block', block.id);
+  if (_pcChatKey !== key) {
+    _pcChatKey = key;
     _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = null;
     _pcRunning = false;
+    _pcLoadedKey = null;
   }
-
-  if (_pcMsgs.length === 0 && !_pcRunning) {
-    _pcRunning = true;
-    const thinkMsg = { role: 'assistant', text: '', isThinking: true, toolCalls: [] };
-    _pcMsgs.push(thinkMsg);
-    const capturedBlockId = block.id;
-    setTimeout(() => {
-      if (_pcBlockId !== capturedBlockId || _pcReiheId !== null) { _pcRunning = false; _pcMsgs = []; return; }
-      _pcRunning = false;
-      _pcSend(fp, { block }, 'Analysiere den Block und erstelle einen vollständigen Reihenplan.', true, thinkMsg);
-    }, 50);
-  }
+  _pcEnsureLoaded(key);
 
   const wrap = mk('div', 'pc-wrap card');
   const hdr = cardHdr('✨ Reihen planen');
@@ -575,35 +660,27 @@ function buildBlockChat(fp, block) {
     const text = ta ? ta.value.trim() : '';
     if (!text || _pcRunning) return;
     ta.value = '';
-    _pcSend(fp, { block }, text, false);
-  }, 'z.B. "Füge eine weitere Reihe mit Schülerversuch hinzu."');
+    _pcSend(fp, { block }, text);
+  }, 'z.B. „Füge eine weitere Reihe mit Schülerversuch hinzu."',
+  () => {
+    if (_pcRunning) return;
+    _pcSend(fp, { block }, 'Analysiere den Block und erstelle einen vollständigen Reihenplan.');
+  });
 
-  _pcRender();
+  // Erst zeichnen, wenn das Element im Dokument hängt — beim Bauen ist es noch los.
+  setTimeout(_pcRender, 0);
   return wrap;
 }
 
 function buildReiheChat(fp, block, reihe) {
-  if (_pcFpId !== fp.id || _pcBlockId !== block.id || _pcReiheId !== reihe.id) {
-    _pcMsgs = []; _pcApi = [];
+  const key = _pcKey('reihe', reihe.id);
+  if (_pcChatKey !== key) {
+    _pcChatKey = key;
     _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = reihe.id;
     _pcRunning = false;
+    _pcLoadedKey = null;
   }
-  // Stunden wurden extern gelöscht → alter Kontext ist veraltet, neu starten
-  if (_pcMsgs.length > 0 && !_pcRunning && (reihe.stunden || []).length === 0) {
-    _pcMsgs = []; _pcApi = [];
-  }
-
-  if (_pcMsgs.length === 0 && !_pcRunning) {
-    _pcRunning = true;
-    const thinkMsg = { role: 'assistant', text: '', isThinking: true, toolCalls: [] };
-    _pcMsgs.push(thinkMsg);
-    const capturedReiheId = reihe.id;
-    setTimeout(() => {
-      if (_pcReiheId !== capturedReiheId) { _pcRunning = false; _pcMsgs = []; return; }
-      _pcRunning = false;
-      _pcSend(fp, { block, reihe }, 'Analysiere die Reihe und erstelle einen vollständigen Stundenplan.', true, thinkMsg);
-    }, 50);
-  }
+  _pcEnsureLoaded(key);
 
   const wrap = mk('div', 'pc-wrap card');
   const hdr = cardHdr('✨ Stunden planen');
@@ -615,9 +692,14 @@ function buildReiheChat(fp, block, reihe) {
     const text = ta ? ta.value.trim() : '';
     if (!text || _pcRunning) return;
     ta.value = '';
-    _pcSend(fp, { block, reihe }, text, false);
-  }, 'z.B. "Verschiebe Stunde 3 ans Ende" oder "Füge eine Wiederholungsstunde ein."');
+    _pcSend(fp, { block, reihe }, text);
+  }, 'z.B. „Ich habe ein Arbeitsblatt zu X — wo passt das hin?"',
+  () => {
+    if (_pcRunning) return;
+    _pcSend(fp, { block, reihe }, 'Analysiere die Reihe und erstelle einen vollständigen Stundenplan.');
+  });
 
-  _pcRender();
+  // Erst zeichnen, wenn das Element im Dokument hängt — beim Bauen ist es noch los.
+  setTimeout(_pcRender, 0);
   return wrap;
 }

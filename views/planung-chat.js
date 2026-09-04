@@ -110,7 +110,7 @@ const PC_TOOLS = [
       properties: {
         phase:      { type: 'string', description: 'Filter auf Unterrichtsphase (optional)' },
         sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' },
-        nurSpiele:  { type: 'boolean', description: 'Nur Spielformate zurückgeben (optional)' }
+        format:     { type: 'string', description: 'Nach Form filtern: Spiel | Rätsel | Experiment | Wettbewerb (optional)' }
       }
     }
   },
@@ -174,7 +174,7 @@ const PC_TOOLS = [
         thema: { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort — leer lassen für alle Materialien des Fachs' },
         jahrgang: { type: 'string', description: 'Nach Jahrgang filtern, z.B. "9" (optional)' },
         inhaltstyp: { type: 'string', description: 'Nach Typ filtern: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext (optional)' },
-        nurSpiele:  { type: 'boolean', description: 'Nur fertige Spiele zurückgeben (optional)' }
+        format:     { type: 'string', description: 'Nach Form filtern: Spiel | Rätsel | Experiment | Wettbewerb (optional)' }
       }
     }
   }
@@ -205,7 +205,7 @@ const PC_STUNDEN_TOOLS = [
       properties: {
         phase:      { type: 'string', description: 'Filter auf Unterrichtsphase (optional)' },
         sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' },
-        nurSpiele:  { type: 'boolean', description: 'Nur Spielformate zurückgeben (optional)' }
+        format:     { type: 'string', description: 'Nach Form filtern: Spiel | Rätsel | Experiment | Wettbewerb (optional)' }
       }
     }
   },
@@ -264,7 +264,7 @@ const PC_STUNDEN_TOOLS = [
         thema: { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort — leer lassen für alle Materialien des Fachs' },
         jahrgang: { type: 'string', description: 'Nach Jahrgang filtern, z.B. "9" (optional)' },
         inhaltstyp: { type: 'string', description: 'Nach Typ filtern: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext (optional)' },
-        nurSpiele:  { type: 'boolean', description: 'Nur fertige Spiele zurückgeben (optional)' }
+        format:     { type: 'string', description: 'Nach Form filtern: Spiel | Rätsel | Experiment | Wettbewerb (optional)' }
       }
     }
   },
@@ -323,7 +323,7 @@ const PC_EINHEIT_TOOLS = [
       properties: {
         phase:      { type: 'string', description: 'Filter auf Unterrichtsphase (optional)' },
         sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' },
-        nurSpiele:  { type: 'boolean', description: 'Nur Spielformate zurückgeben (optional)' }
+        format:     { type: 'string', description: 'Nach Form filtern: Spiel | Rätsel | Experiment | Wettbewerb (optional)' }
       }
     }
   },
@@ -347,7 +347,7 @@ const PC_EINHEIT_TOOLS = [
         thema:      { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort' },
         jahrgang:   { type: 'string', description: 'Nach Jahrgang filtern (optional)' },
         inhaltstyp: { type: 'string', description: 'Nach Typ filtern (optional)' },
-        nurSpiele:  { type: 'boolean', description: 'Nur fertige Spiele zurückgeben (optional)' }
+        format:     { type: 'string', description: 'Nach Form filtern: Spiel | Rätsel | Experiment | Wettbewerb (optional)' }
       }
     }
   },
@@ -543,11 +543,11 @@ async function _pcExecTool(name, input, fp) {
       let hits = [...METHDB];
       if (input.phase)      hits = hits.filter(m => (m.phasen || []).some(p => p.toLowerCase().includes(input.phase.toLowerCase())));
       if (input.sozialform) hits = hits.filter(m => (m.sozialform || []).some(s => s.toLowerCase().includes(input.sozialform.toLowerCase())));
-      if (input.nurSpiele) hits = hits.filter(m => m.spiel);
+      if (input.format) hits = hits.filter(m => (m.formate || []).includes(input.format));
       return JSON.stringify(hits.slice(0, 60).map(m => ({
         name: m.name, beschreibung: (m.beschreibung || '').slice(0, 120),
         phasen: m.phasen, sozialform: m.sozialform, zeitbedarf: m.zeitbedarf,
-        spiel: !!m.spiel
+        formate: m.formate || []
       })));
     }
 
@@ -691,11 +691,12 @@ async function _pcExecTool(name, input, fp) {
     case 'readDatenbank': {
       try {
         var _dbFilters = { fach: fp.fach };
+        var _dbRawParams = [];
         if (input.inhaltstyp) _dbFilters.inhaltstyp = input.inhaltstyp;
         if (input.jahrgang)   _dbFilters.jahrgang   = input.jahrgang;
-        if (input.nurSpiele)  _dbFilters.spiel      = true;
+        if (input.format)     _dbRawParams.push('formate=cs.{' + encodeURIComponent(input.format) + '}');
 
-        var _rows = await sbSelectAll('inhalte', { filters: _dbFilters, limit: 500 });
+        var _rows = await sbSelectAll('inhalte', { filters: _dbFilters, rawParams: _dbRawParams, limit: 500 });
 
         // Thema-Suche client-seitig
         if (input.thema) {
@@ -722,7 +723,7 @@ async function _pcExecTool(name, input, fp) {
             kapitel: r.kapitel,
             jahrgang: r.jahrgang,
             schwierigkeit: r.schwierigkeit,
-            spiel: !!r.spiel,
+            formate: r.formate || [],
             methode: r.methode || null,
             beschreibung: (r.aufgabenstellung || r.inhalt || '').slice(0, 150)
           });

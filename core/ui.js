@@ -1,3 +1,16 @@
+// ── Formate ──────────────────────────────────────────────────────
+// Quer zur didaktischen Typologie: Ein Domino ist funktional ein
+// Anwenden-Format und der Form nach ein Spiel. Die Liste ist erweiterbar,
+// ohne dass dafür eine neue Spalte nötig wird.
+const FORMATE = ['Spiel', 'Rätsel', 'Experiment', 'Wettbewerb'];
+const FORMAT_ICON = { 'Spiel': '🎲', 'Rätsel': '🧩', 'Experiment': '🧪', 'Wettbewerb': '🏆' };
+
+// Symbole für eine Formatliste, z.B. "🎲 🧩 "
+function formatIcons(formate) {
+  if (!Array.isArray(formate) || !formate.length) return '';
+  return formate.map(function(f) { return FORMAT_ICON[f] || ''; }).filter(Boolean).join(' ') + ' ';
+}
+
 // ── Fach-Symbol ──────────────────────────────────────────────────
 function fachIcon(f) {
   const l = (f || '').toLowerCase();

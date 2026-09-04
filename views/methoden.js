@@ -6,7 +6,7 @@ function viewMethoden() {
   let filterSozial = null;
   let filterMat = null;
   let filterAufwand = null;
-  let filterSpiel   = false;
+  let filterFormat  = null;
   let filterText = '';
   let editMode = false;
 
@@ -78,21 +78,15 @@ function viewMethoden() {
     [{val:1,label:'● gering'},{val:2,label:'●● mittel'},{val:3,label:'●●● hoch'},{val:4,label:'●●●● sehr hoch'}],
     () => filterAufwand, v => filterAufwand = v);
 
-  const spielRow = mk('div', '');
-  spielRow.style.cssText = 'display:flex;align-items:center;gap:5px;flex-wrap:wrap;';
-  const spielLbl = tx('span', '', 'Form');
-  spielLbl.style.cssText = 'font-size:11px;color:var(--tx3);min-width:52px;';
-  spielRow.appendChild(spielLbl);
-  const spielChip = mk('button', 'meth-filter-chip');
-  spielChip.textContent = '🎲 Nur Spiele';
-  spielChip.onclick = () => { filterSpiel = !filterSpiel; refresh(); };
-  spielRow.appendChild(spielChip);
+  const fRow = chipRow('Format',
+    FORMATE.map(f => ({ val: f, label: (FORMAT_ICON[f] || '') + ' ' + f })),
+    () => filterFormat, v => filterFormat = v);
 
   filterBody.appendChild(pRow);
   filterBody.appendChild(sRow);
   filterBody.appendChild(mRow);
   filterBody.appendChild(aRow);
-  filterBody.appendChild(spielRow);
+  filterBody.appendChild(fRow);
   filterBar.appendChild(filterBody);
   div.appendChild(filterBar);
 
@@ -117,20 +111,19 @@ function viewMethoden() {
   const TYP_DESC  = { vermitteln:'Wissen einführen & erklären', erarbeiten:'Selbstständig erkunden & erschließen', austauschen:'Kommunizieren & diskutieren', anwenden:'Üben & transferieren', strukturieren:'Ordnen & zusammenfassen', reflektieren:'Rückblicken & bewerten' };
 
   function refresh() {
-    [pRow, sRow, mRow, aRow].forEach(row => {
+    [pRow, sRow, mRow, aRow, fRow].forEach(row => {
       row.querySelectorAll('.meth-filter-chip').forEach(c => {
         const isOn = c.textContent === filterPhase
           || c.textContent === filterSozial
           || c.textContent === filterMat
-          || (filterAufwand !== null && c.textContent === AUFWAND_LABEL[filterAufwand]);
+          || (filterAufwand !== null && c.textContent === AUFWAND_LABEL[filterAufwand])
+          || (filterFormat && c.textContent === (FORMAT_ICON[filterFormat] || '') + ' ' + filterFormat);
         c.className = 'meth-filter-chip' + (isOn ? ' on' : '');
       });
     });
 
-    spielChip.className = 'meth-filter-chip' + (filterSpiel ? ' on' : '');
-
     const filtered = [...METHDB].sort((a, b) => a.name.localeCompare(b.name, 'de')).filter(m => {
-      if (filterSpiel && !m.spiel) return false;
+      if (filterFormat && !(m.formate || []).includes(filterFormat)) return false;
       if (filterPhase   && !m.phasen.includes(filterPhase))       return false;
       if (filterSozial  && !m.sozialform.includes(filterSozial))  return false;
       if (filterMat     && !m.materialtyp.includes(filterMat))    return false;
@@ -178,7 +171,7 @@ function viewMethoden() {
 
         const nameRow = mk('div', '');
         nameRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:6px;';
-        nameRow.appendChild(tx('div', 'meth-card-name', (m.spiel ? '🎲 ' : '') + m.name));
+        nameRow.appendChild(tx('div', 'meth-card-name', formatIcons(m.formate) + m.name));
         if (m.aufwand) {
           const aw = mk('span', 'meth-aufwand');
           for (let i = 1; i <= 4; i++) {
@@ -244,7 +237,7 @@ function viewMethoden() {
     prefill = prefill || {};
     const isNew = !existing;
     const m = existing ? JSON.parse(JSON.stringify(existing))
-      : { id:'', name: prefill.name || '', beschreibung: prefill.beschreibung || '', ziel: prefill.ziel || '', hinweise: prefill.hinweise || '', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], typ: null, spiel:false, quelle:'' };
+      : { id:'', name: prefill.name || '', beschreibung: prefill.beschreibung || '', ziel: prefill.ziel || '', hinweise: prefill.hinweise || '', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], typ: null, formate:[], quelle:'' };
 
     overlay.innerHTML = '';
     overlay.classList.add('open');
@@ -317,11 +310,8 @@ function viewMethoden() {
       selTyp.appendChild(opt);
     });
 
-    const spielWrap = mk('label', 'meth-form-check');
-    const spielCb = mk('input', '');
-    spielCb.type = 'checkbox'; spielCb.checked = !!m.spiel;
-    spielWrap.appendChild(spielCb);
-    spielWrap.appendChild(document.createTextNode(' 🎲 Ist ein Spiel'));
+    const cbFormate = checkGroup(FORMATE.map(f => (FORMAT_ICON[f] || '') + ' ' + f),
+      (m.formate || []).map(f => (FORMAT_ICON[f] || '') + ' ' + f));
 
     const cbSoz  = checkGroup(SOZ_ALL,  m.sozialform);
     const cbPhas = checkGroup(PHAS_ALL, m.phasen);
@@ -336,7 +326,7 @@ function viewMethoden() {
     form.appendChild(field('Zeitbedarf', inpZeit));
     form.appendChild(field('Aufwand', selAufwand));
     form.appendChild(field('Typ', selTyp));
-    form.appendChild(field('Form', spielWrap));
+    form.appendChild(field('Format', cbFormate));
     form.appendChild(field('Sozialform', cbSoz));
     form.appendChild(field('Phasen', cbPhas));
     form.appendChild(field('Material', cbMat));
@@ -361,7 +351,7 @@ function viewMethoden() {
         zeitbedarf: inpZeit.value.trim() || 'variabel',
         aufwand: parseInt(selAufwand.value),
         typ: selTyp.value || null,
-        spiel: spielCb.checked,
+        formate: getChecked(cbFormate).map(l => l.replace(/^\S+\s/, '')),
         sozialform: getChecked(cbSoz),
         phasen: getChecked(cbPhas),
         materialtyp: getChecked(cbMat),
@@ -516,7 +506,7 @@ Antworte NUR mit validem JSON — alle Strings einzeilig:
     "sozialform": [],
     "phasen": [],
     "materialtyp": [],
-    "spiel": false
+    "formate": []
   }
 ]}
 
@@ -524,7 +514,7 @@ aufwand: 1=gering 2=mittel 3=hoch 4=sehr hoch
 sozialform: aus ["Einzelarbeit","Partnerarbeit","Gruppenarbeit","Plenum"]
 phasen: aus ["Einstieg","Erarbeitung","Übung","Sicherung"]
 materialtyp: aus ["Kein Material","Texte","Karten","Arbeitsblätter","Experimente","Plakate/Papier","Bilder/Comics","Objekte/Modelle","Digitale Medien"]
-spiel: true, wenn es sich um ein Spiel handelt (Wettbewerb, Rateformat, Kartenspiel, Brettspiel o.ä.)`;
+formate: Liste aus ["Spiel","Rätsel","Experiment","Wettbewerb"] — nur setzen wenn zutreffend, sonst []`;
 
       try {
         const contentBlocks = [
@@ -585,7 +575,7 @@ spiel: true, wenn es sich um ein Spiel handelt (Wettbewerb, Rateformat, Kartensp
             phasen: Array.isArray(m.phasen) ? m.phasen : [],
             materialtyp: Array.isArray(m.materialtyp) ? m.materialtyp : [],
             typ: null,
-            spiel: m.spiel === true,
+            formate: Array.isArray(m.formate) ? m.formate : [],
             quelle: '',
           }));
           await sbInsert('methoden', newRows);

@@ -81,11 +81,16 @@ Für jeden Eintrag:
 - schwierigkeit: genau eines von: grundlegend|standard|anspruchsvoll — bei Lehrtexten null
 - abbildung: Kurze Beschreibung einer Abbildung, die für das Verständnis der Aufgabe notwendig ist (z.B. „Koordinatensystem mit eingezeichnetem Dreieck ABC", „Foto einer rostenden Eisenbrücke"). Nur ausfüllen wenn die Abbildung inhaltlich relevant ist — nicht für rein dekorative Bilder, Cliparts oder Randgestaltung. Sonst null.
 
-SPIELERKENNUNG (beide Felder optional, nur setzen wenn zutreffend):
-- spiel: true, wenn der Eintrag ein Spiel ist — Rate-, Karten-, Brett- oder Wettbewerbsformat,
-  Domino, Memory, Tabu, Bingo, Quiz-Duell und Ähnliches. Eine normale Übungsaufgabe ist KEIN Spiel.
-- methode: Name des Spielformats, falls erkennbar und gebräuchlich (z.B. "Tabu", "Domino", "Memory",
-  "Bingo"). Nur den Formatnamen, nicht das Thema. Ist das Format namenlos oder eigens erfunden: null.
+FORMATERKENNUNG (beide Felder optional, nur setzen wenn zutreffend, sonst [] bzw. null):
+- formate: Liste aus ["Spiel","Rätsel","Experiment","Wettbewerb"]
+  · Spiel      = braucht Mitspieler und Regeln: Domino, Memory, Tabu, Bingo, Quiz-Duell
+  · Rätsel     = hat eine zu findende Lösung, allein bearbeitbar: Kreuzworträtsel, Zahlenrätsel,
+                 Logikrätsel, Knobelaufgabe
+  · Experiment = Schülerversuch mit Durchführung
+  · Wettbewerb = Wettstreit gegen andere oder gegen die Zeit
+  Eine normale Übungsaufgabe hat KEIN Format — dann [].
+- methode: Name des Formats, falls gebräuchlich (z.B. "Tabu", "Domino", "Memory", "Bingo").
+  Nur den Formatnamen, nicht das Thema. Namenlos oder eigens erfunden: null.
 
 JSON-FORMAT — sehr wichtig:
 - Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
@@ -148,11 +153,16 @@ SONDERREGEL für stundenverlauf:
 
 - abbildung: Kurze Beschreibung einer Abbildung, die für das Verständnis des Materials notwendig ist (z.B. „Foto einer rostenden Eisenbrücke", „Diagramm: Temperaturverlauf über 24h"). Nur ausfüllen wenn die Abbildung inhaltlich relevant ist — nicht für rein dekorative Bilder oder Randgestaltung. Sonst null.
 
-SPIELERKENNUNG (beide Felder optional, nur setzen wenn zutreffend):
-- spiel: true, wenn der Eintrag ein Spiel ist — Rate-, Karten-, Brett- oder Wettbewerbsformat,
-  Domino, Memory, Tabu, Bingo, Quiz-Duell und Ähnliches. Eine normale Übungsaufgabe ist KEIN Spiel.
-- methode: Name des Spielformats, falls erkennbar und gebräuchlich (z.B. "Tabu", "Domino", "Memory",
-  "Bingo"). Nur den Formatnamen, nicht das Thema. Ist das Format namenlos oder eigens erfunden: null.
+FORMATERKENNUNG (beide Felder optional, nur setzen wenn zutreffend, sonst [] bzw. null):
+- formate: Liste aus ["Spiel","Rätsel","Experiment","Wettbewerb"]
+  · Spiel      = braucht Mitspieler und Regeln: Domino, Memory, Tabu, Bingo, Quiz-Duell
+  · Rätsel     = hat eine zu findende Lösung, allein bearbeitbar: Kreuzworträtsel, Zahlenrätsel,
+                 Logikrätsel, Knobelaufgabe
+  · Experiment = Schülerversuch mit Durchführung
+  · Wettbewerb = Wettstreit gegen andere oder gegen die Zeit
+  Eine normale Übungsaufgabe hat KEIN Format — dann [].
+- methode: Name des Formats, falls gebräuchlich (z.B. "Tabu", "Domino", "Memory", "Bingo").
+  Nur den Formatnamen, nicht das Thema. Namenlos oder eigens erfunden: null.
 
 JSON-FORMAT:
 - Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
@@ -913,7 +923,7 @@ function buildImportView(container) {
         thema:        a.thema || null,
         abbildung:    a.abbildung || null,
         inhaltstyp:   a.inhaltstyp || 'aufgabe',
-        spiel:        a.spiel === true,
+        formate:      Array.isArray(a.formate) ? a.formate : [],
         methode:      a.methode || null,
       };
     });
@@ -948,18 +958,19 @@ function buildImportView(container) {
       sub.style.cssText = 'font-size:14px;color:var(--tx2);margin-top:-16px;';
       done.appendChild(sub);
 
-      // ── Erkannte Spielformate für die Methodendatenbank anbieten ──
+      // ── Erkannte Formate für die Methodendatenbank anbieten ──
       // Bewusst als Angebot, nicht automatisch: Die Methodendatenbank soll
       // nur enthalten, was die Lehrerin dort haben will.
       var neueFormate = [];
       rows.forEach(function(r) {
-        if (!r.spiel || !r.methode) return;
+        if (!(r.formate || []).length || !r.methode) return;
         var name = String(r.methode).trim();
         if (!name) return;
         var schonDa = (METHDB || []).some(function(m) {
           return (m.name || '').toLowerCase() === name.toLowerCase();
         });
-        if (!schonDa && neueFormate.indexOf(name) === -1) neueFormate.push(name);
+        var schonGesammelt = neueFormate.some(function(f) { return f.name === name; });
+        if (!schonDa && !schonGesammelt) neueFormate.push({ name: name, formate: r.formate });
       });
 
       if (neueFormate.length) {
@@ -968,13 +979,13 @@ function buildImportView(container) {
           + 'padding:16px 18px;text-align:left;width:100%;max-width:360px;display:flex;'
           + 'flex-direction:column;gap:10px;';
         var fTitel = tx('div', '', neueFormate.length === 1
-          ? '🎲 Spielformat erkannt: ' + neueFormate[0]
-          : '🎲 ' + neueFormate.length + ' Spielformate erkannt');
+          ? formatIcons(neueFormate[0].formate) + 'Format erkannt: ' + neueFormate[0].name
+          : neueFormate.length + ' Formate erkannt');
         fTitel.style.cssText = 'font-weight:600;font-size:14px;';
         fCard.appendChild(fTitel);
         var fSub = tx('div', '', neueFormate.length === 1
           ? 'Steht noch nicht in der Methodendatenbank. Als Methode aufnehmen? Dann kannst du das Format später auf andere Themen übertragen.'
-          : neueFormate.join(', ') + ' — noch nicht in der Methodendatenbank.');
+          : neueFormate.map(function(f) { return f.name; }).join(', ') + ' — noch nicht in der Methodendatenbank.');
         fSub.style.cssText = 'font-size:12px;color:var(--tx2);line-height:1.5;';
         fCard.appendChild(fSub);
 
@@ -983,14 +994,14 @@ function buildImportView(container) {
         fBtn.onclick = async function() {
           fBtn.disabled = true; fBtn.textContent = '⏳ …';
           try {
-            var neu = neueFormate.map(function(name) {
+            var neu = neueFormate.map(function(f) {
               return {
-                id: 'spiel_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '_' + Date.now(),
-                name: name,
-                beschreibung: 'Spielformat, beim Import von „' + buch + '" erkannt. Beschreibung ergänzen.',
+                id: 'format_' + f.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '_' + Date.now(),
+                name: f.name,
+                beschreibung: 'Format, beim Import von „' + buch + '" erkannt. Beschreibung ergänzen.',
                 ziel: '', hinweise: '', zeitbedarf: 'variabel', aufwand: 2,
                 sozialform: [], phasen: [], materialtyp: [],
-                typ: 'anwenden', spiel: true, quelle: ''
+                typ: 'anwenden', formate: f.formate, quelle: ''
               };
             });
             await sbInsert('methoden', neu);

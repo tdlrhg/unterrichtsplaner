@@ -188,6 +188,84 @@ Antworte NUR als JSON-Array von Strings:
   s1body.appendChild(s1grid);
 
   // ══════════════════════════════════════════════════════════════════
+  // SEKTION 2: Material & Notizen
+  // ══════════════════════════════════════════════════════════════════
+  if (!Array.isArray(stunde.material)) stunde.material = [];
+  const matAnz = stunde.material.length;
+  const { body: s2body, acts: s2acts } = mkSec(2, 'Material & Notizen', 'material',
+    matAnz ? '✓ ' + matAnz : 'offen', matAnz > 0);
+
+  const matAddBtn = btn('+ Material', 'btn btn-ghost btn-xs');
+  s2acts.appendChild(matAddBtn);
+
+  const matListe = mk('div', '');
+  matListe.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  s2body.appendChild(matListe);
+
+  function renderMaterial() {
+    matListe.innerHTML = '';
+    if (!stunde.material.length) {
+      const leer = tx('div', '', 'Noch kein Material zugeordnet. Im Reihen-Chat kann die KI das eintragen, sobald ihr euch einig seid.');
+      leer.style.cssText = 'font-size:12px;color:var(--tx3);line-height:1.5;';
+      matListe.appendChild(leer);
+    }
+    stunde.material.forEach(m => {
+      const row = mk('div', '');
+      row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:8px 10px;'
+        + 'background:var(--surf2);border-radius:6px;';
+
+      const col = mk('div', ''); col.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;';
+
+      const qInp = document.createElement('input');
+      qInp.className = 'finp'; qInp.value = m.quelle || ''; qInp.placeholder = 'Material';
+      qInp.style.cssText = 'font-size:13px;font-weight:600;padding:3px 6px;';
+      qInp.oninput = () => { m.quelle = qInp.value; scheduleSave(); };
+      col.appendChild(qInp);
+
+      const detail = mk('div', ''); detail.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
+      const tInp = document.createElement('input');
+      tInp.className = 'finp'; tInp.value = m.teile || ''; tInp.placeholder = 'nur Teil …';
+      tInp.style.cssText = 'font-size:12px;padding:3px 6px;flex:1;min-width:120px;';
+      tInp.oninput = () => { m.teile = tInp.value; scheduleSave(); };
+      const aInp = document.createElement('input');
+      aInp.className = 'finp'; aInp.value = m.anpassung || ''; aInp.placeholder = 'anzupassen …';
+      aInp.style.cssText = 'font-size:12px;padding:3px 6px;flex:1;min-width:120px;';
+      aInp.oninput = () => { m.anpassung = aInp.value; scheduleSave(); };
+      detail.appendChild(tInp); detail.appendChild(aInp);
+      col.appendChild(detail);
+      row.appendChild(col);
+
+      const del = mk('button', 'matc-del');
+      del.textContent = '✕'; del.title = 'Zuordnung entfernen';
+      del.style.cssText = 'color:var(--tx3);flex-shrink:0;';
+      del.onclick = () => {
+        stunde.material = stunde.material.filter(x => x.id !== m.id);
+        scheduleSave(); renderMaterial();
+      };
+      row.appendChild(del);
+      matListe.appendChild(row);
+    });
+  }
+  matAddBtn.onclick = () => {
+    stunde.material.push({ id: uid(), quelle: '', teile: '', anpassung: '' });
+    scheduleSave(); renderMaterial();
+  };
+  renderMaterial();
+
+  // Notizen — die KI schreibt hier hinein (createStunde/updateStunde)
+  const notLabel = tx('div', '', 'Notizen');
+  notLabel.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;'
+    + 'letter-spacing:.5px;margin:14px 0 6px;';
+  s2body.appendChild(notLabel);
+  const notTA = document.createElement('textarea');
+  notTA.className = 'finp'; notTA.rows = 3;
+  notTA.value = stunde.notizen || '';
+  notTA.placeholder = 'Materialhinweise, offene Fragen, Erinnerungen …';
+  notTA.style.cssText = 'font-size:13px;width:100%;resize:vertical;';
+  notTA.oninput = () => { stunde.notizen = notTA.value; scheduleSave(); };
+  s2body.appendChild(notTA);
+
+  // ══════════════════════════════════════════════════════════════════
   // SEKTION 3: Methode
   // ══════════════════════════════════════════════════════════════════
   // Migration: altes stunde.methode → stunde.methoden.Erarbeitung

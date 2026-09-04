@@ -249,7 +249,7 @@ const PC_STUNDEN_TOOLS = [
   },
   {
     name: 'readDatenbank',
-    description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Rufe dies IMMER auf bevor du planst — berücksichtige nur Material, das tatsächlich vorhanden ist.',
+    description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Nur strukturiert erfasstes Material ist hier zu finden — eigenes Material der Lehrerin steht oft nicht drin.',
     input_schema: {
       type: 'object',
       properties: {
@@ -257,6 +257,43 @@ const PC_STUNDEN_TOOLS = [
         jahrgang: { type: 'string', description: 'Nach Jahrgang filtern, z.B. "9" (optional)' },
         inhaltstyp: { type: 'string', description: 'Nach Typ filtern: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext (optional)' }
       }
+    }
+  },
+  {
+    name: 'readDidaktik',
+    description: 'Liest didaktische Leitlinien aus der Wissensbasis.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        ebenen: { type: 'string', description: 'Kommagetrennte Planungsebenen: reihe, stunde, material, situation (optional)' },
+        themen: { type: 'string', description: 'Kommagetrennte Themen, z.B. differenzierung,motivation (optional)' }
+      }
+    }
+  },
+  {
+    name: 'materialZuordnen',
+    description: 'Hält fest, welches Material zu einer Stunde gehört und wie es eingesetzt wird. Bewusst freitextlich: Das Material muss NICHT in der Materialdatenbank stehen. Nutze das, sobald ihr euch über eine Zuordnung einig seid — auch für Teilverwendung („nur Aufgabe 2–4") und nötige Anpassungen.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        stundeId:  { type: 'string', description: 'ID der Stunde (aus readPlan)' },
+        quelle:    { type: 'string', description: 'Um welches Material es geht, so wie die Lehrerin es nennt, z.B. „RAAbits Chemie M4" oder „eigenes Kopfrechenblatt"' },
+        teile:     { type: 'string', description: 'Welcher Teil verwendet wird, falls nicht alles — z.B. „nur Aufgabe 2–4" (optional)' },
+        anpassung: { type: 'string', description: 'Was vorher angepasst werden muss — kürzen, umformulieren, ergänzen (optional)' }
+      },
+      required: ['stundeId', 'quelle']
+    }
+  },
+  {
+    name: 'materialEntfernen',
+    description: 'Entfernt eine Materialzuordnung von einer Stunde.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        stundeId:   { type: 'string', description: 'ID der Stunde' },
+        materialId: { type: 'string', description: 'ID der Zuordnung (aus readPlan)' }
+      },
+      required: ['stundeId', 'materialId']
     }
   }
 ];
@@ -267,16 +304,33 @@ async function _pcExecTool(name, input, fp) {
     case 'readPlan': {
       const blk = (fp.blocks || []).find(b => b.id === _pcBlockId);
       if (_pcReiheId) {
-        // Reihen-Kontext: nur diese Reihe zurückgeben
+        // Reihen-Kontext: diese Reihe samt Nachbarn im Block
         const rei = blk && (blk.reihen || []).find(r => r.id === _pcReiheId);
         if (!rei) return JSON.stringify({});
+        const alle = (blk.reihen || []);
+        const pos = alle.findIndex(r => r.id === _pcReiheId);
         return JSON.stringify({
+          block: {
+            titel: blk.titel,
+            reihenfolge: alle.map((r, i) => ({
+              position: i + 1,
+              titel: r.titel,
+              stundenAnzahl: r.stundenAnzahl,
+              aktuell: r.id === _pcReiheId
+            }))
+          },
+          davor:  pos > 0 ? alle[pos - 1].titel : null,
+          danach: pos >= 0 && pos < alle.length - 1 ? alle[pos + 1].titel : null,
           id: rei.id, titel: rei.titel, beschreibung: rei.beschreibung || '',
           schwerpunkt: rei.schwerpunkt || '', stundenAnzahl: rei.stundenAnzahl,
           notizen: rei.notizen || '',
           stunden: (rei.stunden || []).map(s => ({
             id: s.id, titel: s.titel, lernziel: s.lernziel || '',
-            dauer: s.dauer, intention: s.intention || '', methode: s.methode || ''
+            dauer: s.dauer, intention: s.intention || '', methode: s.methode || '',
+            notizen: s.notizen || '',
+            material: (s.material || []).map(m => ({
+              id: m.id, quelle: m.quelle, teile: m.teile || '', anpassung: m.anpassung || ''
+            }))
           }))
         });
       }
@@ -400,6 +454,35 @@ async function _pcExecTool(name, input, fp) {
       const before = (rei.stunden || []).length;
       rei.stunden = (rei.stunden || []).filter(s => s.id !== input.stundeId);
       if (rei.stunden.length === before) return JSON.stringify({ error: 'Stunde nicht gefunden: ' + input.stundeId });
+      scheduleSave(); render();
+      return JSON.stringify({ ok: true });
+    }
+
+    case 'materialZuordnen': {
+      const blk = (fp.blocks || []).find(b => b.id === _pcBlockId);
+      const rei = blk && (blk.reihen || []).find(r => r.id === _pcReiheId);
+      const stunde = rei && (rei.stunden || []).find(s => s.id === input.stundeId);
+      if (!stunde) return JSON.stringify({ error: 'Stunde nicht gefunden: ' + input.stundeId });
+      if (!Array.isArray(stunde.material)) stunde.material = [];
+      const eintrag = {
+        id: uid(),
+        quelle: input.quelle,
+        teile: input.teile || '',
+        anpassung: input.anpassung || ''
+      };
+      stunde.material.push(eintrag);
+      scheduleSave(); render();
+      return JSON.stringify({ ok: true, materialId: eintrag.id, stunde: stunde.titel });
+    }
+
+    case 'materialEntfernen': {
+      const blk = (fp.blocks || []).find(b => b.id === _pcBlockId);
+      const rei = blk && (blk.reihen || []).find(r => r.id === _pcReiheId);
+      const stunde = rei && (rei.stunden || []).find(s => s.id === input.stundeId);
+      if (!stunde) return JSON.stringify({ error: 'Stunde nicht gefunden: ' + input.stundeId });
+      const before = (stunde.material || []).length;
+      stunde.material = (stunde.material || []).filter(m => m.id !== input.materialId);
+      if (stunde.material.length === before) return JSON.stringify({ error: 'Zuordnung nicht gefunden: ' + input.materialId });
       scheduleSave(); render();
       return JSON.stringify({ ok: true });
     }
@@ -540,17 +623,62 @@ async function _pcSend(fp, context, text) {
       reihe.notizen      ? 'Notizen: '                + reihe.notizen      : ''
     ].filter(Boolean).join('\n');
     tools = PC_STUNDEN_TOOLS;
-    system = `Du bist Planungsassistentin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.
-Dein Auftrag: Plane die Stundenthemen und Abfolge für die Unterrichtsreihe ${reiheInfo}.
+    system = `Du bist Planungspartnerin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.
+Ihr plant gemeinsam die Unterrichtsreihe ${reiheInfo}.
 ${ctx ? ctx + '\n' : ''}
-Gehe immer so vor:
-1. Rufe readPlan, readKLP und readDatenbank je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
-2. Werte das Materialangebot aus readDatenbank sorgfältig aus: Welche Arbeitsblätter, Materialsets, Handreichungen oder Stundenverläufe gibt es für dieses Thema? Stundenverläufe (inhaltstyp stundenverlauf) enthalten ausgearbeitete Unterrichtskonzepte mit Phasen — nutze sie als Vorlage für Stundenstruktur und Methoden, auch wenn du sie nicht 1:1 übernimmst. Plane so, dass das vorhandene Material optimal eingesetzt wird. Wenn für einen Schwerpunkt kein Material vorhanden ist, weise darauf hin. Der KLP (readKLP) ist Hintergrundwissen, keine Vorgabe: Wenn das vorhandene Material oder die Notizen der Lehrerin bewusst von der KLP-Reihenfolge oder -Schwerpunktsetzung abweichen, folge dem Material und den Notizen — versuche nicht, die Struktur wieder an den KLP anzugleichen.
-3. Prüfe, welche Stunden bereits vorhanden sind. Erstelle keine Duplikate.
-4. Wenn die Reihe bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.
-5. Plane die Stundenabfolge vollständig durch, dann erstelle alle Stunden mit createStunde (dauer immer 45). stundenAnzahl gibt das Budget in Unterrichtsstunden à 45 Min. an – eine Doppelstunde zählt darin als zwei. Lege also genau stundenAnzahl Einträge an, jeden mit dauer=45. Wie die Lehrerin sie im Stundenplan auf Einzel- oder Doppelstunden verteilt, entscheidest nicht du.
-Plane nur Stundenthemen und -abfolge – noch keine Phasen oder Materialien.
-Arbeite proaktiv und erstelle direkt einen vollständigen Stundenplan für die Reihe.`;
+Das ist ein fortlaufendes Gespräch, kein Auftrag. Die Lehrerin arbeitet über Tage
+hinweg an dieser Reihe und bringt Material nach und nach ein — oft unsortiert und
+nicht in der Reihenfolge der Stunden. Plane nicht ungefragt die ganze Reihe durch.
+Arbeite an dem, was gerade ansteht, und warte ab, womit sie einsteigt.
+
+Wenn sie ausdrücklich darum bittet, die Reihe komplett durchzuplanen, tu es: Lege
+dann genau stundenAnzahl Stunden an, jede mit dauer=45. stundenAnzahl ist das Budget
+in Unterrichtsstunden à 45 Minuten — eine Doppelstunde zählt darin als zwei. Wie sie
+die im Stundenplan verteilt, entscheidest nicht du.
+
+Zum Einstieg rufst du readPlan einmal auf, um den Stand zu sehen — welche Stunden es
+gibt, welches Material schon zugeordnet ist, und welche Reihen davor und danach
+kommen. readKLP, readDatenbank, readMethoden und readDidaktik nutzt du gezielt, wenn
+eine konkrete Frage ansteht, nicht auf Vorrat.
+
+Der KLP ist Hintergrundwissen, keine Vorgabe: Wenn das vorhandene Material oder die
+Notizen der Lehrerin bewusst von der KLP-Reihenfolge oder -Schwerpunktsetzung
+abweichen, folge dem Material und den Notizen — versuche nicht, die Struktur wieder
+an den KLP anzugleichen.
+
+Material: Vorrang und Reihenfolge
+
+Material, das sie vorschlägt, hat Vorrang. Setze es ein, wenn es trägt.
+
+Hältst du es für ungeeignet, brauchst du einen konkreten, benennbaren Grund — nicht
+„passt nicht recht", sondern woran es scheitert. Und bevor du es verwirfst, prüfst du
+die Anpassung: Lässt sich ein Teil weglassen, eine Aufgabe umformulieren, etwas
+ergänzen? Sag, welche Teile tragen und welche nicht. Erst wenn auch Anpassung nichts
+rettet, sagst du, dass das Material hier nicht funktioniert.
+
+Eigene Vorschläge machst du nicht ungefragt. Erst wenn sie sagt, dass sie nichts hat,
+oder wenn sie an ihrer eigenen Wahl deutlich zweifelt, schaust du mit readDatenbank,
+ob etwas Passendes da ist. Bist du unsicher, ob sie zweifelt, frag nach — „soll ich
+nach Alternativen schauen?" — statt es zu unterstellen.
+
+Material neu zu gestalten ist die letzte Option, nicht die erste.
+
+Hat sie eine eigene Idee für selbst gestaltetes Material, begleitest du sie dabei:
+mitdenken, schärfen, auf Stolperstellen hinweisen. Du entwirfst nicht an ihrer Stelle
+etwas anderes.
+
+Sobald ihr euch über eine Zuordnung einig seid, hältst du sie mit materialZuordnen
+fest — auch Teilverwendung („nur Aufgabe 2–4") und nötige Anpassungen. Das Material
+muss dafür nicht in der Datenbank stehen; es zählt, wie die Lehrerin es nennt.
+
+Weiteres Vorgehen:
+- Erstelle keine Duplikate. Prüfe mit readPlan, was schon da ist.
+- Änderungen an bestehenden Stunden schreibst du mit updateStunde, wenn ihr euch
+  einig seid. Was noch offen ist, gehört in notizen — das sieht sie im Stundenplan.
+- Phasen und Feinplanung gehören nicht hierher. Hier geht es um Stundenthemen,
+  Abfolge und Materialzuordnung.
+- Arbeite an dem, was gerade Thema ist. Kurze Antworten sind die Regel, lange die
+  Ausnahme.`;
   } else {
     // Block-Chat: Reihen planen
     const blockInfo = `„${block.titel}"${block.stundenGesamt ? ' (' + block.stundenGesamt + ' Stunden)' : ''}`;

@@ -184,3 +184,41 @@ async function sicherungenListe() {
     groesse: (o.metadata || {}).size || 0,
   }));
 }
+
+// ── Konfliktschutz ───────────────────────────────────────────────
+// data.json enthält die gesamte Planung und wird bei jedem Speichern
+// vollständig überschrieben. Sind zwei Sitzungen offen — zwei Geräte, zwei
+// Tabs —, gewinnt die zuletzt speichernde, und die Arbeit der anderen ist
+// stillschweigend weg. Genau so gehen Daten verloren.
+//
+// Deshalb: Vor jedem Schreiben prüfen, ob die Datei noch so ist wie beim
+// Laden. Hat sie sich geändert, wird NICHT überschrieben.
+let _dataFingerprint = null;   // Stand, den diese Sitzung kennt
+
+async function dataFingerprint() {
+  const url = _URL + '/storage/v1/object/info/' + BUCKET + '/data.json';
+  try {
+    const res = await fetch(url, { headers: _H() });
+    if (!res.ok) return null;
+    const info = await res.json();
+    // etag ist eine Prüfsumme des Inhalts — erkennt auch Änderungen, die die
+    // Dateigröße nicht verschieben. Die anderen Werte nur als Rückfallebene.
+    return (info.etag || '') + '|' + (info.last_modified || '') + '|' + (info.size || '');
+  } catch (e) {
+    return null;   // Prüfung nicht möglich — Speichern darf trotzdem laufen
+  }
+}
+
+// Nach dem Laden merken, welchen Stand diese Sitzung gesehen hat.
+async function merkeDatenStand() {
+  _dataFingerprint = await dataFingerprint();
+}
+
+// true = unverändert oder nicht prüfbar (Speichern erlaubt)
+// false = jemand anderes hat zwischenzeitlich geschrieben
+async function datenStandUnveraendert() {
+  if (!_dataFingerprint) return true;      // nie gemerkt: nicht blockieren
+  const jetzt = await dataFingerprint();
+  if (!jetzt) return true;                 // Prüfung fehlgeschlagen: nicht blockieren
+  return jetzt === _dataFingerprint;
+}

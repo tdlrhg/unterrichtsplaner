@@ -154,10 +154,24 @@ function scheduleSave() {
 }
 
 async function doPersist() {
+  if (S.konflikt) return;          // bereits blockiert, nicht erneut schreiben
   S.saving = true;
   refreshTopbar();
   try {
+    // Hat jemand anderes zwischenzeitlich gespeichert? Dann nicht überschreiben.
+    if (!(await datenStandUnveraendert())) {
+      S.konflikt = true;
+      S.saving = false;
+      refreshTopbar();
+      alert('Die Planung wurde zwischenzeitlich woanders geändert — in einem anderen '
+        + 'Tab, auf einem anderen Gerät oder in einer anderen Sitzung.\n\n'
+        + 'Deine Änderungen wurden NICHT gespeichert, damit die andere Fassung nicht '
+        + 'überschrieben wird.\n\n'
+        + 'Lade die Seite neu und trage sie dort erneut ein.');
+      return;
+    }
     await sbUpload('data.json', S.data);
+    await merkeDatenStand();       // eigener Schreibvorgang ist der neue Bezugspunkt
   } catch (e) {
     console.error('Speichern fehlgeschlagen:', e);
   }

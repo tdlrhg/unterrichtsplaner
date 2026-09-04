@@ -150,6 +150,7 @@ function buildSetup() {
     S.data = { fachplanungen: [], kurse: [] };
   }
   S.loaded = true;
+  merkeDatenStand();               // Bezugspunkt für den Konfliktschutz
   tagessicherung(loaded);
   restoreNav();
   // Fallback falls gespeicherte IDs nicht mehr existieren

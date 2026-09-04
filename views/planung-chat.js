@@ -173,7 +173,8 @@ const PC_TOOLS = [
       properties: {
         thema: { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort — leer lassen für alle Materialien des Fachs' },
         jahrgang: { type: 'string', description: 'Nach Jahrgang filtern, z.B. "9" (optional)' },
-        inhaltstyp: { type: 'string', description: 'Nach Typ filtern: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext (optional)' }
+        inhaltstyp: { type: 'string', description: 'Nach Typ filtern: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext (optional)' },
+        nurSpiele:  { type: 'boolean', description: 'Nur fertige Spiele zurückgeben (optional)' }
       }
     }
   }
@@ -262,7 +263,8 @@ const PC_STUNDEN_TOOLS = [
       properties: {
         thema: { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort — leer lassen für alle Materialien des Fachs' },
         jahrgang: { type: 'string', description: 'Nach Jahrgang filtern, z.B. "9" (optional)' },
-        inhaltstyp: { type: 'string', description: 'Nach Typ filtern: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext (optional)' }
+        inhaltstyp: { type: 'string', description: 'Nach Typ filtern: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext (optional)' },
+        nurSpiele:  { type: 'boolean', description: 'Nur fertige Spiele zurückgeben (optional)' }
       }
     }
   },
@@ -344,7 +346,8 @@ const PC_EINHEIT_TOOLS = [
       properties: {
         thema:      { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort' },
         jahrgang:   { type: 'string', description: 'Nach Jahrgang filtern (optional)' },
-        inhaltstyp: { type: 'string', description: 'Nach Typ filtern (optional)' }
+        inhaltstyp: { type: 'string', description: 'Nach Typ filtern (optional)' },
+        nurSpiele:  { type: 'boolean', description: 'Nur fertige Spiele zurückgeben (optional)' }
       }
     }
   },
@@ -690,6 +693,7 @@ async function _pcExecTool(name, input, fp) {
         var _dbFilters = { fach: fp.fach };
         if (input.inhaltstyp) _dbFilters.inhaltstyp = input.inhaltstyp;
         if (input.jahrgang)   _dbFilters.jahrgang   = input.jahrgang;
+        if (input.nurSpiele)  _dbFilters.spiel      = true;
 
         var _rows = await sbSelectAll('inhalte', { filters: _dbFilters, limit: 500 });
 
@@ -718,6 +722,8 @@ async function _pcExecTool(name, input, fp) {
             kapitel: r.kapitel,
             jahrgang: r.jahrgang,
             schwierigkeit: r.schwierigkeit,
+            spiel: !!r.spiel,
+            methode: r.methode || null,
             beschreibung: (r.aufgabenstellung || r.inhalt || '').slice(0, 150)
           });
         });

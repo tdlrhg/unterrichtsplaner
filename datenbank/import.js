@@ -81,6 +81,12 @@ Für jeden Eintrag:
 - schwierigkeit: genau eines von: grundlegend|standard|anspruchsvoll — bei Lehrtexten null
 - abbildung: Kurze Beschreibung einer Abbildung, die für das Verständnis der Aufgabe notwendig ist (z.B. „Koordinatensystem mit eingezeichnetem Dreieck ABC", „Foto einer rostenden Eisenbrücke"). Nur ausfüllen wenn die Abbildung inhaltlich relevant ist — nicht für rein dekorative Bilder, Cliparts oder Randgestaltung. Sonst null.
 
+SPIELERKENNUNG (beide Felder optional, nur setzen wenn zutreffend):
+- spiel: true, wenn der Eintrag ein Spiel ist — Rate-, Karten-, Brett- oder Wettbewerbsformat,
+  Domino, Memory, Tabu, Bingo, Quiz-Duell und Ähnliches. Eine normale Übungsaufgabe ist KEIN Spiel.
+- methode: Name des Spielformats, falls erkennbar und gebräuchlich (z.B. "Tabu", "Domino", "Memory",
+  "Bingo"). Nur den Formatnamen, nicht das Thema. Ist das Format namenlos oder eigens erfunden: null.
+
 JSON-FORMAT — sehr wichtig:
 - Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
 - Alle Stringwerte einzeilig (keine Zeilenumbrüche — stattdessen " | " verwenden)
@@ -141,6 +147,12 @@ SONDERREGEL für stundenverlauf:
 - thema: Fachliches Kernthema dieser Seite, max. 5 Wörter (z.B. "Bruchrechnung", "Textaufgaben – Verhältnisse", "Korrosion – Grundlagen")
 
 - abbildung: Kurze Beschreibung einer Abbildung, die für das Verständnis des Materials notwendig ist (z.B. „Foto einer rostenden Eisenbrücke", „Diagramm: Temperaturverlauf über 24h"). Nur ausfüllen wenn die Abbildung inhaltlich relevant ist — nicht für rein dekorative Bilder oder Randgestaltung. Sonst null.
+
+SPIELERKENNUNG (beide Felder optional, nur setzen wenn zutreffend):
+- spiel: true, wenn der Eintrag ein Spiel ist — Rate-, Karten-, Brett- oder Wettbewerbsformat,
+  Domino, Memory, Tabu, Bingo, Quiz-Duell und Ähnliches. Eine normale Übungsaufgabe ist KEIN Spiel.
+- methode: Name des Spielformats, falls erkennbar und gebräuchlich (z.B. "Tabu", "Domino", "Memory",
+  "Bingo"). Nur den Formatnamen, nicht das Thema. Ist das Format namenlos oder eigens erfunden: null.
 
 JSON-FORMAT:
 - Antworte AUSSCHLIESSLICH mit rohem JSON, kein Markdown, keine Codeblöcke
@@ -901,6 +913,8 @@ function buildImportView(container) {
         thema:        a.thema || null,
         abbildung:    a.abbildung || null,
         inhaltstyp:   a.inhaltstyp || 'aufgabe',
+        spiel:        a.spiel === true,
+        methode:      a.methode || null,
       };
     });
     var lastSeite = rows.length ? rows[rows.length - 1].seite : baseSeite;
@@ -933,6 +947,67 @@ function buildImportView(container) {
       var sub = tx('div', '', buch + (baseSeite ? ' · Seite ' + baseSeite + (rows.length && lastSeite !== baseSeite ? '–' + lastSeite : '') : ''));
       sub.style.cssText = 'font-size:14px;color:var(--tx2);margin-top:-16px;';
       done.appendChild(sub);
+
+      // ── Erkannte Spielformate für die Methodendatenbank anbieten ──
+      // Bewusst als Angebot, nicht automatisch: Die Methodendatenbank soll
+      // nur enthalten, was die Lehrerin dort haben will.
+      var neueFormate = [];
+      rows.forEach(function(r) {
+        if (!r.spiel || !r.methode) return;
+        var name = String(r.methode).trim();
+        if (!name) return;
+        var schonDa = (METHDB || []).some(function(m) {
+          return (m.name || '').toLowerCase() === name.toLowerCase();
+        });
+        if (!schonDa && neueFormate.indexOf(name) === -1) neueFormate.push(name);
+      });
+
+      if (neueFormate.length) {
+        var fCard = mk('div', '');
+        fCard.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:10px;'
+          + 'padding:16px 18px;text-align:left;width:100%;max-width:360px;display:flex;'
+          + 'flex-direction:column;gap:10px;';
+        var fTitel = tx('div', '', neueFormate.length === 1
+          ? '🎲 Spielformat erkannt: ' + neueFormate[0]
+          : '🎲 ' + neueFormate.length + ' Spielformate erkannt');
+        fTitel.style.cssText = 'font-weight:600;font-size:14px;';
+        fCard.appendChild(fTitel);
+        var fSub = tx('div', '', neueFormate.length === 1
+          ? 'Steht noch nicht in der Methodendatenbank. Als Methode aufnehmen? Dann kannst du das Format später auf andere Themen übertragen.'
+          : neueFormate.join(', ') + ' — noch nicht in der Methodendatenbank.');
+        fSub.style.cssText = 'font-size:12px;color:var(--tx2);line-height:1.5;';
+        fCard.appendChild(fSub);
+
+        var fBtn = btn('Als Methode aufnehmen', 'btn btn-sm btn-pri');
+        fBtn.style.alignSelf = 'flex-start';
+        fBtn.onclick = async function() {
+          fBtn.disabled = true; fBtn.textContent = '⏳ …';
+          try {
+            var neu = neueFormate.map(function(name) {
+              return {
+                id: 'spiel_' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '_' + Date.now(),
+                name: name,
+                beschreibung: 'Spielformat, beim Import von „' + buch + '" erkannt. Beschreibung ergänzen.',
+                ziel: '', hinweise: '', zeitbedarf: 'variabel', aufwand: 2,
+                sozialform: [], phasen: [], materialtyp: [],
+                typ: 'anwenden', spiel: true, quelle: ''
+              };
+            });
+            await sbInsert('methoden', neu);
+            neu.forEach(function(m) { METHDB.push(m); });
+            fCard.innerHTML = '';
+            var ok = tx('div', '', '✓ ' + neu.length + ' Format' + (neu.length !== 1 ? 'e' : '')
+              + ' aufgenommen — Beschreibung kannst du in der Methodendatenbank ergänzen.');
+            ok.style.cssText = 'font-size:13px;color:#16a34a;line-height:1.5;';
+            fCard.appendChild(ok);
+          } catch(e) {
+            fBtn.disabled = false; fBtn.textContent = 'Als Methode aufnehmen';
+            showKIError(fCard, e);
+          }
+        };
+        fCard.appendChild(fBtn);
+        done.appendChild(fCard);
+      }
 
       var actions = mk('div', '');
       actions.style.cssText = 'display:flex;flex-direction:column;gap:10px;width:100%;max-width:360px;';

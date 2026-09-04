@@ -217,7 +217,8 @@ const PC_STUNDEN_TOOLS = [
         dauer:    { type: 'number', description: 'Immer 45 – eine Doppelstunde = zwei Einträge à 45 Min.' },
         intention:{ type: 'string', description: 'Didaktische Begründung (optional)' },
         methode:  { type: 'string', description: 'Hauptmethode (optional)' },
-        notizen:  { type: 'string', description: 'Materialhinweise, didaktische Kommentare, offene Fragen — wird dauerhaft gespeichert und ist für die Lehrkraft sichtbar' }
+        prioritaet: { type: 'string', description: 'pflicht | optional | puffer — „optional" markiert eine Stunde, die entfallen könnte. Nutze es, wenn ihr euch noch nicht sicher seid, und begründe es in notizen.' },
+        notizen:  { type: 'string', description: 'Materialhinweise, offene Fragen — sichtbar im Stunden-Editor unter „Material & Notizen"' }
       },
       required: ['titel']
     }
@@ -234,6 +235,7 @@ const PC_STUNDEN_TOOLS = [
         dauer:    { type: 'number' },
         intention:{ type: 'string' },
         methode:  { type: 'string' },
+        prioritaet: { type: 'string', description: 'pflicht | optional | puffer — „optional" markiert eine Stunde, die entfallen könnte. Nutze es, wenn ihr euch noch nicht sicher seid, und begründe es in notizen.' },
         notizen:  { type: 'string' }
       },
       required: ['stundeId']
@@ -355,7 +357,8 @@ const PC_EINHEIT_TOOLS = [
         dauer:    { type: 'number', description: '45 oder 90' },
         intention:{ type: 'string' },
         methode:  { type: 'string' },
-        notizen:  { type: 'string', description: 'Offene Punkte und Hinweise — für die Lehrerin im Stundenplan sichtbar' }
+        prioritaet: { type: 'string', description: 'pflicht | optional | puffer — „optional" markiert eine Stunde, die entfallen könnte. Nutze es, wenn ihr euch noch nicht sicher seid, und begründe es in notizen.' },
+        notizen:  { type: 'string', description: 'Offene Punkte und Hinweise — sichtbar im Stunden-Editor' }
       },
       required: ['stundeId']
     }
@@ -421,6 +424,7 @@ const PC_EINHEIT_TOOLS = [
         titel:    { type: 'string', description: 'Stundenthema' },
         lernziel: { type: 'string' },
         dauer:    { type: 'number', description: '45 oder 90' },
+        prioritaet: { type: 'string', description: 'pflicht | optional | puffer — „optional" markiert eine Stunde, die entfallen könnte. Nutze es, wenn ihr euch noch nicht sicher seid, und begründe es in notizen.' },
         notizen:  { type: 'string' }
       },
       required: ['titel']
@@ -452,6 +456,7 @@ async function _pcExecTool(name, input, fp) {
           stunden: eigene.map(s => ({
             id: s.id, titel: s.titel, lernziel: s.lernziel || '',
             dauer: s.dauer, intention: s.intention || '', methode: s.methode || '',
+            prioritaet: s.prioritaet || 'pflicht',
             notizen: s.notizen || '',
             material: (s.material || []).map(m => ({
               id: m.id, quelle: m.quelle, teile: m.teile || '', anpassung: m.anpassung || ''
@@ -491,6 +496,7 @@ async function _pcExecTool(name, input, fp) {
           stunden: (rei.stunden || []).map(s => ({
             id: s.id, titel: s.titel, lernziel: s.lernziel || '',
             dauer: s.dauer, intention: s.intention || '', methode: s.methode || '',
+            prioritaet: s.prioritaet || 'pflicht',
             notizen: s.notizen || '',
             material: (s.material || []).map(m => ({
               id: m.id, quelle: m.quelle, teile: m.teile || '', anpassung: m.anpassung || ''
@@ -588,6 +594,7 @@ async function _pcExecTool(name, input, fp) {
         id: uid(), titel: input.titel, lernziel: input.lernziel || '',
         dauer: input.dauer || 45, intention: input.intention || '', methode: input.methode || '',
         notizen: input.notizen || '',
+        prioritaet: input.prioritaet || 'pflicht',
         phasen: [], klpInhalt: [], klpProzess: [], material: []
       };
       if (_pcEinheitId) s.einheitId = _pcEinheitId;  // im Einheiten-Chat der Gruppe zuordnen
@@ -608,6 +615,7 @@ async function _pcExecTool(name, input, fp) {
       if (input.intention !== undefined) stunde.intention = input.intention;
       if (input.methode   !== undefined) stunde.methode   = input.methode;
       if (input.notizen   !== undefined) stunde.notizen   = input.notizen;
+      if (input.prioritaet!== undefined) stunde.prioritaet = input.prioritaet;
       scheduleSave(); render();
       return JSON.stringify({ ok: true, id: stunde.id });
     }
@@ -938,6 +946,13 @@ So arbeitest du:
   Nachbarstunden zu sehen. readMethoden und readDidaktik nutzt du gezielt bei einer
   konkreten Frage, nicht auf Vorrat.
 
+- Achte auf Stunden mit prioritaet „optional": Dort ist bei der Reihenplanung eine
+  Frage offen geblieben, die erst hier beantwortbar ist — meist, ob der Inhalt in
+  einer anderen Stunde mit untergebracht werden kann. Die Begründung steht in
+  notizen. Sprich diese Fälle von dir aus an, sobald die umliegenden Stunden
+  ausgearbeitet genug sind, um es zu beurteilen. Fällt die Entscheidung, setz
+  prioritaet entsprechend um und halte das Ergebnis in notizen fest.
+
 - Änderungen schreibst du erst, wenn ihr euch einig seid: updateStunde für Lernziel,
   Methode und Notizen, setPhasen für den Phasenverlauf.
 
@@ -1004,10 +1019,21 @@ Sobald ihr euch über eine Zuordnung einig seid, hältst du sie mit materialZuor
 fest — auch Teilverwendung („nur Aufgabe 2–4") und nötige Anpassungen. Das Material
 muss dafür nicht in der Datenbank stehen; es zählt, wie die Lehrerin es nennt.
 
+Offene Fragen an die Feinplanung weiterreichen
+
+Manche Entscheidungen lassen sich hier noch nicht treffen, weil die Information erst
+bei der Ausarbeitung entsteht — etwa ob ein kleines Thema in einer anderen Stunde
+mit untergebracht werden kann. Sag das nicht nur im Gespräch: Die Feinplanung ist
+ein eigener Chat und sieht diesen Verlauf nicht.
+
+Halte solche Fälle stattdessen an der Stunde fest: prioritaet auf „optional", und in
+notizen, worum es geht und wovon die Entscheidung abhängt. Dann taucht die Frage
+genau dann wieder auf, wenn sie beantwortbar ist.
+
 Weiteres Vorgehen:
 - Erstelle keine Duplikate. Prüfe mit readPlan, was schon da ist.
 - Änderungen an bestehenden Stunden schreibst du mit updateStunde, wenn ihr euch
-  einig seid. Was noch offen ist, gehört in notizen — das sieht sie im Stundenplan.
+  einig seid. Was noch offen ist, gehört in notizen — das sieht sie im Stunden-Editor.
 - Phasen und Feinplanung gehören nicht hierher. Hier geht es um Stundenthemen,
   Abfolge und Materialzuordnung.
 - Arbeite an dem, was gerade Thema ist. Kurze Antworten sind die Regel, lange die

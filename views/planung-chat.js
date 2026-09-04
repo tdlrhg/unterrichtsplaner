@@ -690,7 +690,8 @@ async function _pcExecTool(name, input, fp) {
 
     case 'readDatenbank': {
       try {
-        var _dbFilters = { fach: fp.fach };
+        var _dbFach = fachKeyFuerDatenbank(fp.fach);
+        var _dbFilters = _dbFach ? { fach: _dbFach } : {};
         var _dbRawParams = [];
         if (input.inhaltstyp) _dbFilters.inhaltstyp = input.inhaltstyp;
         if (input.jahrgang)   _dbFilters.jahrgang   = input.jahrgang;

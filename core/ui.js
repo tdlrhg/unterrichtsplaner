@@ -1,3 +1,17 @@
+
+// ── Fachschlüssel übersetzen ─────────────────────────────────────
+// Der Unterrichtsplaner führt Fächer als Kürzel (M, Ch, Ch_GK, Bio, Bio_LK …),
+// die Materialdatenbank als ausgeschriebene Schlüssel (mathe, chemie, bio).
+// Ohne Übersetzung liefert jede Materialabfrage aus der Planung heraus null
+// Treffer — die Filter greifen dann auf einen Wert, den es dort nie gibt.
+function fachKeyFuerDatenbank(fach) {
+  const f = (fach || '').toLowerCase();
+  if (f.startsWith('m'))   return 'mathe';
+  if (f.startsWith('ch'))  return 'chemie';
+  if (f.startsWith('bio')) return 'bio';
+  return null;   // unbekannt: lieber ohne Fachfilter suchen als nichts finden
+}
+
 // ── Formate ──────────────────────────────────────────────────────
 // Quer zur didaktischen Typologie: Ein Domino ist funktional ein
 // Anwenden-Format und der Form nach ein Spiel. Die Liste ist erweiterbar,

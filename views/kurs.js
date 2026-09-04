@@ -439,6 +439,43 @@ function viewFachplanung() {
   const selBlock  = selBlockId  && (lp.blocks || []).find(b => b.id === selBlockId);
   const selReihe  = selBlock    && (selBlock.reihen || []).find(r => r.id === selReiheId);
 
+  // ── Planungsgrundlagen ──────────────────────────────────────
+  // Was in diesem Fach und Jahrgang immer gilt: Rituale, schulinterner
+  // Lehrplan, eigene Schwerpunkte. Alle drei Planungs-Chats lesen das mit.
+  const grKey = 'grundlagen_' + lp.id;
+  const grOffen = !!S.open[grKey];
+  const grCard = mk('div', 'card');
+  grCard.style.marginBottom = '12px';
+
+  const grHdr = mk('div', '');
+  grHdr.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;';
+  grHdr.onclick = () => { S.open[grKey] = !grOffen; render(); };
+  grHdr.appendChild(tx('span', '', grOffen ? '▾' : '▸')).style.cssText = 'color:var(--tx3);font-size:11px;';
+  const grTitel = tx('span', '', 'Planungsgrundlagen');
+  grTitel.style.cssText = 'font-size:13px;font-weight:700;';
+  grHdr.appendChild(grTitel);
+  const gefuellt = (lp.grundlagen || '').trim().length;
+  const grHint = tx('span', '', gefuellt
+    ? gefuellt + ' Zeichen · fließt in alle Planungs-Chats ein'
+    : 'Rituale, schulinterner Lehrplan, eigene Schwerpunkte — noch leer');
+  grHint.style.cssText = 'font-size:11.5px;color:var(--tx3);';
+  grHdr.appendChild(grHint);
+  grCard.appendChild(grHdr);
+
+  if (grOffen) {
+    const grBody = mk('div', '');
+    grBody.style.cssText = 'padding:0 14px 14px;';
+    const grTA = document.createElement('textarea');
+    grTA.className = 'finp'; grTA.rows = 8;
+    grTA.value = lp.grundlagen || '';
+    grTA.placeholder = '4 Wochenstunden.\n\nRituale:\n- 1× pro Woche 10 Minuten Kopfrechnen. Wenn es thematisch passt, dort einbauen,\n  sonst als themenunabhängiger Stundeneinstieg.\n- 1× pro Monat ein Mathespiel (ganze Stunde). Spielformate wie Tabu lassen sich\n  auf andere Themen übertragen, wenn kein fertiges Material vorliegt.\n\nSchulinterner Lehrplan / eigene Schwerpunkte:\n- …';
+    grTA.style.cssText = 'font-size:13px;width:100%;resize:vertical;line-height:1.6;';
+    grTA.oninput = () => { lp.grundlagen = grTA.value; scheduleSave(); };
+    grBody.appendChild(grTA);
+    grCard.appendChild(grBody);
+  }
+  div.appendChild(grCard);
+
   const treePanel = mk('div', 'fp-tree-panel');
   treePanel.appendChild(buildFpTree(lp, sel));
   div.appendChild(treePanel);

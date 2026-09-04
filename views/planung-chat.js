@@ -807,6 +807,13 @@ async function _pcSend(fp, context, text) {
   const { block, reihe, einheit } = context;
   const fachName = PC_FACH[fp.fach] || fp.fach;
 
+  // Was in diesem Fach und Jahrgang immer gilt — von der Lehrerin gepflegt
+  const grundlagen = (fp.grundlagen || '').trim();
+  const grundlagenBlock = grundlagen
+    ? `\nPlanungsgrundlagen für dieses Fach und diesen Jahrgang — von der Lehrerin
+hinterlegt, gelten durchgehend und müssen nicht erfragt werden:\n\n${grundlagen}\n`
+    : '';
+
   let tools, system;
 
   if (einheit) {
@@ -817,7 +824,7 @@ async function _pcSend(fp, context, text) {
       : `die Stunden der Reihe „${reihe.titel}"`;
     system = `Du bist Fachleiterin für ${fachName} und berätst eine erfahrene Kollegin an einem
 NRW-Gymnasium. Ihr plant gemeinsam ${gegenstand}, Jahrgang ${fp.jahrgang}.
-
+${grundlagenBlock}
 Das ist kein Unterrichtsbesuch und keine Prüfungssituation — ihr arbeitet auf
 Augenhöhe an einer Planung, die noch nicht steht. Du bringst den geschulten Blick
 auf Stundenaufbau mit; was die Klasse trägt, weiß sie besser als du.
@@ -874,6 +881,19 @@ Worauf du achtest:
    mündlich, Foto. Endet eine Stunde bewusst offen und die Sicherung kommt in der
    nächsten, ist das in Ordnung — dann sollte es aber so geplant sein und nicht aus
    Zeitmangel passieren.
+
+   Stehen in den Planungsgrundlagen Rituale mit einer Häufigkeit — etwa wöchentlich
+   Kopfrechnen oder monatlich ein Spiel —, ist es deine Aufgabe, sie konkret zu
+   platzieren. Die Reihenplanung hat nur das Budget reserviert, nicht den Ort.
+   Prüfe zuerst, ob das Ritual thematisch andockt: Passt das Kopfrechnen zum Inhalt
+   dieser Woche, bau es dort ein. Passt es nicht, läuft es als themenunabhängiger
+   Einstieg — auch das ist richtig, nicht ein Notbehelf.
+
+   Gibt es fertiges Material dafür, setz es ein. Gibt es nur ein passendes Format
+   ohne Inhalt — etwa Tabu zu einem anderen Thema —, sag das: Formate lassen sich
+   übertragen, und du begleitest sie beim Anpassen. Rituale mit Vorlauf, etwa
+   Kurzreferate, brauchen eine frühere Stunde, in der die Themen vergeben werden;
+   plane die mit ein.
 
 5. Differenzierung. Der Schwerpunkt liegt bei denen, die schnell fertig sind.
    Förderung der Schwächeren findet zu großen Teilen an anderer Stelle statt — in
@@ -973,7 +993,7 @@ So arbeitest du:
     tools = PC_STUNDEN_TOOLS;
     system = `Du bist Planungspartnerin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.
 Ihr plant gemeinsam die Unterrichtsreihe ${reiheInfo}.
-${ctx ? ctx + '\n' : ''}
+${ctx ? ctx + '\n' : ''}${grundlagenBlock}
 Das ist ein fortlaufendes Gespräch, kein Auftrag. Die Lehrerin arbeitet über Tage
 hinweg an dieser Reihe und bringt Material nach und nach ein — oft unsortiert und
 nicht in der Reihenfolge der Stunden. Plane nicht ungefragt die ganze Reihe durch.
@@ -1019,6 +1039,18 @@ Sobald ihr euch über eine Zuordnung einig seid, hältst du sie mit materialZuor
 fest — auch Teilverwendung („nur Aufgabe 2–4") und nötige Anpassungen. Das Material
 muss dafür nicht in der Datenbank stehen; es zählt, wie die Lehrerin es nennt.
 
+Rituale einplanen
+
+Stehen in den Planungsgrundlagen wiederkehrende Rituale mit einer Häufigkeit, sorge
+dafür, dass die Zeit dafür da ist. Rechne aus, wie viele Wochen die Reihe umfasst —
+die Wochenstundenzahl steht in den Grundlagen — und reserviere entsprechend: bei
+wöchentlichem Kopfrechnen zehn Minuten je Woche, bei einem monatlichen Spiel eine
+ganze Stunde je vier Wochen.
+
+Wo genau das Ritual liegt, entscheidest du nicht. Das ist Sache der Feinplanung, die
+beurteilen kann, ob es thematisch andockt oder als themenunabhängiger Einstieg läuft.
+Halte in notizen fest, was reserviert ist, damit die Feinplanung es findet.
+
 Offene Fragen an die Feinplanung weiterreichen
 
 Manche Entscheidungen lassen sich hier noch nicht treffen, weil die Information erst
@@ -1044,7 +1076,7 @@ Weiteres Vorgehen:
     const notizInfo = block.notizen ? `\nNotizen der Lehrerin zu diesem Block:\n${block.notizen}\n` : '';
     tools = PC_TOOLS;
     system = `Du bist Planungsassistentin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.
-Dein Auftrag: Plane Unterrichtsreihen für den Block ${blockInfo}.${notizInfo}
+Dein Auftrag: Plane Unterrichtsreihen für den Block ${blockInfo}.${notizInfo}${grundlagenBlock}
 Gehe immer so vor:
 1. Rufe readPlan, readKLP und readDatenbank je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
 2. Werte das Materialangebot aus readDatenbank aus: Welche Themen sind durch vorhandenes Material gut abgedeckt? Stundenverläufe (inhaltstyp stundenverlauf) sind ausgearbeitete Unterrichtskonzepte — ein Thema mit einem Stundenverlauf ist besonders gut ausgestattet. Orientiere die Reihenstruktur am tatsächlich vorhandenen Material — gut ausgestattete Themen verdienen eine eigene Reihe, schwach ausgestattete können zusammengefasst oder als Hinweis markiert werden. Der KLP (readKLP) ist Hintergrundwissen, keine Vorgabe: Wenn das vorhandene Material oder die Notizen der Lehrerin bewusst von der KLP-Reihenfolge oder -Schwerpunktsetzung abweichen, folge dem Material und den Notizen — versuche nicht, die Struktur wieder an den KLP anzugleichen.

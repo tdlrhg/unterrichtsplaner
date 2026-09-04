@@ -109,7 +109,8 @@ const PC_TOOLS = [
       type: 'object',
       properties: {
         phase:      { type: 'string', description: 'Filter auf Unterrichtsphase (optional)' },
-        sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' }
+        sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' },
+        nurSpiele:  { type: 'boolean', description: 'Nur Spielformate zurückgeben (optional)' }
       }
     }
   },
@@ -202,7 +203,8 @@ const PC_STUNDEN_TOOLS = [
       type: 'object',
       properties: {
         phase:      { type: 'string', description: 'Filter auf Unterrichtsphase (optional)' },
-        sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' }
+        sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' },
+        nurSpiele:  { type: 'boolean', description: 'Nur Spielformate zurückgeben (optional)' }
       }
     }
   },
@@ -318,7 +320,8 @@ const PC_EINHEIT_TOOLS = [
       type: 'object',
       properties: {
         phase:      { type: 'string', description: 'Filter auf Unterrichtsphase (optional)' },
-        sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' }
+        sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' },
+        nurSpiele:  { type: 'boolean', description: 'Nur Spielformate zurückgeben (optional)' }
       }
     }
   },
@@ -537,9 +540,11 @@ async function _pcExecTool(name, input, fp) {
       let hits = [...METHDB];
       if (input.phase)      hits = hits.filter(m => (m.phasen || []).some(p => p.toLowerCase().includes(input.phase.toLowerCase())));
       if (input.sozialform) hits = hits.filter(m => (m.sozialform || []).some(s => s.toLowerCase().includes(input.sozialform.toLowerCase())));
+      if (input.nurSpiele) hits = hits.filter(m => m.spiel);
       return JSON.stringify(hits.slice(0, 60).map(m => ({
         name: m.name, beschreibung: (m.beschreibung || '').slice(0, 120),
-        phasen: m.phasen, sozialform: m.sozialform, zeitbedarf: m.zeitbedarf
+        phasen: m.phasen, sozialform: m.sozialform, zeitbedarf: m.zeitbedarf,
+        spiel: !!m.spiel
       })));
     }
 

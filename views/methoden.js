@@ -6,6 +6,7 @@ function viewMethoden() {
   let filterSozial = null;
   let filterMat = null;
   let filterAufwand = null;
+  let filterSpiel   = false;
   let filterText = '';
   let editMode = false;
 
@@ -77,10 +78,21 @@ function viewMethoden() {
     [{val:1,label:'● gering'},{val:2,label:'●● mittel'},{val:3,label:'●●● hoch'},{val:4,label:'●●●● sehr hoch'}],
     () => filterAufwand, v => filterAufwand = v);
 
+  const spielRow = mk('div', '');
+  spielRow.style.cssText = 'display:flex;align-items:center;gap:5px;flex-wrap:wrap;';
+  const spielLbl = tx('span', '', 'Form');
+  spielLbl.style.cssText = 'font-size:11px;color:var(--tx3);min-width:52px;';
+  spielRow.appendChild(spielLbl);
+  const spielChip = mk('button', 'meth-filter-chip');
+  spielChip.textContent = '🎲 Nur Spiele';
+  spielChip.onclick = () => { filterSpiel = !filterSpiel; refresh(); };
+  spielRow.appendChild(spielChip);
+
   filterBody.appendChild(pRow);
   filterBody.appendChild(sRow);
   filterBody.appendChild(mRow);
   filterBody.appendChild(aRow);
+  filterBody.appendChild(spielRow);
   filterBar.appendChild(filterBody);
   div.appendChild(filterBar);
 
@@ -115,7 +127,10 @@ function viewMethoden() {
       });
     });
 
+    spielChip.className = 'meth-filter-chip' + (filterSpiel ? ' on' : '');
+
     const filtered = [...METHDB].sort((a, b) => a.name.localeCompare(b.name, 'de')).filter(m => {
+      if (filterSpiel && !m.spiel) return false;
       if (filterPhase   && !m.phasen.includes(filterPhase))       return false;
       if (filterSozial  && !m.sozialform.includes(filterSozial))  return false;
       if (filterMat     && !m.materialtyp.includes(filterMat))    return false;
@@ -163,7 +178,7 @@ function viewMethoden() {
 
         const nameRow = mk('div', '');
         nameRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:6px;';
-        nameRow.appendChild(tx('div', 'meth-card-name', m.name));
+        nameRow.appendChild(tx('div', 'meth-card-name', (m.spiel ? '🎲 ' : '') + m.name));
         if (m.aufwand) {
           const aw = mk('span', 'meth-aufwand');
           for (let i = 1; i <= 4; i++) {
@@ -229,7 +244,7 @@ function viewMethoden() {
     prefill = prefill || {};
     const isNew = !existing;
     const m = existing ? JSON.parse(JSON.stringify(existing))
-      : { id:'', name: prefill.name || '', beschreibung: prefill.beschreibung || '', ziel: prefill.ziel || '', hinweise: prefill.hinweise || '', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], typ: null, quelle:'' };
+      : { id:'', name: prefill.name || '', beschreibung: prefill.beschreibung || '', ziel: prefill.ziel || '', hinweise: prefill.hinweise || '', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], typ: null, spiel:false, quelle:'' };
 
     overlay.innerHTML = '';
     overlay.classList.add('open');
@@ -302,6 +317,12 @@ function viewMethoden() {
       selTyp.appendChild(opt);
     });
 
+    const spielWrap = mk('label', 'meth-form-check');
+    const spielCb = mk('input', '');
+    spielCb.type = 'checkbox'; spielCb.checked = !!m.spiel;
+    spielWrap.appendChild(spielCb);
+    spielWrap.appendChild(document.createTextNode(' 🎲 Ist ein Spiel'));
+
     const cbSoz  = checkGroup(SOZ_ALL,  m.sozialform);
     const cbPhas = checkGroup(PHAS_ALL, m.phasen);
     const cbMat  = checkGroup(MAT_ALL,  m.materialtyp);
@@ -315,6 +336,7 @@ function viewMethoden() {
     form.appendChild(field('Zeitbedarf', inpZeit));
     form.appendChild(field('Aufwand', selAufwand));
     form.appendChild(field('Typ', selTyp));
+    form.appendChild(field('Form', spielWrap));
     form.appendChild(field('Sozialform', cbSoz));
     form.appendChild(field('Phasen', cbPhas));
     form.appendChild(field('Material', cbMat));
@@ -339,6 +361,7 @@ function viewMethoden() {
         zeitbedarf: inpZeit.value.trim() || 'variabel',
         aufwand: parseInt(selAufwand.value),
         typ: selTyp.value || null,
+        spiel: spielCb.checked,
         sozialform: getChecked(cbSoz),
         phasen: getChecked(cbPhas),
         materialtyp: getChecked(cbMat),
@@ -492,14 +515,16 @@ Antworte NUR mit validem JSON — alle Strings einzeilig:
     "aufwand": 1,
     "sozialform": [],
     "phasen": [],
-    "materialtyp": []
+    "materialtyp": [],
+    "spiel": false
   }
 ]}
 
 aufwand: 1=gering 2=mittel 3=hoch 4=sehr hoch
 sozialform: aus ["Einzelarbeit","Partnerarbeit","Gruppenarbeit","Plenum"]
 phasen: aus ["Einstieg","Erarbeitung","Übung","Sicherung"]
-materialtyp: aus ["Kein Material","Texte","Karten","Arbeitsblätter","Experimente","Plakate/Papier","Bilder/Comics","Objekte/Modelle","Digitale Medien"]`;
+materialtyp: aus ["Kein Material","Texte","Karten","Arbeitsblätter","Experimente","Plakate/Papier","Bilder/Comics","Objekte/Modelle","Digitale Medien"]
+spiel: true, wenn es sich um ein Spiel handelt (Wettbewerb, Rateformat, Kartenspiel, Brettspiel o.ä.)`;
 
       try {
         const contentBlocks = [
@@ -560,6 +585,7 @@ materialtyp: aus ["Kein Material","Texte","Karten","Arbeitsblätter","Experiment
             phasen: Array.isArray(m.phasen) ? m.phasen : [],
             materialtyp: Array.isArray(m.materialtyp) ? m.materialtyp : [],
             typ: null,
+            spiel: m.spiel === true,
             quelle: '',
           }));
           await sbInsert('methoden', newRows);

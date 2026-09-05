@@ -91,11 +91,18 @@ function viewZeitachse(kursId) {
     return stundenGesamt.findIndex(s => s.datum >= start.datum);
   }
 
+  // Wieviele Stunden des Blocks in diesem Kurs übersprungen werden, weil sie
+  // schon gehalten wurden (z.B. am Ende des vorigen Schuljahres).
+  function blockVersatz(block) {
+    const start = planung[block.id];
+    return Math.max(0, (start && parseInt(start.versatz)) || 0);
+  }
+
   function blockEndIdx(block) {
     const si = blockStartIdx(block);
     if (si < 0) return -1;
-    const dauer = zaehleBlockStunden(block);
-    if (dauer === 0) return si;
+    const dauer = zaehleBlockStunden(block) - blockVersatz(block);
+    if (dauer <= 0) return si;
     return Math.min(si + dauer - 1, stundenGesamt.length - 1);
   }
 
@@ -296,16 +303,29 @@ function viewZeitachse(kursId) {
 
     const segs = reihenSegmente(block).filter(s => Math.max(s.geplant, s.echte) > 0);
 
+    // Der Versatz frisst sich von vorn durch die Reihen: ganz gehaltene Reihen
+    // fallen weg, eine angefangene wird gekürzt.
+    let rest = blockVersatz(block);
+
     if (segs.length) {
       let cursor = layout.si;
       segs.forEach(seg => {
-        zeichneGeplantIstBalken(farbe, y, h, cursor, seg.geplant, seg.echte, seg.reihe.titel || '');
-        cursor += Math.max(seg.geplant, seg.echte);
+        let g = seg.geplant, e = seg.echte;
+        const laenge = Math.max(g, e);
+        if (rest > 0) {
+          if (rest >= laenge) { rest -= laenge; return; }   // Reihe komplett gehalten
+          g = Math.max(0, g - rest); e = Math.max(0, e - rest); rest = 0;
+        }
+        if (Math.max(g, e) <= 0) return;
+        zeichneGeplantIstBalken(farbe, y, h, cursor, g, e, seg.reihe.titel || '');
+        cursor += Math.max(g, e);
       });
     } else {
-      const geplantBlock = parseInt(block.stundenGesamt) || 0;
-      const echteBlock = zaehleEchteStundenBlock(block);
-      zeichneGeplantIstBalken(farbe, y, h, layout.si, geplantBlock, echteBlock, block.titel);
+      const geplantBlock = Math.max(0, (parseInt(block.stundenGesamt) || 0) - rest);
+      const echteBlock = Math.max(0, zaehleEchteStundenBlock(block) - rest);
+      if (Math.max(geplantBlock, echteBlock) > 0) {
+        zeichneGeplantIstBalken(farbe, y, h, layout.si, geplantBlock, echteBlock, block.titel);
+      }
     }
   });
 
@@ -349,7 +369,9 @@ function viewZeitachse(kursId) {
     const overlay = mk('div', '');
     overlay.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${Math.max(w,4)}px;height:${h}px;cursor:grab;pointer-events:auto;border-radius:4px;z-index:10;`;
     overlay.draggable = true;
-    overlay.title = block.titel;
+    const vs = blockVersatz(block);
+    overlay.title = block.titel + (vs ? ' · beginnt mit Blockstunde ' + (vs + 1)
+      + ' (die ersten ' + vs + ' gelten als gehalten)' : '');
     overlay.dataset.blockId = block.id;
 
     overlay.ondragstart = e => {

@@ -1102,6 +1102,9 @@ textarea::placeholder { color: #c4cdd6; }
 @keyframes pc-spin { to { transform:rotate(360deg); } }
 .pc-tool-badge { display:block; font-size:12px; color:var(--tx2); padding:3px 0; margin-top:2px; }
 .pc-abbruch { font-size:12px; font-weight:600; color:var(--red); margin-top:6px; }
+/* Blättern zwischen Stunden: schmal, damit die Pfeile nicht wie Aktionen wirken */
+.stunde-pfeil { font-size:16px; line-height:1; padding:4px 10px; font-weight:600; }
+.stunde-pfeil:disabled { opacity:.3; cursor:default; }
 .pc-input-row { display:flex; gap:8px; align-items:flex-end; }
 .pc-input { flex:1; resize:vertical; min-height:60px; font-size:13px; }
 .pc-input:disabled { opacity:.5; }

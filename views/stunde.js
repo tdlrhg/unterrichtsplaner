@@ -707,14 +707,45 @@ function viewStunde(fpId, blockId, reiheId, stundeId) {
     { label: reihe.titel, action: () => { S.sel = { type: 'reihe', ids: [fpId, blockId, reiheId] }; render(); } },
   ]));
 
+  // Nachbarstunden in der Reihenfolge der Reihe — für die Blättern-Pfeile
+  const alleStunden = reihe.stunden || [];
+  const idx    = alleStunden.findIndex(s => s.id === stundeId);
+  const vorige = idx > 0 ? alleStunden[idx - 1] : null;
+  const naechste = (idx >= 0 && idx < alleStunden.length - 1) ? alleStunden[idx + 1] : null;
+  const zuStunde = s => {
+    S.sel = { type: 'stunde', ids: [fpId, blockId, reiheId, s.id] };
+    render();
+    const c = document.querySelector('.content');
+    if (c) c.scrollTop = 0;      // oben anfangen, nicht mitten im Vorgänger
+  };
+
   const hdr = mk('div', 'c-hdr');
   const left = mk('div', '');
   left.appendChild(tx('div', 'c-title', stunde.titel || 'Stunde'));
-  const subTxt = 'Unterrichtsstunde' + (gruppe ? ' · ' + gruppe.titel : '');
+  const subTxt = 'Unterrichtsstunde'
+    + (idx >= 0 ? ' ' + (idx + 1) + ' von ' + alleStunden.length : '')
+    + (gruppe ? ' · ' + gruppe.titel : '');
   left.appendChild(tx('div', 'c-sub', subTxt));
   hdr.appendChild(left);
   const hdrBtns = mk('div', 'btn-grp');
-  const nextBtn = btn('✨ Nächste Stunde', 'btn btn-ghost btn-sm');
+
+  // Blättern innerhalb der Reihe
+  const zurueck = btn('‹', 'btn btn-ghost btn-sm stunde-pfeil');
+  zurueck.title = vorige ? 'Vorherige Stunde: ' + (vorige.titel || 'ohne Titel')
+                         : 'Erste Stunde der Reihe';
+  zurueck.disabled = !vorige;
+  if (vorige) zurueck.onclick = () => zuStunde(vorige);
+  hdrBtns.appendChild(zurueck);
+
+  const vor = btn('›', 'btn btn-ghost btn-sm stunde-pfeil');
+  vor.title = naechste ? 'Nächste Stunde: ' + (naechste.titel || 'ohne Titel')
+                       : 'Letzte Stunde der Reihe';
+  vor.disabled = !naechste;
+  if (naechste) vor.onclick = () => zuStunde(naechste);
+  hdrBtns.appendChild(vor);
+
+  // Plant eine neue Folgestunde — nicht zu verwechseln mit dem Pfeil daneben
+  const nextBtn = btn('✨ Folgestunde planen', 'btn btn-ghost btn-sm');
   nextBtn.onclick = () => kiNaechsteStunde(fp, block, reihe, stunde, gruppe, nextBtn);
   hdrBtns.appendChild(nextBtn);
   const mvb = btn('↗ Verschieben', 'btn btn-ghost btn-sm');
@@ -853,7 +884,7 @@ Antworte NUR mit diesem JSON (kein Text davor oder danach):
   } catch (e) {
     alert('Fehler: ' + e.message);
     triggerBtn.disabled = false;
-    triggerBtn.textContent = '✨ Nächste Stunde';
+    triggerBtn.textContent = '✨ Folgestunde planen';
   }
 }
 

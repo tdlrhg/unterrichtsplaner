@@ -286,7 +286,7 @@ const PC_STUNDEN_TOOLS = [
   },
   {
     name: 'readDatenbank',
-    description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
+    description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Ein Teil des Materials ist zusaetzlich didaktisch erschlossen — dann stehen bei einem Eintrag Felder wie rolleInReihe (einstieg/aufbauend/abschliessend), didaktischeFunktion (motivation, vorwissen, begriffsbildung, sichern …), offenheit, sozialform, niveau und differenzierung. Nutze sie bei der Auswahl. Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
     input_schema: {
       type: 'object',
       properties: {
@@ -369,7 +369,7 @@ const PC_EINHEIT_TOOLS = [
   },
   {
     name: 'readDatenbank',
-    description: 'Durchsucht die Materialdatenbank. Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
+    description: 'Durchsucht die Materialdatenbank. Ein Teil des Materials ist zusaetzlich didaktisch erschlossen — dann stehen bei einem Eintrag Felder wie rolleInReihe (einstieg/aufbauend/abschliessend), didaktischeFunktion (motivation, vorwissen, begriffsbildung, sichern …), offenheit, sozialform, niveau und differenzierung. Nutze sie bei der Auswahl. Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
     input_schema: {
       type: 'object',
       properties: {
@@ -882,7 +882,7 @@ async function _pcExecTool(name, input, fp) {
         _zeige.forEach(function(r) {
           var qn = r.quelle_name || '(ohne Quelle)';
           if (!_byQ[qn]) { _byQ[qn] = { typ: r.quelle_typ, items: [] }; _qOrder.push(qn); }
-          _byQ[qn].items.push({
+          var _it = {
             inhaltstyp: r.inhaltstyp,
             nr: r.nr,
             thema: r.thema,
@@ -892,7 +892,23 @@ async function _pcExecTool(name, input, fp) {
             formate: r.formate || [],
             methode: r.methode || null,
             beschreibung: (r.aufgabenstellung || r.inhalt || '').slice(0, 150)
+          };
+          // Felder aus dem KI-Fingerprint. Nur die planungsrelevanten und nur,
+          // wenn gefüllt — sonst blaeht sich die Antwort mit null-Feldern auf.
+          // Die rechnerischen (rechenbarkeit, mathematische_objekte) bleiben
+          // draussen, sie helfen bei der Stundenplanung nicht.
+          [['rolle_in_reihe','rolleInReihe'], ['didaktische_funktion','didaktischeFunktion'],
+           ['unterrichtsphase','unterrichtsphase'], ['sozialform','sozialform'],
+           ['offenheit','offenheit'], ['kognitive_anforderung','kognitiveAnforderung'],
+           ['differenzierungspotenzial','differenzierung'],
+           ['sprachliche_zugaenglichkeit','sprache'], ['unterstuetzung','unterstuetzung'],
+           ['niveau','niveau'], ['umfang','umfang'], ['operator','operator'],
+           ['hat_loesung','hatLoesung'], ['kontext','kontext']
+          ].forEach(function(p) {
+            var v = r[p[0]];
+            if (v !== null && v !== undefined && v !== '') _it[p[1]] = v;
           });
+          _byQ[qn].items.push(_it);
         });
 
         var _out = {

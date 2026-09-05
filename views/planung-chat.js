@@ -56,6 +56,23 @@ function _pcEnsureLoaded(key) {
     .then(function() { _pcLoading = false; _pcRender(); });
 }
 
+// Verlauf verwerfen — für den Neuanlauf: Voraussetzungen ändern, dann noch
+// einmal von vorn, damit ein Vorschlag wirklich von der KI kommt und nicht
+// aus dem, was im selben Gespräch schon vorgesagt wurde.
+// Löscht nur das Gespräch, nichts an der Planung.
+async function _pcVerlaufVerwerfen() {
+  if (!_pcChatKey || _pcRunning) return;
+  const key = _pcChatKey;
+  _pcMsgs = []; _pcApi = [];
+  _pcLoadedKey = key;          // nicht erneut aus der Tabelle nachladen
+  _pcRender();
+  try {
+    await sbDelete('chats', key);
+  } catch (e) {
+    console.warn('[Chat] Verlauf konnte nicht gelöscht werden:', e.message);
+  }
+}
+
 // Kürzt sehr lange Tool-Ergebnisse (readDatenbank liefert schnell 100 kB),
 // damit ein Verlauf nicht unbegrenzt wächst. Die KI kann das Tool bei Bedarf
 // erneut aufrufen.
@@ -1453,6 +1470,21 @@ function _pcBuildChatUI(wrap, sendFn, placeholder, planAllFn) {
     const pfeil = tx('span', 'pc-klapp', zu ? '▸' : '▾');
     hdr.insertBefore(pfeil, hdr.firstChild);
     hdr.onclick = () => { S.open[zuKey] = !zu; render(); };
+
+    if (!zu) {
+      const neu = btn('↺ Verlauf verwerfen', 'btn btn-ghost btn-xs pc-neu');
+      neu.title = 'Gespräch löschen und neu ansetzen — an der Planung ändert sich nichts';
+      neu.onclick = (e) => {
+        e.stopPropagation();          // sonst klappt der Kopf zu
+        if (_pcRunning) return;
+        if (!_pcMsgs.length) return;
+        if (!confirm('Diesen Gesprächsverlauf verwerfen?\n\n'
+          + _pcMsgs.length + ' Nachrichten werden gelöscht. Angelegte Reihen, Stunden '
+          + 'und Materialzuordnungen bleiben bestehen — nur das Gespräch ist weg.')) return;
+        _pcVerlaufVerwerfen();
+      };
+      hdr.appendChild(neu);
+    }
   }
   if (zu) return;   // Körper gar nicht erst aufbauen
 

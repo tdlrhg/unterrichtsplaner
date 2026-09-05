@@ -1105,6 +1105,8 @@ textarea::placeholder { color: #c4cdd6; }
 /* 220 statt 360: der Weg zum oberen Rand ist der Weg zurück auf die Seite */
 .pc-messages { max-height:220px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; min-height:40px; }
 .pc-klapp { color:var(--tx3); font-size:11px; margin-right:6px; }
+/* schiebt sich an den rechten Rand der Chat-Kopfzeile */
+.pc-neu { margin-left:auto; }
 .pc-msg { max-width:90%; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.5; }
 .pc-user { align-self:flex-end; background:var(--pri); color:#fff; border-bottom-right-radius:2px; }
 .pc-assistant { align-self:flex-start; background:var(--surf2); border:1px solid var(--bord); border-bottom-left-radius:2px; }

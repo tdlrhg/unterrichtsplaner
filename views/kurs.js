@@ -93,13 +93,13 @@ function buildFpTree(lp, sel) {
     }
     if (onChat) {
       const cb = mk('button', 'fp-tree-act-btn' + (chatLabel ? ' fp-tree-act-btn--label' : ''));
-      cb.textContent = chatLabel || '✨'; cb.title = chatTitle || 'Reihen planen';
+      cb.textContent = chatLabel || '💬'; cb.title = chatTitle || 'Reihen planen';
       cb.onclick = e => { e.stopPropagation(); onChat(); };
       actions.appendChild(cb);
     }
     if (onFein) {
       const fb = mk('button', 'fp-tree-act-btn fp-tree-act-btn--label');
-      fb.textContent = '✨ Fein';
+      fb.textContent = '💬 Fein';
       fb.title = 'Feinplanung besprechen — Didaktik, Methoden, Phasen';
       fb.onclick = e => { e.stopPropagation(); onFein(); };
       actions.appendChild(fb);
@@ -158,7 +158,7 @@ function buildFpTree(lp, sel) {
     addS.onclick = () => { S.modal = { type: 'newStunde', data: { fpId, blockId, reiheId: reihe.id, einheitId: gruppe.id } }; render(); };
     acts.appendChild(addS);
     const chat = mk('button', 'fp-tree-act-btn');
-    chat.textContent = '✨'; chat.title = 'Feinplanung besprechen';
+    chat.textContent = '💬'; chat.title = 'Feinplanung besprechen';
     chat.onclick = () => {
       const k = 'einheitChat_' + gruppe.id;
       // Immer nur ein Feinplanungs-Chat offen
@@ -265,7 +265,7 @@ function buildFpTree(lp, sel) {
         onEdit: () => { S.modal = { type: 'editReihe', data: { reihe, fpId: lp.id, blockId: block.id } }; render(); },
         editLabel: '✏ Bearbeiten',
         // Der Stunden-Chat war bisher nur über „Bearbeiten" im Overlay erreichbar
-        chatLabel: '✨ Stunden',
+        chatLabel: '💬 Stunden',
         chatTitle: 'Stunden planen — Themen, Abfolge, Material',
         onChat: () => {
           const k = 'reiheChat_' + reihe.id;

@@ -97,11 +97,12 @@ function modalHandlerPlanung(type, data, m) {
       m.appendChild(gefahr);
     }
 
-    const sv = btn('Speichern', 'btn btn-ghost');
+    const sv = btn('Speichern', 'btn btn-pri');
     sv.onclick = () => { if (!saveFields()) return; S.modal = null; scheduleSave(); render(); };
     footer.appendChild(sv);
 
-    const planBtn = btn('✨ Stunden planen', 'btn btn-pri');
+    // Öffnet nur den Chat — ruft keine KI auf. Deshalb weder ✨ noch „planen“.
+    const planBtn = btn('💬 Stunden-Chat öffnen', 'btn btn-ghost');
     planBtn.onclick = () => {
       if (!saveFields()) return;
       S.modal = null;

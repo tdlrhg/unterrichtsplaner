@@ -54,7 +54,21 @@ function buildTopbar() {
   const bar = mk('div', 'topbar');
   bar.appendChild(buildAppNav('up'));
   const right = mk('div', 'topbar-right');
-  if (S.saving) {
+  if (S.konflikt) {
+    // Nach einem Konflikt wird nichts mehr geschrieben. Das darf niemals wie
+    // "gespeichert" aussehen – sonst arbeitet man weiter ins Leere.
+    const k = mk('div', 'save-konflikt');
+    k.appendChild(tx('span', '', '⚠ NICHT gespeichert'));
+    k.title = 'Die Planung wurde woanders geändert. Seit dem Hinweis wird nichts '
+      + 'mehr gespeichert. Klicken zum Neu laden – ungespeicherte Eingaben gehen '
+      + 'dabei verloren.';
+    k.onclick = () => {
+      if (confirm('Seit dem Konflikt wurde nichts mehr gespeichert.\n\n'
+        + 'Neu laden holt den Stand vom Server. Alles, was du seitdem eingetragen '
+        + 'hast, ist danach weg.\n\nJetzt neu laden?')) location.reload(true);
+    };
+    right.appendChild(k);
+  } else if (S.saving) {
     const s = mk('div', '');
     s.style.display = 'flex'; s.style.alignItems = 'center'; s.style.gap = '6px';
     s.appendChild(mk('span', 'save-dot'));

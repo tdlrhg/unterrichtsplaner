@@ -31,6 +31,10 @@ body { font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif; back
 .topbar-version { font-size: 11px; opacity: .6; letter-spacing: .02em; }
 .save-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; display: inline-block; animation: blink 1s infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+/* Konflikt: es wird NICHT mehr gespeichert – muss unübersehbar sein */
+.save-konflikt { display: flex; align-items: center; gap: 6px; background: #dc2626; color: #fff; font-weight: 700; font-size: 12px; padding: 3px 10px; border-radius: 5px; cursor: pointer; animation: konfliktPuls 1.4s infinite; }
+.save-konflikt:hover { background: #b91c1c; animation: none; }
+@keyframes konfliktPuls { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.7)} 70%{box-shadow:0 0 0 7px rgba(220,38,38,0)} }
 
 /* ── Layout ── */
 .app { display: flex; height: calc(100vh - 52px); }

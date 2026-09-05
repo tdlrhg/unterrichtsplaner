@@ -10,12 +10,16 @@ function openTaskModal(group, opts) {
   var onDone  = opts.onRefresh;
   var navList = opts.navList || null;
   var navIdx  = opts.navIdx  != null ? opts.navIdx : -1;
+  // Beim Blättern zum nächsten Eintrag denselben Reiter offen lassen — das
+  // Fenster wird dabei neu aufgebaut, sonst landet man wieder auf Grunddaten.
+  var startTab = opts.tab != null ? opts.tab : 0;
+  var aktiverTab = startTab;
   var doSave; // wird weiter unten zugewiesen – navTo nutzt Closure-Referenz
   function navTo(idx) {
     (doSave ? doSave({ noClose: true, silent: true }) : Promise.resolve())
       .catch(function() {})
       .then(function() {
-        openTaskModal(navList[idx], { mode: 'edit', onRefresh: onDone, navList: navList, navIdx: idx });
+        openTaskModal(navList[idx], { mode: 'edit', onRefresh: onDone, navList: navList, navIdx: idx, tab: aktiverTab });
       });
   }
   var items   = (group.items && group.items.length) ? group.items : [{}];
@@ -91,9 +95,10 @@ function openTaskModal(group, opts) {
   var tabs = [], panes = [];
   ['📋 Grunddaten', '📚 Unterrichtsdaten', '✏️ Prüfungsdaten'].forEach(function(label, idx) {
     var tab = document.createElement('button');
-    tab.className = 'db-modal-tab' + (idx === 0 ? ' active' : '');
+    tab.className = 'db-modal-tab' + (idx === startTab ? ' active' : '');
     tab.textContent = label;
     tab.onclick = function() {
+      aktiverTab = idx;
       tabs.forEach(function(t, i) { t.classList.toggle('active', i === idx); });
       panes.forEach(function(p, i) { p.classList.toggle('active', i === idx); });
       // Auto-Resize nachziehen — scrollHeight ist 0, solange Pane display:none war
@@ -334,7 +339,7 @@ function openTaskModal(group, opts) {
   }
 
   // ── Pane 0: Grunddaten (gemeinsam) ────────────────────────────
-  var p0 = mk('div', 'db-modal-tab-pane split active'); panes.push(p0);
+  var p0 = mk('div', 'db-modal-tab-pane split' + (startTab === 0 ? ' active' : '')); panes.push(p0);
   var R0 = mkR();
   sec(R0, 'Quelle');
   ssel(R0, 'Herkunft', 'quelle_typ', HERKUNFT_OPTS);
@@ -454,7 +459,7 @@ function openTaskModal(group, opts) {
   tabBodyEl.appendChild(p0);
 
   // ── Pane 1: Unterrichtsdaten ──────────────────────────────────────
-  var p1 = mk('div', 'db-modal-tab-pane scroll'); panes.push(p1);
+  var p1 = mk('div', 'db-modal-tab-pane scroll' + (startTab === 1 ? ' active' : '')); panes.push(p1);
 
   // Anforderung + Niveau oben (pro Teilaufgabe)
   if (isMulti) {
@@ -536,7 +541,7 @@ function openTaskModal(group, opts) {
   tabBodyEl.appendChild(p1);
 
   // ── Pane 2: Prüfungsdaten ─────────────────────────────────────
-  var p2 = mk('div', 'db-modal-tab-pane ' + (isMulti ? 'scroll' : 'split')); panes.push(p2);
+  var p2 = mk('div', 'db-modal-tab-pane ' + (isMulti ? 'scroll' : 'split') + (startTab === 2 ? ' active' : '')); panes.push(p2);
   if (isMulti) {
     sec(p2, 'Prüfungskontext');
     var p2r1 = fieldRow(); p2r1.style.gridTemplateColumns = 'repeat(2,1fr)';

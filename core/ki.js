@@ -98,28 +98,46 @@ async function callKI(prompt, { model = KI_MODEL_SONNET, maxTokens = 1024, label
 
 // Multi-turn Agent-Aufruf mit Tool-Use und Gesprächshistorie.
 // messages: vollständige Anthropic-Message-Array (wird extern verwaltet).
+// signal  : AbortSignal, um einen laufenden Aufruf abzubrechen (Stopp-Knopf).
+//           Ein Abbruch wirft KI_ABBRUCH – der Aufrufer soll das nicht als
+//           Fehler anzeigen, sondern als bewusste Unterbrechung.
 // Gibt das vollständige API-Response-Objekt zurück (nicht nur Text).
-async function callKIAgent({ messages, tools = [], system = '', model = KI_MODEL_SONNET, maxTokens = 8192, label = null } = {}) {
+const KI_ABBRUCH = 'KI_ABBRUCH';
+
+async function callKIAgent({ messages, tools = [], system = '', model = KI_MODEL_SONNET, maxTokens = 8192, label = null, signal = null } = {}) {
   const antKey = localStorage.getItem('ant_key');
   if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
   const body = { model, max_tokens: maxTokens, messages };
   if (tools.length) body.tools = tools;
   if (system) body.system = system;
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': antKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
+  let res;
+  try {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': antKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal,
+    });
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error(KI_ABBRUCH);
+    throw e;
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err?.error?.message || res.statusText);
   }
-  const json = await res.json();
+  let json;
+  try {
+    json = await res.json();   // kann beim Abbruch mitten im Body reißen
+  } catch (e) {
+    if (e.name === 'AbortError') throw new Error(KI_ABBRUCH);
+    throw e;
+  }
   logKIUsage(model, label, json.usage);
   return json;
 }

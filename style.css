@@ -1101,6 +1101,7 @@ textarea::placeholder { color: #c4cdd6; }
 .pc-spinner { display:inline-block; width:14px; height:14px; border:2px solid var(--bord); border-top-color:var(--pri); border-radius:50%; animation:pc-spin .8s linear infinite; flex-shrink:0; }
 @keyframes pc-spin { to { transform:rotate(360deg); } }
 .pc-tool-badge { display:block; font-size:12px; color:var(--tx2); padding:3px 0; margin-top:2px; }
+.pc-abbruch { font-size:12px; font-weight:600; color:var(--red); margin-top:6px; }
 .pc-input-row { display:flex; gap:8px; align-items:flex-end; }
 .pc-input { flex:1; resize:vertical; min-height:60px; font-size:13px; }
 .pc-input:disabled { opacity:.5; }

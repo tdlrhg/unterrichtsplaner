@@ -13,6 +13,18 @@ let _pcReiheId   = null;  // null = Block-Chat, reihe.id = Reihen- oder Einheite
 let _pcEinheitId = null;  // Gruppen-ID, oder null = Feinplanung über die ganze Reihe
 let _pcFeinModus = false; // true = Einheiten-Chat (Feinplanung), unabhängig von Gruppen
 let _pcRunning   = false;
+let _pcAbort     = null;   // AbortController des laufenden KI-Aufrufs
+let _pcStop      = false;  // Stopp gedrückt: Schleife nach dem aktuellen Schritt beenden
+
+// Bricht den laufenden Agenten ab. Der aktuelle KI-Aufruf wird sofort beendet,
+// ein gerade laufendes Tool läuft noch zu Ende — abgebrochen wird davor und
+// danach, nie mittendrin. Bereits Angelegtes bleibt bestehen.
+function _pcStoppen() {
+  if (!_pcRunning) return;
+  _pcStop = true;
+  if (_pcAbort) { try { _pcAbort.abort(); } catch (e) {} }
+  _pcRender();
+}
 
 // ── Persistenz ───────────────────────────────────────────────────────
 // Verläufe liegen in der Supabase-Tabelle „chats", adressiert über
@@ -756,6 +768,14 @@ const _PC_TOOL_LABELS = {
   editReihe:      '✏ Bearbeite Reihe …',
 };
 
+// Markiert den laufenden Zug im Verlauf als abgebrochen. Die bis dahin
+// ausgeführten Tools bleiben sichtbar — sie sind ja auch tatsächlich passiert.
+function _pcAbbruchAnzeigen(thinkMsg) {
+  thinkMsg.isThinking = false;
+  thinkMsg.abgebrochen = true;
+  _pcRender();
+}
+
 function _pcRender() {
   const el = document.getElementById('pc-messages');
   if (!el) return;
@@ -790,9 +810,12 @@ function _pcRender() {
       const row = mk('div', 'pc-thinking-row');
       const spinner = mk('span', 'pc-spinner');
       row.appendChild(spinner);
-      row.appendChild(tx('span', 'pc-thinking', m.toolCalls && m.toolCalls.length ? 'Warte auf Antwort …' : 'KI denkt …'));
+      row.appendChild(tx('span', 'pc-thinking', _pcStop
+        ? 'Abbruch läuft …'
+        : (m.toolCalls && m.toolCalls.length ? 'Warte auf Antwort …' : 'KI denkt …')));
       d.appendChild(row);
     }
+    if (m.abgebrochen) d.appendChild(tx('div', 'pc-abbruch', '⏹ Abgebrochen'));
     el.appendChild(d);
   });
   el.scrollTop = el.scrollHeight;
@@ -801,8 +824,21 @@ function _pcRender() {
   const sbtn = document.getElementById('pc-send');
   const pbtn = document.getElementById('pc-planall');
   if (inp)  inp.disabled  = _pcRunning;
-  if (sbtn) sbtn.disabled = _pcRunning;
   if (pbtn) pbtn.disabled = _pcRunning;
+  // Der Senden-Knopf wird während des Laufs zum Stopp-Knopf
+  if (sbtn) {
+    if (_pcRunning) {
+      sbtn.textContent = _pcStop ? 'Bricht ab …' : '⏹ Stopp';
+      sbtn.className = 'btn btn-danger btn-sm';
+      sbtn.disabled = _pcStop;
+      sbtn.title = 'Bricht die laufende Antwort ab. Bereits Angelegtes bleibt bestehen.';
+    } else {
+      sbtn.textContent = 'Senden ↵';
+      sbtn.className = 'btn btn-primary btn-sm';
+      sbtn.disabled = false;
+      sbtn.title = '';
+    }
+  }
 }
 
 async function _pcSend(fp, context, text) {
@@ -1101,7 +1137,10 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
 
   try {
     while (true) {
-      const resp = await callKIAgent({ messages: _pcApi, tools, system, maxTokens: 8192, label: 'planungs-agent' });
+      _pcAbort = new AbortController();
+      const resp = await callKIAgent({ messages: _pcApi, tools, system, maxTokens: 8192,
+        label: 'planungs-agent', signal: _pcAbort.signal });
+      _pcAbort = null;
 
       _pcApi.push({ role: 'assistant', content: resp.content });
 
@@ -1116,21 +1155,46 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
         break;
       }
 
+      // Stopp direkt vor den Tools: nichts mehr anlegen, was du nicht willst.
+      if (_pcStop) { _pcAbbruchAnzeigen(thinkMsg); break; }
+
       const results = [];
       for (const tu of toolUses) {
         thinkMsg.toolCalls.push({ name: tu.name });
         _pcRender();
         const res = await _pcExecTool(tu.name, tu.input, fp);
         results.push({ type: 'tool_result', tool_use_id: tu.id, content: res });
+        if (_pcStop) break;   // Rest der Tool-Liste nicht mehr ausführen
       }
+
+      if (_pcStop) {
+        // Die Historie muss zu jedem tool_use ein tool_result enthalten, sonst
+        // lehnt die API den nächsten Aufruf ab. Fehlende nachtragen.
+        toolUses.slice(results.length).forEach(tu => {
+          results.push({ type: 'tool_result', tool_use_id: tu.id,
+            content: 'Von der Lehrerin abgebrochen — nicht ausgeführt.' });
+        });
+        _pcApi.push({ role: 'user', content: results });
+        _pcAbbruchAnzeigen(thinkMsg);
+        break;
+      }
+
       _pcApi.push({ role: 'user', content: results });
     }
   } catch (e) {
     thinkMsg.isThinking = false;
-    thinkMsg.text = (thinkMsg.text ? thinkMsg.text + '\n\n' : '') + '⚠ Fehler: ' + e.message;
+    if (e.message === KI_ABBRUCH) {
+      // Abgebrochene Antwort: es gibt keinen assistant-Zug dazu, die Historie
+      // bleibt also gültig. Der Verlauf endet mit der Nutzerfrage.
+      _pcAbbruchAnzeigen(thinkMsg);
+    } else {
+      thinkMsg.text = (thinkMsg.text ? thinkMsg.text + '\n\n' : '') + '⚠ Fehler: ' + e.message;
+    }
     _pcRender();
   }
 
+  _pcAbort = null;
+  _pcStop = false;
   _pcRunning = false;
   _pcRender();
   _pcPersist(einheit ? einheit.titel : (reihe ? reihe.titel : block.titel));
@@ -1151,7 +1215,7 @@ function _pcBuildChatUI(wrap, sendFn, placeholder, planAllFn) {
 
   const sendBtn = btn('Senden ↵', 'btn btn-primary btn-sm');
   sendBtn.id = 'pc-send';
-  sendBtn.onclick = sendFn;
+  sendBtn.onclick = () => { if (_pcRunning) _pcStoppen(); else sendFn(); };
 
   inputRow.appendChild(ta);
   inputRow.appendChild(sendBtn);

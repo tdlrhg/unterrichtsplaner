@@ -269,7 +269,7 @@ const PC_STUNDEN_TOOLS = [
   },
   {
     name: 'readDatenbank',
-    description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Nur strukturiert erfasstes Material ist hier zu finden — eigenes Material der Lehrerin steht oft nicht drin.',
+    description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
     input_schema: {
       type: 'object',
       properties: {
@@ -352,7 +352,7 @@ const PC_EINHEIT_TOOLS = [
   },
   {
     name: 'readDatenbank',
-    description: 'Durchsucht die Materialdatenbank. Nur strukturiert erfasstes Material ist hier zu finden — eigenes Material der Lehrerin steht oft nicht drin.',
+    description: 'Durchsucht die Materialdatenbank. Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
     input_schema: {
       type: 'object',
       properties: {
@@ -712,16 +712,56 @@ async function _pcExecTool(name, input, fp) {
         var _rows = await sbSelectAll('inhalte', { filters: _dbFilters, rawParams: _dbRawParams, limit: 500 });
 
         // Thema-Suche client-seitig
+        var _alleRows = _rows;
+        var _wortSuche = null;
         if (input.thema) {
-          var _q = input.thema.toLowerCase();
-          _rows = _rows.filter(function(r) {
-            return (r.thema || '').toLowerCase().includes(_q) ||
-                   (r.kapitel || '').toLowerCase().includes(_q) ||
-                   (r.uk_titel || '').toLowerCase().includes(_q) ||
-                   (r.nr || '').toLowerCase().includes(_q) ||
-                   (r.aufgabenstellung || '').toLowerCase().includes(_q) ||
-                   (r.inhalt || '').toLowerCase().includes(_q);
-          });
+          var _passt = function(r, q) {
+            return (r.thema || '').toLowerCase().includes(q) ||
+                   (r.kapitel || '').toLowerCase().includes(q) ||
+                   (r.uk_titel || '').toLowerCase().includes(q) ||
+                   (r.nr || '').toLowerCase().includes(q) ||
+                   (r.aufgabenstellung || '').toLowerCase().includes(q) ||
+                   (r.inhalt || '').toLowerCase().includes(q);
+          };
+          var _q = input.thema.toLowerCase().trim();
+          _rows = _alleRows.filter(function(r) { return _passt(r, _q); });
+
+          // Ganze Wendung nicht gefunden? Ein Stundentitel wie
+          // „Ökosystem-Grundbegriffe: Ökosystem, Biotop, Biozönose" steht so
+          // in keinem Feld. Also die Einzelwörter versuchen, bevor wir
+          // behaupten, es gebe nichts.
+          if (!_rows.length) {
+            var _woerter = _q.split(/[^0-9a-zäöüßáéíóúàèìòùâêîôûç]+/i)
+              .filter(function(w) { return w.length >= 4; });
+            if (_woerter.length) {
+              _rows = _alleRows.filter(function(r) {
+                return _woerter.some(function(w) { return _passt(r, w); });
+              });
+              if (_rows.length) _wortSuche = _woerter;
+            }
+          }
+
+          // Immer noch nichts: nicht einfach „keine Treffer" melden, sondern
+          // zeigen, welche Themen es in diesem Fach überhaupt gibt. Sonst
+          // schließt die KI auf eine leere Datenbank, obwohl nur das Wort
+          // nicht passte.
+          if (!_rows.length) {
+            var _vorhanden = [];
+            _alleRows.forEach(function(r) {
+              var t = r.kapitel || r.thema;
+              if (t && _vorhanden.indexOf(t) < 0) _vorhanden.push(t);
+            });
+            return JSON.stringify({
+              gesamt: 0,
+              gesucht: input.thema,
+              hinweis: 'Kein Treffer für diesen Suchbegriff — das heißt NICHT, dass es '
+                + 'kein Material gibt. Die Suche vergleicht Zeichenketten: Suche mit '
+                + 'einzelnen deutschen Begriffen statt mit ganzen Stundentiteln, und '
+                + 'nimm einen der unten aufgeführten Themenbegriffe.',
+              vorhandeneThemen: _vorhanden.slice(0, 80),
+              materialInsgesamt: _alleRows.length
+            });
+          }
         }
 
         // Ohne Suchbegriff wird nicht der ganze Katalog ausgeliefert, sondern
@@ -815,6 +855,10 @@ async function _pcExecTool(name, input, fp) {
             return { quelle: qn, typ: _byQ[qn].typ, materialien: _byQ[qn].items };
           })
         };
+        if (_wortSuche) {
+          _out.hinweis = 'Die ganze Wendung „' + input.thema + '" kam nicht vor; '
+            + 'gesucht wurde nach den Einzelwörtern: ' + _wortSuche.join(', ') + '.';
+        }
         if (_gekuerzt) {
           _out.gezeigt = _MAX;
           _out.hinweis = 'Nur die ersten ' + _MAX + ' von ' + _rows.length

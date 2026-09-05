@@ -895,15 +895,16 @@ async function _pcExecTool(name, input, fp) {
           };
           // Felder aus dem KI-Fingerprint. Nur die planungsrelevanten und nur,
           // wenn gefüllt — sonst blaeht sich die Antwort mit null-Feldern auf.
-          // Die rechnerischen (rechenbarkeit, mathematische_objekte) bleiben
-          // draussen, sie helfen bei der Stundenplanung nicht.
+          // mathematische_objekte heißt historisch so, enthält aber die
+          // fachlichen Objekte des Fachs; rechenbarkeit bleibt draußen.
           [['rolle_in_reihe','rolleInReihe'], ['didaktische_funktion','didaktischeFunktion'],
            ['unterrichtsphase','unterrichtsphase'], ['sozialform','sozialform'],
            ['offenheit','offenheit'], ['kognitive_anforderung','kognitiveAnforderung'],
            ['differenzierungspotenzial','differenzierung'],
            ['sprachliche_zugaenglichkeit','sprache'], ['unterstuetzung','unterstuetzung'],
            ['niveau','niveau'], ['umfang','umfang'], ['operator','operator'],
-           ['hat_loesung','hatLoesung'], ['kontext','kontext']
+           ['hat_loesung','hatLoesung'], ['kontext','kontext'],
+           ['mathematische_objekte','fachobjekte'], ['vorkenntnisse','vorkenntnisse']
           ].forEach(function(p) {
             var v = r[p[0]];
             if (v !== null && v !== undefined && v !== '') _it[p[1]] = v;

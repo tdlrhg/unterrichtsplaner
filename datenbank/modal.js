@@ -513,7 +513,9 @@ function openTaskModal(group, opts) {
   themaDisp.style.cssText = 'font-size:13px;color:var(--tx2);padding:5px 8px;border:1px solid var(--bord);'
     + 'border-radius:6px;min-height:28px;background:var(--bg2,rgba(0,0,0,.02));';
   qB.appendChild(labeled('Thema', themaDisp));
-  sfld(qB, 'Mathematische Objekte', 'mathematische_objekte', 'text', 'z.B. Brüche, Verhältnisse');
+  // Spaltenname historisch mathematische_objekte — gemeint sind die fachlichen
+  // Objekte des jeweiligen Fachs, deshalb neutrale Beschriftung.
+  sfld(qB, 'Fachliche Objekte', 'mathematische_objekte', 'text', 'z.B. Brüche, Ökosystem, Bindungstyp');
   sfld(qB, 'Vorkenntnisse', 'vorkenntnisse', 'text', 'z.B. Grundrechenarten');
   qGrid.appendChild(qB);
 

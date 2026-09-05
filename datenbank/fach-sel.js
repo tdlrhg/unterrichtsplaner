@@ -110,7 +110,15 @@ async function _analyzeFingerprint(g) {
     + '"hilfsmittel":"<ohne|tr|geodreieck|formelsammlung|alle>",'
     + '"differenzierungspotenzial":"<niedrig|mittel|hoch>",'
     + '"sprachliche_zugaenglichkeit":"<zugaenglich|eingeschraenkt|komplex>",'
-    + '"mathematische_objekte":"<kommagetrennt>",'
+    // Das Feld heißt in der Tabelle noch mathematische_objekte, meint aber die
+    // fachlichen Objekte des jeweiligen Fachs — in Bio Ökosystem oder Population,
+    // in Chemie Reaktionsgleichung oder Bindungstyp.
+    + '"mathematische_objekte":"<kommagetrennt: die fachlichen Objekte und Begriffe, '
+    + 'um die es in diesem Material geht — in ' + fachLabel + ' also z.B. '
+    + ({ Mathematik: 'Bruch, Term, lineare Funktion',
+         Biologie:   'Ökosystem, Population, Enzym',
+         Chemie:     'Reaktionsgleichung, Bindungstyp, Redoxreaktion' }[fachLabel]
+        || 'die zentralen Fachbegriffe') + '>",'
     + '"vorkenntnisse":"<kommagetrennt>",'
     + '"klp_kompetenz":"<konkretisierte Kompetenzerwartung, 1 Satz>",'
     + '"thema":"<fachliches Kernthema, max. 5 Wörter, z.B. Bruchrechnung oder Korrosion – Grundlagen>"'

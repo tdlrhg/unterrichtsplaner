@@ -183,7 +183,7 @@ const PC_TOOLS = [
     input_schema: {
       type: 'object',
       properties: {
-        thema: { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort — leer lassen für alle Materialien des Fachs' },
+        thema: { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort. OHNE thema bekommst du eine Übersicht: welche Quelle deckt welche Themen wie stark ab — gut, um sich einen Überblick zu verschaffen. MIT thema bekommst du die einzelnen Materialien dazu. Zweischrittig vorgehen: erst Übersicht, dann gezielt nachfragen.' },
         jahrgang: { type: 'string', description: 'Nach Jahrgang filtern, z.B. "9" (optional)' },
         inhaltstyp: { type: 'string', description: 'Nach Typ filtern: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext (optional)' },
         format:     { type: 'string', description: 'Nach Form filtern: Spiel | Rätsel | Experiment | Wettbewerb (optional)' }
@@ -273,7 +273,7 @@ const PC_STUNDEN_TOOLS = [
     input_schema: {
       type: 'object',
       properties: {
-        thema: { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort — leer lassen für alle Materialien des Fachs' },
+        thema: { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort. OHNE thema bekommst du eine Übersicht: welche Quelle deckt welche Themen wie stark ab — gut, um sich einen Überblick zu verschaffen. MIT thema bekommst du die einzelnen Materialien dazu. Zweischrittig vorgehen: erst Übersicht, dann gezielt nachfragen.' },
         jahrgang: { type: 'string', description: 'Nach Jahrgang filtern, z.B. "9" (optional)' },
         inhaltstyp: { type: 'string', description: 'Nach Typ filtern: arbeitsblatt|loesung|lehrerkommentar|lzk|lehrtext (optional)' },
         format:     { type: 'string', description: 'Nach Form filtern: Spiel | Rätsel | Experiment | Wettbewerb (optional)' }
@@ -356,7 +356,7 @@ const PC_EINHEIT_TOOLS = [
     input_schema: {
       type: 'object',
       properties: {
-        thema:      { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort' },
+        thema:      { type: 'string', description: 'Suchbegriff für Thema, Kapitel oder Stichwort. Ohne thema kommt nur eine Übersicht der Quellen — auf dieser Ebene brauchst du fast immer einen Suchbegriff.' },
         jahrgang:   { type: 'string', description: 'Nach Jahrgang filtern (optional)' },
         inhaltstyp: { type: 'string', description: 'Nach Typ filtern (optional)' },
         format:     { type: 'string', description: 'Nach Form filtern: Spiel | Rätsel | Experiment | Wettbewerb (optional)' }
@@ -724,9 +724,57 @@ async function _pcExecTool(name, input, fp) {
           });
         }
 
-        // Nach Quelle gruppieren für kompakte Ausgabe
+        // Ohne Suchbegriff wird nicht der ganze Katalog ausgeliefert, sondern
+        // eine Landkarte: welche Quelle deckt welche Themen wie stark ab.
+        // Der Katalog eines Fachs sind bei Mathe 1399 Einträge ≈ 96.000 Tokens,
+        // die dann in JEDEM weiteren Zug des Gesprächs erneut mitgeschickt
+        // werden. Für den Reihenschnitt genügt die Landkarte; Einzeltreffer
+        // holt man mit einem zweiten Aufruf mit thema.
+        if (!input.thema) {
+          var _ueb = {}, _uOrder = [];
+          _rows.forEach(function(r) {
+            var qn = r.quelle_name || '(ohne Quelle)';
+            if (!_ueb[qn]) {
+              _ueb[qn] = { quelle: qn, typ: r.quelle_typ, anzahl: 0,
+                           typen: {}, themen: [], jahrgaenge: [], formate: [] };
+              _uOrder.push(qn);
+            }
+            var b = _ueb[qn];
+            b.anzahl++;
+            var it = r.inhaltstyp || 'ohne Typ';
+            b.typen[it] = (b.typen[it] || 0) + 1;
+            var th = r.kapitel || r.thema;
+            if (th && b.themen.indexOf(th) < 0) b.themen.push(th);
+            if (r.jahrgang && b.jahrgaenge.indexOf(r.jahrgang) < 0) b.jahrgaenge.push(r.jahrgang);
+            (r.formate || []).forEach(function(f) { if (b.formate.indexOf(f) < 0) b.formate.push(f); });
+          });
+          return JSON.stringify({
+            uebersicht: true,
+            gesamt: _rows.length,
+            hinweis: 'Landkarte des vorhandenen Materials, keine Einzeltreffer. '
+              + 'Für konkrete Aufgaben, Arbeitsblätter oder Texte rufe readDatenbank '
+              + 'erneut mit thema auf (z.B. thema: "Prozentrechnung").',
+            quellen: _uOrder.map(function(qn) {
+              var b = _ueb[qn];
+              return {
+                quelle: b.quelle, typ: b.typ, anzahl: b.anzahl, typen: b.typen,
+                jahrgaenge: b.jahrgaenge.sort(),
+                formate: b.formate,
+                themen: b.themen.slice(0, 40),
+                weitereThemen: Math.max(0, b.themen.length - 40)
+              };
+            })
+          });
+        }
+
+        // Mit Suchbegriff: Einzeltreffer wie bisher, aber gedeckelt — auch eine
+        // breite Suche darf das Gespräch nicht fluten.
+        var _MAX = 60;
+        var _gekuerzt = _rows.length > _MAX;
+        var _zeige = _rows.slice(0, _MAX);
+
         var _byQ = {}, _qOrder = [];
-        _rows.forEach(function(r) {
+        _zeige.forEach(function(r) {
           var qn = r.quelle_name || '(ohne Quelle)';
           if (!_byQ[qn]) { _byQ[qn] = { typ: r.quelle_typ, items: [] }; _qOrder.push(qn); }
           _byQ[qn].items.push({
@@ -742,12 +790,18 @@ async function _pcExecTool(name, input, fp) {
           });
         });
 
-        return JSON.stringify({
+        var _out = {
           gesamt: _rows.length,
           quellen: _qOrder.map(function(qn) {
             return { quelle: qn, typ: _byQ[qn].typ, materialien: _byQ[qn].items };
           })
-        });
+        };
+        if (_gekuerzt) {
+          _out.gezeigt = _MAX;
+          _out.hinweis = 'Nur die ersten ' + _MAX + ' von ' + _rows.length
+            + ' Treffern. Grenze mit einem genaueren thema, jahrgang oder inhaltstyp weiter ein.';
+        }
+        return JSON.stringify(_out);
       } catch(e) {
         return JSON.stringify({ error: 'Datenbank nicht verfügbar: ' + e.message });
       }
@@ -1212,7 +1266,7 @@ Weiteres Vorgehen:
     system = `Du bist Planungsassistentin für ${fachName} Jahrgang ${fp.jahrgang} an einem NRW-Gymnasium.
 Dein Auftrag: Plane Unterrichtsreihen für den Block ${blockInfo}.${notizInfo}${grundlagenBlock}
 Gehe immer so vor:
-1. Rufe readPlan, readKLP und readDatenbank je genau EINMAL auf – zu Beginn. Wiederhole diese Aufrufe nicht.
+1. Rufe readPlan, readKLP und readDatenbank je einmal auf – zu Beginn. readDatenbank ohne thema liefert eine Übersicht, welche Quelle welche Themen wie stark abdeckt; für die Reihenstruktur reicht das. Nur wenn du für eine bestimmte Reihe wissen musst, was konkret vorliegt, rufe readDatenbank ein zweites Mal mit thema auf. Nicht mehr als drei solcher Nachfragen, und keine ohne Anlass.
 2. Werte das Materialangebot aus readDatenbank aus: Welche Themen sind durch vorhandenes Material gut abgedeckt? Stundenverläufe (inhaltstyp stundenverlauf) sind ausgearbeitete Unterrichtskonzepte — ein Thema mit einem Stundenverlauf ist besonders gut ausgestattet. Orientiere die Reihenstruktur am tatsächlich vorhandenen Material — gut ausgestattete Themen verdienen eine eigene Reihe, schwach ausgestattete können zusammengefasst oder als Hinweis markiert werden. Der KLP (readKLP) ist Hintergrundwissen, keine Vorgabe: Wenn das vorhandene Material oder die Notizen der Lehrerin bewusst von der KLP-Reihenfolge oder -Schwerpunktsetzung abweichen, folge dem Material und den Notizen — versuche nicht, die Struktur wieder an den KLP anzugleichen.
 3. Prüfe, welche Reihen bereits vorhanden sind. Erstelle KEINE Duplikate bestehender Reihen.
 4. Wenn der Block bereits vollständig geplant ist, bestätige das kurz – lege nichts Neues an.

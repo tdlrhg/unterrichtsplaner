@@ -1039,8 +1039,13 @@ function buildImportView(container) {
         'Gleiche Quelle · Seite ' + (lastSeite ? lastSeite + 1 : '?'),
         function() {
           seiteInp.value = lastSeite ? lastSeite + 1 : '';
-          fileLabel.textContent = '📄 PDF oder Bild hierher ziehen — oder klicken zum Auswählen';
-          fileLabel.style.color = 'var(--tx2)';
+          // Ablagefläche in den Ausgangszustand — sie besteht aus drei Teilen,
+          // seit sie nicht mehr ein einzelnes Label ist.
+          fileIcon.textContent = '📂';
+          fileMainLabel.textContent = 'PDF oder Bild hierher ziehen';
+          fileMainLabel.style.color = 'var(--tx1)';
+          fileSubLabel.textContent = 'oder klicken zum Auswählen · Mehrere Dateien möglich';
+          fileInput.value = '';
           _files = [];
           statusEl.textContent = ''; statusEl.style.color = 'var(--tx2)';
           wrap.innerHTML = '';

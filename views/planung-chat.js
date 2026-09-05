@@ -1304,7 +1304,12 @@ function _pcScrollWeiterreichen(el) {
     if (!amEnde && !amAnfang) return;            // im Chat ist noch Weg
     const seite = document.querySelector('.content');
     if (!seite) return;
-    seite.scrollTop += e.deltaY;
+    // deltaY kommt je nach Maus und Browser in Pixeln, Zeilen oder Seiten.
+    // Ungerechnet wären das bei einem klassischen Mausrad drei Pixel.
+    const faktor = e.deltaMode === 1 ? 16          // Zeilen
+                 : e.deltaMode === 2 ? seite.clientHeight   // Seiten
+                 : 1;                              // Pixel
+    seite.scrollTop += e.deltaY * faktor;
     e.preventDefault();
   }, { passive: false });
 }

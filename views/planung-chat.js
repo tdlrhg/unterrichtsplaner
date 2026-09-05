@@ -13,6 +13,7 @@ let _pcReiheId   = null;  // null = Block-Chat, reihe.id = Reihen- oder Einheite
 let _pcEinheitId = null;  // Gruppen-ID, oder null = Feinplanung über die ganze Reihe
 let _pcFeinModus = false; // true = Einheiten-Chat (Feinplanung), unabhängig von Gruppen
 let _pcRunning   = false;
+let _pcMaterialCache = { key: null, roh: '' };  // Materialabfrage je Gespräch
 let _pcAbort     = null;   // AbortController des laufenden KI-Aufrufs
 let _pcStop      = false;  // Stopp gedrückt: Schleife nach dem aktuellen Schritt beenden
 
@@ -1130,6 +1131,40 @@ async function _pcSend(fp, context, text) {
   // die zusammen an einer Planung sitzen, ist das schief.
   const anrede = '\nSprich sie mit Du an. Kein Siezen.\n';
 
+  // Vorhandenes Material fest in den Prompt legen, statt darauf zu hoffen, dass
+  // die KI readDatenbank aufruft. Die Anweisung dazu stand im Prompt und wurde
+  // trotzdem übergangen — mit dem Ergebnis, dass am Bestand vorbeigeplant wurde.
+  // Gesucht wird nach dem Stundenthema, sonst nach dem Reihentitel; die Suche
+  // verbreitert sich bei wenigen Treffern von selbst.
+  let materialBlock = '';
+  if (stunde || reihe) {
+    const suchthema = (stunde && stunde.titel) || (reihe && reihe.titel) || '';
+    if (suchthema) {
+      try {
+        // Innerhalb eines Gesprächs nur einmal abfragen — der Prompt wird bei
+        // jedem Zug neu gebaut, die Datenbank ändert sich dabei nicht.
+        const cacheKey = _pcChatKey + '|' + suchthema;
+        if (_pcMaterialCache.key !== cacheKey) {
+          _pcMaterialCache = { key: cacheKey, roh: await _pcExecTool('readDatenbank', { thema: suchthema }, fp) };
+        }
+        const roh = _pcMaterialCache.roh;
+        const dat = JSON.parse(roh);
+        if (dat && dat.gesamt > 0) {
+          materialBlock = '\nVorhandenes Material zu diesem Thema — bereits für dich '
+            + 'abgefragt, du musst readDatenbank dafür nicht erneut aufrufen '
+            + '(für andere Themen schon):\n' + roh + '\n'
+            + 'Beziehe dich in deinen Vorschlägen auf diese Titel, nicht auf gedachtes '
+            + 'Material. Passt nichts davon, sag das ausdrücklich.\n';
+        } else {
+          materialBlock = '\nZu diesem Thema liegt in ihrer Materialdatenbank nichts vor '
+            + '(bereits geprüft). Plane ohne vorhandenes Material und sag ihr das.\n';
+        }
+      } catch (e) {
+        console.warn('[Chat] Material konnte nicht geladen werden:', e.message);
+      }
+    }
+  }
+
   // Was in diesem Fach und Jahrgang immer gilt — von der Lehrerin gepflegt
   const grundlagen = (fp.grundlagen || '').trim();
   const grundlagenBlock = grundlagen
@@ -1422,7 +1457,7 @@ Gehe immer so vor:
 Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
   }
 
-  system += anrede;   // gilt für alle drei Ebenen
+  system += anrede + materialBlock;   // gilt für alle drei Ebenen
 
   try {
     while (true) {

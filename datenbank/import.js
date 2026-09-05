@@ -19,38 +19,8 @@ function cmpNr(aNr, bNr) {
   return pa[1] < pb[1] ? -1 : pa[1] > pb[1] ? 1 : 0;
 }
 
-// ── Aufgaben-Gruppierung ──────────────────────────────────────────
-// Gruppiert Zeilen nach führender Nummer: "8a","8b" → Gruppe "8"; "9" → Gruppe "9"
-function dbGroupByParent(rows) {
-  var groups = {}, order = [];
-  rows.forEach(function(r) {
-    var _nr = String(r.nr || ''); var _m = _nr.match(/^(.*\d)[a-zA-Z]+$/);
-    var parentNr = (_m ? _m[1] : _nr).trim() || '?';
-    var isMat = r.quelle_typ === 'materialset' || r.quelle_typ === 'handreichung';
-    var key;
-    if (isMat) {
-      // Normiere auf M-Nummer: "Lösung M 1", "M 1a" → alle in Gruppe "M 1"
-      var _mNum = _nr.match(/\b(M\s*\d+)/i);
-      if (_mNum) {
-        parentNr = _mNum[1].replace(/M\s*(\d+)/i, 'M $1');
-        key = (r.quelle_name || '') + '||mat||' + parentNr;
-      } else if (r.quelle_typ === 'handreichung') {
-        // Zeitschriften/Handreichungen: nach Artikeltitel (nr) gruppieren, nicht nach Seite
-        key = (r.quelle_name || '') + '||hand||' + parentNr;
-      } else {
-        key = r.gruppen_key || ((r.quelle_name || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr);
-      }
-    } else if (_m && !(r.gruppen_key && /^dup_/.test(r.gruppen_key))) {
-      key = (r.quelle_name || '') + '||' + (r.kapitel || '') + '||' + (r.uk_titel || '') + '||' + parentNr;
-    } else {
-      key = r.gruppen_key || ((r.quelle_name || '') + '|' + (r.seite != null ? r.seite : '') + '|' + parentNr);
-    }
-    if (!groups[key]) { groups[key] = { key: parentNr, gruppen_key: key, aufgabenstellung: null, items: [] }; order.push(key); }
-    if (!groups[key].aufgabenstellung && r.aufgabenstellung) groups[key].aufgabenstellung = r.aufgabenstellung;
-    groups[key].items.push(r);
-  });
-  return order.map(function(k) { return groups[k]; });
-}
+// dbGroupByParent liegt in core/ui.js — von der Datenbankansicht UND vom
+// Planungs-Chat genutzt, damit beide dieselbe Aufgabenzahl ermitteln.
 
 // ── Import-View ───────────────────────────────────────────────────
 

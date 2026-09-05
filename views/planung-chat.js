@@ -731,6 +731,16 @@ async function _pcExecTool(name, input, fp) {
         // werden. Für den Reihenschnitt genügt die Landkarte; Einzeltreffer
         // holt man mit einem zweiten Aufruf mit thema.
         if (!input.thema) {
+          // Gezählt wird in Aufgaben, nicht in Datenbankzeilen: „21a" bis „21h"
+          // sind acht Zeilen, aber eine Aufgabe. Dieselbe Regel wie in der
+          // Datenbankansicht (dbGroupByParent in core/ui.js) — sonst nennt die
+          // KI der Lehrerin eine Zahl, die sie in ihrer Datenbank nicht sieht.
+          var _aufgProQuelle = {};
+          dbGroupByParent(_rows).forEach(function(g) {
+            var qn = (g.items[0] && g.items[0].quelle_name) || '(ohne Quelle)';
+            _aufgProQuelle[qn] = (_aufgProQuelle[qn] || 0) + 1;
+          });
+
           var _ueb = {}, _uOrder = [];
           _rows.forEach(function(r) {
             var qn = r.quelle_name || '(ohne Quelle)';
@@ -748,16 +758,25 @@ async function _pcExecTool(name, input, fp) {
             if (r.jahrgang && b.jahrgaenge.indexOf(r.jahrgang) < 0) b.jahrgaenge.push(r.jahrgang);
             (r.formate || []).forEach(function(f) { if (b.formate.indexOf(f) < 0) b.formate.push(f); });
           });
+          var _aufgGesamt = Object.keys(_aufgProQuelle).reduce(function(s, k) {
+            return s + _aufgProQuelle[k];
+          }, 0);
+
           return JSON.stringify({
             uebersicht: true,
-            gesamt: _rows.length,
+            aufgaben: _aufgGesamt,
+            teilaufgaben: _rows.length,
             hinweis: 'Landkarte des vorhandenen Materials, keine Einzeltreffer. '
+              + 'Gezählt wird in Aufgaben — Teilaufgaben (21a, 21b, …) gehören zu einer. '
               + 'Für konkrete Aufgaben, Arbeitsblätter oder Texte rufe readDatenbank '
               + 'erneut mit thema auf (z.B. thema: "Prozentrechnung").',
             quellen: _uOrder.map(function(qn) {
               var b = _ueb[qn];
               return {
-                quelle: b.quelle, typ: b.typ, anzahl: b.anzahl, typen: b.typen,
+                quelle: b.quelle, typ: b.typ,
+                aufgaben: _aufgProQuelle[qn] || 0,
+                teilaufgaben: b.anzahl,
+                typen: b.typen,
                 jahrgaenge: b.jahrgaenge.sort(),
                 formate: b.formate,
                 themen: b.themen.slice(0, 40),

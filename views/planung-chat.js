@@ -1007,7 +1007,7 @@ async function _pcSend(fp, context, text) {
   _pcMsgs.push(thinkMsg);
   _pcRender();
 
-  const { block, reihe, einheit } = context;
+  const { block, reihe, einheit, stunde } = context;
   const fachName = PC_FACH[fp.fach] || fp.fach;
 
   // Ohne ausdrückliche Ansage siezt das Modell im Deutschen. Unter Kolleginnen,
@@ -1026,9 +1026,13 @@ hinterlegt, gelten durchgehend und müssen nicht erfragt werden:\n\n${grundlagen
   if (einheit) {
     // Einheiten-Chat: Feinplanung — Didaktik und Classroom Management im Vordergrund
     tools = PC_EINHEIT_TOOLS;
-    const gegenstand = einheit.id
-      ? `die Einheit „${einheit.titel}" aus der Reihe „${reihe.titel}"`
-      : `die Stunden der Reihe „${reihe.titel}"`;
+    // Kommt der Chat aus der Stundenansicht, ist der Gegenstand genau diese eine
+    // Stunde. Die Reihe bleibt Kontext — readPlan liefert sie weiterhin ganz.
+    const gegenstand = stunde
+      ? `die Stunde „${stunde.titel || 'ohne Titel'}" aus der Reihe „${reihe.titel}"`
+      : (einheit.id
+          ? `die Einheit „${einheit.titel}" aus der Reihe „${reihe.titel}"`
+          : `die Stunden der Reihe „${reihe.titel}"`);
     system = `Du bist Fachleiterin für ${fachName} und berätst eine erfahrene Kollegin an einem
 NRW-Gymnasium. Ihr plant gemeinsam ${gegenstand}, Jahrgang ${fp.jahrgang}.
 ${grundlagenBlock}
@@ -1361,7 +1365,8 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
   _pcStop = false;
   _pcRunning = false;
   _pcRender();
-  _pcPersist(einheit ? einheit.titel : (reihe ? reihe.titel : block.titel));
+  _pcPersist(stunde ? (stunde.titel || 'Stunde')
+    : (einheit ? einheit.titel : (reihe ? reihe.titel : block.titel)));
 }
 
 // Das Chatfeld scrollt für sich. Ist es am Ende angekommen, hört der Browser
@@ -1510,8 +1515,13 @@ function buildReiheChat(fp, block, reihe) {
 }
 
 // einheit = Gruppen-Objekt, oder null für die Feinplanung der ganzen Reihe
-function buildEinheitChat(fp, block, reihe, einheit) {
-  const key = _pcKey('einheit', einheit ? einheit.id : reihe.id);
+// einheit : Gruppe, oder null für die ganze Reihe
+// stunde  : optional — dann dreht sich das Gespräch um genau diese Stunde und
+//           bekommt einen eigenen Verlauf. Aufgerufen aus der Stundenansicht.
+function buildEinheitChat(fp, block, reihe, einheit, stunde) {
+  const key = stunde
+    ? _pcKey('stunde', stunde.id)
+    : _pcKey('einheit', einheit ? einheit.id : reihe.id);
   if (_pcChatKey !== key) {
     _pcChatKey = key;
     _pcFpId = fp.id; _pcBlockId = block.id; _pcReiheId = reihe.id;
@@ -1528,10 +1538,12 @@ function buildEinheitChat(fp, block, reihe, einheit) {
   const std = summeStundenEinheiten(eigene);
 
   const wrap = mk('div', 'pc-wrap card');
-  const hdr = cardHdr('✨ Feinplanung');
-  hdr.appendChild(tx('span', 'pc-hdr-sub', einheit
-    ? einheit.titel + ' · ' + std + ' Std. · ' + reihe.titel
-    : reihe.titel + ' · ' + std + ' Std. · ganze Reihe'));
+  const hdr = cardHdr('💬 Feinplanung');
+  hdr.appendChild(tx('span', 'pc-hdr-sub', stunde
+    ? (stunde.titel || 'Stunde') + ' · ' + reihe.titel
+    : (einheit
+        ? einheit.titel + ' · ' + std + ' Std. · ' + reihe.titel
+        : reihe.titel + ' · ' + std + ' Std. · ganze Reihe')));
   wrap.appendChild(hdr);
 
   // Kein „Komplett durchplanen" — auf dieser Ebene wird besprochen, nicht abgearbeitet.
@@ -1541,8 +1553,10 @@ function buildEinheitChat(fp, block, reihe, einheit) {
     if (!text || _pcRunning) return;
     ta.value = '';
     // id: null signalisiert „ganze Reihe" — der Prompt formuliert entsprechend
-    _pcSend(fp, { block, reihe, einheit: einheit || { id: null, titel: reihe.titel } }, text);
-  }, 'z.B. „Schau dir Stunde 2 an — der Einstieg kommt mir zu lang vor."');
+    _pcSend(fp, { block, reihe, einheit: einheit || { id: null, titel: reihe.titel }, stunde }, text);
+  }, stunde
+      ? 'z.B. „Schau mal, ob in der Datenbank Material für diese Stunde liegt."'
+      : 'z.B. „Schau dir Stunde 2 an — der Einstieg kommt mir zu lang vor."');
 
   setTimeout(_pcRender, 0);
   return wrap;

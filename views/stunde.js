@@ -744,6 +744,13 @@ function viewStunde(fpId, blockId, reiheId, stundeId) {
   if (naechste) vor.onclick = () => zuStunde(naechste);
   hdrBtns.appendChild(vor);
 
+  // Feinplanung für genau diese Stunde — eigener Verlauf je Stunde
+  const chatKey = 'stundeChat_' + stundeId;
+  const cb = btn('💬 Feinplanung', 'btn btn-ghost btn-sm');
+  cb.title = 'Über diese Stunde sprechen — Material, Methoden, Phasen';
+  cb.onclick = () => { S.open[chatKey] = !S.open[chatKey]; render(); };
+  hdrBtns.appendChild(cb);
+
   const mvb = btn('↗ Verschieben', 'btn btn-ghost btn-sm');
   mvb.onclick = () => { S.modal = { type: 'moveStunde', data: { fpId, blockId, reiheId, stundeId } }; render(); };
   hdrBtns.appendChild(mvb);
@@ -758,6 +765,9 @@ function viewStunde(fpId, blockId, reiheId, stundeId) {
   hdrBtns.appendChild(db);
   hdr.appendChild(hdrBtns);
   div.appendChild(hdr);
+
+  // Chat direkt unter dem Kopf, damit er ohne Scrollen sichtbar ist
+  if (S.open[chatKey]) div.appendChild(buildEinheitChat(fp, block, reihe, gruppe || null, stunde));
 
   renderStundenBody(div, stunde, fp);
   return div;

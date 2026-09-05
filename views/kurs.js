@@ -50,7 +50,7 @@ function buildFpTree(lp, sel) {
 
   function makeRow(opts) {
     const { level, title, sub, isActive, hasChildren, openKey, onSelect,
-            dragPayload, dropType, onDrop, onEdit, editLabel, onChat, chatTitle,
+            dragPayload, dropType, onDrop, onEdit, editLabel, onChat, chatTitle, chatLabel,
             onFein, onUp, onDown, onDelete,
             isFirst, isLast, onAdd, addLabel, accentColor } = opts;
     const open = openKey ? isOpen(openKey) : false;
@@ -92,8 +92,8 @@ function buildFpTree(lp, sel) {
       actions.appendChild(eb);
     }
     if (onChat) {
-      const cb = mk('button', 'fp-tree-act-btn');
-      cb.textContent = '✨'; cb.title = chatTitle || 'Reihen planen';
+      const cb = mk('button', 'fp-tree-act-btn' + (chatLabel ? ' fp-tree-act-btn--label' : ''));
+      cb.textContent = chatLabel || '✨'; cb.title = chatTitle || 'Reihen planen';
       cb.onclick = e => { e.stopPropagation(); onChat(); };
       actions.appendChild(cb);
     }
@@ -264,11 +264,27 @@ function buildFpTree(lp, sel) {
         dragPayload: { type: 'reihe', srcBlockId: block.id, reiheId: reihe.id },
         onEdit: () => { S.modal = { type: 'editReihe', data: { reihe, fpId: lp.id, blockId: block.id } }; render(); },
         editLabel: '✏ Bearbeiten',
+        // Der Stunden-Chat war bisher nur über „Bearbeiten" im Overlay erreichbar
+        chatLabel: '✨ Stunden',
+        chatTitle: 'Stunden planen — Themen, Abfolge, Material',
+        onChat: () => {
+          const k = 'reiheChat_' + reihe.id;
+          S.open[k] = !S.open[k];
+          // Nur ein Chat je Reihe: Feinplanung schließen, sonst verdeckt sie diesen
+          if (S.open[k]) {
+            delete S.open['feinChat_' + reihe.id];
+            (reihe.einheiten || []).forEach(e => { delete S.open['einheitChat_' + e.id]; });
+          }
+          S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
+          if (!isOpen(rKey)) S._treeOffen[rKey] = true;
+          render();
+        },
         onFein: () => {
           const k = 'feinChat_' + reihe.id;
           // Ein Feinplanungs-Chat zur Zeit: Gruppen-Chats dieser Reihe schließen
           (reihe.einheiten || []).forEach(e => { delete S.open['einheitChat_' + e.id]; });
           S.open[k] = !S.open[k];
+          if (S.open[k]) delete S.open['reiheChat_' + reihe.id];   // sonst bliebe der Stunden-Chat verdeckt offen
           S.sel = { type: 'reihe', ids: [lp.id, block.id, reihe.id] };
           if (!isOpen(rKey)) S._treeOffen[rKey] = true;
           render();

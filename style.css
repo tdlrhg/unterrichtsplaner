@@ -956,6 +956,10 @@ textarea::placeholder { color: #c4cdd6; }
 .fp-tree-label { flex: 1; display: flex; align-items: baseline; gap: 8px; min-width: 0; overflow: hidden; }
 .fp-tree-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fp-tree-sub { font-size: 11px; color: var(--tx3); font-weight: 400; flex-shrink: 0; }
+/* Stundenzeilen: Titel auf feste Breite, damit das Material darunter bündig
+   steht statt hinter jedem Titel woanders anzufangen. */
+.fp-tree-level-2 .fp-tree-title { flex: 0 0 58%; }
+.fp-tree-level-2 .fp-tree-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
 .fp-tree-actions { display: none; align-items: center; gap: 1px; flex-shrink: 0; }
 .fp-tree-row:hover .fp-tree-actions,

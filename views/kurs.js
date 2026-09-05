@@ -15,6 +15,18 @@ function _chatHinscrollen(chatEl, key) {
   }, 80);
 }
 
+// Kurzfassung des zugeordneten Materials für die Stundenzeile im Baum.
+// Mehrere Quellen werden zusammengezogen, sehr lange gekürzt. Nichts
+// zugeordnet → nichts anzeigen, dann bleibt die Spalte sichtbar leer.
+function stundenMaterialKurz(stunde) {
+  const mats = (stunde.material || []).map(m => (m.quelle || '').trim()).filter(Boolean);
+  if (!mats.length) return null;
+  let txt = mats[0];
+  if (txt.length > 42) txt = txt.slice(0, 41) + '…';
+  if (mats.length > 1) txt += ' +' + (mats.length - 1);
+  return '📎 ' + txt;
+}
+
 // ── Fachplanung-Baum ────────────────────────────────────────────────
 function buildFpTree(lp, sel) {
   // Migration: altes Format (einheit.stunden[]) → flach (reihe.stunden[])
@@ -331,7 +343,10 @@ function buildFpTree(lp, sel) {
           const { row: sRow } = makeRow({
             level: 2,
             title: (si + 1) + '. ' + (stunde.titel || '(ohne Titel)'),
-            sub: stunde.lernziel ? stunde.lernziel.slice(0, 55) + '…' : null,
+            // Material statt Lernziel: Beim Durchsehen einer Reihe ist die
+            // Frage „womit?" die dringendere — und eine leere Spalte zeigt
+            // sofort, wo noch nichts zugeordnet ist.
+            sub: stundenMaterialKurz(stunde),
             isActive: selStundeId === stunde.id && !S.multisel.length,
             hasChildren: false,
             onSelect: e => {

@@ -1298,9 +1298,12 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
 function _pcScrollWeiterreichen(el) {
   el.addEventListener('wheel', function (e) {
     if (e.ctrlKey) return;                       // Zoom-Geste nicht anfassen
+    // Das Trackpad scrollt in Bruchteilen: scrollTop steht dann auf 0.4 statt
+    // auf 0, und eine Prüfung auf „genau am Anfang" greift nie. Deshalb 2px
+    // Spielraum an beiden Enden.
     const rest = el.scrollHeight - el.clientHeight - el.scrollTop;
-    const amEnde  = e.deltaY > 0 && rest <= 1;
-    const amAnfang = e.deltaY < 0 && el.scrollTop <= 0;
+    const amEnde   = e.deltaY > 0 && rest <= 2;
+    const amAnfang = e.deltaY < 0 && el.scrollTop <= 2;
     if (!amEnde && !amAnfang) return;            // im Chat ist noch Weg
     const seite = document.querySelector('.content');
     if (!seite) return;

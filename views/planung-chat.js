@@ -758,15 +758,96 @@ async function _pcExecTool(name, input, fp) {
   }
 }
 
+// Zwei Fassungen: während der Ausführung und danach. Im fertigen Verlauf soll
+// stehen, was passiert IST — nicht, was gerade passiert.
 const _PC_TOOL_LABELS = {
   readPlan:       '📋 Lese aktuellen Plan …',
   readKLP:        '📖 Lese Kernlehrplan …',
+  readMethoden:   '🔍 Suche Methoden …',
+  readDidaktik:   '📚 Lese didaktische Hinweise …',
   readDatenbank:  '🔍 Suche Materialien in der Datenbank …',
   createStunde:   '✏ Lege Stunde an …',
   createReihe:    '✏ Lege Reihe an …',
-  editStunde:     '✏ Bearbeite Stunde …',
-  editReihe:      '✏ Bearbeite Reihe …',
+  updateStunde:   '✏ Ändere Stunde …',
+  updateReihe:    '✏ Ändere Reihe …',
+  deleteStunde:   '🗑 Lösche Stunde …',
+  deleteReihe:    '🗑 Lösche Reihe …',
+  setPhasen:      '🧩 Lege Phasen fest …',
+  materialZuordnen: '📎 Ordne Material zu …',
+  materialEntfernen:'📎 Entferne Material …',
 };
+
+const _PC_TOOL_FERTIG = {
+  readPlan:       '📋 Plan gelesen',
+  readKLP:        '📖 Kernlehrplan gelesen',
+  readMethoden:   '🔍 Methoden durchsucht',
+  readDidaktik:   '📚 Didaktik gelesen',
+  readDatenbank:  '🔍 Material gesucht',
+  createStunde:   '✏ Stunde angelegt',
+  createReihe:    '✏ Reihe angelegt',
+  updateStunde:   '✏ Stunde geändert',
+  updateReihe:    '✏ Reihe geändert',
+  deleteStunde:   '🗑 Stunde gelöscht',
+  deleteReihe:    '🗑 Reihe gelöscht',
+  setPhasen:      '🧩 Phasen festgelegt',
+  materialZuordnen: '📎 Material zugeordnet',
+  materialEntfernen:'📎 Material entfernt',
+};
+
+// Titel zu einer ID aus dem aktuellen Plan — damit im Chat nicht nur „Stunde
+// geändert" steht, sondern welche.
+function _pcTitelZuId(fp, art, id) {
+  if (!fp || !id) return '';
+  let treffer = '';
+  (fp.blocks || []).forEach(b => (b.reihen || []).forEach(r => {
+    if (art === 'reihe' && r.id === id) treffer = r.titel || '';
+    if (art === 'stunde') (r.stunden || []).forEach(s => {
+      if (s.id === id) treffer = s.titel || '';
+    });
+  }));
+  return treffer;
+}
+
+// Der Zusatz hinter dem Label. Wird VOR der Ausführung bestimmt, damit auch
+// bei einer Löschung noch dasteht, was gelöscht wurde.
+function _pcToolDetail(name, input, fp) {
+  if (!input) return '';
+  const kurz = t => (t && t.length > 60) ? t.slice(0, 59) + '…' : (t || '');
+  switch (name) {
+    case 'createStunde':
+    case 'createReihe':
+      return kurz(input.titel);
+    case 'updateStunde':
+    case 'deleteStunde':
+      return kurz(input.titel || _pcTitelZuId(fp, 'stunde', input.stundeId));
+    case 'updateReihe':
+    case 'deleteReihe':
+      return kurz(input.titel || _pcTitelZuId(fp, 'reihe', input.reiheId));
+    case 'setPhasen':
+      return kurz(_pcTitelZuId(fp, 'stunde', input.stundeId));
+    case 'materialZuordnen':
+    case 'materialEntfernen': {
+      const stunde = _pcTitelZuId(fp, 'stunde', input.stundeId);
+      return kurz([input.quelle, stunde].filter(Boolean).join(' → '));
+    }
+    case 'readDatenbank':
+    case 'readMethoden':
+      return kurz(input.thema || input.suchbegriff);
+    default:
+      return '';
+  }
+}
+
+// laeuft === true → Verlaufsform, sonst Vergangenheit. Alte gespeicherte
+// Verlaeufe haben kein Flag; die sind zwangslaeufig fertig.
+function _pcToolText(tc) {
+  const basis = tc.laeuft
+    ? (_PC_TOOL_LABELS[tc.name] || ('🔧 ' + tc.name + ' …'))
+    : (_PC_TOOL_FERTIG[tc.name] || _PC_TOOL_LABELS[tc.name] || ('🔧 ' + tc.name));
+  if (!tc.detail) return basis;
+  // Die Auslassungspunkte gehören ans Ende, nicht vor den Titel
+  return basis.replace(/ …$/, '') + ': ' + tc.detail + (tc.laeuft ? ' …' : '');
+}
 
 // Markiert den laufenden Zug im Verlauf als abgebrochen. Die bis dahin
 // ausgeführten Tools bleiben sichtbar — sie sind ja auch tatsächlich passiert.
@@ -803,7 +884,7 @@ function _pcRender() {
     }
     if (m.toolCalls && m.toolCalls.length) {
       m.toolCalls.forEach(tc => {
-        d.appendChild(tx('div', 'pc-tool-badge', _PC_TOOL_LABELS[tc.name] || ('🔧 ' + tc.name)));
+        d.appendChild(tx('div', 'pc-tool-badge', _pcToolText(tc)));
       });
     }
     if (m.isThinking) {
@@ -855,6 +936,10 @@ async function _pcSend(fp, context, text) {
 
   const { block, reihe, einheit } = context;
   const fachName = PC_FACH[fp.fach] || fp.fach;
+
+  // Ohne ausdrückliche Ansage siezt das Modell im Deutschen. Unter Kolleginnen,
+  // die zusammen an einer Planung sitzen, ist das schief.
+  const anrede = '\nSprich sie mit Du an. Kein Siezen.\n';
 
   // Was in diesem Fach und Jahrgang immer gilt — von der Lehrerin gepflegt
   const grundlagen = (fp.grundlagen || '').trim();
@@ -1135,6 +1220,8 @@ Gehe immer so vor:
 Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
   }
 
+  system += anrede;   // gilt für alle drei Ebenen
+
   try {
     while (true) {
       _pcAbort = new AbortController();
@@ -1160,9 +1247,13 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
 
       const results = [];
       for (const tu of toolUses) {
-        thinkMsg.toolCalls.push({ name: tu.name });
+        // Detail vor der Ausführung bestimmen — danach ist Gelöschtes weg
+        const tc = { name: tu.name, detail: _pcToolDetail(tu.name, tu.input, fp), laeuft: true };
+        thinkMsg.toolCalls.push(tc);
         _pcRender();
         const res = await _pcExecTool(tu.name, tu.input, fp);
+        tc.laeuft = false;
+        _pcRender();
         results.push({ type: 'tool_result', tool_use_id: tu.id, content: res });
         if (_pcStop) break;   // Rest der Tool-Liste nicht mehr ausführen
       }
@@ -1200,11 +1291,30 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
   _pcPersist(einheit ? einheit.titel : (reihe ? reihe.titel : block.titel));
 }
 
+// Das Chatfeld scrollt für sich. Ist es am Ende angekommen, hört der Browser
+// erst nach einer Pause auf, die Bewegung darin festzuhalten — man muss die
+// Maus aus dem Chat herausbewegen, um die Seite zu scrollen. Hier wird der
+// Rest der Bewegung stattdessen direkt an die Seite weitergegeben.
+function _pcScrollWeiterreichen(el) {
+  el.addEventListener('wheel', function (e) {
+    if (e.ctrlKey) return;                       // Zoom-Geste nicht anfassen
+    const rest = el.scrollHeight - el.clientHeight - el.scrollTop;
+    const amEnde  = e.deltaY > 0 && rest <= 1;
+    const amAnfang = e.deltaY < 0 && el.scrollTop <= 0;
+    if (!amEnde && !amAnfang) return;            // im Chat ist noch Weg
+    const seite = document.querySelector('.content');
+    if (!seite) return;
+    seite.scrollTop += e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
+}
+
 function _pcBuildChatUI(wrap, sendFn, placeholder, planAllFn) {
   const body = mk('div', 'card-body pc-body');
 
   const msgs = mk('div', 'pc-messages');
   msgs.id = 'pc-messages';
+  _pcScrollWeiterreichen(msgs);
   body.appendChild(msgs);
 
   const inputRow = mk('div', 'pc-input-row');

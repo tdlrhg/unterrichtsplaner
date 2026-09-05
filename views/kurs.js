@@ -1,3 +1,13 @@
+// Zum Chat springen — aber nur, wenn er gerade geöffnet wurde. Die Seite wird
+// bei jeder Kleinigkeit neu gezeichnet (Reihe auf- oder zuklappen, Speichern,
+// Antwort der KI). Ohne diese Merkung springt die Ansicht jedes Mal weg.
+let _chatGescrolltKey = null;
+function _chatHinscrollen(chatEl, key) {
+  if (_chatGescrolltKey === key) return;
+  _chatGescrolltKey = key;
+  setTimeout(() => chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+}
+
 // ── Fachplanung-Baum ────────────────────────────────────────────────
 function buildFpTree(lp, sel) {
   // Migration: altes Format (einheit.stunden[]) → flach (reihe.stunden[])
@@ -483,18 +493,23 @@ function viewFachplanung() {
   // ── Feinplanung: pro Gruppe (✨ auf der Gruppenzeile) oder für die ganze Reihe
   const offeneEinheit = selReihe && (selReihe.einheiten || []).find(e => S.open['einheitChat_' + e.id]);
   const feinGanzeReihe = selReihe && !offeneEinheit && S.open['feinChat_' + selReihe.id];
+  let chatOffenKey = null;
   if (offeneEinheit || feinGanzeReihe) {
     const chatEl = buildEinheitChat(lp, selBlock, selReihe, offeneEinheit || null);
     div.appendChild(chatEl);
-    setTimeout(() => chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    chatOffenKey = 'fein_' + (offeneEinheit ? offeneEinheit.id : selReihe.id);
+    _chatHinscrollen(chatEl, chatOffenKey);
   }
 
   // ── Reihen-Chat (wenn aus Modal geöffnet) ───────────────────
   else if (selReihe && S.open['reiheChat_' + selReihe.id]) {
     const chatEl = buildReiheChat(lp, selBlock, selReihe);
     div.appendChild(chatEl);
-    setTimeout(() => chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    chatOffenKey = 'reihe_' + selReihe.id;
+    _chatHinscrollen(chatEl, chatOffenKey);
   }
+
+  if (!chatOffenKey) _chatGescrolltKey = null;   // zu: beim nächsten Öffnen wieder springen
 
   // ── Block-Chat (unterhalb des Baums, wenn ✨ aktiv) ──────────
   if (selBlock && !selReihe && S.open['blockChat_' + selBlock.id]) {

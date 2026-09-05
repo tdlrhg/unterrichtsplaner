@@ -939,6 +939,14 @@ textarea::placeholder { color: #c4cdd6; }
 .fp-tree-row.active { background: #ccfbf1; }
 .fp-tree-row.fp-tree-row-drop { background: #eff6ff; outline: 2px solid var(--pri); border-radius: 6px; }
 .fp-tree-row.fp-tree-row-dragging { opacity: .35; }
+/* Doppelstunde: belegt zwei Stunden, also auch optisch mehr Platz — hohe
+   Zeile mit einer Klammer am linken Rand. Die Nummer sagt es ("3.–4."),
+   die Höhe macht es beim Überfliegen sichtbar. */
+.fp-tree-row.fp-tree-doppel { min-height: 48px; }
+.fp-tree-row.fp-tree-doppel::before {
+  content: ''; position: absolute; left: 8px; top: 7px; bottom: 7px; width: 3px;
+  border-radius: 2px; background: var(--bord2, #cbd5e1);
+}
 
 .fp-tree-level-0 .fp-tree-title { font-weight: 700; font-size: 15px; }
 .fp-tree-level-1 .fp-tree-title { font-weight: 600; font-size: 13px; }

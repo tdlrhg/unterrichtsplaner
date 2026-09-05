@@ -64,10 +64,11 @@ function buildFpTree(lp, sel) {
     const { level, title, sub, isActive, hasChildren, openKey, onSelect,
             dragPayload, dropType, onDrop, onEdit, editLabel, onChat, chatTitle, chatLabel,
             onFein, onUp, onDown, onDelete,
-            isFirst, isLast, onAdd, addLabel, accentColor } = opts;
+            isFirst, isLast, onAdd, addLabel, accentColor, doppel } = opts;
     const open = openKey ? isOpen(openKey) : false;
 
-    const row = mk('div', 'fp-tree-row fp-tree-level-' + level + (isActive ? ' active' : ''));
+    const row = mk('div', 'fp-tree-row fp-tree-level-' + level + (isActive ? ' active' : '')
+      + (doppel ? ' fp-tree-doppel' : ''));
     row.style.paddingLeft = (16 + level * 44) + 'px';
     if (accentColor) row.style.setProperty('--row-accent', accentColor);
 
@@ -328,6 +329,11 @@ function buildFpTree(lp, sel) {
         (reihe.einheiten || []).forEach(e => { gruppenMap[e.id] = e; });
         let lastGrpId = null;
         const allSn = reihe.stunden;
+        // Nummeriert wird in 45-Minuten-Einheiten, nicht in Stunden-Objekten:
+        // Eine Doppelstunde belegt zwei Nummern und ist an „3.–4." erkennbar.
+        // Vorher zählte die Liste 1,2,3 … und behauptete damit, eine
+        // Doppelstunde sei eine Stunde.
+        let nr = 1;
 
         allSn.forEach((stunde, si) => {
           const grpId = stunde.einheitId || null;
@@ -340,9 +346,13 @@ function buildFpTree(lp, sel) {
           const gruppe = grpId ? gruppenMap[grpId] : null;
           const farbe = gruppe ? gruppe.farbe : null;
           const isMSel = S.multisel.includes(stunde.id);
+          const einh = stundeEinheiten(stunde);
+          const nummer = einh > 1 ? nr + '.–' + (nr + einh - 1) + '. ' : nr + '. ';
+          nr += einh;
           const { row: sRow } = makeRow({
             level: 2,
-            title: (si + 1) + '. ' + (stunde.titel || '(ohne Titel)'),
+            title: nummer + (stunde.titel || '(ohne Titel)'),
+            doppel: einh > 1,
             // Material statt Lernziel: Beim Durchsehen einer Reihe ist die
             // Frage „womit?" die dringendere — und eine leere Spalte zeigt
             // sofort, wo noch nichts zugeordnet ist.

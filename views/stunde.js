@@ -722,7 +722,7 @@ function viewStunde(fpId, blockId, reiheId, stundeId) {
   const hdr = mk('div', 'c-hdr');
   const left = mk('div', '');
   left.appendChild(tx('div', 'c-title', stunde.titel || 'Stunde'));
-  const subTxt = 'Unterrichtsstunde'
+  const subTxt = (stundeEinheiten(stunde) > 1 ? 'Doppelstunde' : 'Unterrichtsstunde')
     + (idx >= 0 ? ' ' + (idx + 1) + ' von ' + alleStunden.length : '')
     + (gruppe ? ' · ' + gruppe.titel : '');
   left.appendChild(tx('div', 'c-sub', subTxt));

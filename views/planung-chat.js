@@ -743,18 +743,47 @@ async function _pcExecTool(name, input, fp) {
           var _q = input.thema.toLowerCase().trim();
           _rows = _alleRows.filter(function(r) { return _passt(r, _q); });
 
-          // Ganze Wendung nicht gefunden? Ein Stundentitel wie
+          // Wenige oder keine Treffer? Ein Stundentitel wie
           // „Ökosystem-Grundbegriffe: Ökosystem, Biotop, Biozönose" steht so
-          // in keinem Feld. Also die Einzelwörter versuchen, bevor wir
-          // behaupten, es gebe nichts.
-          if (!_rows.length) {
+          // in keinem Feld, und ein einzelner Treffer heißt nicht, dass es
+          // nicht mehr gibt: „Ökosystem" trifft eins, „Ökologie" sechs.
+          // Deshalb ab hier zusätzlich mit den Einzelwörtern suchen und die
+          // Ergebnisse zusammenführen.
+          var PC_BREIT_AB = 5;
+          if (_rows.length < PC_BREIT_AB) {
             var _woerter = _q.split(/[^0-9a-zäöüßáéíóúàèìòùâêîôûç]+/i)
               .filter(function(w) { return w.length >= 4; });
             if (_woerter.length) {
-              _rows = _alleRows.filter(function(r) {
-                return _woerter.some(function(w) { return _passt(r, w); });
+              var _schonDa = {};
+              _rows.forEach(function(r) { _schonDa[r.id] = true; });
+              var _mehr = _alleRows.filter(function(r) {
+                return !_schonDa[r.id] && _woerter.some(function(w) { return _passt(r, w); });
               });
-              if (_rows.length) _wortSuche = _woerter;
+              if (_mehr.length) {
+                _rows = _rows.concat(_mehr);
+                _wortSuche = _woerter;
+              }
+            }
+          }
+
+          // Immer noch wenig? Dann das Kapitel der Treffer dazunehmen. „Ökosystem"
+          // trifft genau einen Lehrtext — der steht aber im Kapitel „Ökologie",
+          // und dort liegen fünf weitere, darunter der Goldfisch-Text, den kein
+          // Wort des Stundentitels trifft.
+          var _kapitelBreit = null;
+          if (_rows.length > 0 && _rows.length < PC_BREIT_AB) {
+            var _kaps = [];
+            _rows.forEach(function(r) {
+              if (r.kapitel && _kaps.indexOf(r.kapitel) < 0) _kaps.push(r.kapitel);
+            });
+            var _drin = {};
+            _rows.forEach(function(r) { _drin[r.id] = true; });
+            var _ausKapitel = _alleRows.filter(function(r) {
+              return !_drin[r.id] && r.kapitel && _kaps.indexOf(r.kapitel) >= 0;
+            }).slice(0, 40);
+            if (_ausKapitel.length) {
+              _rows = _rows.concat(_ausKapitel);
+              _kapitelBreit = _kaps;
             }
           }
 
@@ -872,9 +901,18 @@ async function _pcExecTool(name, input, fp) {
             return { quelle: qn, typ: _byQ[qn].typ, materialien: _byQ[qn].items };
           })
         };
+        var _hinweise = [];
         if (_wortSuche) {
-          _out.hinweis = 'Die ganze Wendung „' + input.thema + '" kam nicht vor; '
-            + 'gesucht wurde nach den Einzelwörtern: ' + _wortSuche.join(', ') + '.';
+          _hinweise.push('Wenige direkte Treffer für „' + input.thema + '" — zusätzlich '
+            + 'nach den Einzelwörtern gesucht (' + _wortSuche.join(', ') + ').');
+        }
+        if (_kapitelBreit) {
+          _hinweise.push('Ebenfalls wenig — deshalb ist das ganze Kapitel „'
+            + _kapitelBreit.join('", „') + '" mit aufgeführt. Dort liegt oft Material, '
+            + 'dessen Bezeichnung den Suchbegriff nicht enthält.');
+        }
+        if (_hinweise.length) {
+          _out.hinweis = _hinweise.join(' ') + ' Prüfe die Liste selbst; Randtreffer sind möglich.';
         }
         if (_gekuerzt) {
           _out.gezeigt = _MAX;

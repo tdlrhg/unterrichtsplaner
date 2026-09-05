@@ -744,10 +744,6 @@ function viewStunde(fpId, blockId, reiheId, stundeId) {
   if (naechste) vor.onclick = () => zuStunde(naechste);
   hdrBtns.appendChild(vor);
 
-  // Plant eine neue Folgestunde — nicht zu verwechseln mit dem Pfeil daneben
-  const nextBtn = btn('✨ Folgestunde planen', 'btn btn-ghost btn-sm');
-  nextBtn.onclick = () => kiNaechsteStunde(fp, block, reihe, stunde, gruppe, nextBtn);
-  hdrBtns.appendChild(nextBtn);
   const mvb = btn('↗ Verschieben', 'btn btn-ghost btn-sm');
   mvb.onclick = () => { S.modal = { type: 'moveStunde', data: { fpId, blockId, reiheId, stundeId } }; render(); };
   hdrBtns.appendChild(mvb);
@@ -767,126 +763,6 @@ function viewStunde(fpId, blockId, reiheId, stundeId) {
   return div;
 }
 
-// ── KI: Nächste Stunde planen ─────────────────────────────────────
-async function kiNaechsteStunde(fp, block, reihe, aktStunde, gruppe, triggerBtn) {
-  const antKey = localStorage.getItem('ant_key');
-  if (!antKey) { alert('Bitte zuerst Anthropic API-Key in den Einstellungen hinterlegen.'); return; }
-
-  triggerBtn.disabled = true;
-  triggerBtn.textContent = '⏳ KI denkt…';
-
-  try {
-    const fachNameMap = { M:'Mathematik', Ch:'Chemie', Bio:'Biologie', Ch_GK:'Chemie', Ch_LK:'Chemie', Bio_GK:'Biologie', Bio_LK:'Biologie' };
-    const fachName = fachNameMap[fp.fach] || fp.fach;
-
-    // ── Aktuelle Stunde ──────────────────────────────────────────
-    const aktPhasen = (aktStunde.phasen || []).map(p =>
-      `  - ${p.bezeichnung || p.typ || ''}${p.dauer ? ' (' + p.dauer + ' min)' : ''}: ${p.inhalt || ''}`
-    ).join('\n');
-
-    // ── Alle Stunden in der Reihe (Kontext) ─────────────────────
-    const alleStunden = (reihe.stunden || []);
-    const aktIdx = alleStunden.findIndex(s => s.id === aktStunde.id);
-    const bisherGeplant = alleStunden.slice(0, aktIdx + 1).map((s, i) => {
-      let z = `  Stunde ${i + 1}: "${s.titel || '(ohne Titel)'}"`;
-      if (s.lernziel) z += `\n    Lernziel: ${s.lernziel}`;
-      return z;
-    }).join('\n');
-
-
-    // ── KLP-Kontext ──────────────────────────────────────────────
-    const isSII = ['EF','Q1','Q2','SII'].includes(fp.jahrgang);
-    const isGK = fp.fach.includes('GK'), isLK = fp.fach.includes('LK');
-    const klpHits = KLPDB.filter(e => {
-      if (e.fach !== fachName) return false;
-      const eIsSII = e.stufe === 'SII' || e.id?.toUpperCase().includes('SII');
-      if (isSII !== eIsSII) return false;
-      if (isSII && isGK && e.id?.toUpperCase().includes('LK')) return false;
-      if (isSII && isLK && e.id?.toUpperCase().includes('GK')) return false;
-      return true;
-    }).slice(0, 40);
-    const klpText = klpHits.length
-      ? klpHits.map(e => `  [${e.id}] ${e.kompetenzcodes.join(',')} ${e.inhaltsfeld}: ${e.beschreibung.slice(0,100)}`).join('\n')
-      : '  (kein KLP geladen)';
-
-    const aktKurs = getAktKurs(fp.id);
-    const lgThemen = aktKurs ? getLGThemen(aktKurs.id) : [];
-    const lgInfo = aktKurs?.lerngruppe ? (() => {
-      const lg = aktKurs.lerngruppe;
-      return [
-        lg.leistung ? 'Leistungsniveau: ' + lg.leistung : '',
-        lg.foerderung?.length ? 'Förderbedarf: ' + lg.foerderung.join(', ') : '',
-        lg.konsequenzen ? 'Didakt. Konsequenzen: ' + lg.konsequenzen.slice(0, 200) : '',
-      ].filter(Boolean).join('\n');
-    })() : '';
-
-    const prompt = `Du bist Fachlehrerin für ${fachName} (Jahrgang ${fp.jahrgang}) an einem Gymnasium in NRW.
-${lgInfo ? '\nLERNGRUPPE (' + (aktKurs?.klasse||'') + '):\n' + lgInfo + '\n' : ''}
-AKTUELLE STUNDE (die gerade abgeschlossene/bearbeitete):
-Titel: "${aktStunde.titel || '(ohne Titel)'}"
-Lernziel: "${aktStunde.lernziel || '(kein Lernziel)'}"
-Dauer: ${aktStunde.dauer || 45} Minuten
-${aktPhasen ? 'Phasen:\n' + aktPhasen : ''}
-${aktStunde.lehrerkommentar ? 'Lehrerkommentar: ' + aktStunde.lehrerkommentar : ''}
-
-REIHE: "${reihe.titel}"${block ? ' (Block: ' + block.titel + ')' : ''}
-${gruppe ? 'Gruppe: "' + gruppe.titel + '"' : ''}
-
-BISHERIGE STUNDEN IN DIESER REIHE:
-${bisherGeplant || '  (keine)'}
-
-KLP-KOMPETENZERWARTUNGEN (NRW):
-${klpText}
-${getDIDContext(['stunde', 'reihe'], lgThemen)}
-Plane jetzt die NÄCHSTE sinnvolle Unterrichtsstunde in dieser Reihe.
-Berücksichtige dabei:
-- Was wurde bisher erarbeitet? Was fehlt noch?
-- Welches verfügbare Material passt zur nächsten Stunde?
-- Welche Kompetenzerwartungen werden adressiert?
-
-Antworte NUR mit diesem JSON (kein Text davor oder danach):
-{
-  "titel": "Titel der nächsten Stunde",
-  "lernziel": "Die SuS können … (vollständige Lernzielformulierung)",
-  "dauer": 45,
-  "intention": "2-3 Sätze: Warum diese Stunde als nächstes? Welchen didaktischen Schritt macht sie?",
-  "material": ["Titel von Material 1 aus dem Bucket", "Titel von Material 2"],
-  "klpIds": ["ID1", "ID2"]
-}`;
-
-    const text = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 800 });
-    const parsed = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] || '{}');
-    if (!parsed.titel) throw new Error('Kein Vorschlag erhalten.');
-
-    // ── Neue Stunde anlegen ──────────────────────────────────────
-    const ns = {
-      id: uid(),
-      titel: parsed.titel,
-      lernziel: parsed.lernziel || '',
-      dauer: parsed.dauer || 45,
-      phasen: [],
-      klpInhalt: parsed.klpIds || [],
-      klpProzess: [],
-      material: [],
-      tafelbild: '',
-      lehrerkommentar: parsed.intention || '',
-    };
-    if (aktStunde.einheitId) ns.einheitId = aktStunde.einheitId; // selbe Gruppe
-
-    // Nach der aktuellen Stunde einfügen
-    const arr = reihe.stunden || [];
-    const idx = arr.findIndex(s => s.id === aktStunde.id);
-    arr.splice(idx + 1, 0, ns);
-
-    S.sel = { type: 'stunde', ids: [fp.id, block.id, reihe.id, ns.id] };
-    scheduleSave(); render();
-
-  } catch (e) {
-    alert('Fehler: ' + e.message);
-    triggerBtn.disabled = false;
-    triggerBtn.textContent = '✨ Folgestunde planen';
-  }
-}
 
 function viewFreieStunde(fpId, stundeId) {
   const fp = getFachplanung(fpId);

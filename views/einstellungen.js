@@ -160,12 +160,6 @@ function viewEinstellungen() {
       hinweis: '„reihe" wenn Blöcke geplant werden, „stunde" + „reihe" wenn Reihen geplant werden',
     },
     {
-      name: 'Nächste Stunde planen',
-      ort: 'Stundenansicht · Header-Button',
-      ebenen: ['stunde', 'reihe'],
-      werkzeuge: false,
-    },
-    {
       name: 'Methoden vorschlagen (alle 3 Phasen)',
       ort: 'Stundenansicht · Sektion 3 Methoden',
       ebenen: ['stunde'],

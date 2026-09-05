@@ -1318,6 +1318,22 @@ function _pcScrollWeiterreichen(el) {
 }
 
 function _pcBuildChatUI(wrap, sendFn, placeholder, planAllFn) {
+  // Einklappen: der Chat steht unter dem Plan und verdeckt ihn beim Scrollen.
+  // Zugeklappt bleibt nur die Überschrift stehen. Der Zustand hängt am Chat,
+  // nicht an der Seite, und überlebt darum einen Reload.
+  const zuKey = 'chatZu_' + _pcChatKey;
+  const zu = !!S.open[zuKey];
+
+  const hdr = wrap.querySelector('.card-hdr');
+  if (hdr) {
+    hdr.style.cursor = 'pointer';
+    hdr.title = zu ? 'Chat aufklappen' : 'Chat einklappen';
+    const pfeil = tx('span', 'pc-klapp', zu ? '▸' : '▾');
+    hdr.insertBefore(pfeil, hdr.firstChild);
+    hdr.onclick = () => { S.open[zuKey] = !zu; render(); };
+  }
+  if (zu) return;   // Körper gar nicht erst aufbauen
+
   const body = mk('div', 'card-body pc-body');
 
   const msgs = mk('div', 'pc-messages');

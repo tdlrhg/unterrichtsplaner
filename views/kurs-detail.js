@@ -250,6 +250,17 @@ function viewKursDetail(kursId) {
 
         // Einheit-Zeilen (Stunden liegen flach in reihe.stunden[], gefiltert per einheitId)
         const einheitRows = [];
+        // Nummern in 45-Minuten-Einheiten über die GANZE Reihe — sonst zählt
+        // jede Gruppe wieder bei 1 an und die Zahlen widersprechen dem
+        // Fachplanungsbaum. Eine Doppelstunde belegt zwei Nummern.
+        const stundenNummern = {};
+        let laufNr = 1;
+        (reihe.stunden || []).forEach(s => {
+          const e = stundeEinheiten(s);
+          stundenNummern[s.id] = e > 1 ? laufNr + '.–' + (laufNr + e - 1) + '.' : laufNr + '.';
+          laufNr += e;
+        });
+
         function buildEinheitRow(titel, stundenListe) {
           const egeplant = summeStundenEinheiten(stundenListe);
           const einheitRow = tblRow([
@@ -266,9 +277,11 @@ function viewKursDetail(kursId) {
           stundenListe.forEach((stunde, si2) => {
             const PRIO = {pflicht:'🟢',optional:'🟡',puffer:'🔵',klassenarbeit:'📝',rueckgabe:'📋'};
             const icon = PRIO[stunde.prioritaet||'pflicht'] || '🟢';
-            const dauerLabel = stunde.dauer && stunde.dauer !== 45 ? ' (' + Math.round(stunde.dauer/45) + 'x)' : '';
+            // Die Nummer sagt die Dauer bereits („2.–3."), ein zusätzliches
+            // „(2x)" wäre doppelt gemoppelt.
+            const nummer = stundenNummern[stunde.id] || (si2 + 1) + '.';
             const stundeRow = tblRow([
-              { text: icon + ' ' + (si2+1) + '. ' + (stunde.titel||'(ohne Titel)') + dauerLabel, indent: 72, color: 'var(--tx3)' },
+              { text: icon + ' ' + nummer + ' ' + (stunde.titel||'(ohne Titel)'), indent: 72, color: 'var(--tx3)' },
               { text: '–', align: 'right', color: 'var(--tx3)' },
               { text: String(stundeEinheiten(stunde)), align: 'right', color: 'var(--tx3)' },
               { text: '–', align: 'right', color: 'var(--tx3)' }

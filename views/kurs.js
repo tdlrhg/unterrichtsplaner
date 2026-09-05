@@ -4,8 +4,15 @@
 let _chatGescrolltKey = null;
 function _chatHinscrollen(chatEl, key) {
   if (_chatGescrolltKey === key) return;
-  _chatGescrolltKey = key;
-  setTimeout(() => chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  setTimeout(() => {
+    // Wurde die Seite in der Zwischenzeit neu gezeichnet, hängt dieses Element
+    // nicht mehr im Dokument — dann ist nichts passiert, und der Schlüssel darf
+    // NICHT als erledigt gelten. Sonst öffnet sich der Chat unterhalb des
+    // sichtbaren Bereichs und die Ansicht bleibt oben stehen: Chat scheinbar weg.
+    if (!chatEl.isConnected) return;
+    _chatGescrolltKey = key;
+    chatEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 80);
 }
 
 // ── Fachplanung-Baum ────────────────────────────────────────────────

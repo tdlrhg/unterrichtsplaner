@@ -892,7 +892,10 @@ async function _pcExecTool(name, input, fp) {
             schwierigkeit: r.schwierigkeit,
             formate: r.formate || [],
             methode: r.methode || null,
-            beschreibung: (r.aufgabenstellung || r.inhalt || '').slice(0, 150)
+            // Die von Hand gepflegte Beschreibung geht vor: Dort steht, wie die
+            // Lehrerin das Material einsetzt — die Aufgabenstellung sagt nur,
+            // was darauf gedruckt ist.
+            beschreibung: (r.beschreibung || r.aufgabenstellung || r.inhalt || '').slice(0, 220)
           };
           // Felder aus dem KI-Fingerprint. Nur die planungsrelevanten und nur,
           // wenn gefüllt — sonst blaeht sich die Antwort mit null-Feldern auf.

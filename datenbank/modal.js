@@ -517,6 +517,12 @@ function openTaskModal(group, opts) {
   // Objekte des jeweiligen Fachs, deshalb neutrale Beschriftung.
   sfld(qB, 'Fachliche Objekte', 'mathematische_objekte', 'text', 'z.B. Brüche, Ökosystem, Bindungstyp');
   sfld(qB, 'Vorkenntnisse', 'vorkenntnisse', 'text', 'z.B. Grundrechenarten');
+  // Freitext für „so setze ich das ein" — geht an die Planungs-KI und hat dort
+  // Vorrang vor der maschinell erfassten Aufgabenstellung.
+  var beschrTA = mkAutoTA(ref.beschreibung || '',
+    'Worum es geht und wie du es einsetzt — z.B. „ohne die Beschriftung, vor der Begriffsbildung"');
+  beschrTA.dataset.key = 'beschreibung';
+  qB.appendChild(labeled('Beschreibung / Einsatzhinweis', beschrTA));
   qGrid.appendChild(qB);
 
   // D. Gestaltung (unten rechts)

@@ -608,14 +608,48 @@ function exportFachplanung(fpId) {
         block.reihen.forEach((reihe, ri) => {
           md += '### ' + (bi+1) + '.' + (ri+1) + ' ' + reihe.titel + '\n\n';
 
+          // Der Export enthielt nur Titel, Priorität, Lernziel und KLP-Codes —
+          // also gerade nicht die geplante Stunde. Phasen, Material, Methoden,
+          // Dauer und Notizen gehören in einen Entwurf, den man mitnehmen kann.
           function stundenListe(md, liste) {
             liste.forEach((stunde, si2) => {
               const prio = PRIO_LABEL[stunde.prioritaet] || 'Pflicht';
-              md += '- **' + (si2+1) + '. ' + (stunde.titel || '(ohne Titel)') + '**';
-              md += ' [' + prio + ']';
-              if (stunde.lernziel) md += '\n  _Lernziel: ' + stunde.lernziel + '_';
-              if (stunde.klpInhalt && stunde.klpInhalt.length > 0) md += '\n  KLP Inhalt: ' + stunde.klpInhalt.join(', ');
-              if (stunde.klpProzess && stunde.klpProzess.length > 0) md += '\n  KLP Prozess: ' + stunde.klpProzess.join(', ');
+              const einh = stundeEinheiten(stunde);
+              md += '\n**' + (si2+1) + '. ' + (stunde.titel || '(ohne Titel)') + '**';
+              md += '  \n' + (einh > 1 ? 'Doppelstunde (' + (stunde.dauer || 90) + ' min)' : 'Einzelstunde (45 min)');
+              md += ' · ' + prio + '\n';
+              if (stunde.lernziel)  md += '\n_Lernziel:_ ' + stunde.lernziel + '\n';
+              if (stunde.intention) md += '\n_Intention:_ ' + stunde.intention + '\n';
+              const meth = stundeMethodenText(stunde);
+              if (meth) md += '\n_Methoden:_ ' + meth + '\n';
+              if (stunde.klpInhalt && stunde.klpInhalt.length > 0)  md += '\n_KLP Inhalt:_ ' + stunde.klpInhalt.join(', ') + '\n';
+              if (stunde.klpProzess && stunde.klpProzess.length > 0) md += '\n_KLP Prozess:_ ' + stunde.klpProzess.join(', ') + '\n';
+
+              if ((stunde.material || []).length) {
+                md += '\n_Material:_\n';
+                stunde.material.forEach(m => {
+                  md += '- ' + (m.quelle || '(ohne Quelle)');
+                  if (m.teile)     md += ' — ' + m.teile;
+                  if (m.anpassung) md += ' _(Anpassung: ' + m.anpassung + ')_';
+                  md += '\n';
+                });
+              }
+
+              if ((stunde.phasen || []).length) {
+                md += '\n| Phase | Min | Sozialform | Was passiert |\n';
+                md += '|---|---|---|---|\n';
+                stunde.phasen.forEach(ph => {
+                  const zelle = t => String(t || '').replace(/\|/g, '\\|').replace(/\n+/g, ' ');
+                  md += '| ' + zelle(ph.titel)
+                     + ' | ' + (ph.minuten != null ? ph.minuten : '')
+                     + ' | ' + zelle([ph.sozialform, ph.methode].filter(Boolean).join(' · '))
+                     + ' | ' + zelle(ph.inhalt) + ' |\n';
+                });
+              }
+
+              if (stunde.tafelbild)       md += '\n_Tafelbild:_ ' + stunde.tafelbild + '\n';
+              if (stunde.lehrerkommentar) md += '\n_Hinweise:_ ' + stunde.lehrerkommentar + '\n';
+              if (stunde.notizen)         md += '\n_Notizen:_ ' + stunde.notizen + '\n';
               md += '\n';
             });
             return md;

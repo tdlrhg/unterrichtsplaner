@@ -201,6 +201,7 @@ function viewMethoden() {
         if (m.zeitbedarf && m.zeitbedarf !== 'variabel') detBody.appendChild(tx('div', '', '⏱ ' + m.zeitbedarf));
         if (m.ziel) detBody.appendChild(tx('div', '', '🎯 ' + m.ziel));
         if (m.hinweise) detBody.appendChild(tx('div', '', '💡 ' + m.hinweise));
+        if (m.einfuehrung) detBody.appendChild(tx('div', '', '🎓 Einführung: ' + m.einfuehrung));
         const ql = mk('a', '');
         ql.href = m.quelle; ql.target = '_blank';
         ql.textContent = '↗ Methodenkartei';
@@ -237,7 +238,7 @@ function viewMethoden() {
     prefill = prefill || {};
     const isNew = !existing;
     const m = existing ? JSON.parse(JSON.stringify(existing))
-      : { id:'', name: prefill.name || '', beschreibung: prefill.beschreibung || '', ziel: prefill.ziel || '', hinweise: prefill.hinweise || '', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], typ: null, formate:[], quelle:'' };
+      : { id:'', name: prefill.name || '', beschreibung: prefill.beschreibung || '', ziel: prefill.ziel || '', hinweise: prefill.hinweise || '', einfuehrung: prefill.einfuehrung || '', zeitbedarf:'variabel', aufwand:1, sozialform:[], phasen:[], materialtyp:[], typ: null, formate:[], quelle:'' };
 
     overlay.innerHTML = '';
     overlay.classList.add('open');
@@ -293,6 +294,9 @@ function viewMethoden() {
     const inpDesc   = textarea(m.beschreibung, 2);
     const inpZiel   = textarea(m.ziel, 2);
     const inpHinw   = textarea(m.hinweise, 2);
+    // Wie die Methode das erste Mal beigebracht wird. Steht hier etwas, weiß
+    // die Planungs-KI, dass eine Einführung nötig ist und wie sie aussieht.
+    const inpEinf   = textarea(m.einfuehrung, 3);
     const inpZeit   = textInput(m.zeitbedarf, 'z.B. 10–15 min');
     const inpQuelle = textInput(m.quelle, 'https://…');
 
@@ -323,6 +327,7 @@ function viewMethoden() {
     form.appendChild(field('Beschreibung', inpDesc));
     form.appendChild(field('Ziel', inpZiel));
     form.appendChild(field('Hinweise', inpHinw));
+    form.appendChild(field('Einführung — wie wird die Methode beigebracht?', inpEinf));
     form.appendChild(field('Zeitbedarf', inpZeit));
     form.appendChild(field('Aufwand', selAufwand));
     form.appendChild(field('Typ', selTyp));
@@ -348,6 +353,7 @@ function viewMethoden() {
         beschreibung: inpDesc.value.trim(),
         ziel: inpZiel.value.trim(),
         hinweise: inpHinw.value.trim(),
+        einfuehrung: inpEinf.value.trim() || null,
         zeitbedarf: inpZeit.value.trim() || 'variabel',
         aufwand: parseInt(selAufwand.value),
         typ: selTyp.value || null,

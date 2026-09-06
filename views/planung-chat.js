@@ -137,10 +137,11 @@ const PC_TOOLS = [
   },
   {
     name: 'readMethoden',
-    description: 'Liest die Methodendatenbank.',
+    description: 'Liest die Methodendatenbank. Ohne Filter kommen nur die ersten 60 von über hundert Methoden — suche gezielt, wenn du eine bestimmte meinst. Steht bei einer Methode das Feld „einfuehrung", muss sie der Lerngruppe erst beigebracht werden.',
     input_schema: {
       type: 'object',
       properties: {
+        name:       { type: 'string', description: 'Sucht im Namen und in der Beschreibung, z.B. „Tabu" oder „Placemat" (optional)' },
         phase:      { type: 'string', description: 'Filter auf Unterrichtsphase (optional)' },
         sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' },
         format:     { type: 'string', description: 'Nach Form filtern: Spiel | Rätsel | Experiment | Wettbewerb (optional)' }
@@ -232,10 +233,11 @@ const PC_STUNDEN_TOOLS = [
   },
   {
     name: 'readMethoden',
-    description: 'Liest die Methodendatenbank.',
+    description: 'Liest die Methodendatenbank. Ohne Filter kommen nur die ersten 60 von über hundert Methoden — suche gezielt, wenn du eine bestimmte meinst. Steht bei einer Methode das Feld „einfuehrung", muss sie der Lerngruppe erst beigebracht werden.',
     input_schema: {
       type: 'object',
       properties: {
+        name:       { type: 'string', description: 'Sucht im Namen und in der Beschreibung, z.B. „Tabu" oder „Placemat" (optional)' },
         phase:      { type: 'string', description: 'Filter auf Unterrichtsphase (optional)' },
         sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' },
         format:     { type: 'string', description: 'Nach Form filtern: Spiel | Rätsel | Experiment | Wettbewerb (optional)' }
@@ -350,10 +352,11 @@ const PC_EINHEIT_TOOLS = [
   },
   {
     name: 'readMethoden',
-    description: 'Liest die Methodendatenbank. Nutze sie, wenn eine konkrete Form gesucht ist — etwa eine kurze Wiederholung ohne Vorbereitungsaufwand.',
+    description: 'Liest die Methodendatenbank. Nutze sie, wenn eine konkrete Form gesucht ist — etwa eine kurze Wiederholung ohne Vorbereitungsaufwand. Ohne Filter kommen nur die ersten 60 von über hundert Methoden — suche gezielt, wenn du eine bestimmte meinst. Steht bei einer Methode das Feld „einfuehrung", muss sie der Lerngruppe erst beigebracht werden.',
     input_schema: {
       type: 'object',
       properties: {
+        name:       { type: 'string', description: 'Sucht im Namen und in der Beschreibung, z.B. „Tabu" oder „Placemat" (optional)' },
         phase:      { type: 'string', description: 'Filter auf Unterrichtsphase (optional)' },
         sozialform: { type: 'string', description: 'Filter auf Sozialform (optional)' },
         format:     { type: 'string', description: 'Nach Form filtern: Spiel | Rätsel | Experiment | Wettbewerb (optional)' }
@@ -573,15 +576,35 @@ async function _pcExecTool(name, input, fp) {
     }
 
     case 'readMethoden': {
+      // Frisch laden statt aus dem Speicher: METHDB wird einmal beim Seitenstart
+      // gefüllt. Eine Methode, die die Lehrerin danach in der Datenbank anlegt,
+      // wäre sonst bis zum nächsten Neuladen unsichtbar.
+      try {
+        const _frisch = await sbSelectAll('methoden');
+        if (Array.isArray(_frisch) && _frisch.length) METHDB = _frisch;
+      } catch (e) {
+        console.warn('[Chat] Methoden nicht aktualisierbar:', e.message);
+      }
       let hits = [...METHDB];
+      if (input.name) {
+        const q = input.name.toLowerCase();
+        hits = hits.filter(m => (m.name || '').toLowerCase().includes(q)
+          || (m.beschreibung || '').toLowerCase().includes(q));
+      }
       if (input.phase)      hits = hits.filter(m => (m.phasen || []).some(p => p.toLowerCase().includes(input.phase.toLowerCase())));
       if (input.sozialform) hits = hits.filter(m => (m.sozialform || []).some(s => s.toLowerCase().includes(input.sozialform.toLowerCase())));
       if (input.format) hits = hits.filter(m => (m.formate || []).includes(input.format));
-      return JSON.stringify(hits.slice(0, 60).map(m => ({
-        name: m.name, beschreibung: (m.beschreibung || '').slice(0, 120),
-        phasen: m.phasen, sozialform: m.sozialform, zeitbedarf: m.zeitbedarf,
-        formate: m.formate || []
-      })));
+      return JSON.stringify(hits.slice(0, 60).map(m => {
+        const o = {
+          name: m.name, beschreibung: (m.beschreibung || '').slice(0, 120),
+          phasen: m.phasen, sozialform: m.sozialform, zeitbedarf: m.zeitbedarf,
+          formate: m.formate || []
+        };
+        // Steht hier etwas, muss die Methode erst beigebracht werden — und so
+        // geht es. Fehlt das Feld, ist sie ohne Weiteres einsetzbar.
+        if (m.einfuehrung) o.einfuehrung = String(m.einfuehrung).slice(0, 400);
+        return o;
+      }));
     }
 
     case 'readDidaktik': {
@@ -1280,6 +1303,16 @@ Worauf du achtest:
    Bevorzuge wiederkehrende Formate gegenüber Einzellösungen pro Stunde. Ein
    Angebot, das immer dieselbe Form hat und bei dem nur der Inhalt wechselt, wird
    durchgehalten; ein neues Konzept pro Stunde nicht.
+
+   Methoden, die erst beigebracht werden müssen: Trägt eine Methode in
+   readMethoden das Feld „einfuehrung", ist sie nicht voraussetzungslos
+   einsetzbar. Der erste Einsatz ist dann die Einführung — sie kostet Zeit, und
+   der Inhalt sollte dabei bewusst leicht sein, damit die Aufmerksamkeit bei der
+   Methode bleibt. Steht in den Planungsgrundlagen ein Methodencurriculum
+   (welche Methoden diese Lerngruppe wann lernen soll), richte dich danach:
+   Methoden im Aufbau setzt du bewusst wiederholt ein, auch wenn eine andere
+   Methode für diese eine Stunde etwas besser passen würde. Sag jeweils dazu, ob
+   du eine Methode einführst oder als bekannt voraussetzt.
 
    Differenzierung ist meist keine eigene Phase, sondern eine Eigenschaft der
    Aufgabe: wie viele Aufgaben bearbeitet werden, welche Schwierigkeit sie haben,

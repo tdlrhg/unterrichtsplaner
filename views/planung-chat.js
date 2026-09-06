@@ -200,6 +200,17 @@ const PC_TOOLS = [
     }
   },
   {
+    name: 'readMaterial',
+    description: 'Liest EIN Material vollständig — Aufgabenstellung, Text, Lösungshinweise, Bildbeschreibung. Nutze es, wenn die Kurzfassung aus readDatenbank nicht reicht, um zu beurteilen, ob das Material trägt. Nicht auf Vorrat für viele Materialien.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Die id aus readDatenbank' }
+      },
+      required: ['id']
+    }
+  },
+  {
     name: 'readDatenbank',
     description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Rufe dies IMMER auf bevor du planst — berücksichtige nur Material, das tatsächlich vorhanden ist.',
     input_schema: {
@@ -291,8 +302,19 @@ const PC_STUNDEN_TOOLS = [
     }
   },
   {
+    name: 'readMaterial',
+    description: 'Liest EIN Material vollständig — Aufgabenstellung, Text, Lösungshinweise, Bildbeschreibung. Nutze es, wenn die Kurzfassung aus readDatenbank nicht reicht, um zu beurteilen, ob das Material trägt. Nicht auf Vorrat für viele Materialien.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Die id aus readDatenbank' }
+      },
+      required: ['id']
+    }
+  },
+  {
     name: 'readDatenbank',
-    description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Bei Bildmaterial steht unter abbildung, was darauf zu sehen ist — verlasse dich darauf und erfinde keine Bildinhalte; das Bild selbst siehst du nicht. Ein Teil des Materials ist zusaetzlich didaktisch erschlossen — dann stehen bei einem Eintrag Felder wie rolleInReihe (einstieg/aufbauend/abschliessend), didaktischeFunktion (motivation, vorwissen, begriffsbildung, sichern …), offenheit, sozialform, niveau und differenzierung. Nutze sie bei der Auswahl. Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
+    description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Nenne Material immer mit Quelle, Nummer und Seite, damit die Lehrerin es aufschlagen kann; gib das auch so an materialZuordnen weiter. Bei Bildmaterial steht unter abbildung, was darauf zu sehen ist — verlasse dich darauf und erfinde keine Bildinhalte; das Bild selbst siehst du nicht. Ein Teil des Materials ist zusaetzlich didaktisch erschlossen — dann stehen bei einem Eintrag Felder wie rolleInReihe (einstieg/aufbauend/abschliessend), didaktischeFunktion (motivation, vorwissen, begriffsbildung, sichern …), offenheit, sozialform, niveau und differenzierung. Nutze sie bei der Auswahl. Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
     input_schema: {
       type: 'object',
       properties: {
@@ -375,8 +397,19 @@ const PC_EINHEIT_TOOLS = [
     }
   },
   {
+    name: 'readMaterial',
+    description: 'Liest EIN Material vollständig — Aufgabenstellung, Text, Lösungshinweise, Bildbeschreibung. Nutze es, wenn die Kurzfassung aus readDatenbank nicht reicht, um zu beurteilen, ob das Material trägt. Nicht auf Vorrat für viele Materialien.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Die id aus readDatenbank' }
+      },
+      required: ['id']
+    }
+  },
+  {
     name: 'readDatenbank',
-    description: 'Durchsucht die Materialdatenbank. Bei Bildmaterial steht unter abbildung, was darauf zu sehen ist — verlasse dich darauf und erfinde keine Bildinhalte; das Bild selbst siehst du nicht. Ein Teil des Materials ist zusaetzlich didaktisch erschlossen — dann stehen bei einem Eintrag Felder wie rolleInReihe (einstieg/aufbauend/abschliessend), didaktischeFunktion (motivation, vorwissen, begriffsbildung, sichern …), offenheit, sozialform, niveau und differenzierung. Nutze sie bei der Auswahl. Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
+    description: 'Durchsucht die Materialdatenbank. Nenne Material immer mit Quelle, Nummer und Seite, damit die Lehrerin es aufschlagen kann; gib das auch so an materialZuordnen weiter. Bei Bildmaterial steht unter abbildung, was darauf zu sehen ist — verlasse dich darauf und erfinde keine Bildinhalte; das Bild selbst siehst du nicht. Ein Teil des Materials ist zusaetzlich didaktisch erschlossen — dann stehen bei einem Eintrag Felder wie rolleInReihe (einstieg/aufbauend/abschliessend), didaktischeFunktion (motivation, vorwissen, begriffsbildung, sichern …), offenheit, sozialform, niveau und differenzierung. Nutze sie bei der Auswahl. Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
     input_schema: {
       type: 'object',
       properties: {
@@ -753,6 +786,28 @@ async function _pcExecTool(name, input, fp) {
       return JSON.stringify({ ok: true });
     }
 
+    case 'readMaterial': {
+      // Volltext eines einzelnen Materials. Die Trefferliste zeigt nur 220
+      // Zeichen — zu wenig, um zu beurteilen, ob ein Material trägt.
+      try {
+        const rows = await sbSelect('inhalte', { filters: { id: input.id }, limit: 1 });
+        const r = rows && rows[0];
+        if (!r) return JSON.stringify({ error: 'Material nicht gefunden: ' + input.id });
+        return JSON.stringify({
+          quelle: r.quelle_name, nr: r.nr, seite: r.seite,
+          inhaltstyp: r.inhaltstyp, thema: r.thema, kapitel: r.kapitel,
+          titel: r.titel || null,
+          aufgabenstellung: r.aufgabenstellung || null,
+          inhalt: r.inhalt || null,
+          abbildung: r.abbildung || null,
+          beschreibung: r.beschreibung || null,
+          hatLoesung: r.hat_loesung
+        });
+      } catch (e) {
+        return JSON.stringify({ error: 'Nicht lesbar: ' + e.message });
+      }
+    }
+
     case 'readDatenbank': {
       try {
         var _dbFach = fachKeyFuerDatenbank(fp.fach);
@@ -919,8 +974,10 @@ async function _pcExecTool(name, input, fp) {
           var qn = r.quelle_name || '(ohne Quelle)';
           if (!_byQ[qn]) { _byQ[qn] = { typ: r.quelle_typ, items: [] }; _qOrder.push(qn); }
           var _it = {
+            id: r.id,                // für readMaterial
             inhaltstyp: r.inhaltstyp,
             nr: r.nr,
+            seite: r.seite,          // damit die Lehrerin das Material aufschlagen kann
             thema: r.thema,
             kapitel: r.kapitel,
             jahrgang: r.jahrgang,
@@ -997,6 +1054,7 @@ const _PC_TOOL_LABELS = {
   readMethoden:   '🔍 Suche Methoden …',
   readDidaktik:   '📚 Lese didaktische Hinweise …',
   readDatenbank:  '🔍 Suche Materialien in der Datenbank …',
+  readMaterial:   '📄 Lese Material …',
   createStunde:   '✏ Lege Stunde an …',
   createReihe:    '✏ Lege Reihe an …',
   updateStunde:   '✏ Ändere Stunde …',
@@ -1014,6 +1072,7 @@ const _PC_TOOL_FERTIG = {
   readMethoden:   '🔍 Methoden durchsucht',
   readDidaktik:   '📚 Didaktik gelesen',
   readDatenbank:  '🔍 Material gesucht',
+  readMaterial:   '📄 Material gelesen',
   createStunde:   '✏ Stunde angelegt',
   createReihe:    '✏ Reihe angelegt',
   updateStunde:   '✏ Stunde geändert',

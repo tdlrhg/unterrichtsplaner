@@ -338,7 +338,7 @@ const PC_STUNDEN_TOOLS = [
   },
   {
     name: 'materialZuordnen',
-    description: 'Hält fest, welches Material zu einer Stunde gehört und wie es eingesetzt wird. Bewusst freitextlich: Das Material muss NICHT in der Materialdatenbank stehen. Nutze das, sobald ihr euch über eine Zuordnung einig seid — auch für Teilverwendung („nur Aufgabe 2–4") und nötige Anpassungen.',
+    description: 'Hält fest, welches Material zu einer Stunde gehört und wie es eingesetzt wird. Bewusst freitextlich: Das Material muss NICHT in der Materialdatenbank stehen. Nutze das, sobald ihr euch über eine Zuordnung einig seid — auch für Teilverwendung („nur Aufgabe 2–4") und nötige Anpassungen. Ordne NUR zu, was in der Stunde tatsächlich zum Einsatz kommt — bei den Lernenden oder sichtbar im Unterricht. Lehrerkommentare, Erläuterungen, Lösungsblätter und sonstige Vorbereitungslektüre gehören NICHT hierher; erwähne sie in notizen der Stunde.',
     input_schema: {
       type: 'object',
       properties: {
@@ -466,7 +466,7 @@ const PC_EINHEIT_TOOLS = [
   },
   {
     name: 'materialZuordnen',
-    description: 'Hält fest, welches Material zu einer Stunde gehört und wie es eingesetzt wird — auch Teilverwendung und nötige Anpassungen. Das Material muss NICHT in der Datenbank stehen.',
+    description: 'Hält fest, welches Material zu einer Stunde gehört und wie es eingesetzt wird — auch Teilverwendung und nötige Anpassungen. Das Material muss NICHT in der Datenbank stehen. Ordne NUR zu, was in der Stunde tatsächlich zum Einsatz kommt — bei den Lernenden oder sichtbar im Unterricht. Lehrerkommentare, Erläuterungen, Lösungsblätter und sonstige Vorbereitungslektüre gehören NICHT hierher; erwähne sie in notizen der Stunde.',
     input_schema: {
       type: 'object',
       properties: {

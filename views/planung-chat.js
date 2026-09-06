@@ -497,7 +497,8 @@ async function _pcExecTool(name, input, fp) {
             : { id: null, titel: 'ganze Reihe (keine Gruppen angelegt)' },
           stunden: eigene.map(s => ({
             id: s.id, titel: s.titel, lernziel: s.lernziel || '',
-            dauer: s.dauer, intention: s.intention || '', methoden: stundeMethodenText(s),
+            dauer: s.dauer, einheiten: stundeEinheiten(s),
+            intention: s.intention || '', methoden: stundeMethodenText(s),
             prioritaet: s.prioritaet || 'pflicht',
             notizen: s.notizen || '',
             material: (s.material || []).map(m => ({
@@ -535,9 +536,17 @@ async function _pcExecTool(name, input, fp) {
           id: rei.id, titel: rei.titel, beschreibung: rei.beschreibung || '',
           schwerpunkt: rei.schwerpunkt || '', stundenAnzahl: rei.stundenAnzahl,
           notizen: rei.notizen || '',
+          // Fertig gerechnet, damit die KI nicht selbst zählen muss: Eine
+          // Doppelstunde ist ein Eintrag, zählt aber zwei Unterrichtsstunden.
+          budget: {
+            soll: rei.stundenAnzahl || null,
+            belegt: summeStundenEinheiten(rei.stunden),
+            offen: (rei.stundenAnzahl || 0) - summeStundenEinheiten(rei.stunden)
+          },
           stunden: (rei.stunden || []).map(s => ({
             id: s.id, titel: s.titel, lernziel: s.lernziel || '',
-            dauer: s.dauer, intention: s.intention || '', methoden: stundeMethodenText(s),
+            dauer: s.dauer, einheiten: stundeEinheiten(s),
+            intention: s.intention || '', methoden: stundeMethodenText(s),
             prioritaet: s.prioritaet || 'pflicht',
             notizen: s.notizen || '',
             material: (s.material || []).map(m => ({
@@ -1414,6 +1423,11 @@ Das ist ein fortlaufendes Gespräch, kein Auftrag. Die Lehrerin arbeitet über T
 hinweg an dieser Reihe und bringt Material nach und nach ein — oft unsortiert und
 nicht in der Reihenfolge der Stunden. Plane nicht ungefragt die ganze Reihe durch.
 Arbeite an dem, was gerade ansteht, und warte ab, womit sie einsteigt.
+
+Rechne die Stundenzahl nie selbst nach: readPlan liefert unter „budget" soll,
+belegt und offen — fertig gerechnet, Doppelstunden bereits als zwei gezählt. Jede
+Stunde trägt zusätzlich „einheiten" (1 oder 2). Nimm diese Zahlen und behaupte
+nichts über das Budget, was ihnen widerspricht.
 
 Wenn sie ausdrücklich darum bittet, die Reihe komplett durchzuplanen, tu es: Lege
 dann Stunden an, bis stundenAnzahl aufgebraucht ist. stundenAnzahl ist das Budget in

@@ -668,9 +668,19 @@ function buildExtraktionVorschau(parsed, container) {
   const actRow = mk('div', '');
   actRow.style.cssText = 'display:flex;gap:8px;';
 
+  const saveMeldung = tx('div', '', '');
+  saveMeldung.style.cssText = 'font-size:12px;color:#dc2626;margin-top:8px;line-height:1.5;';
+
   const saveBtn = btn('✓ Speichern', 'btn btn-pri btn-sm');
   saveBtn.onclick = async () => {
-    saveBtn.disabled = true; saveBtn.textContent = '⏳ Speichert…';
+    saveBtn.disabled = true; saveBtn.textContent = '⏳ Speichert… 0 s';
+    saveMeldung.textContent = '';
+    // Mitlaufende Sekunden: sonst ist „wartet noch" von „hängt" nicht zu
+    // unterscheiden — und man sieht, ob die Zeitgrenze überhaupt greift.
+    const _t0 = Date.now();
+    const _tick = setInterval(() => {
+      saveBtn.textContent = '⏳ Speichert… ' + Math.round((Date.now() - _t0) / 1000) + ' s';
+    }, 1000);
     const entry = {
       id: uid(),
       erstellt: new Date().toISOString(),
@@ -685,14 +695,19 @@ function buildExtraktionVorschau(parsed, container) {
     // ein zweites Mal an.
     try {
       await sbUpload('didaktik-artikel.json', DIDARTDB.concat([entry]));
+      clearInterval(_tick);
       DIDARTDB.push(entry);
       didLoescheEntwurf();          // gespeichert — Entwurf wird nicht mehr gebraucht
       S._didaktikView = null;
       S._didaktikSel = entry.id;
       render();
     } catch(e) {
-      alert('Speichern fehlgeschlagen: ' + e.message
-        + '\n\nDeine Auswertung bleibt auf dem Bildschirm — du kannst es gleich erneut versuchen.');
+      clearInterval(_tick);
+      // In die Seite schreiben statt alert(): Ein einmal abgelehnter Dialog
+      // bleibt im Browser dauerhaft unterdrückt, die Meldung wäre dann weg.
+      saveMeldung.textContent = 'Speichern fehlgeschlagen nach '
+        + Math.round((Date.now() - _t0) / 1000) + ' s: ' + e.message
+        + ' — deine Auswertung bleibt stehen und ist lokal gesichert.';
       saveBtn.disabled = false; saveBtn.textContent = '✓ Speichern';
     }
   };
@@ -703,6 +718,7 @@ function buildExtraktionVorschau(parsed, container) {
   actRow.appendChild(saveBtn);
   actRow.appendChild(discardBtn);
   wrap.appendChild(actRow);
+  wrap.appendChild(saveMeldung);
 
   return wrap;
 }

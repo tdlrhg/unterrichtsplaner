@@ -134,10 +134,32 @@ function getDIDContext(ebenen = [], themen = [], werkzeuge = false) {
 }
 
 // ── Migration: altes Format (einheit.stunden[]) → flach (reihe.stunden[]) ──
+// Lesbare Kurzfassung der Methoden einer Stunde — für readPlan und Anzeigen.
+// Quelle ist ausschließlich stunde.methoden (die drei Phasen-Fächer); das
+// Altfeld stunde.methode wird nicht mehr gelesen.
+function stundeMethodenText(s) {
+  const m = s && s.methoden;
+  if (!m) return '';
+  return ['Einstieg', 'Erarbeitung', 'Sicherung']
+    .filter(t => m[t] && m[t].name)
+    .map(t => t + ': ' + m[t].name)
+    .join(' · ');
+}
+
 function migrateToFlatStunden(lp) {
   (lp.blocks || []).forEach(block => {
     (block.reihen || []).forEach(reihe => {
       if (!reihe.stunden) reihe.stunden = [];
+      // Altfeld methode ins neue Format überführen und entfernen. Solange es
+      // stehenblieb, war es in der Oberfläche unsichtbar, aber für die
+      // Planungs-KI lesbar — gelöschte Methoden tauchten wieder auf.
+      (reihe.stunden || []).forEach(s => {
+        if (typeof s.methode === 'string' && s.methode.trim()) {
+          if (!s.methoden) s.methoden = { Einstieg: null, Erarbeitung: null, Sicherung: null };
+          if (!s.methoden.Erarbeitung) s.methoden.Erarbeitung = { name: s.methode, id: null, begr: '' };
+        }
+        if ('methode' in s) delete s.methode;
+      });
       (reihe.einheiten || []).forEach(einheit => {
         if (Array.isArray(einheit.stunden) && einheit.stunden.length > 0) {
           einheit.stunden.forEach(s => {

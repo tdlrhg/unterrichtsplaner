@@ -186,7 +186,10 @@ function modalHandlerPlanung(type, data, m) {
     m.appendChild(tx('div', 'modal-title', 'Stunde bearbeiten'));
     m.appendChild(modalInput('mt', 'Titel', 'z.B. Einführung Nucleophilie', stunde.titel || ''));
     m.appendChild(modalInput('mlz', 'Lernziel', 'Was können SuS am Ende?', stunde.lernziel || ''));
-    m.appendChild(modalInput('mmeth', 'Methode', 'z.B. Schülerexperiment, UG, GA', stunde.methode || ''));
+    // Methode liegt in stunde.methoden.Erarbeitung — das Altfeld stunde.methode
+    // wird beim Laden entfernt, ein Schreiben dorthin ginge verloren.
+    m.appendChild(modalInput('mmeth', 'Methode (Erarbeitung)', 'z.B. Schülerexperiment, UG, GA',
+      (stunde.methoden && stunde.methoden.Erarbeitung && stunde.methoden.Erarbeitung.name) || ''));
     m.appendChild(modalTextarea('mn', 'Notizen', 'Materialhinweise, didaktische Ideen, offene Fragen…', stunde.notizen || ''));
     const footer = mk('div', 'modal-footer');
     footer.appendChild(cancelBtn());
@@ -196,7 +199,9 @@ function modalHandlerPlanung(type, data, m) {
       if (!t) return;
       stunde.titel   = t;
       stunde.lernziel = document.getElementById('mlz').value.trim();
-      stunde.methode  = document.getElementById('mmeth').value.trim();
+      const _meth = document.getElementById('mmeth').value.trim();
+      if (!stunde.methoden) stunde.methoden = { Einstieg: null, Erarbeitung: null, Sicherung: null };
+      stunde.methoden.Erarbeitung = _meth ? { name: _meth, id: null, begr: '' } : null;
       stunde.notizen  = document.getElementById('mn').value.trim();
       S.modal = null; scheduleSave(); render();
     };

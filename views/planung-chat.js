@@ -494,7 +494,7 @@ async function _pcExecTool(name, input, fp) {
             : { id: null, titel: 'ganze Reihe (keine Gruppen angelegt)' },
           stunden: eigene.map(s => ({
             id: s.id, titel: s.titel, lernziel: s.lernziel || '',
-            dauer: s.dauer, intention: s.intention || '', methode: s.methode || '',
+            dauer: s.dauer, intention: s.intention || '', methoden: stundeMethodenText(s),
             prioritaet: s.prioritaet || 'pflicht',
             notizen: s.notizen || '',
             material: (s.material || []).map(m => ({
@@ -534,7 +534,7 @@ async function _pcExecTool(name, input, fp) {
           notizen: rei.notizen || '',
           stunden: (rei.stunden || []).map(s => ({
             id: s.id, titel: s.titel, lernziel: s.lernziel || '',
-            dauer: s.dauer, intention: s.intention || '', methode: s.methode || '',
+            dauer: s.dauer, intention: s.intention || '', methoden: stundeMethodenText(s),
             prioritaet: s.prioritaet || 'pflicht',
             notizen: s.notizen || '',
             material: (s.material || []).map(m => ({
@@ -552,7 +552,7 @@ async function _pcExecTool(name, input, fp) {
           id: r.id, titel: r.titel, beschreibung: r.beschreibung,
           schwerpunkt: r.schwerpunkt, stundenAnzahl: r.stundenAnzahl,
           notizen: r.notizen || '',
-          stunden: (r.stunden || []).map(s => ({ id: s.id, titel: s.titel, lernziel: s.lernziel, dauer: s.dauer, methode: s.methode, notizen: s.notizen || '' }))
+          stunden: (r.stunden || []).map(s => ({ id: s.id, titel: s.titel, lernziel: s.lernziel, dauer: s.dauer, methoden: stundeMethodenText(s), notizen: s.notizen || '' }))
         }))
       }]);
     }

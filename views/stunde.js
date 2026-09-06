@@ -272,6 +272,11 @@ Antworte NUR als JSON-Array von Strings:
   if (!stunde.methoden) {
     stunde.methoden = { Einstieg: null, Erarbeitung: null, Sicherung: null };
     if (stunde.methode) stunde.methoden.Erarbeitung = { name: stunde.methode, id: null, begr: '' };
+    // Altfeld nach der Übernahme entfernen. Blieb es stehen, war es unsichtbar,
+    // aber für die Planungs-KI weiterhin lesbar — gelöschte Methoden kamen
+    // dadurch immer wieder zurück.
+    delete stunde.methode;
+    scheduleSave();
   }
   const methAnz = ['Einstieg','Erarbeitung','Sicherung'].filter(t => stunde.methoden[t]?.name).length;
   const methFertigNeu = methAnz > 0;

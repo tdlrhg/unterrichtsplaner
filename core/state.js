@@ -105,17 +105,23 @@ function getAktKurs(fpId) {
 
 function getDIDContext(ebenen = [], themen = [], werkzeuge = false) {
   if (!DIDARTDB.length) return '';
+  // Die Schlagwörter der Artikel sind groß geschrieben („Differenzierung"),
+  // die Suchbegriffe der KI klein. Ohne Normalisierung findet „differenzierung"
+  // nichts, obwohl 40 Bausteine so verschlagwortet sind.
+  const suche = themen.map(t => String(t).toLowerCase().trim()).filter(Boolean);
+  const passt = tags => !suche.length || (tags || []).some(t => {
+    const tag = String(t).toLowerCase();
+    return suche.some(th => tag.includes(th) || th.includes(tag));
+  });
   const lines = [];
   DIDARTDB.forEach(art => {
     (art.kernaussagen || []).forEach(k => {
       const eOk = !ebenen.length || (k.planungsebene||[]).some(e => ebenen.includes(e));
-      const tOk = !themen.length || (k.themen||[]).some(t => themen.some(th => t.includes(th) || th.includes(t)));
-      if (eOk && tOk) lines.push('• ' + k.aussage);
+      if (eOk && passt(k.themen)) lines.push('• ' + k.aussage);
     });
     (art.muster || []).forEach(m => {
       const eOk = !ebenen.length || (m.planungsebene||[]).some(e => ebenen.includes(e));
-      const tOk = !themen.length || (m.themen||[]).some(t => themen.some(th => t.includes(th) || th.includes(t)));
-      if (eOk && tOk) lines.push(`→ ${m.name}: ${m.prinzip}`);
+      if (eOk && passt(m.themen)) lines.push(`→ ${m.name}: ${m.prinzip}`);
     });
     if (werkzeuge) {
       const wz = art.werkzeuge || {};

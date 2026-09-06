@@ -66,6 +66,9 @@ async function _pcVerlaufVerwerfen() {
   const key = _pcChatKey;
   _pcMsgs = []; _pcApi = [];
   _pcLoadedKey = key;          // nicht erneut aus der Tabelle nachladen
+  // Auch das gemerkte Material vergessen: Wer neu ansetzt, hat oft gerade
+  // etwas am Material geändert und bekäme sonst den alten Stand.
+  _pcMaterialCache = { key: null, roh: '' };
   _pcRender();
   try {
     await sbDelete('chats', key);

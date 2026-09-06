@@ -290,7 +290,7 @@ const PC_STUNDEN_TOOLS = [
   },
   {
     name: 'readDatenbank',
-    description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Ein Teil des Materials ist zusaetzlich didaktisch erschlossen — dann stehen bei einem Eintrag Felder wie rolleInReihe (einstieg/aufbauend/abschliessend), didaktischeFunktion (motivation, vorwissen, begriffsbildung, sichern …), offenheit, sozialform, niveau und differenzierung. Nutze sie bei der Auswahl. Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
+    description: 'Durchsucht die Materialdatenbank nach verfügbarem Unterrichtsmaterial für dieses Fach (Arbeitsblätter, Materialsets, Handreichungen, Schulbuch-Aufgaben). Bei Bildmaterial steht unter abbildung, was darauf zu sehen ist — verlasse dich darauf und erfinde keine Bildinhalte; das Bild selbst siehst du nicht. Ein Teil des Materials ist zusaetzlich didaktisch erschlossen — dann stehen bei einem Eintrag Felder wie rolleInReihe (einstieg/aufbauend/abschliessend), didaktischeFunktion (motivation, vorwissen, begriffsbildung, sichern …), offenheit, sozialform, niveau und differenzierung. Nutze sie bei der Auswahl. Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
     input_schema: {
       type: 'object',
       properties: {
@@ -373,7 +373,7 @@ const PC_EINHEIT_TOOLS = [
   },
   {
     name: 'readDatenbank',
-    description: 'Durchsucht die Materialdatenbank. Ein Teil des Materials ist zusaetzlich didaktisch erschlossen — dann stehen bei einem Eintrag Felder wie rolleInReihe (einstieg/aufbauend/abschliessend), didaktischeFunktion (motivation, vorwissen, begriffsbildung, sichern …), offenheit, sozialform, niveau und differenzierung. Nutze sie bei der Auswahl. Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
+    description: 'Durchsucht die Materialdatenbank. Bei Bildmaterial steht unter abbildung, was darauf zu sehen ist — verlasse dich darauf und erfinde keine Bildinhalte; das Bild selbst siehst du nicht. Ein Teil des Materials ist zusaetzlich didaktisch erschlossen — dann stehen bei einem Eintrag Felder wie rolleInReihe (einstieg/aufbauend/abschliessend), didaktischeFunktion (motivation, vorwissen, begriffsbildung, sichern …), offenheit, sozialform, niveau und differenzierung. Nutze sie bei der Auswahl. Hier steht ALLES, was erfasst wurde — Schulbücher ebenso wie eigenes Material der Lehrerin (quelle_typ eigenmaterial). Behaupte nie, eigenes Material sei hier grundsätzlich nicht zu finden. Findest du nichts, lag es am Suchbegriff.',
     input_schema: {
       type: 'object',
       properties: {
@@ -900,6 +900,9 @@ async function _pcExecTool(name, input, fp) {
             // was darauf gedruckt ist.
             beschreibung: (r.beschreibung || r.aufgabenstellung || r.inhalt || '').slice(0, 220)
           };
+          // Was auf dem Material ZU SEHEN ist. Ohne dieses Feld plant die KI
+          // blind über Bildmaterial und erfindet, was darauf sein könnte.
+          if (r.abbildung) _it.abbildung = String(r.abbildung).slice(0, 300);
           // Felder aus dem KI-Fingerprint. Nur die planungsrelevanten und nur,
           // wenn gefüllt — sonst blaeht sich die Antwort mit null-Feldern auf.
           // mathematische_objekte heißt historisch so, enthält aber die

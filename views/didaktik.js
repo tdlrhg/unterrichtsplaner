@@ -323,31 +323,66 @@ function buildExtraktionUI() {
     await handleFiles(e.dataTransfer.files);
   };
 
+  // Ohne onerror und ohne Zeitgrenze wird das Versprechen bei einer nicht
+  // dekodierbaren Datei nie eingelöst — das await davor wartet dann endlos,
+  // ohne Fehler und ohne Meldung. Es sieht aus, als hänge die Seite.
   function resizeImage(dataUrl, maxWidth, quality) {
     return new Promise(resolve => {
+      let fertig = false;
+      const raus = (wert) => { if (!fertig) { fertig = true; resolve(wert); } };
+      const uhr = setTimeout(() => raus(null), 20000);
       const img = new Image();
       img.onload = () => {
-        const scale = Math.min(1, maxWidth / img.width);
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
+        clearTimeout(uhr);
+        try {
+          const scale = Math.min(1, maxWidth / img.width);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          const url = canvas.toDataURL('image/jpeg', quality);
+          canvas.width = 0; canvas.height = 0;
+          raus(url && url.length > 100 ? url : null);
+        } catch (e) {
+          console.warn('[Didaktik] Bild konnte nicht verkleinert werden:', e.message);
+          raus(null);
+        }
       };
+      img.onerror = () => { clearTimeout(uhr); raus(null); };
       img.src = dataUrl;
     });
   }
 
   // Sequentiell lesen — Reihenfolge bleibt erhalten
   async function handleFiles(files) {
-    for (const file of Array.from(files).filter(f => f.type.startsWith('image/'))) {
-      const dataUrl = await new Promise((res, rej) => {
-        const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsDataURL(file);
-      });
-      const resized = await resizeImage(dataUrl, 1200, 0.82);
+    const alle = Array.from(files);
+    const bilder = alle.filter(f => f.type.startsWith('image/'));
+    const abgelehnt = alle.filter(f => !f.type.startsWith('image/')).map(f => f.name);
+    const gescheitert = [];
+
+    for (const file of bilder) {
+      let dataUrl = null;
+      try {
+        dataUrl = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = e => res(e.target.result);
+          r.onerror = () => rej(new Error('Datei nicht lesbar'));
+          r.readAsDataURL(file);
+        });
+      } catch (e) { dataUrl = null; }
+
+      const resized = dataUrl ? await resizeImage(dataUrl, 1200, 0.82) : null;
+      if (!resized) { gescheitert.push(file.name); continue; }
+
       uploadedImages.push({ name: file.name, dataUrl: resized, mediaType: 'image/jpeg' });
       renderUploadArea();
     }
+
+    // Stilles Verschlucken war das eigentliche Problem — sagen, was nicht ging.
+    const meldung = []
+      .concat(abgelehnt.length ? ['Keine Bilddatei: ' + abgelehnt.join(', ') + ' (PDF wird hier nicht unterstützt)'] : [])
+      .concat(gescheitert.length ? ['Konnte nicht gelesen werden: ' + gescheitert.join(', ')] : []);
+    if (meldung.length) alert(meldung.join('\n'));
   }
 
   function renderUploadArea() {

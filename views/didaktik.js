@@ -1,5 +1,36 @@
 // ── Didaktik-Wissensdatenbank ─────────────────────────────────────
 
+// ── Entwurfssicherung ─────────────────────────────────────────────
+// Die KI-Auswertung eines Kapitels ist teuer (18 Seiten ≈ 48.000 Tokens) und
+// lag bisher nur im Speicher der Seite: Tabwechsel, hängender Upload oder ein
+// Neuladen — und sie war weg. Deshalb wird sie sofort nach dem Aufruf lokal
+// abgelegt und beim nächsten Öffnen angeboten.
+const DID_ENTWURF_KEY = 'did_entwurf';
+
+function didSichereEntwurf(parsed) {
+  try {
+    localStorage.setItem(DID_ENTWURF_KEY, JSON.stringify({
+      gesichert: new Date().toISOString(),
+      parsed: parsed
+    }));
+  } catch (e) {
+    console.warn('[Didaktik] Entwurf konnte nicht gesichert werden:', e.message);
+  }
+}
+
+function didLadeEntwurf() {
+  try {
+    const roh = localStorage.getItem(DID_ENTWURF_KEY);
+    if (!roh) return null;
+    const d = JSON.parse(roh);
+    return (d && d.parsed && d.parsed.quelle) ? d : null;
+  } catch (e) { return null; }
+}
+
+function didLoescheEntwurf() {
+  try { localStorage.removeItem(DID_ENTWURF_KEY); } catch (e) {}
+}
+
 // Schema eines Wissensartikels:
 // {
 //   id, erstellt,
@@ -301,6 +332,27 @@ function buildExtraktionUI() {
   hint.style.cssText = 'font-size:13px;color:var(--tx2);margin-bottom:14px;line-height:1.5;';
   body.appendChild(hint);
 
+  // Liegengebliebene Auswertung anbieten, statt sie still verfallen zu lassen
+  const entwurf = didLadeEntwurf();
+  if (entwurf) {
+    const box = mk('div', '');
+    box.style.cssText = 'border:1px solid var(--bord);border-radius:8px;padding:12px 14px;'
+      + 'margin-bottom:14px;background:var(--surf2);display:flex;align-items:center;gap:12px;flex-wrap:wrap;';
+    const wann = new Date(entwurf.gesichert);
+    box.appendChild(tx('div', '', '↩ Nicht gespeicherte Auswertung: „'
+      + (entwurf.parsed.quelle.titel || 'ohne Titel') + '" vom '
+      + wann.toLocaleDateString('de-DE') + ' ' + wann.toLocaleTimeString('de-DE', {hour:'2-digit',minute:'2-digit'})));
+    const weiter = btn('Weiterbearbeiten', 'btn btn-pri btn-sm');
+    weiter.onclick = () => {
+      body.innerHTML = '';
+      body.appendChild(buildExtraktionVorschau(entwurf.parsed, body));
+    };
+    const weg = btn('Verwerfen', 'btn btn-ghost btn-sm');
+    weg.onclick = () => { didLoescheEntwurf(); render(); };
+    box.appendChild(weiter); box.appendChild(weg);
+    body.appendChild(box);
+  }
+
   // Upload-Bereich
   let uploadedImages = [];
   let thumbDragSrc = null;
@@ -563,6 +615,11 @@ Die Seiten des Artikels sind als Bilder beigefügt.`;
       }
       if (!parsed.quelle) throw new Error('Ungültige Antwort von der KI.');
 
+      // Sofort lokal sichern — noch vor jedem Netzzugriff. Ein Kapitel mit 18
+      // Seiten kostet rund 48.000 Tokens; ein Tabwechsel, ein hängender Upload
+      // oder ein Neuladen darf diese Arbeit nicht vernichten.
+      didSichereEntwurf(parsed);
+
       // Vorschau anzeigen
       statusEl.textContent = '';
       body.innerHTML = '';
@@ -629,6 +686,7 @@ function buildExtraktionVorschau(parsed, container) {
     try {
       await sbUpload('didaktik-artikel.json', DIDARTDB.concat([entry]));
       DIDARTDB.push(entry);
+      didLoescheEntwurf();          // gespeichert — Entwurf wird nicht mehr gebraucht
       S._didaktikView = null;
       S._didaktikSel = entry.id;
       render();

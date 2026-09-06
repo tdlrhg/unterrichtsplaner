@@ -246,13 +246,13 @@ const PC_STUNDEN_TOOLS = [
   },
   {
     name: 'createStunde',
-    description: 'Erstellt eine Unterrichtsstunde in dieser Reihe (Thema, Lernziel, Methode – noch keine Phasen). Jede angelegte Stunde entspricht einer Unterrichtsstunde à 45 Min. – auch wenn sie später als Teil einer Doppelstunde unterrichtet wird. Verwende immer dauer=45.',
+    description: 'Erstellt eine Unterrichtsstunde in dieser Reihe (Thema, Lernziel, Methode – noch keine Phasen). Eine Doppelstunde ist EIN Eintrag mit dauer=90, nicht zwei Einträge mit „[1/2]" und „[2/2]" im Titel — das Werkzeug rechnet sie selbst als zwei Unterrichtsstunden.',
     input_schema: {
       type: 'object',
       properties: {
         titel:    { type: 'string', description: 'Stundenthema' },
         lernziel: { type: 'string', description: 'Lernziel der Stunde (optional)' },
-        dauer:    { type: 'number', description: 'Immer 45 – eine Doppelstunde = zwei Einträge à 45 Min.' },
+        dauer:    { type: 'number', description: '45 für eine Einzelstunde, 90 für eine Doppelstunde. Nichts anderes.' },
         intention:{ type: 'string', description: 'Didaktische Begründung (optional)' },
         methode:  { type: 'string', description: 'Hauptmethode (optional)' },
         prioritaet: { type: 'string', description: 'pflicht | optional | puffer — „optional" markiert eine Stunde, die entfallen könnte. Nutze es, wenn ihr euch noch nicht sicher seid, und begründe es in notizen.' },
@@ -1416,9 +1416,11 @@ nicht in der Reihenfolge der Stunden. Plane nicht ungefragt die ganze Reihe durc
 Arbeite an dem, was gerade ansteht, und warte ab, womit sie einsteigt.
 
 Wenn sie ausdrücklich darum bittet, die Reihe komplett durchzuplanen, tu es: Lege
-dann genau stundenAnzahl Stunden an, jede mit dauer=45. stundenAnzahl ist das Budget
-in Unterrichtsstunden à 45 Minuten — eine Doppelstunde zählt darin als zwei. Wie sie
-die im Stundenplan verteilt, entscheidest nicht du.
+dann Stunden an, bis stundenAnzahl aufgebraucht ist. stundenAnzahl ist das Budget in
+Unterrichtsstunden à 45 Minuten: Eine Einzelstunde (dauer=45) verbraucht eine, eine
+Doppelstunde (dauer=90) verbraucht zwei. Eine Doppelstunde ist EIN Eintrag mit
+dauer=90 — lege dafür nie zwei Stunden mit „[1/2]" und „[2/2]" an. Wie sie die im
+Stundenplan verteilt, entscheidest nicht du.
 
 Zum Einstieg rufst du readPlan einmal auf, um den Stand zu sehen — welche Stunden es
 gibt, welches Material schon zugeordnet ist, und welche Reihen davor und danach

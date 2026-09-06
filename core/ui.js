@@ -254,15 +254,22 @@ function phasenTable(stunde) {
 
     // Titel + Inhalt
     const ti = document.createElement('td');
-    ti.style.minWidth = '180px';
+    ti.style.minWidth = '340px';   // die breiteste Spalte — hier steht der Verlauf
     const titI = document.createElement('input');
     titI.type = 'text'; titI.value = phase.titel || ''; titI.placeholder = 'Titel';
-    titI.style.cssText = 'border:none;background:transparent;font-size:13px;width:100%;font-family:inherit;display:block;';
+    titI.style.cssText = 'border:none;background:transparent;font-size:13px;width:100%;font-family:inherit;display:block;font-weight:600;';
     titI.oninput = e => { phase.titel = e.target.value; scheduleSave(); };
     const inhTA = document.createElement('textarea');
     inhTA.value = phase.inhalt || ''; inhTA.placeholder = 'Inhalt / Aktivität…';
-    inhTA.style.cssText = 'border:none;background:transparent;font-size:13px;width:100%;font-family:inherit;min-height:40px;resize:vertical;display:block;';
-    inhTA.oninput = e => { phase.inhalt = e.target.value; scheduleSave(); };
+    inhTA.style.cssText = 'border:none;background:transparent;font-size:13px;width:100%;font-family:inherit;resize:none;display:block;overflow:hidden;line-height:1.45;';
+    // Mitwachsen statt Rollbalken: In einem 40px hohen Feld war vom Verlauf
+    // nur die erste Zeile zu sehen, der Rest verschwand hinter der Bildlaufleiste.
+    const inhWachsen = () => {
+      inhTA.style.height = 'auto';
+      inhTA.style.height = Math.max(38, inhTA.scrollHeight + 2) + 'px';
+    };
+    inhTA.oninput = e => { phase.inhalt = e.target.value; inhWachsen(); scheduleSave(); };
+    setTimeout(inhWachsen, 0);
     ti.appendChild(titI); ti.appendChild(inhTA);
     tr.appendChild(ti);
 

@@ -663,14 +663,17 @@ textarea::placeholder { color: #c4cdd6; }
 .lz-row:hover .lz-del { opacity: 1; }
 
 /* ── Phasierungsmodell-Kacheln ── */
-.modell-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 16px 4px; }
-.modell-kachel { border: 2px solid var(--bord); border-radius: 8px; padding: 10px 12px; cursor: pointer; transition: border-color .15s, background .15s; background: var(--surf2); }
+.modell-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px 16px 2px; }
+/* Symbol und Name in eine Zeile — die Kacheln nahmen sonst viermal so viel
+   Hoehe wie noetig, obwohl die Schrift schon klein ist. */
+.modell-kachel { border: 1.5px solid var(--bord); border-radius: 7px; padding: 6px 9px; cursor: pointer; transition: border-color .15s, background .15s; background: var(--surf2); }
 .modell-kachel:hover { border-color: var(--pri2); background: #f0fdfa; }
 .modell-kachel.active { border-color: var(--pri); background: #ccfbf1; }
-.modell-icon { font-size: 18px; margin-bottom: 4px; }
-.modell-name { font-size: 12px; font-weight: 700; color: var(--tx); margin-bottom: 3px; }
-.modell-phasen { font-size: 10px; color: var(--tx2); margin-bottom: 3px; line-height: 1.4; }
-.modell-hinweis { font-size: 10px; color: var(--tx3); font-style: italic; }
+.modell-kachel-kopf { display: flex; align-items: baseline; gap: 5px; }
+.modell-icon { font-size: 13px; }
+.modell-name { font-size: 11.5px; font-weight: 700; color: var(--tx); }
+.modell-phasen { font-size: 9.5px; color: var(--tx2); line-height: 1.35; margin-top: 2px; }
+.modell-hinweis { font-size: 9.5px; color: var(--tx3); font-style: italic; }
 .modell-kachel.active .modell-name { color: var(--pri); }
 .modell-ki-begr { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 6px; font-size: 12px; color: var(--tx2); padding: 6px 2px 2px; }
 .modell-ki-begr-icon { flex-shrink: 0; }

@@ -7,6 +7,14 @@
 // abgelegt und beim nächsten Öffnen angeboten.
 const DID_ENTWURF_KEY = 'did_entwurf';
 
+// uid() steht in core/state.js — das lädt datenbank.html nicht, diese Ansicht
+// läuft aber auf beiden Seiten. Ohne eigenen Ersatz warf das Speichern dort
+// einen ReferenceError, bevor überhaupt etwas hochgeladen wurde.
+function didUid() {
+  if (typeof uid === 'function') return uid();
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+}
+
 function didSichereEntwurf(parsed) {
   try {
     localStorage.setItem(DID_ENTWURF_KEY, JSON.stringify({
@@ -681,19 +689,21 @@ function buildExtraktionVorschau(parsed, container) {
     const _tick = setInterval(() => {
       saveBtn.textContent = '⏳ Speichert… ' + Math.round((Date.now() - _t0) / 1000) + ' s';
     }, 1000);
-    const entry = {
-      id: uid(),
-      erstellt: new Date().toISOString(),
-      quelle: parsed.quelle,
-      kernaussagen: (parsed.kernaussagen||[]).map(k => ({ id: uid(), ...k })),
-      muster: (parsed.muster||[]).map(m => ({ id: uid(), ...m })),
-      werkzeuge: parsed.werkzeuge || { heuristiken: [], repraesentationen: [], methoden: [] },
-      einwaende: (parsed.einwaende||[]).map(e => ({ id: uid(), ...e })),
-    };
-    // Erst hochladen, dann in den Bestand übernehmen. Andersherum steht der
-    // Artikel nach einem Fehlschlag schon drin und der zweite Versuch legt ihn
-    // ein zweites Mal an.
+    // Alles im try: Ein Fehler beim Bauen des Eintrags flog vorher ungefangen
+    // heraus, und der Knopf blieb dauerhaft auf „Speichert…" stehen.
     try {
+      const entry = {
+        id: didUid(),
+        erstellt: new Date().toISOString(),
+        quelle: parsed.quelle,
+        kernaussagen: (parsed.kernaussagen||[]).map(k => ({ id: didUid(), ...k })),
+        muster: (parsed.muster||[]).map(m => ({ id: didUid(), ...m })),
+        werkzeuge: parsed.werkzeuge || { heuristiken: [], repraesentationen: [], methoden: [] },
+        einwaende: (parsed.einwaende||[]).map(e => ({ id: didUid(), ...e })),
+      };
+      // Erst hochladen, dann in den Bestand übernehmen. Andersherum steht der
+      // Artikel nach einem Fehlschlag schon drin und der zweite Versuch legt
+      // ihn ein zweites Mal an.
       await sbUpload('didaktik-artikel.json', DIDARTDB.concat([entry]));
       clearInterval(_tick);
       DIDARTDB.push(entry);

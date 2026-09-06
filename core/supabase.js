@@ -3,6 +3,11 @@ const _URL = 'https://yjyqmpppwglktvcfcorh.supabase.co';
 const _KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqeXFtcHBwd2dsa3R2Y2Zjb3JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MjI0MDEsImV4cCI6MjA5NDE5ODQwMX0.GHE6wIVw72B7tzx7s6mihKppHCzVKugYo07wOFZvMhg';
 const BUCKET = 'unterrichtsplaner';
 
+// Ohne Zeitgrenze wartet ein haengender Upload endlos — der Knopf steht dann
+// dauerhaft auf „Speichert…", ohne Fehler und ohne Ausweg. Lieber nach einer
+// Minute abbrechen und es sagen; geschrieben wird eine Datei ganz oder gar nicht.
+const SB_UPLOAD_TIMEOUT = 60000;
+
 async function sbUpload(path, obj) {
   const url = _URL + '/storage/v1/object/' + BUCKET + '/' + path;
   const body = new Blob([JSON.stringify(obj)], { type: 'application/octet-stream' });
@@ -12,10 +17,23 @@ async function sbUpload(path, obj) {
     'Content-Type': 'application/octet-stream',
     'x-upsert': 'true'
   };
-  let res = await fetch(url, { method: 'POST', headers, body });
-  if (!res.ok) {
-    res = await fetch(url, { method: 'PUT', headers, body });
+  async function sende(method) {
+    const ctrl = new AbortController();
+    const uhr = setTimeout(() => ctrl.abort(), SB_UPLOAD_TIMEOUT);
+    try {
+      return await fetch(url, { method, headers, body, signal: ctrl.signal });
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        throw new Error('Zeitüberschreitung beim Speichern von ' + path
+          + ' — die Verbindung antwortet nicht. Nichts wurde geschrieben; bitte erneut versuchen.');
+      }
+      throw new Error('Verbindungsfehler beim Speichern von ' + path + ': ' + e.message);
+    } finally {
+      clearTimeout(uhr);
+    }
   }
+  let res = await sende('POST');
+  if (!res.ok) res = await sende('PUT');
   if (!res.ok) throw new Error(await res.text());
 }
 

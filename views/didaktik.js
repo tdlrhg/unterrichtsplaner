@@ -606,14 +606,18 @@ function buildExtraktionVorschau(parsed, container) {
       werkzeuge: parsed.werkzeuge || { heuristiken: [], repraesentationen: [], methoden: [] },
       einwaende: (parsed.einwaende||[]).map(e => ({ id: uid(), ...e })),
     };
-    DIDARTDB.push(entry);
+    // Erst hochladen, dann in den Bestand übernehmen. Andersherum steht der
+    // Artikel nach einem Fehlschlag schon drin und der zweite Versuch legt ihn
+    // ein zweites Mal an.
     try {
-      await sbUpload('didaktik-artikel.json', DIDARTDB);
+      await sbUpload('didaktik-artikel.json', DIDARTDB.concat([entry]));
+      DIDARTDB.push(entry);
       S._didaktikView = null;
       S._didaktikSel = entry.id;
       render();
     } catch(e) {
-      alert('Speichern fehlgeschlagen: ' + e.message);
+      alert('Speichern fehlgeschlagen: ' + e.message
+        + '\n\nDeine Auswertung bleibt auf dem Bildschirm — du kannst es gleich erneut versuchen.');
       saveBtn.disabled = false; saveBtn.textContent = '✓ Speichern';
     }
   };

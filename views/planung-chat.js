@@ -1400,8 +1400,12 @@ Worauf du achtest:
    Sekundarstufe I. Die Übergangszeiten aus Punkt 3 zählen in dieses Budget hinein,
    nicht obendrauf.
 
-   In einer Doppelstunde fallen die Rahmenzeiten nur einmal an — abzüglich der
-   Pause bleiben dort spürbar mehr als zwei Einzelstunden hergeben.
+   Eine Doppelstunde ist EIN Eintrag mit dauer=90, keine zwei Stunden. Frage nicht
+   nach der Länge der „zweiten Stunde" — es gibt keine. Die Rahmenzeiten fallen nur
+   einmal an, dafür geht die Pause ab: Rechne mit etwa 75 Minuten unterrichtlicher
+   Zeit in der Sekundarstufe I und etwa 80 in der Sekundarstufe II, unterbrochen von
+   einer 5-Minuten-Pause. Plane die Phasen über die ganze Doppelstunde hinweg und
+   lege die Pause an eine Stelle, an der ein Schnitt didaktisch passt.
 
    Liegen die Phasenzeiten in Summe darüber, sag es deutlich und benenne, was
    gekürzt, verschoben oder als „wenn Zeit bleibt" markiert wird. Eine Planung, die

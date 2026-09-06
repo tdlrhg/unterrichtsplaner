@@ -526,7 +526,24 @@ Die Seiten des Artikels sind als Bilder beigefügt.`;
         })),
         { type: 'text', text: prompt }
       ];
-      const rawText = await callKI(_blocks, { maxTokens: 8000, label: 'didaktik-import' });
+      // Laufende Anzeige: Ein Kapitel mit 18 Seiten sind rund 48.000 Tokens in
+      // einer Anfrage. Ohne Rückmeldung ist „rechnet noch" von „hängt" nicht
+      // zu unterscheiden.
+      const _start = Date.now();
+      const _uhr = setInterval(() => {
+        const s = Math.round((Date.now() - _start) / 1000);
+        statusEl.textContent = 'KI liest ' + uploadedImages.length + ' Seiten … '
+          + (s < 60 ? s + ' s' : Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + ' min');
+      }, 1000);
+
+      let rawText;
+      try {
+        // 16000 statt 8000: Bei einem langen Kapitel mit vielen Kernaussagen
+        // und Mustern brach die Antwort sonst mitten im JSON ab.
+        rawText = await callKI(_blocks, { maxTokens: 16000, label: 'didaktik-import' });
+      } finally {
+        clearInterval(_uhr);
+      }
       let jsonStr = rawText.match(/\{[\s\S]*\}/)?.[0] || '{}';
       // Robuste Bereinigung: trailing commas, abgeschnittene Arrays/Objekte schließen
       jsonStr = jsonStr

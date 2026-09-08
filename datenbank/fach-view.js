@@ -61,6 +61,10 @@ async function buildFachView(container) {
   abDupBtn.title = 'Ausgewählte Aufgaben duplizieren';
   abDupBtn.onclick = function() { _runDuplicate(load); };
   actionBar.appendChild(abDupBtn);
+  var abFachBtn = btn('⇄ Fach wechseln', 'btn btn-sm');
+  abFachBtn.title = 'Ausgewählte Aufgaben in ein anderes Fach umtragen';
+  abFachBtn.onclick = function() { _runFachWechsel(load); };
+  actionBar.appendChild(abFachBtn);
   var abDelBtn = btn('🗑 Löschen', 'btn btn-sm');
   abDelBtn.style.cssText += 'background:#fee2e2;color:#b91c1c;border-color:#fca5a5;';
   abDelBtn.onclick = function() { _runDelete(load); };

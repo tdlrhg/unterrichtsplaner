@@ -121,10 +121,25 @@ function viewKursDetail(kursId) {
     return (block.reihen || []).reduce((s, r) => s + (parseInt(r.stundenAnzahl) || 0), 0);
   }
 
-  // Soll-Stunden aus Blöcken
+  // Welche Blöcke gehören zu DIESEM Kurs? Eine Fachplanung kann länger laufen
+  // als ein Schuljahr (Q1/Q2). Gezählt wird nur, was auf der Zeitachse dieses
+  // Kurses liegt — abzüglich der Stunden, die schon im Vorjahr gehalten wurden
+  // (Versatz). Liegt noch gar nichts auf der Zeitachse, zählen alle Blöcke wie
+  // bisher, damit einjährige Kurse ohne Zeitplanung nicht plötzlich leer sind.
+  const kursPlanung = ((S.data.zeitplanung || {})[kursId]) || {};
+  const alleBloecke = fp ? (fp.blocks || []) : [];
+  const irgendwasPlatziert = alleBloecke.some(b => kursPlanung[b.id]);
+  const kursBloecke = irgendwasPlatziert ? alleBloecke.filter(b => kursPlanung[b.id]) : alleBloecke;
+  const nichtEingeplant = irgendwasPlatziert ? alleBloecke.filter(b => !kursPlanung[b.id]) : [];
+  function blockVersatzKurs(block) {
+    const p = kursPlanung[block.id];
+    return Math.max(0, (p && parseInt(p.versatz)) || 0);
+  }
+
+  // Soll-Stunden aus den Blöcken dieses Kurses
   let sollGesamt = 0;
-  (fp ? fp.blocks || [] : []).forEach(b => {
-    const g = blockSoll(b);
+  kursBloecke.forEach(b => {
+    const g = Math.max(0, blockSoll(b) - blockVersatzKurs(b));
     if (g > 0) sollGesamt += g;
   });
 
@@ -214,17 +229,19 @@ function viewKursDetail(kursId) {
     const tbody = document.createElement('tbody');
     let sumSoll = 0, sumGeplant = 0;
 
-    (fp.blocks || []).forEach(block => {
+    kursBloecke.forEach(block => {
       const blockId = kursId + '_b_' + block.id;
       const blockOffen = !!S._baumOffen[blockId];
 
-      const soll = blockSoll(block);
-      const geplant = (block.reihen || []).reduce((s,r) => s + summeStundenEinheiten(r.stunden), 0);
+      // Bereits im Vorjahr gehaltene Stunden zählen hier weder als Soll noch als geplant
+      const vs = blockVersatzKurs(block);
+      const soll = Math.max(0, blockSoll(block) - vs);
+      const geplant = Math.max(0, (block.reihen || []).reduce((s,r) => s + summeStundenEinheiten(r.stunden), 0) - vs);
       const offen = soll > 0 ? soll - geplant : null;
       sumSoll += soll; sumGeplant += geplant;
 
       // Block-Zeile
-      const blockPfeilCell = { text: '▶ ' + block.titel, bold: true };
+      const blockPfeilCell = { text: '▶ ' + block.titel + (vs ? ' (ab Blockstunde ' + (vs + 1) + ')' : ''), bold: true };
       const blockRow = tblRow([
         blockPfeilCell,
         { text: soll || '–', align: 'right' },
@@ -337,10 +354,29 @@ function viewKursDetail(kursId) {
             stundenRows.forEach(r => r.style.display = 'none');
           });
         });
-        blockRow.cells[0].textContent = (open ? '▶ ' : '▼ ') + block.titel;
+        blockRow.cells[0].textContent = (open ? '▶ ' : '▼ ') + block.titel + (vs ? ' (ab Blockstunde ' + (vs + 1) + ')' : '');
         blockRow.cells[0].style.fontWeight = '700';
       };
     });
+
+    // Blöcke der Fachplanung, die in diesem Kurs nicht auf der Zeitachse liegen —
+    // etwa die Q1-Themen im Q2-Kurs. Sichtbar, aber nicht in den Summen.
+    if (nichtEingeplant.length) {
+      tbody.appendChild(tblRow([
+        { text: 'Nicht auf der Zeitachse dieses Kurses — zählt nicht mit', color: 'var(--tx3)', pad: '12px 10px 4px' },
+        { text: '', align: 'right' }, { text: '', align: 'right' }, { text: '', align: 'right' }
+      ], { borderTop: true }));
+      nichtEingeplant.forEach(block => {
+        const soll = blockSoll(block);
+        const geplant = (block.reihen || []).reduce((s,r) => s + summeStundenEinheiten(r.stunden), 0);
+        tbody.appendChild(tblRow([
+          { text: block.titel, color: 'var(--tx3)', indent: 24 },
+          { text: soll || '–', align: 'right', color: 'var(--tx3)' },
+          { text: geplant, align: 'right', color: 'var(--tx3)' },
+          { text: '', align: 'right' }
+        ], {}));
+      });
+    }
 
     // Klassenarbeiten-Zeilen
     if (klassenarbeiten.length > 0) {

@@ -513,6 +513,35 @@ const PC_EINHEIT_TOOLS = [
   }
 ];
 
+// Stufe aus dem Jahrgang: 5–10 = Sekundarstufe I, EF/Q1/Q2 (11–13) = II
+function _pcIstSII(fp) {
+  const t = String((fp && fp.jahrgang) || '').toUpperCase();
+  const z = parseInt(t, 10);
+  return /EF|Q1|Q2/.test(t) || (z >= 11 && z <= 13);
+}
+
+// Sekundarstufe I: feste Rahmenphasen um die Unterrichtsphasen legen.
+// Ankommen 0'–5', Aufräumen am Ende 5 min, bei Doppelstunden die Pause
+// zwischen den Stunden (0 min, liegt außerhalb der 90) bei 45'. Vorhandene
+// Rahmenphasen der KI werden ersetzt, damit nichts doppelt zählt.
+function _pcRahmenphasenSI(phasen, doppel) {
+  const neu = (titel, minuten) => ({ id: uid(), titel, typ: '', inhalt: '', methode: '',
+    material: '', sozialform: '', minuten, materialIds: [] });
+  const titel = p => String(p.titel || '').trim().toLowerCase();
+  const istRahmen = p => /^(ankommen|begrüßung|begruessung|anwesenheit|aufräumen|aufraeumen|pause)/.test(titel(p));
+  const kern = phasen.filter(p => !istRahmen(p));
+  const out = [neu('Ankommen (Begrüßung, Anwesenheit)', 5)];
+  let t = 5, pauseGesetzt = !doppel, pauseVersetzt = false;
+  kern.forEach(p => {
+    if (!pauseGesetzt && t >= 45) { out.push(neu('Pause', 0)); pauseGesetzt = true; if (t > 45) pauseVersetzt = t; }
+    out.push(p);
+    t += parseInt(p.minuten) || 0;
+  });
+  if (!pauseGesetzt) { out.push(neu('Pause', 0)); pauseVersetzt = t; }
+  out.push(neu('Aufräumen', 5));
+  return { phasen: out, pauseVersetzt };
+}
+
 async function _pcExecTool(name, input, fp) {
   switch (name) {
 
@@ -760,9 +789,20 @@ async function _pcExecTool(name, input, fp) {
         minuten: parseInt(p.minuten) || 0,
         materialIds: []
       }));
-      const summe = stunde.phasen.reduce((s, p) => s + p.minuten, 0);
+      let hinweis = null;
+      if (!_pcIstSII(fp)) {
+        const doppel = (parseInt(stunde.dauer) || 45) >= 90;
+        const r = _pcRahmenphasenSI(stunde.phasen, doppel);
+        stunde.phasen = r.phasen;
+        hinweis = 'Sekundarstufe I: Ankommen (0\'–5\') und Aufräumen (letzte 5 min) wurden automatisch gesetzt'
+          + (doppel ? ', die Pause bei 45\'.' : '.')
+          + (r.pauseVersetzt ? ' ACHTUNG: Keine Phase endet genau bei 45\' — die Pause steht erst bei ' + r.pauseVersetzt + '\'. Teile die Phase so, dass sie bei 45\' endet.' : '');
+      }
+      let lauf = 0;
+      const zeitmarken = stunde.phasen.map(p => { lauf += p.minuten; return (p.titel || '?') + ' bis ' + lauf + '\''; });
+      const summe = lauf;
       scheduleSave(); render();
-      return JSON.stringify({ ok: true, anzahl: stunde.phasen.length, minutenGesamt: summe });
+      return JSON.stringify({ ok: true, anzahl: stunde.phasen.length, minutenGesamt: summe, zeitmarken, hinweis });
     }
 
     case 'materialZuordnen': {
@@ -1424,9 +1464,10 @@ Worauf du achtest:
      den beiden Stunden (sie zählt nicht zu den 90 Minuten), 45'–85' Unterricht,
      85'–90' Aufräumen. Unterricht = 80 Minuten. In der Mitte gibt es kein Aufräumen
      und kein erneutes Ankommen.
-   · Lege Ankommen und Aufräumen als eigene Phasen mit je 5 Minuten an (typ leer),
-     bei der Doppelstunde dazwischen eine Phase „Pause" mit 0 Minuten genau an der
-     Stelle 45'. Die Summe aller Phasen ist dann genau 45 bzw. 90.
+   · Ankommen, Aufräumen und die Pause setzt setPhasen AUTOMATISCH. Übergib nur die
+     Unterrichtsphasen: zusammen 35 Minuten (Einzelstunde) bzw. 80 Minuten
+     (Doppelstunde), bei der Doppelstunde so geschnitten, dass nach 40 Minuten
+     Unterricht eine Phase endet. Die Zeitmarken im Ergebnis beginnen bei 5'.
 
    Sekundarstufe II: Rechne mit etwa 40 Minuten Unterricht in der Einzelstunde und
    etwa 80 in der Doppelstunde; Ankommen und Aufräumen nicht als eigene Phasen.

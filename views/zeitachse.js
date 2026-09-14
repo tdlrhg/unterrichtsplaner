@@ -558,16 +558,17 @@ function viewZeitachse(kursId) {
     document.querySelectorAll('.za-menue').forEach(m => m.remove());
     const r = anker.getBoundingClientRect();
     const menue = mk('div', 'za-menue');
-    menue.style.cssText = 'position:fixed;z-index:1000;min-width:220px;background:var(--surf);border:1px solid var(--bord);'
-      + 'border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.15);padding:10px 12px;font-size:12px;'
-      + 'left:' + Math.min(r.left, window.innerWidth - 240) + 'px;top:' + (r.bottom + 4) + 'px;';
+    menue.style.cssText = 'position:fixed;z-index:1000;width:190px;background:var(--surf);border:1px solid var(--bord);'
+      + 'border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.14);padding:6px 8px;font-size:11px;line-height:1.3;'
+      + 'left:' + Math.min(r.left, window.innerWidth - 200) + 'px;top:' + (r.bottom + 3) + 'px;';
 
     const kopf = tx('div', '', stunde.titel || '(ohne Titel)');
-    kopf.style.cssText = 'font-weight:700;margin-bottom:8px;';
+    kopf.style.cssText = 'font-weight:700;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+    kopf.title = stunde.titel || '';
     menue.appendChild(kopf);
 
-    const oeffnen = btn('Stunde öffnen', 'btn btn-ghost btn-sm');
-    oeffnen.style.width = '100%';
+    const oeffnen = btn('Stunde öffnen', 'btn btn-ghost btn-xs');
+    oeffnen.style.cssText += 'width:100%;padding:2px 6px;font-size:11px;';
     oeffnen.onclick = () => {
       schliessen();
       S.aktFpId = fp.id; S.view = 'fachplanung';
@@ -576,16 +577,18 @@ function viewZeitachse(kursId) {
     };
     menue.appendChild(oeffnen);
 
-    const lbl = tx('div', '', 'Mehr Zeit gebraucht — Stunden:');
-    lbl.style.cssText = 'margin:10px 0 4px;color:var(--tx2);';
+    const lbl = tx('div', '', 'Mehr Zeit gebraucht:');
+    lbl.style.cssText = 'margin:6px 0 3px;color:var(--tx2);';
     menue.appendChild(lbl);
     const zeile = mk('div', '');
-    zeile.style.cssText = 'display:flex;gap:6px;';
+    zeile.style.cssText = 'display:flex;gap:4px;align-items:center;';
     const zahl = document.createElement('input');
     zahl.type = 'number'; zahl.min = '1'; zahl.step = '1'; zahl.value = '1';
     zahl.className = 'finp';
-    zahl.style.cssText = 'width:64px;';
-    const ok = btn('+ hinzufügen', 'btn btn-pri btn-sm');
+    zahl.style.cssText = 'width:44px;padding:1px 4px;font-size:11px;height:22px;';
+    const ok = btn('+ Stunden', 'btn btn-pri btn-xs');
+    ok.style.cssText += 'padding:2px 8px;font-size:11px;height:22px;';
+    ok.title = 'Legt Fortsetzungsstunden direkt dahinter an; Soll und spätere Blöcke rücken mit.';
     const ausfuehren = () => {
       const n = parseInt(zahl.value, 10);
       if (!(n >= 1)) { zahl.focus(); return; }
@@ -597,9 +600,6 @@ function viewZeitachse(kursId) {
     zeile.appendChild(zahl); zeile.appendChild(ok);
     menue.appendChild(zeile);
 
-    const hinweis = tx('div', '', 'Legt Fortsetzungsstunden direkt dahinter an; Soll und spätere Blöcke rücken mit.');
-    hinweis.style.cssText = 'margin-top:6px;font-size:10.5px;color:var(--tx3);line-height:1.4;';
-    menue.appendChild(hinweis);
 
     document.body.appendChild(menue);
     setTimeout(() => { zahl.focus(); zahl.select(); }, 0);

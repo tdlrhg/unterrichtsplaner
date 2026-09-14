@@ -451,9 +451,11 @@ const PC_EINHEIT_TOOLS = [
           items: {
             type: 'object',
             properties: {
-              titel:      { type: 'string', description: 'z.B. Einstieg, Erarbeitung, Sicherung' },
-              inhalt:     { type: 'string', description: 'Was in dieser Phase passiert — und was die Lernenden dabei tun' },
-              methode:    { type: 'string', description: 'Methode oder Form (optional)' },
+              titel:      { type: 'string', description: 'Kurzer Phasentitel, z.B. „Einstieg: Ist jede 3 gleich viel wert?"' },
+              typ:        { type: 'string', enum: ['Einstieg', 'Erarbeitung', 'Sicherung', ''], description: 'Phasentyp — immer setzen. Leer nur bei einer Pause.' },
+              inhalt:     { type: 'string', description: 'STICHWORTARTIG: höchstens drei kurze Zeilen, jede beginnt mit „– ". Was passiert, was die Lernenden tun. Keine ausformulierten Impulse, Lehrertexte oder Begründungen — die gehören in die notizen der Stunde (updateStunde).' },
+              methode:    { type: 'string', description: 'NUR der Name einer Unterrichtsmethode, möglichst aus readMethoden (z.B. „Think-Pair-Share", „Placemat"). Kein Material, keine Aufgabennummern, keine Beschreibung. Leer lassen, wenn keine benannte Methode.' },
+              material:   { type: 'string', description: 'Welches Material in dieser Phase eingesetzt wird, kurz — z.B. „MSK N1A 1.1 a–c", „Tafel: XXX / 333". Leer, wenn keins.' },
               sozialform: { type: 'string', description: 'Plenum, Einzelarbeit, Partnerarbeit, Gruppenarbeit (optional)' },
               minuten:    { type: 'number', description: 'Dauer in Minuten' }
             },
@@ -746,8 +748,10 @@ async function _pcExecTool(name, input, fp) {
       stunde.phasen = input.phasen.map(p => ({
         id: uid(),
         titel: p.titel || '',
+        typ: ['Einstieg', 'Erarbeitung', 'Sicherung'].includes(p.typ) ? p.typ : '',
         inhalt: p.inhalt || '',
         methode: p.methode || '',
+        material: p.material || '',
         sozialform: p.sozialform || '',
         minuten: parseInt(p.minuten) || 0,
         materialIds: []

@@ -206,6 +206,17 @@ function phasenTable(stunde) {
 
   const tbl = document.createElement('table');
   tbl.className = 'ph-table';
+  // Feste Breiten für die schmalen Spalten, der Inhalt nimmt den Rest. Ohne
+  // table-layout:fixed verteilte der Browser den Platz nach Inhalt, und die
+  // hinteren Spalten blieben breit, obwohl dort wenig steht.
+  tbl.style.cssText = 'table-layout:fixed;width:100%;min-width:900px;';
+  const colgroup = document.createElement('colgroup');
+  ['28px', '104px', null, '150px', '124px', '54px', '160px', '38px'].forEach(w => {
+    const c = document.createElement('col');
+    if (w) c.style.width = w;
+    colgroup.appendChild(c);
+  });
+  tbl.appendChild(colgroup);
 
   const PHASEN_TYP_FARBE = { Einstieg: '#3b82f6', Erarbeitung: '#10b981', Sicherung: '#f59e0b' };
   const PHASEN_TYPEN = ['Einstieg', 'Erarbeitung', 'Sicherung'];
@@ -254,7 +265,6 @@ function phasenTable(stunde) {
 
     // Titel + Inhalt
     const ti = document.createElement('td');
-    ti.style.minWidth = '340px';   // die breiteste Spalte — hier steht der Verlauf
     const titI = document.createElement('input');
     titI.type = 'text'; titI.value = phase.titel || ''; titI.placeholder = 'Titel';
     titI.style.cssText = 'border:none;background:transparent;font-size:13px;width:100%;font-family:inherit;display:block;font-weight:600;';
@@ -275,7 +285,6 @@ function phasenTable(stunde) {
 
     // Methode (aus METHDB, gefiltert nach Phasentyp)
     const tm = document.createElement('td');
-    tm.style.minWidth = '160px';
 
     function renderMethCell() {
       tm.innerHTML = '';
@@ -359,6 +368,16 @@ function phasenTable(stunde) {
     minI.style.cssText = 'width:50px;border:none;background:transparent;font-size:13px;';
     minI.oninput = e => { phase.minuten = parseInt(e.target.value) || 0; scheduleSave(); };
     tmin.appendChild(minI); tr.appendChild(tmin);
+
+    // Material der Phase (Freitext) — die Spalte gab es bisher nur als Überschrift
+    const tmat = document.createElement('td');
+    const matTA = document.createElement('textarea');
+    matTA.value = phase.material || ''; matTA.placeholder = 'Material…'; matTA.rows = 1;
+    matTA.style.cssText = 'border:none;background:transparent;font-size:12px;width:100%;font-family:inherit;resize:none;overflow:hidden;line-height:1.4;color:var(--tx2);';
+    const matWachsen = () => { matTA.style.height = 'auto'; matTA.style.height = Math.max(22, matTA.scrollHeight + 2) + 'px'; };
+    matTA.oninput = e => { phase.material = e.target.value; matWachsen(); scheduleSave(); };
+    setTimeout(matWachsen, 0);
+    tmat.appendChild(matTA); tr.appendChild(tmat);
 
     // Löschen
     const td = document.createElement('td');

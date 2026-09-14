@@ -488,17 +488,19 @@ function viewZeitachse(kursId) {
       for (let k = b.start; k < b.start + b.span; k++) belegt[k] = true;
       const karte = mk('div', '');
       karte.style.cssText = 'grid-row:2;grid-column:' + (b.start + 1) + ' / span ' + b.span + ';margin:0 3px;'
-        + 'padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;line-height:1.35;'
+        + 'padding:2px 7px;border-radius:5px;cursor:pointer;font-size:11.5px;line-height:1.3;align-self:start;'
+        + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
         + 'background:' + pastellize(sg.farbe) + ';border-left:3px solid ' + sg.farbe + ';';
-      const titel = tx('div', '', b.stunde.titel || '(ohne Titel)');
+      // Eine Zeile: Titel, bei Doppelstunden der Hinweis dahinter statt darunter
+      const titel = tx('span', '', b.stunde.titel || '(ohne Titel)');
       titel.style.cssText = 'font-weight:600;color:var(--tx);';
       karte.appendChild(titel);
       if (b.span > 1) {
-        const dz = tx('div', '', 'Doppelstunde');
-        dz.style.cssText = 'font-size:10px;color:var(--tx2);margin-top:2px;';
+        const dz = tx('span', '', ' · Doppelstunde');
+        dz.style.cssText = 'font-size:10px;color:var(--tx2);';
         karte.appendChild(dz);
       }
-      karte.title = 'Stunde öffnen';
+      karte.title = (b.stunde.titel || '') + ' — Stunde öffnen';
       karte.onclick = () => {
         S.aktFpId = fp.id; S.view = 'fachplanung';
         S.sel = { type: 'stunde', ids: [fp.id, sg.block.id, sg.reihe.id, b.stunde.id] };
@@ -511,8 +513,8 @@ function viewZeitachse(kursId) {
     belegt.forEach((ja, k) => {
       if (ja) return;
       const offen = tx('div', '', 'offen');
-      offen.style.cssText = 'grid-row:2;grid-column:' + (k + 1) + ';margin:0 3px;padding:6px 8px;border-radius:6px;'
-        + 'font-size:11px;color:var(--tx3);border:1px dashed var(--bord);text-align:center;';
+      offen.style.cssText = 'grid-row:2;grid-column:' + (k + 1) + ';margin:0 3px;padding:2px 7px;border-radius:5px;align-self:start;'
+        + 'font-size:10.5px;line-height:1.3;color:var(--tx3);border:1px dashed var(--bord);text-align:center;';
       grid.appendChild(offen);
     });
 

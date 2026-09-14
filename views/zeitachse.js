@@ -429,8 +429,21 @@ function viewZeitachse(kursId) {
     const slots = stundenGesamt.slice(sg.startIdx, sg.startIdx + sg.dauer);
     const kurzDatum = d => d.slice(8, 10) + '.' + d.slice(5, 7) + '.';
 
+    // Eine Spalte pro Unterrichtstag; die Termine eines Tages liegen darin
+    // untereinander. So wird eine Doppelstunde (zwei Termine am selben Tag)
+    // doppelt so hoch statt doppelt so breit.
+    const tage = [];
+    const tagVon = [];         // Slot-Index → {tag, zeile}
+    slots.forEach((sl, i) => {
+      let t = tage[tage.length - 1];
+      if (!t || t.datum !== sl.datum) { t = { datum: sl.datum, tag: sl.tag, kw: sl.kw, year: sl.year, slots: [] }; tage.push(t); }
+      tagVon[i] = { tagIdx: tage.length - 1, zeile: t.slots.length };
+      t.slots.push(sl);
+    });
+    const maxZeilen = Math.max(1, ...tage.map(t => t.slots.length));
+
     // Stunden der Reihe auf die Termine legen; Doppelstunden belegen zwei
-    const belegung = [];   // {start, span, stunde}
+    const belegung = [];       // {start, span, stunde}
     let einheit = 0, pos = 0;
     (sg.reihe.stunden || []).forEach(st => {
       const e = stundeEinheiten(st);
@@ -465,55 +478,75 @@ function viewZeitachse(kursId) {
     const scroller = mk('div', '');
     scroller.style.cssText = 'overflow-x:auto;padding:10px 12px 12px;';
     const grid = mk('div', '');
-    grid.style.cssText = `display:grid;grid-template-columns:repeat(${Math.max(slots.length, 1)}, minmax(118px, 1fr));`
-      + 'grid-auto-rows:auto;row-gap:6px;';
+    grid.style.cssText = `display:grid;grid-template-columns:repeat(${Math.max(tage.length, 1)}, minmax(118px, 1fr));`
+      + `grid-template-rows:auto repeat(${maxZeilen}, 21px);row-gap:4px;`;
 
-    // Kopfzeile: Datum und Stunde je Termin, neue Woche mit Trennlinie
-    slots.forEach((sl, i) => {
-      const neueWoche = i > 0 && (sl.kw !== slots[i - 1].kw || sl.year !== slots[i - 1].year);
+    const trenn = i => {
+      if (i === 0) return '';
+      const neueWoche = tage[i].kw !== tage[i - 1].kw || tage[i].year !== tage[i - 1].year;
+      return 'border-left:' + (neueWoche ? '2px solid var(--bord)' : '1px dashed var(--bord)') + ';';
+    };
+
+    // Kopfzeile: Tag, Datum, Stunden des Tages; neue Woche mit Trennlinie
+    tage.forEach((tg, i) => {
+      const neueWoche = i === 0 || tg.kw !== tage[i - 1].kw || tg.year !== tage[i - 1].year;
       const z = mk('div', '');
-      z.style.cssText = 'grid-row:1;grid-column:' + (i + 1) + ';padding:0 6px 4px;font-size:11px;line-height:1.35;'
-        + (i > 0 ? 'border-left:' + (neueWoche ? '2px solid var(--bord)' : '1px dashed var(--bord)') + ';' : '');
-      const d = tx('div', '', sl.tag + ' ' + kurzDatum(sl.datum));
+      z.style.cssText = 'grid-row:1;grid-column:' + (i + 1) + ';padding:0 6px 4px;font-size:11px;line-height:1.35;' + trenn(i);
+      const d = tx('div', '', tg.tag + ' ' + kurzDatum(tg.datum));
       d.style.cssText = 'font-weight:700;color:var(--tx);';
-      const w = tx('div', '', sl.stunde + '. Std' + (i === 0 || neueWoche ? ' · KW' + sl.kw : ''));
+      const w = tx('div', '', tg.slots.map(x => x.stunde).join('./') + '. Std' + (neueWoche ? ' · KW' + tg.kw : ''));
       w.style.cssText = 'color:var(--tx3);';
       z.appendChild(d); z.appendChild(w);
       grid.appendChild(z);
+      // Trennlinie über die ganze Spaltenhöhe fortsetzen
+      if (i > 0) {
+        const linie = mk('div', '');
+        linie.style.cssText = 'grid-column:' + (i + 1) + ';grid-row:2 / span ' + maxZeilen + ';' + trenn(i) + 'pointer-events:none;';
+        grid.appendChild(linie);
+      }
     });
 
-    // Belegte Termine
+    // Belegte Termine — pro Tag ein Feld, Höhe = Anzahl Termine an diesem Tag
     const belegt = new Array(slots.length).fill(false);
     belegung.forEach(b => {
-      for (let k = b.start; k < b.start + b.span; k++) belegt[k] = true;
-      const karte = mk('div', '');
-      karte.style.cssText = 'grid-row:2;grid-column:' + (b.start + 1) + ' / span ' + b.span + ';margin:0 3px;'
-        + 'padding:2px 7px;border-radius:5px;cursor:pointer;font-size:11.5px;line-height:1.3;align-self:start;'
-        + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
-        + 'background:' + pastellize(sg.farbe) + ';border-left:3px solid ' + sg.farbe + ';';
-      // Eine Zeile: Titel, bei Doppelstunden der Hinweis dahinter statt darunter
-      const titel = tx('span', '', b.stunde.titel || '(ohne Titel)');
-      titel.style.cssText = 'font-weight:600;color:var(--tx);';
-      karte.appendChild(titel);
-      if (b.span > 1) {
-        const dz = tx('span', '', ' · Doppelstunde');
-        dz.style.cssText = 'font-size:10px;color:var(--tx2);';
-        karte.appendChild(dz);
+      const teile = [];   // zusammenhängende Stücke je Tag
+      for (let k = b.start; k < b.start + b.span; k++) {
+        belegt[k] = true;
+        const tv = tagVon[k];
+        const letzt = teile[teile.length - 1];
+        if (letzt && letzt.tagIdx === tv.tagIdx) letzt.anzahl++;
+        else teile.push({ tagIdx: tv.tagIdx, zeile: tv.zeile, anzahl: 1 });
       }
-      karte.title = (b.stunde.titel || '') + ' — Stunde öffnen';
-      karte.onclick = () => {
-        S.aktFpId = fp.id; S.view = 'fachplanung';
-        S.sel = { type: 'stunde', ids: [fp.id, sg.block.id, sg.reihe.id, b.stunde.id] };
-        render();
-      };
-      grid.appendChild(karte);
+      teile.forEach((teil, ti) => {
+        const karte = mk('div', '');
+        karte.style.cssText = 'grid-column:' + (teil.tagIdx + 1) + ';grid-row:' + (teil.zeile + 2) + ' / span ' + teil.anzahl + ';'
+          + 'margin:0 3px;padding:2px 7px;border-radius:5px;cursor:pointer;font-size:11.5px;line-height:1.3;overflow:hidden;'
+          + (teil.anzahl === 1 ? 'white-space:nowrap;text-overflow:ellipsis;' : '')
+          + 'background:' + pastellize(sg.farbe) + ';border-left:3px solid ' + sg.farbe + ';';
+        const titel = tx('span', '', b.stunde.titel || '(ohne Titel)');
+        titel.style.cssText = 'font-weight:600;color:var(--tx);';
+        karte.appendChild(titel);
+        if (ti > 0) {
+          const fz = tx('span', '', ' · Forts.');
+          fz.style.cssText = 'font-size:10px;color:var(--tx2);';
+          karte.appendChild(fz);
+        }
+        karte.title = (b.stunde.titel || '') + (b.span > 1 ? ' (Doppelstunde)' : '') + ' — Stunde öffnen';
+        karte.onclick = () => {
+          S.aktFpId = fp.id; S.view = 'fachplanung';
+          S.sel = { type: 'stunde', ids: [fp.id, sg.block.id, sg.reihe.id, b.stunde.id] };
+          render();
+        };
+        grid.appendChild(karte);
+      });
     });
 
     // Termine ohne angelegte Stunde
     belegt.forEach((ja, k) => {
       if (ja) return;
+      const tv = tagVon[k];
       const offen = tx('div', '', 'offen');
-      offen.style.cssText = 'grid-row:2;grid-column:' + (k + 1) + ';margin:0 3px;padding:2px 7px;border-radius:5px;align-self:start;'
+      offen.style.cssText = 'grid-column:' + (tv.tagIdx + 1) + ';grid-row:' + (tv.zeile + 2) + ';margin:0 3px;padding:2px 7px;border-radius:5px;'
         + 'font-size:10.5px;line-height:1.3;color:var(--tx3);border:1px dashed var(--bord);text-align:center;';
       grid.appendChild(offen);
     });

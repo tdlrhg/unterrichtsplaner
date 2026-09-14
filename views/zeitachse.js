@@ -531,12 +531,8 @@ function viewZeitachse(kursId) {
           fz.style.cssText = 'font-size:10px;color:var(--tx2);';
           karte.appendChild(fz);
         }
-        karte.title = (b.stunde.titel || '') + (b.span > 1 ? ' (Doppelstunde)' : '') + ' — Stunde öffnen';
-        karte.onclick = () => {
-          S.aktFpId = fp.id; S.view = 'fachplanung';
-          S.sel = { type: 'stunde', ids: [fp.id, sg.block.id, sg.reihe.id, b.stunde.id] };
-          render();
-        };
+        karte.title = (b.stunde.titel || '') + (b.span > 1 ? ' (Doppelstunde)' : '') + ' — klicken für Optionen';
+        karte.onclick = e => { e.stopPropagation(); zeigeStundenMenue(karte, sg, b.stunde); };
         grid.appendChild(karte);
       });
     });
@@ -554,6 +550,102 @@ function viewZeitachse(kursId) {
     scroller.appendChild(grid);
     box.appendChild(scroller);
     return box;
+  }
+
+  // ── Menü an einer Stunde der Detailachse ─────────────────────
+  // Öffnen, oder „mehr Zeit gebraucht": n Fortsetzungsstunden direkt dahinter.
+  function zeigeStundenMenue(anker, sg, stunde) {
+    document.querySelectorAll('.za-menue').forEach(m => m.remove());
+    const r = anker.getBoundingClientRect();
+    const menue = mk('div', 'za-menue');
+    menue.style.cssText = 'position:fixed;z-index:1000;min-width:220px;background:var(--surf);border:1px solid var(--bord);'
+      + 'border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.15);padding:10px 12px;font-size:12px;'
+      + 'left:' + Math.min(r.left, window.innerWidth - 240) + 'px;top:' + (r.bottom + 4) + 'px;';
+
+    const kopf = tx('div', '', stunde.titel || '(ohne Titel)');
+    kopf.style.cssText = 'font-weight:700;margin-bottom:8px;';
+    menue.appendChild(kopf);
+
+    const oeffnen = btn('Stunde öffnen', 'btn btn-ghost btn-sm');
+    oeffnen.style.width = '100%';
+    oeffnen.onclick = () => {
+      schliessen();
+      S.aktFpId = fp.id; S.view = 'fachplanung';
+      S.sel = { type: 'stunde', ids: [fp.id, sg.block.id, sg.reihe.id, stunde.id] };
+      render();
+    };
+    menue.appendChild(oeffnen);
+
+    const lbl = tx('div', '', 'Mehr Zeit gebraucht — Stunden:');
+    lbl.style.cssText = 'margin:10px 0 4px;color:var(--tx2);';
+    menue.appendChild(lbl);
+    const zeile = mk('div', '');
+    zeile.style.cssText = 'display:flex;gap:6px;';
+    const zahl = document.createElement('input');
+    zahl.type = 'number'; zahl.min = '1'; zahl.step = '1'; zahl.value = '1';
+    zahl.className = 'finp';
+    zahl.style.cssText = 'width:64px;';
+    const ok = btn('+ hinzufügen', 'btn btn-pri btn-sm');
+    const ausfuehren = () => {
+      const n = parseInt(zahl.value, 10);
+      if (!(n >= 1)) { zahl.focus(); return; }
+      schliessen();
+      mehrZeit(sg.block, sg.reihe, stunde, n);
+    };
+    ok.onclick = ausfuehren;
+    zahl.onkeydown = e => { if (e.key === 'Enter') ausfuehren(); if (e.key === 'Escape') schliessen(); };
+    zeile.appendChild(zahl); zeile.appendChild(ok);
+    menue.appendChild(zeile);
+
+    const hinweis = tx('div', '', 'Legt Fortsetzungsstunden direkt dahinter an; Soll und spätere Blöcke rücken mit.');
+    hinweis.style.cssText = 'margin-top:6px;font-size:10.5px;color:var(--tx3);line-height:1.4;';
+    menue.appendChild(hinweis);
+
+    document.body.appendChild(menue);
+    setTimeout(() => { zahl.focus(); zahl.select(); }, 0);
+
+    function aussen(e) { if (!menue.contains(e.target)) schliessen(); }
+    function schliessen() { menue.remove(); document.removeEventListener('mousedown', aussen); }
+    setTimeout(() => document.addEventListener('mousedown', aussen), 0);
+  }
+
+  function mehrZeit(block, reihe, stunde, n) {
+    const liste = reihe.stunden || (reihe.stunden = []);
+    const pos = liste.findIndex(x => x.id === stunde.id);
+    if (pos < 0) return;
+
+    // Startindizes der späteren Blöcke merken, bevor sich Längen ändern
+    const eigenerStart = blockStartIdx(block);
+    const spaeter = (fp.blocks || [])
+      .filter(b => b.id !== block.id && planung[b.id])
+      .map(b => ({ b, si: blockStartIdx(b) }))
+      .filter(x => x.si > eigenerStart);
+
+    // 1) Fortsetzungsstunden direkt hinter der Stunde
+    const basis = (stunde.titel || 'Stunde').replace(/\s*\(Fortsetzung[^)]*\)\s*$/, '');
+    const neu = [];
+    for (let i = 0; i < n; i++) {
+      const st = { id: uid(), titel: basis + ' (Fortsetzung' + (n > 1 ? ' ' + (i + 1) + '/' + n : '') + ')',
+        dauer: 45, material: [], phasen: [], lernziel: '' };
+      if (stunde.einheitId) st.einheitId = stunde.einheitId;
+      neu.push(st);
+    }
+    liste.splice(pos + 1, 0, ...neu);
+
+    // 2) Soll von Reihe und Block wachsen mit, sofern eingetragen
+    if (parseInt(reihe.stundenAnzahl) > 0) reihe.stundenAnzahl = parseInt(reihe.stundenAnzahl) + n;
+    if (parseInt(block.stundenGesamt) > 0) block.stundenGesamt = parseInt(block.stundenGesamt) + n;
+
+    // 3) Spätere Blöcke dieses Kurses um n Termine nach hinten
+    spaeter.forEach(({ b, si }) => {
+      if (si < 0) return;
+      const ziel = stundenGesamt[Math.min(si + n, stundenGesamt.length - 1)];
+      if (!ziel) return;
+      planung[b.id] = Object.assign({}, planung[b.id], { datum: ziel.datum, stunde: ziel.stunde });
+    });
+
+    scheduleSave();
+    render();
   }
 
   // ── Klassenarbeiten als Marker ───────────────────────────────

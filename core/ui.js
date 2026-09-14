@@ -211,7 +211,7 @@ function phasenTable(stunde) {
   // hinteren Spalten blieben breit, obwohl dort wenig steht.
   tbl.style.cssText = 'table-layout:fixed;width:100%;min-width:900px;';
   const colgroup = document.createElement('colgroup');
-  ['28px', '104px', null, '150px', '124px', '54px', '160px', '38px'].forEach(w => {
+  ['28px', '104px', null, '150px', '124px', '62px', '160px', '38px'].forEach(w => {
     const c = document.createElement('col');
     if (w) c.style.width = w;
     colgroup.appendChild(c);
@@ -232,6 +232,17 @@ function phasenTable(stunde) {
   tbl.appendChild(thead);
 
   const tbody = document.createElement('tbody');
+
+  // Laufende Summe: wie viele Minuten am Ende jeder Phase vergangen sind.
+  // Wird bei jeder Minuteneingabe neu gerechnet, ohne die Tabelle neu zu bauen.
+  const summenEls = [];
+  function summenAktualisieren() {
+    let summe = 0;
+    stunde.phasen.forEach((ph, k) => {
+      summe += parseInt(ph.minuten) || 0;
+      if (summenEls[k]) summenEls[k].textContent = 'bis ' + summe;
+    });
+  }
 
   function rebuildRow(phase, i) {
     const tr = document.createElement('tr');
@@ -362,12 +373,16 @@ function phasenTable(stunde) {
     ts.appendChild(sSel); tr.appendChild(ts);
 
     // Minuten
-    const tmin = document.createElement('td'); tmin.style.width = '60px';
+    const tmin = document.createElement('td');
     const minI = document.createElement('input');
     minI.type = 'number'; minI.value = phase.minuten || 0;
     minI.style.cssText = 'width:50px;border:none;background:transparent;font-size:13px;';
-    minI.oninput = e => { phase.minuten = parseInt(e.target.value) || 0; scheduleSave(); };
-    tmin.appendChild(minI); tr.appendChild(tmin);
+    minI.oninput = e => { phase.minuten = parseInt(e.target.value) || 0; summenAktualisieren(); scheduleSave(); };
+    const kum = mk('div', '');
+    kum.style.cssText = 'font-size:10.5px;color:var(--tx3);white-space:nowrap;padding-left:2px;';
+    kum.title = 'Minuten vergangen am Ende dieser Phase';
+    summenEls[i] = kum;
+    tmin.appendChild(minI); tmin.appendChild(kum); tr.appendChild(tmin);
 
     // Material der Phase (Freitext) — die Spalte gab es bisher nur als Überschrift
     const tmat = document.createElement('td');
@@ -389,6 +404,7 @@ function phasenTable(stunde) {
   }
 
   stunde.phasen.forEach((phase, i) => tbody.appendChild(rebuildRow(phase, i)));
+  summenAktualisieren();
   tbl.appendChild(tbody);
   wrap.appendChild(tbl);
   return wrap;

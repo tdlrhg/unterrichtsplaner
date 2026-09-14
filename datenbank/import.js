@@ -528,6 +528,10 @@ function buildImportView(container) {
 
   function parseKiJson(raw) {
     var cleaned = raw.trim().replace(/^```[a-z]*\n?/i, '').replace(/```\s*$/i, '').trim();
+    // Erst unverändert versuchen: Ist die Antwort gültiges JSON, dürfen die
+    // Reparaturen unten nichts anfassen — sie haben schon gültige Antworten
+    // kaputtgemacht (leere Werte "" wurden zu einem einzelnen ").
+    try { return JSON.parse(cleaned); } catch (e0) {}
     // Pre-fix: KI schreibt manchmal \" (Backslash + Quote) wo der String enden soll.
     // Entferne den Backslash vor "  wenn danach ein strukturelles Token folgt.
     cleaned = cleaned.replace(/\\"(?=[ \t\r\n]*[}\]])/g, '"');
@@ -547,9 +551,15 @@ function buildImportView(container) {
       if (qch !== '"') { out += qch; qi++; continue; }
       out += '"'; qi++;
       var wasValue = inValue; inValue = false;
+      var stringStart = qi;   // ab hier beginnt der Inhalt dieses Strings
       while (qi < qn) {
         var qc = cleaned[qi];
         if (qc === '\\') { out += qc; qi++; if (qi < qn) { out += cleaned[qi]; qi++; } }
+        else if (qc === '"' && cleaned[qi + 1] === '"' && qi > stringStart) {
+          // Verdoppeltes Anführungszeichen am Ende eines nicht-leeren Strings
+          // ("wert"",): das erste fällt weg, das zweite wird normal geprüft.
+          qi++;
+        }
         else if (qc === '"') {
           var qj = qi + 1;
           while (qj < qn && (cleaned[qj] === ' ' || cleaned[qj] === '\t' || cleaned[qj] === '\r' || cleaned[qj] === '\n')) qj++;
@@ -568,8 +578,13 @@ function buildImportView(container) {
               var qm = qk + 1;
               while (qm < qn && cleaned[qm] !== '"') { if (cleaned[qm] === '\\') qm++; qm++; }
               var qm2 = qm + 1;
-              while (qm2 < qn && (cleaned[qm2] === ' ' || cleaned[qm2] === '\t')) qm2++;
-              isStructural = (qm < qn && cleaned[qm2] === ':');
+              while (qm2 < qn && (cleaned[qm2] === ' ' || cleaned[qm2] === '\t' || cleaned[qm2] === '\r' || cleaned[qm2] === '\n')) qm2++;
+              // Strukturell, wenn der nächste String ein Schlüssel ist (gefolgt von ':')
+              // — oder, außerhalb eines Objektwerts, ein weiteres Listenelement
+              // (gefolgt von ',', ']' oder '}'). Ohne die zweite Bedingung
+              // verschmolzen Listen wie ["a","b"] zu einem einzigen Eintrag.
+              isStructural = qm < qn && (cleaned[qm2] === ':' ||
+                (!wasValue && (cleaned[qm2] === ',' || cleaned[qm2] === ']' || cleaned[qm2] === '}')));
             } else if (!wasValue) {
               // Innerhalb eines Schlüssel-Strings: strukturell vor JSON-Werten
               isStructural = (qnxt2 === '{' || qnxt2 === '[' ||
@@ -589,10 +604,18 @@ function buildImportView(container) {
     cleaned = cleaned.replace(/"((?:[^"\\]|\\.)*)"/g, function(m, inner) {
       return '"' + inner.replace(/\n/g, '\\n').replace(/\r/g, '').replace(/\t/g, '\\t') + '"';
     });
-    cleaned = cleaned.replace(/"",/g, '",')
-                     .replace(/""\s*\n\s*"/g, '",\n  "')
-                     .replace(/""\s*}/g, '"}')
-                     .replace(/""\s*]/g, '"]');
+    // Verdoppelte Anführungszeichen am Stringende zusammenziehen — aber NICHT,
+    // wenn es ein leerer Wert ist ("text":"", oder ["",...]). Das erkennt man am
+    // Zeichen davor: Doppelpunkt, eckige Klammer oder Komma.
+    function ohneLeerwert(re, ersatz) {
+      cleaned = cleaned.replace(re, function (m, davor) {
+        return /[:\[,]\s*$/.test(davor) ? m : davor + ersatz;
+      });
+    }
+    ohneLeerwert(/([\s\S]{0,3})"",/g, '",');
+    ohneLeerwert(/([\s\S]{0,3})""\s*\n\s*"/g, '",\n  "');
+    ohneLeerwert(/([\s\S]{0,3})""\s*}/g, '"}');
+    ohneLeerwert(/([\s\S]{0,3})""\s*]/g, '"]');
     cleaned = cleaned.replace(/\\(?!["\\/bfnrtu0-9])/g, '\\\\');
     try { return robustJsonParsePr(cleaned); } catch(e) {}
     try { return JSON.parse(cleaned); } catch(e2) {

@@ -188,7 +188,8 @@ function viewZeitachse(kursId) {
   }
 
   // SVG
-  const WBREITE = 38; const ZHOEHE = 26; const HEADER_H = 58;  // extra Platz für KA-Icons
+  const WBREITE = 38; const ZHOEHE = 44; const HEADER_H = 58;  // extra Platz für KA-Icons
+  const BALKEN_H = 20;   // Balken selbst; der Rest der Zeile ist Platz für die Lupe darunter
   const totalW = wochen.length * WBREITE;
   const totalH = HEADER_H + maxRow * ZHOEHE + 12;
 
@@ -293,13 +294,16 @@ function viewZeitachse(kursId) {
     }
   }
 
+  // Gezeichnete Reihen-Segmente — für die Lupe und die Detailachse
+  const segmente = [];
+
   // Blöcke zeichnen — pro Block in Reihen-Segmente aufgeteilt, wenn Reihen existieren
   (fp.blocks || []).forEach((block, bi) => {
     const layout = blockLayouts[block.id];
     if (!layout) return;
     const farbe = FARBEN[bi % FARBEN.length];
     const y = HEADER_H + layout.row * ZHOEHE + 3;
-    const h = ZHOEHE - 6;
+    const h = BALKEN_H;
 
     const segs = reihenSegmente(block).filter(s => Math.max(s.geplant, s.echte) > 0);
 
@@ -312,12 +316,15 @@ function viewZeitachse(kursId) {
       segs.forEach(seg => {
         let g = seg.geplant, e = seg.echte;
         const laenge = Math.max(g, e);
+        let skip = 0;   // am Anfang dieser Reihe schon gehaltene Einheiten
         if (rest > 0) {
           if (rest >= laenge) { rest -= laenge; return; }   // Reihe komplett gehalten
+          skip = rest;
           g = Math.max(0, g - rest); e = Math.max(0, e - rest); rest = 0;
         }
         if (Math.max(g, e) <= 0) return;
         zeichneGeplantIstBalken(farbe, y, h, cursor, g, e, seg.reihe.titel || '');
+        segmente.push({ block, reihe: seg.reihe, farbe, startIdx: cursor, dauer: Math.max(g, e), skip, y });
         cursor += Math.max(g, e);
       });
     } else {
@@ -364,7 +371,7 @@ function viewZeitachse(kursId) {
     const x = layout.startW * WBREITE + 2;
     const y = HEADER_H + layout.row * ZHOEHE + 3;
     const w = (layout.endW - layout.startW + 1) * WBREITE - 4;
-    const h = ZHOEHE - 6;
+    const h = BALKEN_H;
 
     const overlay = mk('div', '');
     overlay.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${Math.max(w,4)}px;height:${h}px;cursor:grab;pointer-events:auto;border-radius:4px;z-index:10;`;
@@ -390,8 +397,129 @@ function viewZeitachse(kursId) {
     dropGrid.appendChild(overlay);
   });
 
+  // Lupe unter jedem Reihen-Segment → Detailachse mit einzelnen Terminen
+  const zoomAktiv = S._zaZoom && S._zaZoom.kursId === kursId ? S._zaZoom : null;
+  segmente.forEach(sg => {
+    const wIdx = idxToWeekIdx(sg.startIdx);
+    if (wIdx < 0) return;
+    const aktiv = zoomAktiv && zoomAktiv.reiheId === sg.reihe.id;
+    const lupe = mk('button', '');
+    lupe.textContent = '🔍';
+    lupe.title = 'Termine der Reihe „' + (sg.reihe.titel || '') + '" anzeigen';
+    lupe.style.cssText = `position:absolute;left:${wIdx * WBREITE + 2}px;top:${sg.y + BALKEN_H + 2}px;`
+      + 'width:18px;height:17px;padding:0;font-size:10px;line-height:15px;cursor:pointer;pointer-events:auto;z-index:11;'
+      + 'border-radius:4px;border:1px solid ' + (aktiv ? sg.farbe : 'var(--bord)') + ';'
+      + 'background:' + (aktiv ? pastellize(sg.farbe) : '#fff') + ';';
+    lupe.onclick = e => {
+      e.stopPropagation();
+      S._zaZoom = aktiv ? null : { kursId, blockId: sg.block.id, reiheId: sg.reihe.id };
+      render();
+    };
+    dropGrid.appendChild(lupe);
+  });
+
   container.appendChild(dropGrid);
   div.appendChild(container);
+
+  // ── Detailachse: eine Reihe, Termin für Termin ───────────────
+  const zoomSeg = zoomAktiv && segmente.find(sg => sg.block.id === zoomAktiv.blockId && sg.reihe.id === zoomAktiv.reiheId);
+  if (zoomSeg) div.appendChild(baueDetailachse(zoomSeg));
+
+  function baueDetailachse(sg) {
+    const slots = stundenGesamt.slice(sg.startIdx, sg.startIdx + sg.dauer);
+    const kurzDatum = d => d.slice(8, 10) + '.' + d.slice(5, 7) + '.';
+
+    // Stunden der Reihe auf die Termine legen; Doppelstunden belegen zwei
+    const belegung = [];   // {start, span, stunde}
+    let einheit = 0, pos = 0;
+    (sg.reihe.stunden || []).forEach(st => {
+      const e = stundeEinheiten(st);
+      if (einheit + e <= sg.skip) { einheit += e; return; }   // schon im Vorjahr gehalten
+      einheit += e;
+      if (pos >= slots.length) return;
+      belegung.push({ start: pos, span: Math.min(e, slots.length - pos), stunde: st });
+      pos += e;
+    });
+
+    const box = mk('div', '');
+    box.style.cssText = 'margin-top:12px;border:1px solid var(--bord);border-radius:8px;border-top:3px solid ' + sg.farbe + ';background:var(--surf);';
+
+    const kopf = mk('div', '');
+    kopf.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--bord);';
+    kopf.appendChild(tx('span', '', '🔍'));
+    const t = tx('div', '', sg.reihe.titel || 'Reihe');
+    t.style.cssText = 'font-weight:700;font-size:13px;';
+    kopf.appendChild(t);
+    const info = tx('div', '', slots.length
+      ? kurzDatum(slots[0].datum) + '–' + kurzDatum(slots[slots.length - 1].datum) + ' · ' + slots.length + ' Termine'
+        + (belegung.length ? '' : ' · noch keine Stunden angelegt')
+      : 'keine Termine im Schuljahr');
+    info.style.cssText = 'font-size:12px;color:var(--tx3);flex:1;';
+    kopf.appendChild(info);
+    const zu = btn('✕', 'btn btn-ghost btn-sm');
+    zu.title = 'Detailachse schließen';
+    zu.onclick = () => { S._zaZoom = null; render(); };
+    kopf.appendChild(zu);
+    box.appendChild(kopf);
+
+    const scroller = mk('div', '');
+    scroller.style.cssText = 'overflow-x:auto;padding:10px 12px 12px;';
+    const grid = mk('div', '');
+    grid.style.cssText = `display:grid;grid-template-columns:repeat(${Math.max(slots.length, 1)}, minmax(118px, 1fr));`
+      + 'grid-auto-rows:auto;row-gap:6px;';
+
+    // Kopfzeile: Datum und Stunde je Termin, neue Woche mit Trennlinie
+    slots.forEach((sl, i) => {
+      const neueWoche = i > 0 && (sl.kw !== slots[i - 1].kw || sl.year !== slots[i - 1].year);
+      const z = mk('div', '');
+      z.style.cssText = 'grid-row:1;grid-column:' + (i + 1) + ';padding:0 6px 4px;font-size:11px;line-height:1.35;'
+        + (i > 0 ? 'border-left:' + (neueWoche ? '2px solid var(--bord)' : '1px dashed var(--bord)') + ';' : '');
+      const d = tx('div', '', sl.tag + ' ' + kurzDatum(sl.datum));
+      d.style.cssText = 'font-weight:700;color:var(--tx);';
+      const w = tx('div', '', sl.stunde + '. Std' + (i === 0 || neueWoche ? ' · KW' + sl.kw : ''));
+      w.style.cssText = 'color:var(--tx3);';
+      z.appendChild(d); z.appendChild(w);
+      grid.appendChild(z);
+    });
+
+    // Belegte Termine
+    const belegt = new Array(slots.length).fill(false);
+    belegung.forEach(b => {
+      for (let k = b.start; k < b.start + b.span; k++) belegt[k] = true;
+      const karte = mk('div', '');
+      karte.style.cssText = 'grid-row:2;grid-column:' + (b.start + 1) + ' / span ' + b.span + ';margin:0 3px;'
+        + 'padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px;line-height:1.35;'
+        + 'background:' + pastellize(sg.farbe) + ';border-left:3px solid ' + sg.farbe + ';';
+      const titel = tx('div', '', b.stunde.titel || '(ohne Titel)');
+      titel.style.cssText = 'font-weight:600;color:var(--tx);';
+      karte.appendChild(titel);
+      if (b.span > 1) {
+        const dz = tx('div', '', 'Doppelstunde');
+        dz.style.cssText = 'font-size:10px;color:var(--tx2);margin-top:2px;';
+        karte.appendChild(dz);
+      }
+      karte.title = 'Stunde öffnen';
+      karte.onclick = () => {
+        S.aktFpId = fp.id; S.view = 'fachplanung';
+        S.sel = { type: 'stunde', ids: [fp.id, sg.block.id, sg.reihe.id, b.stunde.id] };
+        render();
+      };
+      grid.appendChild(karte);
+    });
+
+    // Termine ohne angelegte Stunde
+    belegt.forEach((ja, k) => {
+      if (ja) return;
+      const offen = tx('div', '', 'offen');
+      offen.style.cssText = 'grid-row:2;grid-column:' + (k + 1) + ';margin:0 3px;padding:6px 8px;border-radius:6px;'
+        + 'font-size:11px;color:var(--tx3);border:1px dashed var(--bord);text-align:center;';
+      grid.appendChild(offen);
+    });
+
+    scroller.appendChild(grid);
+    box.appendChild(scroller);
+    return box;
+  }
 
   // ── Klassenarbeiten als Marker ───────────────────────────────
   klassenarbeiten.forEach(ka => {
@@ -421,7 +549,7 @@ function viewZeitachse(kursId) {
     svg.appendChild(marker);
   });
 
-  const hint = tx('div', '', 'Block ziehen zum Verschieben · Klick auf Block für Optionen');
+  const hint = tx('div', '', 'Block ziehen zum Verschieben · Klick auf Block für Optionen · 🔍 unter einer Reihe zeigt ihre Termine');
   hint.style.cssText = 'font-size:11px;color:var(--tx3);margin-top:6px;';
   div.appendChild(hint);
 

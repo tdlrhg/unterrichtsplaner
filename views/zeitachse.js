@@ -590,7 +590,7 @@ function viewZeitachse(kursId) {
       const n = parseInt(zahl.value, 10);
       if (!(n >= 1)) { zahl.focus(); return; }
       schliessen();
-      mehrZeit(sg.block, sg.reihe, stunde, n);
+      mehrZeit(sg, stunde, n);
     };
     ok.onclick = ausfuehren;
     zahl.onkeydown = e => { if (e.key === 'Enter') ausfuehren(); if (e.key === 'Escape') schliessen(); };
@@ -609,7 +609,8 @@ function viewZeitachse(kursId) {
     setTimeout(() => document.addEventListener('mousedown', aussen), 0);
   }
 
-  function mehrZeit(block, reihe, stunde, n) {
+  function mehrZeit(sg, stunde, n) {
+    const block = sg.block, reihe = sg.reihe;
     const liste = reihe.stunden || (reihe.stunden = []);
     const pos = liste.findIndex(x => x.id === stunde.id);
     if (pos < 0) return;
@@ -621,15 +622,27 @@ function viewZeitachse(kursId) {
       .map(b => ({ b, si: blockStartIdx(b) }))
       .filter(x => x.si > eigenerStart);
 
-    // 1) Fortsetzungsstunden direkt hinter der Stunde
-    const basis = (stunde.titel || 'Stunde').replace(/\s*\(Fortsetzung[^)]*\)\s*$/, '');
-    const neu = [];
-    for (let i = 0; i < n; i++) {
-      const st = { id: uid(), titel: basis + ' (Fortsetzung' + (n > 1 ? ' ' + (i + 1) + '/' + n : '') + ')',
-        dauer: 45, material: [], phasen: [], lernziel: '' };
-      if (stunde.einheitId) st.einheitId = stunde.einheitId;
-      neu.push(st);
+    // 1) Fortsetzungsstunden direkt hinter der Stunde — passend zum Stundenplan:
+    //    Fallen zwei neue Einheiten auf aufeinanderfolgende Stunden am selben Tag,
+    //    wird daraus eine Doppelstunde, sonst bleiben es Einzelstunden.
+    const einheitenBis = liste.slice(0, pos + 1).reduce((sum, x) => sum + stundeEinheiten(x), 0);
+    const ersterSlot = sg.startIdx + Math.max(0, einheitenBis - sg.skip);
+    const dauern = [];
+    let rest = n, k = 0;
+    while (rest > 0) {
+      const a = stundenGesamt[ersterSlot + k], b = stundenGesamt[ersterSlot + k + 1];
+      const doppel = rest >= 2 && a && b && a.datum === b.datum
+        && parseInt(b.stunde, 10) === parseInt(a.stunde, 10) + 1;
+      dauern.push(doppel ? 90 : 45);
+      rest -= doppel ? 2 : 1; k += doppel ? 2 : 1;
     }
+    const basis = (stunde.titel || 'Stunde').replace(/\s*\(Fortsetzung[^)]*\)\s*$/, '');
+    const neu = dauern.map((d, i) => {
+      const st = { id: uid(), titel: basis + ' (Fortsetzung' + (dauern.length > 1 ? ' ' + (i + 1) + '/' + dauern.length : '') + ')',
+        dauer: d, material: [], phasen: [], lernziel: '' };
+      if (stunde.einheitId) st.einheitId = stunde.einheitId;
+      return st;
+    });
     liste.splice(pos + 1, 0, ...neu);
 
     // 2) Soll von Reihe und Block wachsen mit, sofern eingetragen

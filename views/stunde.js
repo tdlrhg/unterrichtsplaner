@@ -451,12 +451,18 @@ Antworte NUR als JSON mit den offenen Feldern (Vorgaben weglassen):
     prKiBtn.textContent = '✨ KI wählt'; prKiBtn.disabled = false;
   };
 
+  // Kompakt: Überschrift und Auswahl stehen in EINER Zeile. prZeile nimmt auf,
+  // was danach für diese Gruppe angehängt wird (Chips, Textfeld).
+  s4body.style.padding = '6px 16px 10px';
+  let prZeile = s4body;
   function prSection(label, hint) {
-    const h = mk('div', '');
-    h.style.cssText = 'font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;margin-top:12px;display:flex;align-items:center;gap:6px;';
+    const zeile = mk('div', 'pr-row');
+    s4body.appendChild(zeile);
+    prZeile = zeile;
+    const h = mk('div', 'pr-row-lbl');
+    zeile.appendChild(h);
     h.appendChild(tx('span', '', label));
     if (hint) h.appendChild(tx('span', '', '· ' + hint).style && h.lastChild || (() => { const s = tx('span','',hint); s.style.cssText='font-weight:400;text-transform:none;color:var(--tx3);'; return s; })());
-    s4body.appendChild(h);
   }
   function prChips(key, options, multi) {
     const wrap = mk('div', 'pr-chip-wrap');
@@ -477,7 +483,7 @@ Antworte NUR als JSON mit den offenen Feldern (Vorgaben weglassen):
       };
       wrap.appendChild(b);
     });
-    s4body.appendChild(wrap);
+    prZeile.appendChild(wrap);
   }
 
   // ── Dauer (Checkboxen 45 / 90, leer = KI entscheidet) ──────────
@@ -495,7 +501,7 @@ Antworte NUR als JSON mit den offenen Feldern (Vorgaben weglassen):
     };
     dauerWrap.appendChild(b);
   });
-  s4body.appendChild(dauerWrap);
+  prZeile.appendChild(dauerWrap);
 
   // ── Sozialformen ────────────────────────────────────────────────
   prSection('Sozialformen');
@@ -505,13 +511,13 @@ Antworte NUR als JSON mit den offenen Feldern (Vorgaben weglassen):
   prSection('Schwerpunkt');
   prChips('schwerpunkt', ['Einführung', 'Erarbeitung', 'Übung & Festigung', 'Sicherung', 'Experiment', 'Diskussion', 'Präsentation'], false);
 
-  prSection('Besondere Hinweise');
+  prSection('Hinweise');
   const hinweisTA = document.createElement('textarea');
-  hinweisTA.className = 'finp'; hinweisTA.rows = 2; hinweisTA.style.cssText = 'resize:none;font-size:13px;';
+  hinweisTA.className = 'finp pr-hinweis'; hinweisTA.rows = 1; hinweisTA.style.cssText = 'resize:vertical;font-size:12px;min-height:26px;height:26px;line-height:1.4;';   // finp bringt sonst ~80px Mindesthöhe mit
   hinweisTA.placeholder = 'z.B. Heute kein Beamer, Max fehlt, Raumwechsel…';
   hinweisTA.value = pr.hinweise || '';
   hinweisTA.oninput = e => { pr.hinweise = e.target.value; scheduleSave(); };
-  s4body.appendChild(hinweisTA);
+  prZeile.appendChild(hinweisTA);
 
   // ══════════════════════════════════════════════════════════════════
   // SEKTION 5: Phasen

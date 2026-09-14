@@ -789,8 +789,13 @@ textarea::placeholder { color: #c4cdd6; }
 .sidebar { position: relative; }
 
 /* ── Planungsrahmen ── */
-.pr-chip-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
-.pr-chip { border: 1px solid var(--bord); background: var(--surf2); color: var(--tx2); }
+.pr-chip-wrap { display: flex; flex-wrap: wrap; gap: 4px; margin: 0; flex: 1; min-width: 0; }
+.pr-chip { border: 1px solid var(--bord); background: var(--surf2); color: var(--tx2); padding: 1px 8px; font-size: 11.5px; line-height: 1.5; }
+/* Eine Zeile je Gruppe: Überschrift links, Auswahl rechts daneben */
+.pr-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-bottom: 1px dashed var(--bord); }
+.pr-row:last-child { border-bottom: none; }
+.pr-row-lbl { width: 118px; flex-shrink: 0; font-size: 10.5px; font-weight: 700; color: var(--tx2); text-transform: uppercase; letter-spacing: .4px; display: flex; align-items: center; gap: 6px; }
+.pr-hinweis { flex: 1; min-height: 26px; padding: 3px 8px; }
 .pr-chip:hover { border-color: var(--pri); color: var(--pri); }
 .pr-chip.active { border-color: var(--pri); background: #ccfbf1; color: var(--pri); font-weight: 700; }
 .pr-chip.active.ki { border-color: #0e7490; background: #f0fdfa; color: #0e7490; }

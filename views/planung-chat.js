@@ -343,9 +343,11 @@ const PC_STUNDEN_TOOLS = [
       type: 'object',
       properties: {
         stundeId:  { type: 'string', description: 'ID der Stunde (aus readPlan)' },
-        quelle:    { type: 'string', description: 'Um welches Material es geht, so wie die Lehrerin es nennt, z.B. „RAAbits Chemie M4" oder „eigenes Kopfrechenblatt"' },
+        quelle:    { type: 'string', description: 'KURZ wie ein Etikett — z.B. „MSK N1A 1.1", „RAAbits Chemie M4", „AB Filmleiste (selbst zu erstellen)". Keine langen Buchtitel, Links oder Erläuterungen: Aufgabennummern gehören in teile, Hinweise in anpassung.' },
         teile:     { type: 'string', description: 'Welcher Teil verwendet wird, falls nicht alles — z.B. „nur Aufgabe 2–4" (optional)' },
-        anpassung: { type: 'string', description: 'Was vorher angepasst werden muss — kürzen, umformulieren, ergänzen (optional)' }
+        anpassung: { type: 'string', description: 'Was vorher angepasst werden muss — kürzen, umformulieren, ergänzen (optional)' },
+        kopieren:  { type: 'boolean', description: 'true, wenn die Lehrerin das Material vorher für die Lernenden kopieren muss (Arbeitsblatt, Kopiervorlage, Tabelle). Nicht bei Büchern, Heft, Tafel, digitalem Material.' },
+        menge:     { type: 'string', description: 'Nur bei kopieren: wie viele — „Klassensatz", „je Paar", „je Gruppe" oder eine Zahl wie „6 Stück"' }
       },
       required: ['stundeId', 'quelle']
     }
@@ -473,9 +475,11 @@ const PC_EINHEIT_TOOLS = [
       type: 'object',
       properties: {
         stundeId:  { type: 'string', description: 'ID der Stunde' },
-        quelle:    { type: 'string', description: 'Um welches Material es geht, so wie die Lehrerin es nennt' },
+        quelle:    { type: 'string', description: 'KURZ wie ein Etikett — z.B. „MSK N1A 1.1", „RAAbits Chemie M4", „AB Filmleiste (selbst zu erstellen)". Keine langen Buchtitel, Links oder Erläuterungen: Aufgabennummern gehören in teile, Hinweise in anpassung.' },
         teile:     { type: 'string', description: 'Welcher Teil verwendet wird, falls nicht alles (optional)' },
-        anpassung: { type: 'string', description: 'Was vorher angepasst werden muss (optional)' }
+        anpassung: { type: 'string', description: 'Was vorher angepasst werden muss (optional)' },
+        kopieren:  { type: 'boolean', description: 'true, wenn die Lehrerin das Material vorher für die Lernenden kopieren muss (Arbeitsblatt, Kopiervorlage, Tabelle). Nicht bei Büchern, Heft, Tafel, digitalem Material.' },
+        menge:     { type: 'string', description: 'Nur bei kopieren: wie viele — „Klassensatz", „je Paar", „je Gruppe" oder eine Zahl wie „6 Stück"' }
       },
       required: ['stundeId', 'quelle']
     }
@@ -537,7 +541,7 @@ async function _pcExecTool(name, input, fp) {
             prioritaet: s.prioritaet || 'pflicht',
             notizen: s.notizen || '',
             material: (s.material || []).map(m => ({
-              id: m.id, quelle: m.quelle, teile: m.teile || '', anpassung: m.anpassung || ''
+              id: m.id, quelle: m.quelle, teile: m.teile || '', anpassung: m.anpassung || '', kopieren: !!m.kopieren, menge: m.menge || ''
             })),
             phasen: (s.phasen || []).map(p => ({
               titel: p.titel || '', inhalt: p.inhalt || '', methode: p.methode || '',
@@ -585,7 +589,7 @@ async function _pcExecTool(name, input, fp) {
             prioritaet: s.prioritaet || 'pflicht',
             notizen: s.notizen || '',
             material: (s.material || []).map(m => ({
-              id: m.id, quelle: m.quelle, teile: m.teile || '', anpassung: m.anpassung || ''
+              id: m.id, quelle: m.quelle, teile: m.teile || '', anpassung: m.anpassung || '', kopieren: !!m.kopieren, menge: m.menge || ''
             }))
           }))
         });
@@ -771,7 +775,9 @@ async function _pcExecTool(name, input, fp) {
         id: uid(),
         quelle: input.quelle,
         teile: input.teile || '',
-        anpassung: input.anpassung || ''
+        anpassung: input.anpassung || '',
+        kopieren: !!input.kopieren,
+        menge: input.kopieren ? (input.menge || 'Klassensatz') : ''
       };
       stunde.material.push(eintrag);
       scheduleSave(); render();

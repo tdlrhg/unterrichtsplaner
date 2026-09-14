@@ -199,55 +199,93 @@ Antworte NUR als JSON-Array von Strings:
   s2acts.appendChild(matAddBtn);
 
   const matListe = mk('div', '');
-  matListe.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  matListe.style.cssText = 'display:flex;flex-direction:column;';
   s2body.appendChild(matListe);
 
+  // Kompakte Liste: eine Zeile je Material. Eingabefelder erscheinen nur beim
+  // Bearbeiten (✎) — vorher waren es drei breite Felder je Material, in denen
+  // der Text abgeschnitten wurde.
+  let offenMatId = null;
   function renderMaterial() {
     matListe.innerHTML = '';
     if (!stunde.material.length) {
-      const leer = tx('div', '', 'Noch kein Material zugeordnet. Im Reihen-Chat kann die KI das eintragen, sobald ihr euch einig seid.');
+      const leer = tx('div', '', 'Noch kein Material zugeordnet. Im Chat kann die KI das eintragen, sobald ihr euch einig seid.');
       leer.style.cssText = 'font-size:12px;color:var(--tx3);line-height:1.5;';
       matListe.appendChild(leer);
     }
     stunde.material.forEach(m => {
-      const row = mk('div', '');
-      row.style.cssText = 'display:flex;align-items:flex-start;gap:8px;padding:8px 10px;'
-        + 'background:var(--surf2);border-radius:6px;';
+      const zeile = mk('div', 'mat-zeile');
+      const kopf = mk('div', 'mat-kopf');
 
-      const col = mk('div', ''); col.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;';
+      const q = tx('span', 'mat-quelle', m.quelle || '(ohne Bezeichnung)');
+      q.title = m.quelle || '';
+      kopf.appendChild(q);
+      const t = tx('span', 'mat-teile', m.teile || '');
+      t.title = m.teile || '';
+      kopf.appendChild(t);
 
-      const qInp = document.createElement('input');
-      qInp.className = 'finp'; qInp.value = m.quelle || ''; qInp.placeholder = 'Material';
-      qInp.style.cssText = 'font-size:13px;font-weight:600;padding:3px 6px;';
-      qInp.oninput = () => { m.quelle = qInp.value; scheduleSave(); };
-      col.appendChild(qInp);
-
-      const detail = mk('div', ''); detail.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;';
-      const tInp = document.createElement('input');
-      tInp.className = 'finp'; tInp.value = m.teile || ''; tInp.placeholder = 'nur Teil …';
-      tInp.style.cssText = 'font-size:12px;padding:3px 6px;flex:1;min-width:120px;';
-      tInp.oninput = () => { m.teile = tInp.value; scheduleSave(); };
-      const aInp = document.createElement('input');
-      aInp.className = 'finp'; aInp.value = m.anpassung || ''; aInp.placeholder = 'anzupassen …';
-      aInp.style.cssText = 'font-size:12px;padding:3px 6px;flex:1;min-width:120px;';
-      aInp.oninput = () => { m.anpassung = aInp.value; scheduleSave(); };
-      detail.appendChild(tInp); detail.appendChild(aInp);
-      col.appendChild(detail);
-      row.appendChild(col);
-
-      const del = mk('button', 'matc-del');
-      del.textContent = '✕'; del.title = 'Zuordnung entfernen';
-      del.style.cssText = 'color:var(--tx3);flex-shrink:0;';
-      del.onclick = () => {
-        stunde.material = stunde.material.filter(x => x.id !== m.id);
+      // Kopiermarke: Klick schaltet um; beim Einschalten ohne Menge → Klassensatz
+      const kop = mk('button', 'mat-kopie' + (m.kopieren ? ' an' : ''));
+      kop.textContent = m.kopieren ? '🖨 ' + (m.menge || 'kopieren') : '🖨';
+      kop.title = m.kopieren ? 'Muss kopiert werden — klicken zum Abschalten' : 'Als „muss kopiert werden" markieren';
+      kop.onclick = () => {
+        m.kopieren = !m.kopieren;
+        if (m.kopieren && !m.menge) m.menge = 'Klassensatz';
         scheduleSave(); renderMaterial();
       };
-      row.appendChild(del);
-      matListe.appendChild(row);
+      kopf.appendChild(kop);
+
+      const ed = mk('button', 'mat-knopf');
+      ed.textContent = offenMatId === m.id ? '▴' : '✎';
+      ed.title = offenMatId === m.id ? 'Bearbeiten schließen' : 'Bearbeiten';
+      ed.onclick = () => { offenMatId = offenMatId === m.id ? null : m.id; renderMaterial(); };
+      kopf.appendChild(ed);
+
+      const del = mk('button', 'mat-knopf');
+      del.textContent = '✕'; del.title = 'Zuordnung entfernen';
+      del.onclick = () => {
+        stunde.material = stunde.material.filter(x => x.id !== m.id);
+        if (offenMatId === m.id) offenMatId = null;
+        scheduleSave(); renderMaterial();
+      };
+      kopf.appendChild(del);
+      zeile.appendChild(kopf);
+
+      if (m.anpassung && offenMatId !== m.id) {
+        const anp = tx('div', 'mat-anpassung', '↳ ' + m.anpassung);
+        zeile.appendChild(anp);
+      }
+
+      if (offenMatId === m.id) {
+        const edit = mk('div', 'mat-edit');
+        const feld = (label, wert, platzhalter, onInput, mehrzeilig) => {
+          edit.appendChild(tx('label', '', label));
+          const el = document.createElement(mehrzeilig ? 'textarea' : 'input');
+          el.className = 'finp'; el.value = wert || ''; el.placeholder = platzhalter;
+          if (mehrzeilig) { el.rows = 2; el.style.resize = 'vertical'; }
+          el.oninput = () => { onInput(el.value); scheduleSave(); };
+          edit.appendChild(el);
+          return el;
+        };
+        const qIn = feld('Material', m.quelle, 'kurz, z.B. „MSK N1A 1.1"', v => { m.quelle = v; });
+        feld('Teile', m.teile, 'z.B. nur 1.3 a) und b)', v => { m.teile = v; });
+        feld('Anpassung', m.anpassung, 'was vorher angepasst werden muss', v => { m.anpassung = v; }, true);
+        const mengeIn = feld('Kopien', m.menge, 'Klassensatz, je Paar, 6 Stück …', v => { m.menge = v; if (v && !m.kopieren) m.kopieren = true; });
+        mengeIn.title = 'Ein Eintrag hier markiert das Material als „muss kopiert werden"';
+        const fertig = btn('Fertig', 'btn btn-ghost btn-xs');
+        fertig.style.gridColumn = '2'; fertig.style.justifySelf = 'start';
+        fertig.onclick = () => { offenMatId = null; renderMaterial(); };
+        edit.appendChild(fertig);
+        zeile.appendChild(edit);
+        if (!m.quelle) setTimeout(() => qIn.focus(), 0);
+      }
+      matListe.appendChild(zeile);
     });
   }
   matAddBtn.onclick = () => {
-    stunde.material.push({ id: uid(), quelle: '', teile: '', anpassung: '' });
+    const neu = { id: uid(), quelle: '', teile: '', anpassung: '', kopieren: false, menge: '' };
+    stunde.material.push(neu);
+    offenMatId = neu.id;   // neues Material gleich zum Ausfüllen offen
     scheduleSave(); renderMaterial();
   };
   renderMaterial();

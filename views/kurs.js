@@ -630,6 +630,7 @@ function exportFachplanung(fpId) {
                 stunde.material.forEach(m => {
                   md += '- ' + (m.quelle || '(ohne Quelle)');
                   if (m.teile)     md += ' — ' + m.teile;
+                  if (m.kopieren)  md += ' 🖨 **kopieren' + (m.menge ? ': ' + m.menge : '') + '**';
                   if (m.anpassung) md += ' _(Anpassung: ' + m.anpassung + ')_';
                   md += '\n';
                 });

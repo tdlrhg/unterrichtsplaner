@@ -108,12 +108,27 @@ async function callKI(prompt, { model = KI_MODEL_SONNET, maxTokens = 1024, label
 // Gibt das vollständige API-Response-Objekt zurück (nicht nur Text).
 const KI_ABBRUCH = 'KI_ABBRUCH';
 
-async function callKIAgent({ messages, tools = [], system = '', model = KI_MODEL_SONNET, maxTokens = 8192, label = null, signal = null } = {}) {
+// cache   : Prompt-Caching (Standard: an). Ein Planungs-Chat schickt bei jedem
+//           Aufruf Werkzeuge, Systemprompt und den ganzen Verlauf neu — laut
+//           Nutzungs-Log im Schnitt über 60.000 Token, zu über 90 % Eingabe.
+//           Aus dem Cache gelesene Token kosten ein Zehntel.
+//           Zwei Marken: eine feste am Systemprompt (deckt Werkzeuge + System,
+//           beides bleibt innerhalb eines Gesprächs byte-gleich) und die
+//           automatische am Ende des Verlaufs, die mit jedem Zug mitwandert.
+//           TTL 1 Stunde: Zwischen zwei Nachrichten liegen oft mehr als fünf
+//           Minuten Lesezeit; mit 5-Minuten-TTL würde dann jedes Mal der
+//           ganze Verlauf neu geschrieben.
+async function callKIAgent({ messages, tools = [], system = '', model = KI_MODEL_SONNET, maxTokens = 8192, label = null, signal = null, cache = true } = {}) {
   const antKey = localStorage.getItem('ant_key');
   if (!antKey) throw new Error('Kein API-Key hinterlegt (Einstellungen).');
   const body = { model, max_tokens: maxTokens, messages };
   if (tools.length) body.tools = tools;
-  if (system) body.system = system;
+  if (system) {
+    body.system = cache
+      ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral', ttl: '1h' } }]
+      : system;
+  }
+  if (cache) body.cache_control = { type: 'ephemeral', ttl: '1h' };
   let res;
   try {
     res = await fetch('https://api.anthropic.com/v1/messages', {

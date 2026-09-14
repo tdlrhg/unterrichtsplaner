@@ -4,6 +4,10 @@
 
 const KI_MODEL_SONNET = 'claude-sonnet-4-6';
 const KI_MODEL_HAIKU  = 'claude-haiku-4-5';
+// Fuer die Feinplanung: aktuelle Generation. Wird kein thinking-Parameter
+// gesendet, denkt Opus 5 von sich aus adaptiv mit — anders als Sonnet 4.6,
+// das ohne den Parameter gar nicht erst nachdenkt.
+const KI_MODEL_OPUS   = 'claude-opus-5';
 const KI_BILLING_URL  = 'https://console.anthropic.com/settings/billing';
 
 function isKICreditError(err) {

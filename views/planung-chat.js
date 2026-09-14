@@ -1591,8 +1591,16 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
   try {
     while (true) {
       _pcAbort = new AbortController();
-      const resp = await callKIAgent({ messages: _pcApi, tools, system, maxTokens: 8192,
-        label: 'planungs-agent', signal: _pcAbort.signal });
+      // Die Feinplanung ist der einzige Aufruf, der wirklich abwaegen muss —
+      // Zeitbudget, Methodenwahl, Differenzierung gegeneinander. Dafuer Opus 5,
+      // das dabei von sich aus mitdenkt; das kostet Denk-Token, die in
+      // max_tokens mit hineinzaehlen, daher hier mehr Luft. Reihen- und
+      // Block-Chat planen Struktur und bleiben, wo sie waren.
+      const resp = await callKIAgent({ messages: _pcApi, tools, system,
+        model:     einheit ? KI_MODEL_OPUS : KI_MODEL_SONNET,
+        maxTokens: einheit ? 16000 : 8192,
+        label:     einheit ? 'planungs-agent-fein' : 'planungs-agent',
+        signal: _pcAbort.signal });
       _pcAbort = null;
 
       _pcApi.push({ role: 'assistant', content: resp.content });

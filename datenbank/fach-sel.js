@@ -159,6 +159,151 @@ async function _runDuplicate(reloadFn) {
   if (reloadFn) reloadFn({ keepScroll: true });
 }
 
+// ── Fach wechseln ────────────────────────────────────────────────
+// Ein beim Import falsch gesetztes Fach trifft immer einen ganzen Stapel.
+// Die Korrektur sitzt deshalb in der Mehrfachauswahl: markieren, Zielfach
+// wählen, umtragen. Geändert wird ausschließlich das Feld `fach` — alle
+// übrigen Metadaten und die Gruppenzugehörigkeit bleiben unberührt.
+function _runFachWechsel(reloadFn) {
+  var gs = Object.values(_selGroups);
+  if (!gs.length) return;
+  var itemCount = gs.reduce(function(s, g) { return s + g.items.length; }, 0);
+
+  // Fächer, in denen die Auswahl aktuell liegt. In der Fach-Ansicht ist das
+  // genau eines — die Zählung deckt eine gemischte Auswahl mit ab.
+  var istFach = {};
+  gs.forEach(function(g) {
+    g.items.forEach(function(it) { if (it.fach) istFach[it.fach] = (istFach[it.fach] || 0) + 1; });
+  });
+
+  var ziel   = null;
+  var closed = false;
+  var laeuft = false;
+
+  var ov = mk('div', 'db-modal-overlay');
+  ov.style.zIndex = '9600';   // über der Aktionsleiste (z-index 200)
+  ov.onclick = function(e) { if (e.target === ov) close(); };
+
+  var box = mk('div', 'db-modal');
+  box.style.cssText = 'max-width:460px;height:auto;max-height:none;';
+
+  var hdr = mk('div', 'db-modal-hdr');
+  hdr.appendChild(tx('div', 'db-modal-title', '⇄ Fach wechseln'));
+  var closeX = btn('✕', 'btn btn-ghost btn-sm');
+  closeX.style.cssText += 'margin-left:auto;font-size:13px;padding:3px 8px;';
+  closeX.onclick = function() { close(); };
+  hdr.appendChild(closeX);
+  box.appendChild(hdr);
+
+  var body = mk('div', '');
+  body.style.cssText = 'padding:18px 22px;display:flex;flex-direction:column;gap:14px;';
+  var info = tx('div', '', gs.length + ' Aufgabe' + (gs.length === 1 ? '' : 'n')
+    + ' mit ' + itemCount + ' Eintr' + (itemCount === 1 ? 'ag' : 'ägen') + ' umtragen nach:');
+  info.style.cssText = 'font-size:13px;color:var(--tx2);';
+  body.appendChild(info);
+
+  var btnRow = mk('div', '');
+  btnRow.style.cssText = 'display:flex;gap:10px;';
+  var fachBtns = [];
+  FAECHER.forEach(function(f) {
+    // Liegt die gesamte Auswahl bereits in diesem Fach, ist es kein Ziel.
+    var istAktuell = istFach[f.key] === itemCount;
+    var b = mk('button', '');
+    b.disabled = istAktuell;
+    b.title = istAktuell ? f.label + ' — aktuelles Fach' : 'Nach ' + f.label + ' umtragen';
+    var ic = tx('span', '', f.icon);
+    ic.style.cssText = 'font-size:26px;line-height:1;';
+    var lb = tx('span', '', istAktuell ? f.label + ' (aktuell)' : f.label);
+    lb.style.cssText = 'font-size:11.5px;font-weight:600;';
+    b.appendChild(ic); b.appendChild(lb);
+    b.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;'
+      + 'padding:14px 6px;border-radius:10px;border:1.5px solid var(--bord);background:transparent;'
+      + 'color:var(--tx2);transition:all .12s;'
+      + (istAktuell ? 'opacity:.45;cursor:default;' : 'cursor:pointer;');
+    if (!istAktuell) b.onclick = function() { ziel = f.key; syncBtns(); };
+    btnRow.appendChild(b);
+    fachBtns.push({ k: f.key, b: b, f: f, aus: istAktuell });
+  });
+  body.appendChild(btnRow);
+
+  var stat = tx('div', '', '');
+  stat.style.cssText = 'font-size:12px;color:var(--tx3);min-height:16px;line-height:1.4;';
+  body.appendChild(stat);
+  box.appendChild(body);
+
+  var foot = mk('div', 'db-modal-footer');
+  var goBtn = btn('Umtragen', 'btn btn-pri btn-sm');
+  goBtn.disabled = true;
+  goBtn.onclick = function() { run(); };
+  var abBtn = btn('Abbrechen', 'btn btn-ghost btn-sm');
+  abBtn.onclick = function() { close(); };
+  foot.appendChild(goBtn); foot.appendChild(abBtn);
+  box.appendChild(foot);
+
+  function syncBtns() {
+    fachBtns.forEach(function(t) {
+      if (t.aus) return;
+      var an = ziel === t.k;
+      t.b.style.background  = an ? t.f.color + '20' : 'transparent';
+      t.b.style.borderColor = an ? t.f.color : 'var(--bord)';
+      t.b.style.borderWidth = an ? '2.5px' : '1.5px';
+      t.b.style.color       = an ? t.f.color : 'var(--tx2)';
+    });
+    goBtn.disabled = !ziel;
+  }
+
+  function esc(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
+  document.addEventListener('keydown', esc);
+
+  function close() {
+    if (closed || laeuft) return;   // während des Umtragens nicht schließbar
+    closed = true;
+    document.removeEventListener('keydown', esc);
+    ov.remove();
+  }
+
+  // Jede Zeile einzeln — sbUpdate arbeitet per id. Ein Fehlschlag bricht den
+  // Lauf nicht ab; erneutes Ausführen ist gefahrlos, weil derselbe Wert
+  // geschrieben wird.
+  async function run() {
+    if (!ziel || laeuft) return;
+    laeuft = true;
+    goBtn.disabled = true; goBtn.textContent = '⏳ Trägt um…';
+    abBtn.disabled = true; closeX.disabled = true;
+    stat.style.color = 'var(--tx3)';
+    var ok = 0, fehler = 0;
+    for (var i = 0; i < gs.length; i++) {
+      for (var j = 0; j < gs[i].items.length; j++) {
+        try {
+          await sbUpdate('inhalte', gs[i].items[j].id, { fach: ziel });
+          ok++;
+        } catch (e) {
+          fehler++;
+          console.error('[Fach-Wechsel] Fehler bei', gs[i].items[j].id, e);
+        }
+        stat.textContent = (ok + fehler) + '/' + itemCount + ' verarbeitet'
+          + (fehler ? ' · ' + fehler + ' fehlgeschlagen' : '');
+      }
+    }
+    laeuft = false;
+    if (fehler) {
+      stat.style.color = '#dc2626';
+      stat.textContent = ok + ' von ' + itemCount + ' umgetragen, ' + fehler
+        + ' fehlgeschlagen. Details in der Konsole — erneut versuchen ist gefahrlos.';
+      goBtn.disabled = false; goBtn.textContent = '↻ Erneut versuchen';
+      abBtn.disabled = false; closeX.disabled = false;
+      return;
+    }
+    close();
+    _clearSel();
+    if (reloadFn) reloadFn();
+  }
+
+  ov.appendChild(box);
+  document.body.appendChild(ov);
+  syncBtns();
+}
+
 async function _runDelete(reloadFn) {
   var gs = Object.values(_selGroups);
   if (!gs.length) return;

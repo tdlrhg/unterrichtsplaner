@@ -228,7 +228,12 @@ function buildImportView(container) {
 
   // Hidden selects — halten den Wert, werden im restlichen Code via .value gelesen
   var typSel  = fsel(HERKUNFT_OPTS); typSel.style.display = 'none'; typSel.value = 'materialset';
-  var fachSel = fsel(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; })); fachSel.style.display = 'none';
+  // Bewusst ohne Vorbelegung: ein stillschweigend gesetztes Fach landet sonst
+  // beim ersten unaufmerksamen Import in der Datenbank und ist dort nur noch
+  // über „Fach wechseln" in der Fach-Ansicht zu korrigieren.
+  var fachSel = fsel([['', '–']].concat(FAECHER.map(function(f) { return [f.key, f.icon + ' ' + f.label]; })));
+  fachSel.style.display = 'none';
+  fachSel.value = '';
   var buchInp  = finp('z.B. Lambacher Schweizer 8');
   var jgInp    = finp('z.B. 7/8'); jgInp.style.maxWidth = '80px';
   var kapInp   = finp('Kapitel (optional)');
@@ -392,6 +397,9 @@ function buildImportView(container) {
 
   var fachCol = mk('div', '');
   fachCol.style.cssText = 'display:flex;flex-direction:column;gap:14px;flex-shrink:0;margin-left:16px;margin-top:10px;';
+  var fachLbl = tx('div', 'fl', 'Fach');
+  fachLbl.style.cssText = 'text-align:center;margin-bottom:-6px;';
+  fachCol.appendChild(fachLbl);
   var _fachBtns = [];
   FAECHER.forEach(function(f) {
     var b = mk('button', '');
@@ -405,7 +413,11 @@ function buildImportView(container) {
     fachCol.appendChild(b);
     _fachBtns.push({ k: f.key, b: b, f: f });
   });
+  var fachHint = tx('div', '', 'bitte wählen');
+  fachHint.style.cssText = 'font-size:10.5px;font-weight:600;color:#dc2626;text-align:center;margin-top:-8px;';
+  fachCol.appendChild(fachHint);
   function refreshFachBtns() {
+    fachHint.style.visibility = fachSel.value ? 'hidden' : 'visible';
     _fachBtns.forEach(function(t) {
       var active = fachSel.value === t.k;
       t.b.style.background  = active ? t.f.color + '30' : t.f.color + '18';
@@ -813,6 +825,7 @@ function buildImportView(container) {
       ];
       if (jgInp.value.trim()) parts.push('Jg. ' + jgInp.value.trim());
       if (fachSel.value) { var fi = fachInfo(fachSel.value); parts.push(fi.icon + ' ' + fi.label); }
+      else parts.push('⚠️ Fach fehlt');
       metaSummary.textContent = parts.join(' · ');
     }
     metaRefresh();
@@ -853,13 +866,19 @@ function buildImportView(container) {
   async function saveAll() {
     var buch     = buchInp.value.trim();
     var herkunft = HERKUNFT[typSel.value] ? typSel.value : 'schulbuch';
+    var fach     = fachSel.value;
+    if (!fach) {
+      statusEl.style.color = '#dc2626';
+      statusEl.textContent = '⚠️ Bitte zuerst das Fach wählen.';
+      if (fachCol.scrollIntoView) fachCol.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     if ((HERKUNFT[herkunft] || {}).hasBuch && !buch) {
       statusEl.style.color = '#dc2626';
       statusEl.textContent = '⚠️ Bitte Werk / Titel eingeben.';
       buchInp.focus();
       return;
     }
-    var fach     = fachSel.value;
     var jg       = normJahrgang(jgInp.value.trim()) || null;
     var kap      = kapInp.value.trim() || null;
     var uk       = ukInp.value.trim() || null;

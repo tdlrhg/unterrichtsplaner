@@ -636,12 +636,15 @@ function exportFachplanung(fpId) {
               }
 
               if ((stunde.phasen || []).length) {
-                md += '\n| Phase | Min | Sozialform | Was passiert |\n';
-                md += '|---|---|---|---|\n';
+                md += '\n| Phase | Min | bis | Sozialform | Was passiert |\n';
+                md += '|---|---|---|---|---|\n';
+                let bis = 0;   // bis Phasenende vergangene Minuten
                 stunde.phasen.forEach(ph => {
+                  bis += parseInt(ph.minuten) || 0;
                   const zelle = t => String(t || '').replace(/\|/g, '\\|').replace(/\n+/g, ' ');
                   md += '| ' + zelle(ph.titel)
                      + ' | ' + (ph.minuten != null ? ph.minuten : '')
+                     + ' | ' + bis
                      + ' | ' + zelle([ph.sozialform, ph.methode].filter(Boolean).join(' · '))
                      + ' | ' + zelle(ph.inhalt) + ' |\n';
                 });

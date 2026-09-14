@@ -454,12 +454,12 @@ const PC_EINHEIT_TOOLS = [
             type: 'object',
             properties: {
               titel:      { type: 'string', description: 'Kurzer Phasentitel, z.B. „Einstieg: Ist jede 3 gleich viel wert?"' },
-              typ:        { type: 'string', enum: ['Einstieg', 'Erarbeitung', 'Sicherung', ''], description: 'Phasentyp — immer setzen. Leer nur bei einer Pause.' },
+              typ:        { type: 'string', enum: ['Einstieg', 'Erarbeitung', 'Sicherung', ''], description: 'Phasentyp — immer setzen. Leer nur bei Ankommen, Aufräumen und Pause.' },
               inhalt:     { type: 'string', description: 'STICHWORTARTIG: höchstens drei kurze Zeilen, jede beginnt mit „– ". Was passiert, was die Lernenden tun. Keine ausformulierten Impulse, Lehrertexte oder Begründungen — die gehören in die notizen der Stunde (updateStunde).' },
               methode:    { type: 'string', description: 'NUR der Name einer Unterrichtsmethode, möglichst aus readMethoden (z.B. „Think-Pair-Share", „Placemat"). Kein Material, keine Aufgabennummern, keine Beschreibung. Leer lassen, wenn keine benannte Methode.' },
               material:   { type: 'string', description: 'Welches Material in dieser Phase eingesetzt wird, kurz — z.B. „MSK N1A 1.1 a–c", „Tafel: XXX / 333". Leer, wenn keins.' },
               sozialform: { type: 'string', description: 'Plenum, Einzelarbeit, Partnerarbeit, Gruppenarbeit (optional)' },
-              minuten:    { type: 'number', description: 'Dauer in Minuten' }
+              minuten:    { type: 'number', description: 'Dauer in Minuten. Die Pause zwischen den Stunden einer Doppelstunde bekommt 0 — sie liegt außerhalb der 90 Minuten.' }
             },
             required: ['titel']
           }
@@ -1241,6 +1241,15 @@ async function _pcSend(fp, context, text) {
   // die zusammen an einer Planung sitzen, ist das schief.
   const anrede = '\nSprich sie mit Du an. Kein Siezen.\n';
 
+  // Stufe aus dem Jahrgang: 5–10 = Sekundarstufe I, EF/Q1/Q2 (11–13) = II.
+  // Die Zeitregeln unterscheiden sich; die KI soll das nicht raten müssen.
+  const jgText = String(fp.jahrgang || '').toUpperCase();
+  const jgZahl = parseInt(jgText, 10);
+  const istSII = /EF|Q1|Q2/.test(jgText) || (jgZahl >= 11 && jgZahl <= 13);
+  const zeitrahmen = '\nZeitrahmen: Diese Lerngruppe (Jahrgang ' + (fp.jahrgang || '?') + ') ist '
+    + (istSII ? 'Sekundarstufe II.' : 'Sekundarstufe I — Zeitmarken: Einzelstunde 5\'–40\' Unterricht (35 min), '
+      + 'Doppelstunde 5\'–45\' und 45\'–85\' Unterricht (80 min), Pause zwischen den Stunden.') + '\n';
+
   // Vorhandenes Material fest in den Prompt legen, statt darauf zu hoffen, dass
   // die KI readDatenbank aufruft. Die Anweisung dazu stand im Prompt und wurde
   // trotzdem übergangen — mit dem Ergebnis, dass am Bestand vorbeigeplant wurde.
@@ -1404,18 +1413,29 @@ Worauf du achtest:
    Danach richtet sich, was hilft. Du kennst diese Lerngruppe nicht — frag nach,
    wenn sie ein konkretes Problem anspricht, statt allgemeine Vorschläge zu machen.
 
-6. Realistische Zeit. Feste Rahmenzeiten gehen von der Stunde ab: zu Beginn
-   Begrüßungsritual, Material und Anwesenheit, am Ende drei Minuten zum Aufräumen.
-   Rechne unterrichtlich mit 40 Minuten in der Sekundarstufe II und etwa 35 in der
-   Sekundarstufe I. Die Übergangszeiten aus Punkt 3 zählen in dieses Budget hinein,
-   nicht obendrauf.
+6. Realistische Zeit. Welche Stufe diese Lerngruppe ist, steht unten unter
+   „Zeitrahmen". Die Übergangszeiten aus Punkt 3 zählen in das Unterrichtsbudget
+   hinein, nicht obendrauf.
+
+   Sekundarstufe I — feste Zeitmarken:
+   · Einzelstunde (45): 0'–5' Ankommen (Begrüßung, Anwesenheit), 5'–40' Unterricht
+     = 35 Minuten, 40'–45' Aufräumen (Stühle hoch usw.).
+   · Doppelstunde (90): 0'–5' Ankommen, 5'–45' Unterricht, dann die Pause ZWISCHEN
+     den beiden Stunden (sie zählt nicht zu den 90 Minuten), 45'–85' Unterricht,
+     85'–90' Aufräumen. Unterricht = 80 Minuten. In der Mitte gibt es kein Aufräumen
+     und kein erneutes Ankommen.
+   · Lege Ankommen und Aufräumen als eigene Phasen mit je 5 Minuten an (typ leer),
+     bei der Doppelstunde dazwischen eine Phase „Pause" mit 0 Minuten genau an der
+     Stelle 45'. Die Summe aller Phasen ist dann genau 45 bzw. 90.
+
+   Sekundarstufe II: Rechne mit etwa 40 Minuten Unterricht in der Einzelstunde und
+   etwa 80 in der Doppelstunde; Ankommen und Aufräumen nicht als eigene Phasen.
 
    Eine Doppelstunde ist EIN Eintrag mit dauer=90, keine zwei Stunden. Frage nicht
-   nach der Länge der „zweiten Stunde" — es gibt keine. Die Rahmenzeiten fallen nur
-   einmal an, dafür geht die Pause ab: Rechne mit etwa 75 Minuten unterrichtlicher
-   Zeit in der Sekundarstufe I und etwa 80 in der Sekundarstufe II, unterbrochen von
-   einer 5-Minuten-Pause. Plane die Phasen über die ganze Doppelstunde hinweg und
-   lege die Pause an eine Stelle, an der ein Schnitt didaktisch passt.
+   nach der Länge der „zweiten Stunde" — es gibt keine. Plane die Phasen über die
+   ganze Doppelstunde hinweg; die Pause liegt fest bei 45' (siehe Zeitmarken oben).
+   Eine Phase, die über 45' hinausreicht, wird durch die Pause unterbrochen — sag
+   dann, ob das didaktisch trägt.
 
    Liegen die Phasenzeiten in Summe darüber, sag es deutlich und benenne, was
    gekürzt, verschoben oder als „wenn Zeit bleibt" markiert wird. Eine Planung, die
@@ -1596,7 +1616,7 @@ Gehe immer so vor:
 Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
   }
 
-  system += anrede + materialBlock;   // gilt für alle drei Ebenen
+  system += anrede + zeitrahmen + materialBlock;   // gilt für alle drei Ebenen
 
   try {
     while (true) {

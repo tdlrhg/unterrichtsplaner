@@ -1262,18 +1262,31 @@ function _pcRender() {
   }
 }
 
-async function _pcSend(fp, context, text) {
-  // context = { block } für Block-Chat, { block, reihe } für Reihen-Chat
-  if (_pcRunning || !text.trim()) return;
-  _pcRunning = true;
+// Notbehelf: Prompt und Plandaten als Text, ohne KI-Aufruf. Die Werkzeuge
+// gibt es im externen Chat nicht — deshalb liegen ihre Ergebnisse gleich bei.
+async function _pcKontextKopieren(fp, context) {
+  const { system } = await _pcBaueSystem(fp, context);
+  const plan = await _pcExecTool('readPlan', {}, fp);
+  const methoden = await _pcExecTool('readMethoden', {}, fp);
+  const text = [
+    'Wir planen gemeinsam eine Unterrichtsstunde. Unten stehen deine Rolle, die Planungsdaten, '
+    + 'das vorhandene Material und die Methodendatenbank. Werkzeuge (readPlan, readDatenbank, '
+    + 'setPhasen, materialZuordnen usw.) werden im Text erwähnt, stehen hier aber nicht zur '
+    + 'Verfügung — ihre Daten sind unten schon eingefügt. Statt setPhasen gibst du den Verlauf, '
+    + 'wenn wir uns einig sind, als Tabelle aus: Zeit (von–bis), Typ, Inhalt (stichwortartig), '
+    + 'Methode, Material, Sozialform, Minuten. Darunter die Materialliste mit Kopien ja/nein.',
+    '=== ROLLE UND REGELN ===', system,
+    '=== PLAN (Reihe und Stunden) ===', plan,
+    '=== METHODEN ===', methoden,
+    '=== START ===', 'Stunde: „' + (context.stunde.titel || '') + '". Frag mich, womit ich einsteigen will.'
+  ].join('\n\n');
+  await navigator.clipboard.writeText(text);
+  return text.length;
+}
 
-  _pcMsgs.push({ role: 'user', text: text.trim() });
-  _pcApi.push({ role: 'user', content: text.trim() });
-
-  const thinkMsg = { role: 'assistant', text: '', isThinking: true, toolCalls: [] };
-  _pcMsgs.push(thinkMsg);
-  _pcRender();
-
+// Baut Werkzeuge und System-Prompt für den Chat. Auch vom Notbehelf
+// „Kontext kopieren" genutzt, damit beide immer denselben Stand haben.
+async function _pcBaueSystem(fp, context) {
   const { block, reihe, einheit, stunde } = context;
   const fachName = PC_FACH[fp.fach] || fp.fach;
 
@@ -1658,6 +1671,23 @@ Blöcke legt die Lehrerin manuell an – lege keine neuen Blöcke an.`;
   }
 
   system += anrede + zeitrahmen + materialBlock;   // gilt für alle drei Ebenen
+  return { tools, system };
+}
+
+async function _pcSend(fp, context, text) {
+  // context = { block } für Block-Chat, { block, reihe } für Reihen-Chat
+  if (_pcRunning || !text.trim()) return;
+  _pcRunning = true;
+
+  _pcMsgs.push({ role: 'user', text: text.trim() });
+  _pcApi.push({ role: 'user', content: text.trim() });
+
+  const thinkMsg = { role: 'assistant', text: '', isThinking: true, toolCalls: [] };
+  _pcMsgs.push(thinkMsg);
+  _pcRender();
+
+  const { block, reihe, einheit, stunde } = context;
+  const { tools, system } = await _pcBaueSystem(fp, context);
 
   try {
     while (true) {
@@ -1940,6 +1970,26 @@ function buildEinheitChat(fp, block, reihe, einheit, stunde) {
   }, stunde
       ? 'z.B. „Schau mal, ob in der Datenbank Material für diese Stunde liegt."'
       : 'z.B. „Schau dir Stunde 2 an — der Einstieg kommt mir zu lang vor."');
+
+  // Notbehelf ohne API-Kosten: alles, was die Feinplanung bekäme, in die
+  // Zwischenablage — zum Einfügen in einen normalen Claude-Chat.
+  if (stunde) {
+    const kopie = btn('📋', 'btn btn-ghost btn-xs pc-kopie');
+    kopie.title = 'Notbehelf: Kontext für einen externen Chat kopieren (kein KI-Aufruf)';
+    kopie.onclick = async (e) => {
+      e.stopPropagation();
+      kopie.textContent = '…';
+      try {
+        const n = await _pcKontextKopieren(fp, { block, reihe, einheit: einheit || { id: null, titel: reihe.titel }, stunde });
+        kopie.textContent = '✓';
+        kopie.title = 'Kopiert (' + Math.round(n / 1000) + 'k Zeichen) — in einen Claude-Chat einfügen';
+      } catch (err) {
+        kopie.textContent = '📋';
+        alert('Kopieren fehlgeschlagen: ' + err.message);
+      }
+    };
+    hdr.appendChild(kopie);
+  }
 
   setTimeout(_pcRender, 0);
   return wrap;

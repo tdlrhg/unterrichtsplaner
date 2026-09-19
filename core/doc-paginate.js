@@ -341,6 +341,18 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
     if (verfuegbar > letzterBlock.offsetHeight) letzterBlock.style.height = verfuegbar + 'px';
   });
 
+  // Klausur-Aufgabenkopf: Punktemuster oben rechts auf jeder Seite, die mit
+  // dem Kopf einer Aufgabe beginnt (Fortsetzungsseiten haben keinen Kopf).
+  seiten.forEach(function (seite) {
+    var content = seite.querySelector('.dv-content');
+    var erstes = content && content.firstElementChild;
+    if (!erstes || !erstes.classList.contains('dv-aufgabe-klausur')) return;
+    if (!erstes.querySelector(':scope > .dv-aufgabe-hdr')) return;
+    var punkte = mk('div', 'dv-ak-punkte');
+    punkte.style.top = content.style.top;
+    seite.appendChild(punkte);
+  });
+
   // Platzhalter inkl. Seitenzahlen füllen
   var basis = dvPlatzhalter(v, meta);
   seiten.forEach(function (s, idx) {

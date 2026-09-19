@@ -227,8 +227,11 @@ function dvBlockRoh(b, v) {
   }
 
   if (b.t === 'aufgabe') {
-    var a = mk('section', 'dv-aufgabe' + (v.aufgabe.trennlinie ? ' dv-aufgabe-linie' : ''));
-    var titelUnten = !!v.aufgabe.titelUnten;
+    // Klausur-Stil: große farbige Überschrift, Thema darunter, Punktemuster
+    // oben rechts (siehe docPaginate), jede Aufgabe auf neuer Seite.
+    var klausur = v.aufgabe.stil === 'klausur';
+    var a = mk('section', 'dv-aufgabe' + (v.aufgabe.trennlinie ? ' dv-aufgabe-linie' : '') + (klausur ? ' dv-aufgabe-klausur' : ''));
+    var titelUnten = klausur || !!v.aufgabe.titelUnten;
     var hdr = mk('div', 'dv-aufgabe-hdr' + (v.aufgabe.zentriert ? ' dv-aufgabe-hdr-zentriert' : ''));
     var kopfzeile = mk('div', 'dv-aufgabe-kopfzeile');
     kopfzeile.appendChild(tx('span', 'dv-aufgabe-label', dvFuellen(v.aufgabe.label, { nr: b.nr })));
@@ -429,6 +432,9 @@ function docRender(doc, v) {
   var hatAbschluss = false;
   doc.blocks.forEach(function (b) {
     if (b.t === 'abschluss') { b.gesamtpunkte = gesamt; hatAbschluss = true; }
+    // Klausur-Stil: jede Aufgabe beginnt auf einer neuen Seite (auf einer
+    // leeren Seite wird der Umbruch von docPaginate ignoriert).
+    if (b.t === 'aufgabe' && v.aufgabe.stil === 'klausur') nodes.push(mk('div', 'dv-brk'));
     nodes.push(dvBlock(b, v));
   });
   // Abschlussseite ist – wie der Titelblock – ein Vorlagen-Schalter, kein

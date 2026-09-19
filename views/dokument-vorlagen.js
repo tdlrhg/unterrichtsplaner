@@ -71,6 +71,7 @@ var DV_FELDER = [
 
   { gruppe: 'Aufgaben', hinweis: 'Platzhalter in der Beschriftung: {{nr}}' },
   { pfad: 'aufgabe.label',      label: 'Beschriftung', typ: 'text' },
+  { pfad: 'aufgabe.stil',       label: 'Stil', typ: 'select', optionen: [['normal', 'Standard'], ['klausur', 'Klausur: große Überschrift, Punktemuster, neue Seite je Aufgabe']] },
   { pfad: 'aufgabe.punkte',     label: 'Punkte', typ: 'select', optionen: [['kasten', 'Kästchen zum Eintragen'], ['klammer', 'Zahl in Klammern'], ['keine', 'Nicht anzeigen']] },
   { pfad: 'aufgabe.abstand',    label: 'Abstand danach', typ: 'zahl', min: 0, max: 30, schritt: 0.5, einheit: 'mm', halb: true },
   { pfad: 'aufgabe.farbe',      label: 'Akzentfarbe',    typ: 'farbe', halb: true },

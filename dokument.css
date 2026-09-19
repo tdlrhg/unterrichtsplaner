@@ -402,6 +402,15 @@
 .dv-bild-rechts { text-align: right; }
 .dv-bild img { max-width: 100%; }
 
+/* Klausur-Aufgabenkopf (aufgabe.stil = 'klausur'), siehe dvBlockRoh/docPaginate */
+.dv-aufgabe-klausur .dv-aufgabe-label { font-size: 30pt; text-transform: uppercase; letter-spacing: .01em; line-height: 1.1; color: var(--dv-dk-farbe); }
+.dv-aufgabe-klausur .dv-aufgabe-titel-unten { font-size: 11.5pt; font-weight: 800; color: var(--dv-dk-farbe); margin: 4mm 0 9mm 9mm; }
+.dv-ak-punkte {
+  position: absolute; right: var(--dv-titel-rand-r); width: 46%; height: 29mm; pointer-events: none;
+  background-image: radial-gradient(circle, var(--dv-dk-farbe) 1.05pt, transparent 1.25pt);
+  background-size: 3.6mm 3.6mm;
+}
+
 /* ── Deckblatt (Klausur), siehe dvDeckblatt() in core/doc-render.js ──
    Absolut auf der Seite platziert (Prozent der A4-Seite), Farbe über
    --dv-dk-farbe aus der Vorlage. */

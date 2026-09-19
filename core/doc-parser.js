@@ -22,6 +22,7 @@ function docInline(s) {
   h = h.replace(/(^|[^*\w])\*([^*\n]+)\*/g, '$1<em>$2</em>');
   h = h.replace(/(^|[^_\w])_([^_\n]+)_/g, '$1<em>$2</em>');
   h = h.replace(/~~([^~]+)~~/g, '<s>$1</s>');
+  h = h.replace(/\+\+([^+\n]+)\+\+/g, '<u>$1</u>');
   h = h.replace(/\s\\\\\s*$/, '<br>');
   h = h.replace(/_{3,}/g, '<span class="dv-luecke"></span>');
   return h;

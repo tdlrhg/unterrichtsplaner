@@ -79,6 +79,7 @@
 .dv-format-trenner { width: 1px; height: 16px; background: var(--bord); margin: 0 3px; }
 .dv-format-fett { font-weight: 800; }
 .dv-format-kursiv { font-style: italic; }
+.dv-format-unterstrichen { text-decoration: underline; }
 
 /* Quelltext-Editor mit Syntax-Einfärbung.
    Das Textfeld liegt (mit transparenter Schrift) über einem Backdrop, das

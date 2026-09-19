@@ -155,6 +155,7 @@ var DV_CURSOR = '\u00ab';
 var DV_BAUSTEINE = [
   { label: 'Fett',    titel: 'Fett (**Text**) – markierten Text umschließen',   wrap: '**', cls: 'dv-format-fett' },
   { label: 'Kursiv',  titel: 'Kursiv (*Text*) – markierten Text umschließen',   wrap: '*',  cls: 'dv-format-kursiv' },
+  { label: 'U',       titel: 'Unterstrichen (++Text++) – markierten Text umschließen', wrap: '++', cls: 'dv-format-unterstrichen' },
   { label: 'Bruch',   titel: 'Bruch mit Bruchstrich ({Zähler/Nenner})',        aktion: 'bruch' },
   { trenner: true },
   { label: 'Aufgabe',    titel: 'Neue Aufgabe (##)',                       text: '## Aufgabe ' + DV_CURSOR + '[P]\n' },

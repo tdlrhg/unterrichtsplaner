@@ -410,10 +410,10 @@
   background-size: 3.4mm 3.4mm;
 }
 .dv-dk-punkte { position: absolute; left: 0; top: 6.5%; width: 24%; height: 13%; }
-.dv-dk-zeit { position: absolute; top: 2%; right: 4%; text-align: center; font-weight: 800; color: var(--dv-dk-farbe); line-height: 1.1; }
-.dv-dk-zeit svg { width: 11mm; height: 11mm; display: block; margin: 0 auto 0 -4mm; }
-.dv-dk-zeit-wert { font-size: 11pt; }
-.dv-dk-zeit-einheit { font-size: 10pt; }
+.dv-dk-zeit { position: absolute; top: 2%; right: 4%; display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 2.5mm; text-align: center; font-weight: 800; color: var(--dv-dk-farbe); line-height: 1.1; }
+.dv-dk-zeit svg { width: 11mm; height: 11mm; grid-row: 1 / span 2; }
+.dv-dk-zeit-wert { font-size: 13pt; align-self: end; }
+.dv-dk-zeit-einheit { font-size: 10.5pt; align-self: start; }
 .dv-dk-titel { position: absolute; left: 34.5%; top: 6.3%; font-size: 36pt; font-weight: 800; letter-spacing: .16em; line-height: 1; color: var(--dv-dk-farbe); }
 .dv-dk-unter { position: absolute; left: 34.5%; top: 11.6%; font-size: 12.5pt; font-weight: 800; -webkit-text-stroke: .35pt var(--dv-dk-farbe); letter-spacing: .12em; color: var(--dv-dk-farbe); text-transform: uppercase; }
 .dv-dk-kurs { position: absolute; left: 41.5%; top: 22.6%; right: 5%; font-size: 9.5pt; font-weight: 800; letter-spacing: .14em; color: var(--dv-dk-farbe); }

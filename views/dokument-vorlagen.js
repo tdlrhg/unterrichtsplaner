@@ -102,7 +102,14 @@ var DV_FELDER = [
 
   { gruppe: 'Abschluss', hinweis: 'Formfehler-Hinweis + Punkte/Note/Datum/Signatur, am Ende der letzten Seite. Gesamtpunktzahl wird automatisch berechnet.' },
   { pfad: 'abschluss.zeigen',      label: 'Abschlussseite anzeigen', typ: 'check' },
-  { pfad: 'abschluss.hinweistext', label: 'Formfehler-Hinweis (eine Zeile = ein Punkt)', typ: 'mehrzeilig', von: 'abschluss.zeigen' }
+  { pfad: 'abschluss.hinweistext', label: 'Formfehler-Hinweis (eine Zeile = ein Punkt)', typ: 'mehrzeilig', von: 'abschluss.zeigen' },
+
+  { gruppe: 'Deckblatt', hinweis: 'Eigene erste Seite (Klausur). Im Dokumentkopf: datum, schuljahr, stufe, kurs, lehrer, thema, zeit. Die Aufgabenliste entsteht aus den ##-Überschriften.' },
+  { pfad: 'deckblatt.zeigen', label: 'Deckblatt anzeigen', typ: 'check' },
+  { pfad: 'deckblatt.titel',  label: 'Titel', typ: 'text', breite: 'zweidrittel', von: 'deckblatt.zeigen' },
+  { pfad: 'deckblatt.farbe',  label: 'Farbe', typ: 'farbe', breite: 'drittel', von: 'deckblatt.zeigen' },
+  { pfad: 'deckblatt.schule', label: 'Schule (Fußzeile)', typ: 'text', von: 'deckblatt.zeigen' },
+  { pfad: 'deckblatt.bild',   label: 'Foto (linker Streifen)', typ: 'bild', von: 'deckblatt.zeigen' }
 ];
 
 // ── Formular-Bausteine ───────────────────────────────────────────
@@ -119,6 +126,29 @@ function dvFeldHuelle(label, inpEl, feld) {
   if (label) fg.appendChild(tx('label', 'fl', label));
   fg.appendChild(inpEl);
   return fg;
+}
+
+// Foto für die Vorlage verkleinern (längste Seite maxSeite px, JPEG): die
+// Vorlagen liegen gesammelt in einer JSON-Datei in der Cloud, ein Originalfoto
+// mit mehreren MB würde sie bei jeder Änderung mit hochladen.
+function dvBildVerkleinern(file, maxSeite) {
+  return new Promise(function (ok, fehler) {
+    var r = new FileReader();
+    r.onerror = fehler;
+    r.onload = function () {
+      var img = new Image();
+      img.onerror = fehler;
+      img.onload = function () {
+        var f = Math.min(1, maxSeite / Math.max(img.width, img.height));
+        var c = document.createElement('canvas');
+        c.width = Math.round(img.width * f); c.height = Math.round(img.height * f);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        ok(c.toDataURL('image/jpeg', 0.82));
+      };
+      img.src = r.result;
+    };
+    r.readAsDataURL(file);
+  });
 }
 
 function dvBauFeld(feld, v, gesperrt) {
@@ -187,6 +217,31 @@ function dvBauFeld(feld, v, gesperrt) {
     };
     fwrap.appendChild(ci); fwrap.appendChild(ct);
     return dvFeldHuelle(feld.label, fwrap, feld);
+  }
+
+  if (feld.typ === 'bild') {
+    var bwrap = mk('div', 'dv-bild-feld');
+    if (wert) {
+      var vorschau = document.createElement('img');
+      vorschau.src = wert; vorschau.className = 'dv-bild-feld-vorschau';
+      bwrap.appendChild(vorschau);
+    }
+    var binp = document.createElement('input');
+    binp.type = 'file'; binp.accept = 'image/*'; binp.disabled = gesperrt;
+    binp.onchange = function () {
+      if (!binp.files[0]) return;
+      dvBildVerkleinern(binp.files[0], 1400).then(function (url) {
+        dvFeldGeaendert(feld.pfad, url);
+        dvVorlagenPanelNeu();
+      }).catch(function () { alert('Das Bild konnte nicht gelesen werden.'); });
+    };
+    bwrap.appendChild(binp);
+    if (wert && !gesperrt) {
+      var weg = btn('Entfernen', 'btn btn-ghost btn-sm');
+      weg.onclick = function () { dvFeldGeaendert(feld.pfad, ''); dvVorlagenPanelNeu(); };
+      bwrap.appendChild(weg);
+    }
+    return dvFeldHuelle(feld.label, bwrap, feld);
   }
 
   if (feld.typ === 'mehrzeilig') {

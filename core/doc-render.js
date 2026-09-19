@@ -340,6 +340,75 @@ function dvTitelblock(doc, v) {
   return tb;
 }
 
+// ── Deckblatt (Klausur) ──────────────────────────────────────────
+// Eigenständige erste Seite vor dem eigentlichen Inhalt, keine Textfluss-
+// Seite: Titel/Schule/Farbe/Foto kommen aus der Vorlage (v.deckblatt),
+// Datum/Schuljahr/Stufe/Kurs/Thema/Zeit aus dem Dokumentkopf, die
+// Aufgabenliste aus den ##-Überschriften. Wird in dvUpdate() vor die
+// paginierten Seiten gesetzt (docPaginate kennt es nicht).
+function dvDeckblatt(doc, v) {
+  var d = v.deckblatt || {};
+  var m = doc.meta;
+  var werte = dvPlatzhalter(v, m);
+  var seite = mk('div', 'dv-page dv-deckblatt');
+  seite.style.setProperty('--dv-dk-farbe', d.farbe || '#3f4f9e');
+
+  seite.appendChild(mk('div', 'dv-dk-punkte'));
+
+  if (m.zeit) {
+    var zeit = mk('div', 'dv-dk-zeit');
+    var zahl = /^\d+$/.test(String(m.zeit).trim());
+    zeit.innerHTML = '<svg viewBox="0 0 48 48" fill="none" stroke="#1c1917" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">' +
+      '<circle cx="24" cy="27" r="16"/><path d="M24 27v-9M24 27l6 4M19 6h10M24 6v5M38 12l3-3"/></svg>';
+    zeit.appendChild(tx('div', 'dv-dk-zeit-wert', zahl ? String(m.zeit).trim() : m.zeit));
+    if (zahl) zeit.appendChild(tx('div', 'dv-dk-zeit-einheit', 'min'));
+    seite.appendChild(zeit);
+  }
+
+  seite.appendChild(tx('div', 'dv-dk-titel', d.titel || 'KLAUSUR'));
+  var unter = [werte.datum, m.schuljahr ? 'SJ ' + m.schuljahr : '', m.stufe].filter(Boolean).join(' / ');
+  if (unter) seite.appendChild(tx('div', 'dv-dk-unter', unter));
+
+  var kurs = [m.kurs, m.lehrer].filter(Boolean).join(': ');
+  if (kurs) seite.appendChild(tx('div', 'dv-dk-kurs', kurs));
+  if (m.thema) seite.appendChild(tx('div', 'dv-dk-thema', m.thema));
+
+  if (d.bild) {
+    var bild = mk('div', 'dv-dk-bild');
+    var img = document.createElement('img');
+    img.src = d.bild; img.alt = '';
+    bild.appendChild(img);
+    seite.appendChild(bild);
+  }
+
+  var box = mk('div', 'dv-dk-name');
+  box.appendChild(tx('div', 'dv-dk-name-label', 'Name:'));
+  seite.appendChild(box);
+
+  var liste = mk('div', 'dv-dk-aufgaben');
+  doc.blocks.forEach(function (b) {
+    if (b.t !== 'aufgabe') return;
+    var z = mk('div', 'dv-dk-aufgabe');
+    z.appendChild(tx('span', 'dv-dk-aufgabe-nr', 'Aufgabe ' + b.nr));
+    if (b.titel) {
+      var t = mk('span', 'dv-dk-aufgabe-titel');
+      t.innerHTML = ': ' + docInline(b.titel);
+      z.appendChild(t);
+    }
+    liste.appendChild(z);
+  });
+  seite.appendChild(liste);
+
+  if (d.schule) {
+    var fuss = mk('div', 'dv-dk-fuss');
+    fuss.appendChild(mk('span', 'dv-dk-fuss-punkte'));
+    fuss.appendChild(tx('span', 'dv-dk-fuss-text', d.schule));
+    fuss.appendChild(mk('span', 'dv-dk-fuss-punkte'));
+    seite.appendChild(fuss);
+  }
+  return seite;
+}
+
 // ── Dokument → Titelblock (separat) + Array von Fluss-Elementen ──
 // Der Titelblock wird NICHT mit in den Fluss gehängt: er soll über die
 // volle Seitenbreite gehen, auch wenn die Punkte-Spalte den restlichen

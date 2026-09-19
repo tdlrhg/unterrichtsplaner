@@ -305,6 +305,9 @@ function dvUpdate() {
   var scrollVorher = vorschau ? vorschau.scrollTop : 0;
 
   var seiten = docPaginate(pages, gerendert.nodes, v, doc.meta, dvAufgabenSummen(doc.blocks), gerendert.titelblock);
+  // Deckblatt (Klausur) als eigene erste Seite, nicht Teil der Paginierung –
+  // Seitenzahlen/"Seite x von y" zählen daher nur die Inhaltsseiten.
+  if (v.deckblatt && v.deckblatt.zeigen) pages.insertBefore(dvDeckblatt(doc, v), pages.firstChild);
   pages.style.setProperty('--dv-zoom', String(DV.zoom));
   if (vorschau) vorschau.scrollTop = scrollVorher;
 

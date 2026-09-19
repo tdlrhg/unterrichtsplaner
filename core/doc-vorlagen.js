@@ -36,7 +36,8 @@ var DV_VORLAGEN = [
     kasten: { rahmen: true, fuellung: '#f5f2ed' },
     punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true, schriftgroesse: 1.7 },
     seitenzahlGross: { zeigen: false, abSeite: 1, groesse: 40, farbe: '#d4cec2' },
-    abschluss: { zeigen: false, hinweistext: DV_ABSCHLUSS_STANDARDTEXT }
+    abschluss: { zeigen: false, hinweistext: DV_ABSCHLUSS_STANDARDTEXT },
+    deckblatt: { zeigen: false, titel: 'KLAUSUR', schule: '', farbe: '#3f4f9e', bild: '' }
   },
   {
     id: 'ab-schlicht',
@@ -55,7 +56,8 @@ var DV_VORLAGEN = [
     kasten: { rahmen: false, fuellung: '#f1ede7' },
     punkteSpalte: { zeigen: false, breite: 16, trennlinie: true, gesamtbox: true, schriftgroesse: 1.7 },
     seitenzahlGross: { zeigen: false, abSeite: 1, groesse: 40, farbe: '#d4cec2' },
-    abschluss: { zeigen: false, hinweistext: DV_ABSCHLUSS_STANDARDTEXT }
+    abschluss: { zeigen: false, hinweistext: DV_ABSCHLUSS_STANDARDTEXT },
+    deckblatt: { zeigen: false, titel: 'KLAUSUR', schule: '', farbe: '#3f4f9e', bild: '' }
   }
 ];
 

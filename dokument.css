@@ -401,6 +401,37 @@
 .dv-bild-rechts { text-align: right; }
 .dv-bild img { max-width: 100%; }
 
+/* ── Deckblatt (Klausur), siehe dvDeckblatt() in core/doc-render.js ──
+   Absolut auf der Seite platziert (Prozent der A4-Seite), Farbe über
+   --dv-dk-farbe aus der Vorlage. */
+.dv-deckblatt { color: #1c1917; }
+.dv-dk-punkte, .dv-dk-fuss-punkte {
+  background-image: radial-gradient(circle, var(--dv-dk-farbe) 1.05pt, transparent 1.25pt);
+  background-size: 3.4mm 3.4mm;
+}
+.dv-dk-punkte { position: absolute; left: 0; top: 6.5%; width: 24%; height: 13%; }
+.dv-dk-zeit { position: absolute; top: 2%; right: 4%; text-align: center; font-weight: 800; color: var(--dv-dk-farbe); line-height: 1.1; }
+.dv-dk-zeit svg { width: 11mm; height: 11mm; display: block; margin: 0 auto 0 -4mm; }
+.dv-dk-zeit-wert { font-size: 11pt; }
+.dv-dk-zeit-einheit { font-size: 10pt; }
+.dv-dk-titel { position: absolute; left: 34.5%; top: 6.3%; font-size: 36pt; font-weight: 800; letter-spacing: .16em; line-height: 1; color: var(--dv-dk-farbe); }
+.dv-dk-unter { position: absolute; left: 34.5%; top: 11.4%; font-size: 9.5pt; font-weight: 800; letter-spacing: .14em; color: var(--dv-dk-farbe); text-transform: uppercase; }
+.dv-dk-kurs { position: absolute; left: 41.5%; top: 22.6%; right: 5%; font-size: 9.5pt; font-weight: 800; letter-spacing: .14em; color: var(--dv-dk-farbe); }
+.dv-dk-thema { position: absolute; left: 41.5%; top: 26.2%; right: 5%; font-size: 9.5pt; font-weight: 800; letter-spacing: .1em; color: var(--dv-dk-farbe); }
+.dv-dk-bild { position: absolute; left: 0; top: 20.5%; bottom: 0; width: 31%; overflow: hidden; }
+.dv-dk-bild img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dv-dk-name {
+  position: absolute; left: 38.5%; top: 39.5%; width: 55.5%; height: 15%;
+  border: 2.6pt solid var(--dv-dk-farbe); border-radius: 5px 14px 6px 16px / 14px 5px 16px 6px;
+}
+.dv-dk-name-label { text-align: center; font-size: 15pt; font-weight: 800; color: var(--dv-dk-farbe); margin-top: 1.5mm; }
+.dv-dk-aufgaben { position: absolute; left: 44%; top: 62%; right: 5%; color: var(--dv-dk-farbe); }
+.dv-dk-aufgabe { font-size: 13pt; line-height: 1.9; margin-bottom: 9mm; }
+.dv-dk-aufgabe-nr { font-weight: 800; }
+.dv-dk-fuss { position: absolute; left: 33%; right: 4%; bottom: 3.6%; display: flex; align-items: center; gap: 4mm; }
+.dv-dk-fuss-punkte { flex: 1; height: 5mm; }
+.dv-dk-fuss-text { font-size: 7.5pt; letter-spacing: .06em; text-transform: uppercase; color: #57534e; white-space: nowrap; }
+
 /* ── 3. Druck ── */
 @media print {
   body { background: #fff; }
@@ -420,3 +451,5 @@
   }
   .dv-page:last-child { break-after: auto; page-break-after: auto; }
 }
+.dv-bild-feld { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.dv-bild-feld-vorschau { max-width: 100%; max-height: 90px; border: 1px solid var(--bord); border-radius: 4px; }

@@ -415,7 +415,7 @@
 .dv-dk-zeit-wert { font-size: 11pt; }
 .dv-dk-zeit-einheit { font-size: 10pt; }
 .dv-dk-titel { position: absolute; left: 34.5%; top: 6.3%; font-size: 36pt; font-weight: 800; letter-spacing: .16em; line-height: 1; color: var(--dv-dk-farbe); }
-.dv-dk-unter { position: absolute; left: 34.5%; top: 11.4%; font-size: 9.5pt; font-weight: 800; letter-spacing: .14em; color: var(--dv-dk-farbe); text-transform: uppercase; }
+.dv-dk-unter { position: absolute; left: 34.5%; top: 11.6%; font-size: 12.5pt; font-weight: 800; -webkit-text-stroke: .35pt var(--dv-dk-farbe); letter-spacing: .12em; color: var(--dv-dk-farbe); text-transform: uppercase; }
 .dv-dk-kurs { position: absolute; left: 41.5%; top: 22.6%; right: 5%; font-size: 9.5pt; font-weight: 800; letter-spacing: .14em; color: var(--dv-dk-farbe); }
 .dv-dk-thema { position: absolute; left: 41.5%; top: 26.2%; right: 5%; font-size: 9.5pt; font-weight: 800; letter-spacing: .1em; color: var(--dv-dk-farbe); }
 .dv-dk-bild { position: absolute; left: 0; top: 20.5%; bottom: 0; width: 31%; overflow: hidden; }

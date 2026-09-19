@@ -367,11 +367,18 @@ function dvDeckblatt(doc, v) {
 
   seite.appendChild(tx('div', 'dv-dk-titel', d.titel || 'KLAUSUR'));
   var unter = [werte.datum, m.schuljahr ? 'SJ ' + m.schuljahr : '', m.stufe].filter(Boolean).join(' / ');
-  if (unter) seite.appendChild(tx('div', 'dv-dk-unter', unter));
+  // Über docInline(), damit Auszeichnungen (++unterstrichen++, **fett** …)
+  // auch hier wirken und nicht als Zeichen im Text stehen bleiben.
+  function dkZeile(klasse, text) {
+    var z = mk('div', klasse);
+    z.innerHTML = docInline(text);
+    return z;
+  }
+  if (unter) seite.appendChild(dkZeile('dv-dk-unter', unter));
 
   var kurs = [m.kurs, m.lehrer].filter(Boolean).join(': ');
-  if (kurs) seite.appendChild(tx('div', 'dv-dk-kurs', kurs));
-  if (m.thema) seite.appendChild(tx('div', 'dv-dk-thema', m.thema));
+  if (kurs) seite.appendChild(dkZeile('dv-dk-kurs', kurs));
+  if (m.thema) seite.appendChild(dkZeile('dv-dk-thema', m.thema));
 
   if (d.bild) {
     var bild = mk('div', 'dv-dk-bild');

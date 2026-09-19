@@ -10,6 +10,17 @@ function dvUeberlauf(box) {
 
 // ── Kopf-/Fußband ────────────────────────────────────────────────
 function dvBand(art, cfg) {
+  // Klausur-Design der Fußzeile: Punktereihen links und rechts, in der Mitte
+  // nur der Text aus cfg.mitte (z.B. Schulname) – wie auf dem Deckblatt.
+  if (art === 'fuss' && cfg.stil === 'punkte') {
+    var pb = mk('div', 'dv-band dv-band-fuss dv-band-punkte');
+    pb.appendChild(mk('span', 'dv-dk-fuss-punkte'));
+    var pt = tx('div', 'dv-dk-fuss-text', '');
+    pt.setAttribute('data-tpl', cfg.mitte || '');
+    pb.appendChild(pt);
+    pb.appendChild(mk('span', 'dv-dk-fuss-punkte'));
+    return pb;
+  }
   var band = mk('div', 'dv-band dv-band-' + art + (cfg.linie ? ' dv-band-linie' : ''));
   // Leere Spalten gar nicht erst anlegen – sonst beansprucht z.B. eine leere
   // "rechts"-Spalte trotzdem ihr flex:1 und drängt "links" auf ein Drittel

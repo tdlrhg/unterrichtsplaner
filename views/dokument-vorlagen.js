@@ -62,6 +62,7 @@ var DV_FELDER = [
 
   { gruppe: 'Fußzeile' },
   { pfad: 'fuss.zeigen',  label: 'Fußzeile anzeigen', typ: 'check', halb: true },
+  { pfad: 'fuss.stil',    label: 'Stil', typ: 'select', optionen: [['normal', 'Text links / Mitte / rechts'], ['punkte', 'Punktereihen mit Text in der Mitte (Klausur)']], von: 'fuss.zeigen' },
   { pfad: 'fuss.abSeite', label: 'Erst ab Seite',     typ: 'zahl', min: 1, max: 9, schritt: 1, einheit: '', halb: true, von: 'fuss.zeigen' },
   { pfad: 'fuss.links',   label: 'Links',  typ: 'text', von: 'fuss.zeigen' },
   { pfad: 'fuss.mitte',   label: 'Mitte',  typ: 'text', von: 'fuss.zeigen' },

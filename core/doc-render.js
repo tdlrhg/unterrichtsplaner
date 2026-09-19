@@ -406,10 +406,13 @@ function dvDeckblatt(doc, v) {
   });
   seite.appendChild(liste);
 
-  if (d.schule) {
+  // Ohne eigenes Schule-Feld den Text der Punkte-Fußzeile übernehmen, damit
+  // der Schulname nicht doppelt eingetragen werden muss.
+  var schule = d.schule || (v.fuss && v.fuss.stil === 'punkte' ? dvFuellen(v.fuss.mitte, werte) : '');
+  if (schule) {
     var fuss = mk('div', 'dv-dk-fuss');
     fuss.appendChild(mk('span', 'dv-dk-fuss-punkte'));
-    fuss.appendChild(tx('span', 'dv-dk-fuss-text', d.schule));
+    fuss.appendChild(tx('span', 'dv-dk-fuss-text', schule));
     fuss.appendChild(mk('span', 'dv-dk-fuss-punkte'));
     seite.appendChild(fuss);
   }

@@ -115,6 +115,7 @@ function dvApplyVorlage(el, v) {
   s.setProperty('--dv-punkte-schriftgroesse', ((v.punkteSpalte && v.punkteSpalte.schriftgroesse) || 1.7) + 'em');
   s.setProperty('--dv-sz-gross-groesse', ((v.seitenzahlGross && v.seitenzahlGross.groesse) || 40) + 'pt');
   s.setProperty('--dv-sz-gross-farbe', (v.seitenzahlGross && v.seitenzahlGross.farbe) || '#d4cec2');
+  s.setProperty('--dv-dk-farbe', (v.deckblatt && v.deckblatt.farbe) || '#3f4f9e');
   s.setProperty('--dv-tb-titel-groesse', ((v.titelblock && v.titelblock.titelGroesse) || 1.75) + 'em');
   // Die Kopfzeile ab Seite 2 sitzt bei aktivem Rahmen nah am Rahmen (siehe
   // --dv-titel-rand-o) – dort würde ihre Trennlinie sonst mitten durch die

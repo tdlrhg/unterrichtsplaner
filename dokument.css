@@ -430,6 +430,9 @@
 .dv-dk-aufgabe { font-size: 13pt; line-height: 1.9; margin-bottom: 9mm; }
 .dv-dk-aufgabe-nr { font-weight: 800; }
 .dv-dk-fuss { position: absolute; left: 33%; right: 4%; bottom: 3.6%; display: flex; align-items: center; gap: 4mm; }
+.dv-band-punkte { gap: 4mm; }
+.dv-band-punkte .dv-dk-fuss-punkte { opacity: .45; }
+.dv-band-punkte .dv-dk-fuss-text { flex: 0 0 auto; }
 .dv-dk-fuss-punkte { flex: 1; height: 6.8mm; } /* genau 2 Punktreihen (Kachelhöhe 3.4mm), sonst wird die zweite abgeschnitten */
 .dv-dk-fuss-text { font-size: 7.5pt; letter-spacing: .06em; text-transform: uppercase; color: #57534e; white-space: nowrap; }
 

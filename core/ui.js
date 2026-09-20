@@ -300,7 +300,9 @@ function phasenTable(stunde) {
     function renderMethCell() {
       tm.innerHTML = '';
       // Aktuelle Methode anzeigen
-      if (phase.methodeId) {
+      // Auch ein freier Eintrag ohne Datenbank-ID wird als gesetzte Methode
+      // angezeigt, nicht als blasser Platzhalter im Suchfeld.
+      if (phase.methodeId || phase.methode) {
         const mObj = METHDB.find(m => m.id === phase.methodeId);
         const nameDiv = mk('div', 'ph-meth-set');
         nameDiv.appendChild(tx('span', '', mObj ? mObj.name : phase.methode || '?'));
@@ -315,7 +317,7 @@ function phasenTable(stunde) {
       const searchWrap = mk('div', 'mat-search-wrap');
       const si = document.createElement('input');
       si.type = 'text';
-      si.placeholder = phase.methode || '+ Methode…';
+      si.placeholder = phase.methode || '+ Methode oder frei eintragen…';
       si.className = 'mat-search-inp';
       const dd = mk('div', 'mat-dd');
 
@@ -341,7 +343,29 @@ function phasenTable(stunde) {
         });
         dd.style.display = 'block';
       };
-      si.onblur = () => setTimeout(() => { dd.style.display = 'none'; si.value = ''; }, 150);
+      // Getippter Text war bisher nur Suchbegriff und ging beim Verlassen des
+      // Feldes verloren. Nicht jede Methode steht in der Datenbank — steht beim
+      // Verlassen noch etwas da, wird es als freier Eintrag übernommen. Ein Klick
+      // auf einen Vorschlag leert das Feld vorher, der Fall bleibt also getrennt.
+      function freiUebernehmen() {
+        const frei = si.value.trim();
+        if (!frei) return false;
+        phase.methodeId = null;
+        phase.methode = frei;
+        si.value = '';
+        scheduleSave();
+        renderMethCell();
+        return true;
+      }
+      si.onkeydown = e => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        freiUebernehmen();
+      };
+      si.onblur = () => setTimeout(() => {
+        dd.style.display = 'none';
+        if (!freiUebernehmen()) si.value = '';
+      }, 150);
 
       searchWrap.appendChild(si); searchWrap.appendChild(dd);
       wrap.appendChild(searchWrap);

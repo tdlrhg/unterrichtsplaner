@@ -170,8 +170,11 @@ textarea::placeholder { color: #c4cdd6; }
 .ph-table tr:last-child td { border-bottom: none; }
 
 /* Methoden-Zelle */
-.ph-meth-set { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--tx); }
-.ph-meth-clr { cursor: pointer; color: var(--tx3); font-size: 11px; padding: 0 3px; }
+.ph-meth-set { display: flex; align-items: flex-start; gap: 4px; font-size: 12.5px; font-weight: 600; color: var(--tx); line-height: 1.35; padding-top: 2px; }
+/* Lange Wörter wie „Unterrichtsgespräch" werden getrennt statt mitten im Wort
+   umgebrochen — dafür steht die Sprache im html-Tag. */
+.ph-meth-set > span:first-child { flex: 1; min-width: 0; overflow-wrap: break-word; hyphens: auto; }
+.ph-meth-clr { cursor: pointer; color: var(--tx3); font-size: 11px; padding: 0 3px; flex: none; }
 .ph-meth-clr:hover { color: var(--red); }
 .ph-meth-ki { background: none; border: none; cursor: pointer; font-size: 14px; padding: 2px 4px; border-radius: 4px; opacity: .6; }
 .ph-meth-ki:hover { opacity: 1; background: var(--surf2); }

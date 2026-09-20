@@ -211,7 +211,7 @@ function phasenTable(stunde) {
   // hinteren Spalten blieben breit, obwohl dort wenig steht.
   tbl.style.cssText = 'table-layout:fixed;width:100%;min-width:900px;';
   const colgroup = document.createElement('colgroup');
-  ['28px', '104px', null, '150px', '124px', '62px', '160px', '38px'].forEach(w => {
+  ['28px', '100px', null, '132px', '118px', '58px', '140px', '34px'].forEach(w => {
     const c = document.createElement('col');
     if (w) c.style.width = w;
     colgroup.appendChild(c);
@@ -276,10 +276,18 @@ function phasenTable(stunde) {
 
     // Titel + Inhalt
     const ti = document.createElement('td');
-    const titI = document.createElement('input');
-    titI.type = 'text'; titI.value = phase.titel || ''; titI.placeholder = 'Titel';
-    titI.style.cssText = 'border:none;background:transparent;font-size:13px;width:100%;font-family:inherit;display:block;font-weight:600;';
-    titI.oninput = e => { phase.titel = e.target.value; scheduleSave(); };
+    // Titel als mitwachsendes Feld: In einer einzeiligen Eingabe verschwand ein
+    // langer Titel hinter dem rechten Rand, ohne dass man es sah.
+    const titI = document.createElement('textarea');
+    titI.value = phase.titel || ''; titI.placeholder = 'Titel'; titI.rows = 1;
+    titI.style.cssText = 'border:none;background:transparent;font-size:13px;width:100%;font-family:inherit;display:block;font-weight:600;resize:none;overflow:hidden;line-height:1.35;';
+    const titWachsen = () => {
+      titI.style.height = 'auto';
+      titI.style.height = (titI.scrollHeight + 2) + 'px';
+    };
+    titI.oninput = e => { phase.titel = e.target.value; titWachsen(); scheduleSave(); };
+    titI.onkeydown = e => { if (e.key === 'Enter') e.preventDefault(); };   // Titel bleibt einzeilig gemeint
+    setTimeout(titWachsen, 0);
     const inhTA = document.createElement('textarea');
     inhTA.value = phase.inhalt || ''; inhTA.placeholder = 'Inhalt / Aktivität…';
     inhTA.style.cssText = 'border:none;background:transparent;font-size:13px;width:100%;font-family:inherit;resize:none;display:block;overflow:hidden;line-height:1.45;';
@@ -317,7 +325,7 @@ function phasenTable(stunde) {
       const searchWrap = mk('div', 'mat-search-wrap');
       const si = document.createElement('input');
       si.type = 'text';
-      si.placeholder = phase.methode || '+ Methode oder frei eintragen…';
+      si.placeholder = phase.methode || '+ Methode / frei';
       si.className = 'mat-search-inp';
       const dd = mk('div', 'mat-dd');
 
@@ -385,7 +393,7 @@ function phasenTable(stunde) {
     // Sozialform
     const ts = document.createElement('td');
     const sSel = document.createElement('select');
-    sSel.style.cssText = 'border:none;background:transparent;font-size:13px;width:100%;';
+    sSel.style.cssText = 'border:none;background:transparent;font-size:12.5px;width:100%;';
     sSel.appendChild(Object.assign(document.createElement('option'), { value: '', textContent: '–' }));
     SOZIALFORMEN.forEach(s => {
       const o = document.createElement('option');

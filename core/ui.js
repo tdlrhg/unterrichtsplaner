@@ -211,7 +211,7 @@ function phasenTable(stunde) {
   // hinteren Spalten blieben breit, obwohl dort wenig steht.
   tbl.style.cssText = 'table-layout:fixed;width:100%;min-width:900px;';
   const colgroup = document.createElement('colgroup');
-  ['28px', '100px', null, '132px', '118px', '58px', '140px', '34px'].forEach(w => {
+  ['28px', '100px', null, '132px', '118px', '58px', '96px', '34px'].forEach(w => {
     const c = document.createElement('col');
     if (w) c.style.width = w;
     colgroup.appendChild(c);

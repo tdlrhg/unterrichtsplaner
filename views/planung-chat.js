@@ -640,7 +640,38 @@ async function _pcExecTool(name, input, fp) {
     }
 
     case 'readKLP': {
-      let hits = KLPDB.filter(e => e.fach === fp.fach);
+      // Das Fach der Planung heißt bei Kursen „Ch_GK" oder „Bio_LK", die
+      // KLP-Daten kennen nur „Ch" und „Bio" — ohne das Abschneiden kam
+      // in jedem Grund- und Leistungskurs eine leere Liste zurück.
+      const basisFach = String(fp.fach || '').replace(/_(GK|LK)$/, '');
+      const kursart = /_LK$/.test(fp.fach || '') ? 'LK'
+        : (/_GK$/.test(fp.fach || '') ? 'GK' : null);
+      let hits = KLPDB.filter(e => e.fach === basisFach);
+
+      // Jahrgang: Q1/Q2 liegen in den Daten als „Q (GK)" bzw. „Q (LK)",
+      // die Sekundarstufe I in Doppeljahrgängen („7/8").
+      const jg = String(fp.jahrgang || '').toUpperCase();
+      const jgZahl = parseInt(jg, 10);
+      let jgFilter = null;
+      if (/Q1|Q2/.test(jg) || jgZahl === 12 || jgZahl === 13) {
+        jgFilter = kursart ? 'Q (' + kursart + ')' : 'Q ';
+      } else if (jg === 'EF' || jgZahl === 11) {
+        jgFilter = 'EF';
+      } else if (jgZahl >= 5 && jgZahl <= 10) {
+        jgFilter = jgZahl <= 6 ? '5/6' : (jgZahl <= 8 ? '7/8' : '9/10');
+      }
+      let jgGetroffen = false;
+      if (jgFilter) {
+        const enger = hits.filter(e => String(e.jahrgang || '').startsWith(jgFilter));
+        // Greift der Filter nicht, lieber alle Jahrgänge des Fachs als nichts —
+        // die KI muss aber erfahren, dass sie nicht den passenden Jahrgang sieht.
+        if (enger.length) { hits = enger; jgGetroffen = true; }
+      }
+
+      if (!hits.length) {
+        return JSON.stringify({ hinweis: 'Für ' + (fp.fach || '?') + ' ' + (fp.jahrgang || '?')
+          + ' liegen keine KLP-Daten vor.', eintraege: [] });
+      }
       if (input.filter) {
         const q = input.filter.toLowerCase();
         hits = hits.filter(e =>
@@ -648,10 +679,16 @@ async function _pcExecTool(name, input, fp) {
           (e.beschreibung || '').toLowerCase().includes(q)
         );
       }
-      return JSON.stringify(hits.slice(0, 60).map(e => ({
-        id: e.id, inhaltsfeld: e.inhaltsfeld,
-        codes: e.kompetenzcodes, text: (e.beschreibung || '').slice(0, 120)
-      })));
+      return JSON.stringify({
+        stand: jgGetroffen
+          ? basisFach + ' ' + jgFilter + ', ' + hits.length + ' Einträge'
+          : basisFach + ': für ' + (fp.jahrgang || '?') + ' liegen keine eigenen Einträge vor, '
+            + 'gezeigt werden alle Jahrgänge (' + hits.length + ' Einträge)',
+        eintraege: hits.slice(0, 60).map(e => ({
+          id: e.id, jahrgang: e.jahrgang, inhaltsfeld: e.inhaltsfeld,
+          codes: e.kompetenzcodes, text: (e.beschreibung || '').slice(0, 120)
+        }))
+      });
     }
 
     case 'readMethoden': {

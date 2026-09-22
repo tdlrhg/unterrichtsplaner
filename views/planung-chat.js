@@ -267,7 +267,8 @@ const PC_STUNDEN_TOOLS = [
         intention:{ type: 'string', description: 'Didaktische Begründung (optional)' },
         methode:  { type: 'string', description: 'Hauptmethode (optional)' },
         prioritaet: { type: 'string', description: 'pflicht | optional | puffer — „optional" markiert eine Stunde, die entfallen könnte. Nutze es, wenn ihr euch noch nicht sicher seid, und begründe es in notizen.' },
-        notizen:  { type: 'string', description: 'Materialhinweise, offene Fragen — sichtbar im Stunden-Editor unter „Material & Notizen"' }
+        notizen:  { type: 'string', description: 'Materialhinweise, offene Fragen — sichtbar im Stunden-Editor unter „Material & Notizen"' },
+        nachStundeId: { type: 'string', description: 'ID der Stunde, HINTER der die neue Stunde stehen soll (aus readPlan). Ohne Angabe wird hinten angehängt. Für eine Stunde ganz am Anfang „ANFANG" übergeben.' }
       },
       required: ['titel']
     }
@@ -506,7 +507,8 @@ const PC_EINHEIT_TOOLS = [
         lernziel: { type: 'string' },
         dauer:    { type: 'number', description: '45 oder 90' },
         prioritaet: { type: 'string', description: 'pflicht | optional | puffer — „optional" markiert eine Stunde, die entfallen könnte. Nutze es, wenn ihr euch noch nicht sicher seid, und begründe es in notizen.' },
-        notizen:  { type: 'string' }
+        notizen:  { type: 'string' },
+        nachStundeId: { type: 'string', description: 'ID der Stunde, HINTER der die neue Stunde stehen soll (aus readPlan). Ohne Angabe wird hinten angehängt. Für eine Stunde ganz am Anfang „ANFANG" übergeben.' }
       },
       required: ['titel']
     }
@@ -740,9 +742,27 @@ async function _pcExecTool(name, input, fp) {
       };
       if (_pcEinheitId) s.einheitId = _pcEinheitId;  // im Einheiten-Chat der Gruppe zuordnen
       if (!rei.stunden) rei.stunden = [];
-      rei.stunden.push(s);
+      // Einsortieren statt immer anhängen: Eine nachträglich eingeschobene
+      // Stunde gehört meist mitten in die Reihe, und von Hand umsortieren
+      // heißt, die Stunde einzeln nach oben zu klicken.
+      let hinweis = '';
+      if (input.nachStundeId === 'ANFANG') {
+        rei.stunden.unshift(s);
+      } else if (input.nachStundeId) {
+        const idx = rei.stunden.findIndex(x => x.id === input.nachStundeId);
+        if (idx < 0) {
+          rei.stunden.push(s);
+          hinweis = 'Stunde ' + input.nachStundeId + ' gibt es nicht — hinten angehängt.';
+        } else {
+          rei.stunden.splice(idx + 1, 0, s);
+        }
+      } else {
+        rei.stunden.push(s);
+      }
       scheduleSave(); render();
-      return JSON.stringify({ ok: true, id: s.id, titel: s.titel });
+      return JSON.stringify({ ok: true, id: s.id, titel: s.titel,
+        position: rei.stunden.findIndex(x => x.id === s.id) + 1,
+        von: rei.stunden.length, hinweis: hinweis || undefined });
     }
 
     case 'updateStunde': {

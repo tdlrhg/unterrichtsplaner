@@ -23,7 +23,10 @@ function docInline(s) {
   h = h.replace(/(^|[^_\w])_([^_\n]+)_/g, '$1<em>$2</em>');
   h = h.replace(/~~([^~]+)~~/g, '<s>$1</s>');
   h = h.replace(/\+\+([^+\n]+)\+\+/g, '<u>$1</u>');
-  h = h.replace(/\s\\\\\s*$/, '<br>');
+  // Zeilenumbruch: eine Quellzeile, die mit \ endet, wird beim Einsammeln
+  // des Absatzes (siehe unten) durch diesen Marker ersetzt, der docEsc()
+  // unversehrt übersteht und hier zu <br> wird.
+  h = h.replace(/\s*\u0000BR\u0000\s*/g, '<br>');
   h = h.replace(/_{3,}/g, '<span class="dv-luecke"></span>');
   return h;
 }
@@ -322,7 +325,8 @@ function docParse(src) {
       if (!nx || /^(#|##|###|:::|::|>|\+\+\+|!\[|\||[-*+]\s|\d+[.)]\s)/.test(nx) || /^(-{3,}|_{3,})$/.test(nx)) break;
       abs.push(nx); i++;
     }
-    pushBlock(ziel(), { t: 'p', html: docInline(abs.join(' ')) });
+    var absText = abs.map(function (l) { return l.replace(/\\$/, '\u0000BR\u0000'); }).join(' ');
+    pushBlock(ziel(), { t: 'p', html: docInline(absText) });
   }
 
   return { meta: meta, blocks: wurzel, warnungen: warnungen };

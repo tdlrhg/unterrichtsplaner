@@ -204,15 +204,22 @@ function dvBlockRoh(b, v) {
   }
 
   if (b.t === 'bild') {
-    // Alt-Text ist nur fürs img-alt-Attribut (Barrierefreiheit) gedacht,
-    // erscheint NICHT als sichtbare Unterschrift im Dokument. Wer eine
-    // echte Bildunterschrift will, schreibt sie als normalen Absatz
-    // direkt unter das Bild in den Text.
+    // Bei links/rechts wird die Box selbst schwebend (float) und braucht
+    // dafür eine feste Breite – sonst würde sie prozentual gegen eine noch
+    // unbestimmte Breite rechnen. Bei mitte bleibt die Box blockbreit und
+    // nur das <img> bekommt die Breite (text-align:center zentriert es).
+    var floated = b.ausrichtung === 'links' || b.ausrichtung === 'rechts';
     var bw = mk('div', 'dv-bild dv-bild-' + (b.ausrichtung || 'mitte'));
     var img = document.createElement('img');
     img.src = b.src; img.alt = b.alt || '';
-    if (b.breite) img.style.width = b.breite + '%';
+    if (floated) bw.style.width = (b.breite || 45) + '%';
+    else if (b.breite) img.style.width = b.breite + '%';
     bw.appendChild(img);
+    if (b.unterschrift) {
+      var uc = mk('div', 'dv-bild-unterschrift');
+      uc.innerHTML = docInline(b.unterschrift);
+      bw.appendChild(uc);
+    }
     return bw;
   }
 

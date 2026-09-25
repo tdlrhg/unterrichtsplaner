@@ -457,7 +457,7 @@ async function dvBildEinfuegen(file, cursorPos) {
 
 // ── Bilder-Panel: Breite/Ausrichtung per Auswahlfeld statt Text-Fummelei ──
 // Muss zum Bild-Muster in core/doc-parser.js passen (dort die Referenz).
-var DV_BILD_MUSTER = /^!\[([^\]]*)\]\(([^)\s]+)(?:\s+(\d+)%)?(?:\s+(links|mitte|rechts))?\)$/;
+var DV_BILD_MUSTER = /^!\[([^\]]*)\]\(([^)\s]+)(?:\s+(\d+)%)?(?:\s+(links|mitte|rechts))?(?:\s+"([^"]*)")?\)$/;
 
 function dvBildNeueId() {
   var max = 0;
@@ -477,7 +477,7 @@ function dvBilderAusTextAuslagern(text) {
     if (!m || m[2].indexOf('data:') !== 0) return zeile;
     var id = dvBildNeueId();
     DV.bilder[id] = m[2];
-    return dvBildZeileBauen(m[1], id, m[3] ? parseInt(m[3], 10) : null, m[4] || 'mitte');
+    return dvBildZeileBauen(m[1], id, m[3] ? parseInt(m[3], 10) : null, m[4] || 'mitte', m[5] || null);
   }).join('\n');
 }
 
@@ -489,7 +489,7 @@ function dvBilderInTextEinbetten(text) {
   return text.split('\n').map(function (zeile) {
     var m = zeile.match(DV_BILD_MUSTER);
     if (!m || !DV.bilder[m[2]]) return zeile;
-    return dvBildZeileBauen(m[1], DV.bilder[m[2]], m[3] ? parseInt(m[3], 10) : null, m[4] || 'mitte');
+    return dvBildZeileBauen(m[1], DV.bilder[m[2]], m[3] ? parseInt(m[3], 10) : null, m[4] || 'mitte', m[5] || null);
   }).join('\n');
 }
 
@@ -518,24 +518,36 @@ function dvBilderImText() {
     var m = zeile.match(DV_BILD_MUSTER);
     if (m) liste.push({
       alt: m[1], src: m[2], anzeigeSrc: DV.bilder[m[2]] || m[2],
-      breite: m[3] ? parseInt(m[3], 10) : null, ausrichtung: m[4] || 'mitte'
+      breite: m[3] ? parseInt(m[3], 10) : null, ausrichtung: m[4] || 'mitte',
+      unterschrift: m[5] || ''
     });
     return liste;
   }, []);
 }
 
-function dvBildZeileBauen(alt, src, breite, ausrichtung) {
+function dvBildZeileBauen(alt, src, breite, ausrichtung, unterschrift) {
   var klammer = src;
   if (breite) klammer += ' ' + breite + '%';
   if (ausrichtung && ausrichtung !== 'mitte') klammer += ' ' + ausrichtung;
+  // Anführungszeichen im Text nicht escapen (das Muster kennt kein Escaping) –
+  // einfach entfernen, damit die Zeile gültig bleibt.
+  if (unterschrift) klammer += ' "' + unterschrift.replace(/"/g, '') + '"';
   return '![' + alt + '](' + klammer + ')';
 }
 
-function dvBildUebernehmen(src, breite, ausrichtung) {
+// aenderungen: { breite?, ausrichtung?, unterschrift? } – nur angegebene
+// Felder werden geändert, alles andere bleibt wie in der Quelle.
+function dvBildUebernehmen(src, aenderungen) {
   var zeilen = DV.quelle.split('\n');
   for (var i = 0; i < zeilen.length; i++) {
     var m = zeilen[i].match(DV_BILD_MUSTER);
-    if (m && m[2] === src) { zeilen[i] = dvBildZeileBauen(m[1], src, breite, ausrichtung); break; }
+    if (m && m[2] === src) {
+      var breite = 'breite' in aenderungen ? aenderungen.breite : (m[3] ? parseInt(m[3], 10) : null);
+      var ausrichtung = 'ausrichtung' in aenderungen ? aenderungen.ausrichtung : (m[4] || 'mitte');
+      var unterschrift = 'unterschrift' in aenderungen ? aenderungen.unterschrift : (m[5] || null);
+      zeilen[i] = dvBildZeileBauen(m[1], src, breite, ausrichtung, unterschrift);
+      break;
+    }
   }
   DV.quelle = zeilen.join('\n');
   var ta = document.getElementById('dv-ta');
@@ -663,7 +675,10 @@ function dvBilderPanelAktualisieren() {
     });
 
     var uebernehmen = function () {
-      dvBildUebernehmen(b.src, breiteSel.value ? parseInt(breiteSel.value, 10) : null, ausrichtungSel.value);
+      dvBildUebernehmen(b.src, {
+        breite: breiteSel.value ? parseInt(breiteSel.value, 10) : null,
+        ausrichtung: ausrichtungSel.value
+      });
     };
     breiteSel.onchange = uebernehmen;
     ausrichtungSel.onchange = uebernehmen;
@@ -671,6 +686,22 @@ function dvBilderPanelAktualisieren() {
     regler.appendChild(breiteSel);
     regler.appendChild(ausrichtungSel);
     mitte.appendChild(regler);
+
+    var ucInp = document.createElement('input');
+    ucInp.type = 'text';
+    ucInp.className = 'finp dv-bild-row-unterschrift';
+    ucInp.placeholder = 'Bildunterschrift (optional)';
+    ucInp.value = b.unterschrift || '';
+    // onblur statt oninput: dvUpdate() baut das ganze Bilder-Panel neu auf
+    // (siehe dvBilderPanelAktualisieren) – bei jedem Tastendruck würde das
+    // Feld dabei den Fokus verlieren.
+    ucInp.onblur = function () {
+      var wert = ucInp.value.trim() || null;
+      if (wert !== (b.unterschrift || null)) dvBildUebernehmen(b.src, { unterschrift: wert });
+    };
+    ucInp.addEventListener('keydown', function (e) { if (e.key === 'Enter') ucInp.blur(); });
+    mitte.appendChild(ucInp);
+
     row.appendChild(mitte);
 
     var schneidenBtn = btn('✂', 'btn btn-ghost btn-xs');

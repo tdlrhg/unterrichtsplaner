@@ -257,16 +257,18 @@ function docParse(src) {
     var mk2 = line.match(/^::\s*([\wäöüÄÖÜß.-]+)\s*:\s*(.*)$/);
     if (mk2) { meta[mk2[1].toLowerCase()] = mk2[2].trim(); continue; }
 
-    // ── Bild: ![Alt](src), optional Breite und/oder Ausrichtung:
-    // ![Alt](src 60%) · ![Alt](src links) · ![Alt](src 60% rechts) ──
-    // Gleiches Muster als DV_BILD_MUSTER in dokument-app.js (Bilder-Panel) –
-    // bei Änderung hier bitte dort mitziehen.
-    var img = line.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+(\d+)%)?(?:\s+(links|mitte|rechts))?\)$/);
+    // ── Bild: ![Alt](src), optional Breite, Ausrichtung und Bildunterschrift:
+    // ![Alt](src 60%) · ![Alt](src links) · ![Alt](src 60% rechts "Abb. 1: Text") ──
+    // Bei links/rechts umfließt der Text das Bild (float); die Unterschrift
+    // erscheint klein kursiv darunter. Gleiches Muster als DV_BILD_MUSTER in
+    // dokument-app.js (Bilder-Panel) – bei Änderung hier bitte dort mitziehen.
+    var img = line.match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+(\d+)%)?(?:\s+(links|mitte|rechts))?(?:\s+"([^"]*)")?\)$/);
     if (img) {
       pushBlock(ziel(), {
         t: 'bild', alt: img[1], src: img[2],
         breite: img[3] ? parseInt(img[3], 10) : null,
-        ausrichtung: img[4] || null
+        ausrichtung: img[4] || null,
+        unterschrift: img[5] || null
       });
       continue;
     }

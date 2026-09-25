@@ -346,8 +346,9 @@
 .dv-p { margin-bottom: var(--dv-abs); }
 .dv-p:last-child { margin-bottom: 0; }
 .dv-h1 { font-size: 1.25em; font-weight: 800; margin: 4mm 0 2mm; }
-.dv-zwischen { font-size: 1.05em; font-weight: 800; color: var(--dv-dk-farbe); margin: 5mm 0 2mm; }
+.dv-zwischen { font-size: 1.3em; font-weight: 800; color: var(--dv-dk-farbe); margin: 5mm 0 2mm; }
 .dv-zwischen:first-child { margin-top: 0; }
+.dv-zwischen-titel { font-size: .68em; }
 .dv-liste { margin: 0 0 var(--dv-abs) 6mm; }
 .dv-liste li { margin-bottom: 1mm; }
 /* Ankreuzoptionen (MC): - [ ] Text / - [x] Text */

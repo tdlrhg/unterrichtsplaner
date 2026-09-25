@@ -79,7 +79,9 @@ function dvBlockRoh(b, v) {
 
   if (b.t === 'zwischen') {
     var zw = mk('div', 'dv-zwischen dv-zwischen-' + b.variante);
-    zw.innerHTML = b.variante === 'material' ? ('Material ' + b.nr + ' – ' + b.html) : b.html;
+    zw.innerHTML = b.variante === 'material'
+      ? ('Material ' + b.nr + ' – <span class="dv-zwischen-titel">' + b.html + '</span>')
+      : b.html;
     return zw;
   }
 

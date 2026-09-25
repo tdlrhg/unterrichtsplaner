@@ -307,6 +307,11 @@
 .dv-teil-body { }
 .dv-fortsetzung-hinweis { font-size: .8em; font-weight: 400; font-style: italic; color: #78716c; }
 
+/* Klausur-Stil (aufgabe.stil = 'klausur'): 1./2./3. statt a)/b)/c), mehr
+   Abstand zwischen den Arbeitsaufträgen, Punkte als "(N BE)" darunter. */
+.dv-teil-klausur { margin-bottom: 7mm; }
+.dv-teil-punkte-be { font-style: italic; text-align: right; margin-top: 1.5mm; }
+
 /* Absatz mit Teilaufgaben-Einzug, aber ohne Buchstabe/Punkte (::: text).
    Zwei Fälle: direkt unter einer Aufgabe (kein Teil davor) auf Höhe der
    Buchstaben-Spalte (Aussenrand). Innerhalb einer Teilaufgabe (::: text

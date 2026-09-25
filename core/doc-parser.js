@@ -224,7 +224,10 @@ function docParse(src) {
       if (lm) { teilNr = lm[1].toLowerCase().charCodeAt(0) - 96; t3 = t3.slice(lm[0].length).trim(); }
       else teilNr++;
       zurueckAufAufgabe();
-      aktTeil = { t: 'teil', marke: String.fromCharCode(96 + Math.max(1, teilNr)) + ')', titel: t3, punkte: p3.punkte, kinder: [] };
+      // marke ist die gebuchstabierte Form (a), b) …) für den normalen Stil;
+      // nr die reine Zahl, damit die Vorlage im Klausur-Stil "1.", "2." …
+      // daraus bauen kann – der Parser entscheidet nicht über die Anzeige.
+      aktTeil = { t: 'teil', marke: String.fromCharCode(96 + Math.max(1, teilNr)) + ')', nr: teilNr, titel: t3, punkte: p3.punkte, kinder: [] };
       pushBlock(ziel(), aktTeil);
       stack.push(aktTeil.kinder);
       continue;

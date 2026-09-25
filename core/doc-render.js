@@ -226,18 +226,27 @@ function dvBlockRoh(b, v) {
   if (b.t === 'hr') return mk('div', 'dv-hr');
 
   if (b.t === 'teil') {
-    var te = mk('div', 'dv-teil');
+    // Klausur-Stil: Nummerierung 1./2./3. statt a)/b)/c), Punkte als
+    // "(N BE)" kursiv rechtsbündig unter dem Auftrag statt inline im Kopf.
+    var klausurTeil = v.aufgabe.stil === 'klausur';
+    var te = mk('div', 'dv-teil' + (klausurTeil ? ' dv-teil-klausur' : ''));
     var kopfz = mk('div', 'dv-teil-hdr');
-    kopfz.appendChild(tx('span', 'dv-teil-marke', dvFuellen(v.teil.marke, { marke: b.marke })));
+    var markeText = klausurTeil ? (b.nr + '.') : dvFuellen(v.teil.marke, { marke: b.marke });
+    kopfz.appendChild(tx('span', 'dv-teil-marke', markeText));
     if (b.titel) { var tt = mk('span', 'dv-teil-titel'); tt.innerHTML = docInline(b.titel); kopfz.appendChild(tt); }
     if (b.punkte != null) te.setAttribute('data-punkte', b.punkte);
-    var tp = dvPunkteEl(b.punkte, v);
-    if (tp) { kopfz.appendChild(mk('span', 'dv-teil-leader')); kopfz.appendChild(tp); }
+    if (!klausurTeil) {
+      var tp = dvPunkteEl(b.punkte, v);
+      if (tp) { kopfz.appendChild(mk('span', 'dv-teil-leader')); kopfz.appendChild(tp); }
+    }
     te.appendChild(kopfz);
     var tbody2 = mk('div', 'dv-teil-body');
     tbody2.setAttribute('data-splitbody', '1');
     (b.kinder || []).forEach(function (k) { tbody2.appendChild(dvBlock(k, v)); });
     te.appendChild(tbody2);
+    if (klausurTeil && b.punkte != null) {
+      te.appendChild(tx('div', 'dv-teil-punkte-be', '(' + dvZahl(b.punkte) + ' BE)'));
+    }
     return te;
   }
 

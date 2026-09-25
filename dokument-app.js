@@ -514,15 +514,33 @@ function dvDateiSpeichern() {
 }
 
 function dvBilderImText() {
-  return DV.quelle.split('\n').reduce(function (liste, zeile) {
+  return DV.quelle.split('\n').reduce(function (liste, zeile, i) {
     var m = zeile.match(DV_BILD_MUSTER);
     if (m) liste.push({
       alt: m[1], src: m[2], anzeigeSrc: DV.bilder[m[2]] || m[2],
       breite: m[3] ? parseInt(m[3], 10) : null, ausrichtung: m[4] || 'mitte',
-      unterschrift: m[5] || ''
+      unterschrift: m[5] || '', zeile: i
     });
     return liste;
   }, []);
+}
+
+// Vertauscht die Quellzeilen zweier Bilder (per Index in dvBilderImText()) –
+// die beiden Bilder wechseln so die Position im Dokument, aller Text drumherum
+// bleibt unverändert stehen.
+function dvBilderVertauschen(indexA, indexB) {
+  var bilder = dvBilderImText();
+  if (indexA < 0 || indexB < 0 || indexA >= bilder.length || indexB >= bilder.length) return;
+  var zeilen = DV.quelle.split('\n');
+  var zA = bilder[indexA].zeile, zB = bilder[indexB].zeile;
+  var tausch = zeilen[zA];
+  zeilen[zA] = zeilen[zB];
+  zeilen[zB] = tausch;
+  DV.quelle = zeilen.join('\n');
+  var ta = document.getElementById('dv-ta');
+  if (ta) ta.value = DV.quelle;
+  localStorage.setItem('dv_quelle', DV.quelle);
+  dvUpdate();
 }
 
 function dvBildZeileBauen(alt, src, breite, ausrichtung, unterschrift) {
@@ -644,8 +662,21 @@ function dvBilderPanelAktualisieren() {
   wrap.appendChild(titelZeile);
   if (!_dvBilderOffen) return;
 
-  bilder.forEach(function (b) {
+  bilder.forEach(function (b, idx) {
     var row = mk('div', 'dv-bild-row');
+
+    var reihenfolge = mk('div', 'dv-bild-row-reihenfolge');
+    var hochBtn = btn('▲', 'btn btn-ghost btn-xs');
+    hochBtn.title = 'Mit vorherigem Bild tauschen';
+    hochBtn.disabled = idx === 0;
+    hochBtn.onclick = function () { dvBilderVertauschen(idx, idx - 1); };
+    var runterBtn = btn('▼', 'btn btn-ghost btn-xs');
+    runterBtn.title = 'Mit nächstem Bild tauschen';
+    runterBtn.disabled = idx === bilder.length - 1;
+    runterBtn.onclick = function () { dvBilderVertauschen(idx, idx + 1); };
+    reihenfolge.appendChild(hochBtn);
+    reihenfolge.appendChild(runterBtn);
+    row.appendChild(reihenfolge);
 
     var thumb = document.createElement('img');
     thumb.src = b.anzeigeSrc; thumb.className = 'dv-bild-thumb';

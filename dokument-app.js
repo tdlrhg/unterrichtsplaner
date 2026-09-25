@@ -152,14 +152,22 @@ function dvHighlightAktualisieren() {
 // Zeichen selbst wird beim Einfügen entfernt. Ohne Marke landet der Cursor
 // am Ende des Bausteins.
 var DV_CURSOR = '\u00ab';
-var DV_BAUSTEINE = [
+// Wirkt auf die aktuelle Textauswahl (Formatierung innerhalb eines Blocks).
+var DV_INLINE_BAUSTEINE = [
   { label: 'Fett',    titel: 'Fett (**Text**) – markierten Text umschließen',   wrap: '**', cls: 'dv-format-fett' },
   { label: 'Kursiv',  titel: 'Kursiv (*Text*) – markierten Text umschließen',   wrap: '*',  cls: 'dv-format-kursiv' },
   { label: 'U',       titel: 'Unterstrichen (++Text++) – markierten Text umschließen', wrap: '++', cls: 'dv-format-unterstrichen' },
-  { label: 'Bruch',   titel: 'Bruch mit Bruchstrich ({Zähler/Nenner})',        aktion: 'bruch' },
-  { trenner: true },
+  { label: 'Bruch',   titel: 'Bruch mit Bruchstrich ({Zähler/Nenner})',        aktion: 'bruch' }
+];
+
+// Fügt an der Cursorposition einen neuen Block ein (eigene Zeile).
+var DV_BLOCK_BAUSTEINE = [
   { label: 'Aufgabe',    titel: 'Neue Aufgabe (##)',                       text: '## Aufgabe ' + DV_CURSOR + '[P]\n' },
   { label: 'a)',         titel: 'Neue Teilaufgabe (###)',                  text: '### ' + DV_CURSOR + '[P]\n' },
+  { trenner: true },
+  { label: 'Kontext',    titel: 'Zwischenüberschrift "Kontext" (####)',    text: '#### Kontext\n' + DV_CURSOR },
+  { label: 'Material',   titel: 'Material-Überschrift, automatisch nummeriert (#### Material)', text: '#### Material ' + DV_CURSOR + '\n' },
+  { trenner: true },
   { label: 'Absatz',     titel: 'Absatz ohne eigene Teilaufgabe (::: text)', text: '::: text\n' + DV_CURSOR + '\n:::\n' },
   { trenner: true },
   { label: 'Linien',     titel: 'Schreiblinien (::: linien)',              text: '::: linien n=4\n' },
@@ -863,17 +871,22 @@ function dvRenderApp() {
   bilderPanel.style.display = 'none';
   inhalt.appendChild(bilderPanel);
 
-  var formatLeiste = mk('div', 'dv-format-leiste');
-  DV_BAUSTEINE.forEach(function (b) {
-    if (b.trenner) { formatLeiste.appendChild(mk('span', 'dv-format-trenner')); return; }
-    var fb = btn(b.label, 'btn btn-ghost btn-xs dv-format-btn' + (b.cls ? ' ' + b.cls : ''));
-    fb.title = b.titel;
-    fb.onclick = b.wrap ? function () { dvFormatUmschliessen(b.wrap); }
-      : b.aktion === 'bruch' ? function () { dvBruchEinfuegen(); }
-      : function () { dvBausteinEinfuegen(b.text); };
-    formatLeiste.appendChild(fb);
-  });
-  inhalt.appendChild(formatLeiste);
+  function dvBausteinLeiste(liste, cls, label) {
+    var leiste = mk('div', 'dv-format-leiste ' + cls);
+    leiste.appendChild(tx('span', 'dv-format-gruppen-label', label));
+    liste.forEach(function (b) {
+      if (b.trenner) { leiste.appendChild(mk('span', 'dv-format-trenner')); return; }
+      var fb = btn(b.label, 'btn btn-ghost btn-xs dv-format-btn' + (b.cls ? ' ' + b.cls : ''));
+      fb.title = b.titel;
+      fb.onclick = b.wrap ? function () { dvFormatUmschliessen(b.wrap); }
+        : b.aktion === 'bruch' ? function () { dvBruchEinfuegen(); }
+        : function () { dvBausteinEinfuegen(b.text); };
+      leiste.appendChild(fb);
+    });
+    return leiste;
+  }
+  inhalt.appendChild(dvBausteinLeiste(DV_INLINE_BAUSTEINE, 'dv-format-leiste-inline', 'Text'));
+  inhalt.appendChild(dvBausteinLeiste(DV_BLOCK_BAUSTEINE, 'dv-format-leiste-block', 'Einfügen'));
 
   // Textfeld + farbiges Backdrop (siehe dvQuelleHervorheben)
   var edWrap = mk('div', 'dv-ed-wrap');

@@ -70,6 +70,7 @@ function docParse(src) {
   var aktTeil = null;
   var aufgabeNr = 0;
   var teilNr = 0;
+  var materialNr = 0;
 
   // Aktuelle Quellzeile (1-indiziert), wird jede Schleifen-Iteration unten
   // aktualisiert – pushBlock() markiert damit jeden Block mit der Zeile
@@ -204,6 +205,7 @@ function docParse(src) {
       if (nrM) { nr = nrM[1] ? parseInt(nrM[1], 10) : null; txt = txt.slice(nrM[0].length).trim(); }
       aufgabeNr = nr != null ? nr : aufgabeNr + 1;
       teilNr = 0;
+      materialNr = 0;
       zurueckAufWurzel();
       aktAufgabe = { t: 'aufgabe', nr: aufgabeNr, titel: txt, punkte: p2.punkte, kinder: [] };
       pushBlock(wurzel, aktAufgabe);
@@ -223,6 +225,21 @@ function docParse(src) {
       aktTeil = { t: 'teil', marke: String.fromCharCode(96 + Math.max(1, teilNr)) + ')', titel: t3, punkte: p3.punkte, kinder: [] };
       pushBlock(ziel(), aktTeil);
       stack.push(aktTeil.kinder);
+      continue;
+    }
+
+    // ── Zwischenüberschrift (####) ── z.B. "Kontext" oder, automatisch
+    // nummeriert, "Material <Titel>" → "Material 1 – <Titel>" ──
+    var h4 = line.match(/^####\s+(.*)$/);
+    if (h4) {
+      var t4 = h4[1].trim();
+      var matM = t4.match(/^Material\s*(\d+)?\s*[:.–—-]?\s*(.*)$/i);
+      if (matM) {
+        materialNr = matM[1] ? parseInt(matM[1], 10) : materialNr + 1;
+        pushBlock(ziel(), { t: 'zwischen', variante: 'material', nr: materialNr, html: docInline(matM[2].trim()) });
+      } else {
+        pushBlock(ziel(), { t: 'zwischen', variante: 'kontext', html: docInline(t4) });
+      }
       continue;
     }
 

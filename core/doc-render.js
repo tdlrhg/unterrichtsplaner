@@ -77,6 +77,12 @@ function dvBlockRoh(b, v) {
     var h = mk('div', 'dv-h' + b.level); h.innerHTML = b.html; return h;
   }
 
+  if (b.t === 'zwischen') {
+    var zw = mk('div', 'dv-zwischen dv-zwischen-' + b.variante);
+    zw.innerHTML = b.variante === 'material' ? ('Material ' + b.nr + ' – ' + b.html) : b.html;
+    return zw;
+  }
+
   if (b.t === 'liste') {
     var l = mk(b.ordered ? 'ol' : 'ul', 'dv-liste' + (b.mc ? ' dv-liste-mc' : ''));
     b.items.forEach(function (it) {

@@ -207,7 +207,9 @@ function docParse(src) {
       if (nrM) { nr = nrM[1] ? parseInt(nrM[1], 10) : null; txt = txt.slice(nrM[0].length).trim(); }
       aufgabeNr = nr != null ? nr : aufgabeNr + 1;
       teilNr = 0;
-      materialNr = 0;
+      // materialNr NICHT zurücksetzen – Material wird über alle Aufgaben
+      // hinweg fortlaufend nummeriert (anders als Teilaufgaben/Punkte, die
+      // pro Aufgabe neu zählen).
       zurueckAufWurzel();
       aktAufgabe = { t: 'aufgabe', nr: aufgabeNr, titel: txt, punkte: p2.punkte, kinder: [] };
       pushBlock(wurzel, aktAufgabe);

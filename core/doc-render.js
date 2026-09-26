@@ -231,7 +231,7 @@ function dvBlockRoh(b, v) {
     var klausurTeil = v.aufgabe.stil === 'klausur';
     var te = mk('div', 'dv-teil' + (klausurTeil ? ' dv-teil-klausur' : ''));
     var kopfz = mk('div', 'dv-teil-hdr');
-    var markeText = klausurTeil ? (b.nr + '.') : dvFuellen(v.teil.marke, { marke: b.marke });
+    var markeText = klausurTeil ? (b.aufgabeNr + '.' + b.nr) : dvFuellen(v.teil.marke, { marke: b.marke });
     kopfz.appendChild(tx('span', 'dv-teil-marke', markeText));
     if (b.titel) { var tt = mk('span', 'dv-teil-titel'); tt.innerHTML = docInline(b.titel); kopfz.appendChild(tt); }
     if (b.punkte != null) te.setAttribute('data-punkte', b.punkte);

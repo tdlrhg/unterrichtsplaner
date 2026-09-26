@@ -213,7 +213,13 @@ function dvBlockRoh(b, v) {
     var img = document.createElement('img');
     img.src = b.src; img.alt = b.alt || '';
     if (floated) bw.style.width = (b.breite || 45) + '%';
-    else if (b.breite) img.style.width = b.breite + '%';
+    else if (b.breite) {
+      img.style.width = b.breite + '%';
+      // .dv-bild img hat sonst max-width:100% (Sicherheitsnetz gegen zu große
+      // Originalbilder ohne gesetzte Breite) – bei bewusst über 100% gesetzter
+      // Breite muss das hier weichen, sonst klemmt es wieder auf 100%.
+      if (b.breite > 100) img.style.maxWidth = 'none';
+    }
     bw.appendChild(img);
     if (b.unterschrift) {
       var uc = mk('div', 'dv-bild-unterschrift');

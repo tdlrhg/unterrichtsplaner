@@ -637,7 +637,7 @@ function dvBildWeissraumErkennenUndZuschneiden(src, callback) {
   img.src = src;
 }
 
-var DV_BILD_BREITEN = [['', 'Originalgröße'], ['25', '25%'], ['50', '50%'], ['75', '75%'], ['100', '100%']];
+var DV_BILD_BREITEN = [['', 'Originalgröße'], ['25', '25%'], ['50', '50%'], ['75', '75%'], ['100', '100%'], ['125', '125%'], ['150', '150%']];
 var DV_BILD_AUSRICHTUNGEN = [['links', 'Links'], ['mitte', 'Mitte'], ['rechts', 'Rechts']];
 
 var _dvBilderOffen = localStorage.getItem('dv_bilder_offen') !== 'false';

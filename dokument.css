@@ -396,6 +396,7 @@
 .dv-kasten-titel { font-weight: 700; font-size: .9em; margin-bottom: 1.2mm; }
 .dv-kasten-loesung { background: #f0fdf4; border: .6pt dashed #86bd9a; }
 .dv-kasten-hinweis { border-left: 1.2mm solid var(--dv-auf-farbe); }
+.dv-kasten-hinweis .dv-kasten-body { font-style: italic; }
 
 /* Antwortraum */
 .dv-linien { margin: 2mm 0 var(--dv-abs); }

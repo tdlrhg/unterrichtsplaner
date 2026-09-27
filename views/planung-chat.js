@@ -1319,6 +1319,195 @@ function _pcRender() {
   }
 }
 
+// Festes Ausgabeformat für den externen Chat. Hält sich die KI daran, liest
+// das Tool das Ergebnis ohne eigenen KI-Aufruf ein — siehe _pcErgebnisLesen.
+const _PC_AUSGABEFORMAT = `So gibst du ein Ergebnis aus:
+
+Besprich die Stunde wie gewohnt im Fließtext. Sobald wir uns über den Verlauf
+einig sind — und nur dann —, hängst du an deine Antwort einen Codeblock an,
+genau in dieser Form (Sprache „stundenplan"), damit mein Planungstool ihn
+einlesen kann:
+
+\`\`\`stundenplan
+{
+  "lernziel": "ein Satz, optional",
+  "phasen": [
+    { "typ": "Einstieg", "titel": "kurz", "inhalt": "stichwortartig, max. 2 Zeilen",
+      "methode": "Name der Methode", "material": "was hier gebraucht wird",
+      "sozialform": "Plenum", "minuten": 10 }
+  ],
+  "material": [
+    { "quelle": "Titel wie in der Datenbank", "teile": "z.B. Aufgabe 2–4",
+      "anpassung": "was geändert werden muss", "kopieren": true, "menge": "Klassensatz" }
+  ]
+}
+\`\`\`
+
+Regeln für den Block:
+- Gültiges JSON, keine Kommentare, keine Rechenausdrücke bei "minuten".
+- "typ" ist Einstieg, Erarbeitung oder Sicherung.
+- Nur die Unterrichtsphasen. Ankommen, Pause und Aufräumen setzt das Tool selbst.
+- "inhalt" stichwortartig, keine ausformulierten Sätze.
+- In "material" alles, was in der Stunde gebraucht wird, auch noch zu erstellendes.
+  "kopieren": true nur, wenn wirklich Kopien nötig sind.
+- Änderst du den Plan später, gib den ganzen Block neu aus.`;
+
+// Liest den Ergebnisblock aus dem eingefügten Chat-Text. Ohne KI, solange das
+// Format stimmt; sonst wirft die Funktion und der Aufrufer fragt die KI.
+function _pcErgebnisLesen(text) {
+  const roh = String(text || '').trim();
+  if (!roh) throw new Error('Nichts eingefügt.');
+  // Codeblock bevorzugt; sonst das letzte {...} im Text
+  const block = roh.match(/```(?:stundenplan|json)?\s*([\s\S]*?)```/i);
+  let kern = block ? block[1] : null;
+  if (!kern) {
+    const auf = roh.indexOf('{'), zu = roh.lastIndexOf('}');
+    if (auf < 0 || zu <= auf) throw new Error('Kein Ergebnisblock gefunden.');
+    kern = roh.slice(auf, zu + 1);
+  }
+  let dat;
+  try {
+    dat = JSON.parse(kern);
+  } catch (e) {
+    // Häufigster Schaden: Komma vor der schließenden Klammer
+    dat = JSON.parse(kern.replace(/,\s*([}\]])/g, '$1'));
+  }
+  if (!dat || !Array.isArray(dat.phasen) || !dat.phasen.length) {
+    throw new Error('Im Block stehen keine Phasen.');
+  }
+  return dat;
+}
+
+// Schreibt ein gelesenes Ergebnis in die Stunde — dieselben Regeln wie beim
+// Werkzeug setPhasen, damit die Zeitmarken der Sek I auch hier stimmen.
+function _pcErgebnisSchreiben(fp, stunde, dat) {
+  stunde.phasen = (dat.phasen || []).map(p => ({
+    id: uid(),
+    titel: String(p.titel || ''),
+    typ: ['Einstieg', 'Erarbeitung', 'Sicherung'].includes(p.typ) ? p.typ : '',
+    inhalt: String(p.inhalt || ''),
+    methode: String(p.methode || ''),
+    material: String(p.material || ''),
+    sozialform: String(p.sozialform || ''),
+    minuten: parseInt(p.minuten) || 0,
+    materialIds: []
+  }));
+  let rahmen = null;
+  if (!_pcIstSII(fp)) {
+    const doppel = (parseInt(stunde.dauer) || 45) >= 90;
+    const r = _pcRahmenphasenSI(stunde.phasen, doppel);
+    stunde.phasen = r.phasen;
+    rahmen = r;
+  }
+  if (Array.isArray(dat.material) && dat.material.length) {
+    if (!Array.isArray(stunde.material)) stunde.material = [];
+    dat.material.forEach(m => {
+      const quelle = String(m.quelle || '').trim();
+      if (!quelle) return;
+      if (stunde.material.some(x => (x.quelle || '').trim().toLowerCase() === quelle.toLowerCase())) return;
+      stunde.material.push({
+        id: uid(), quelle,
+        teile: String(m.teile || ''), anpassung: String(m.anpassung || ''),
+        kopieren: !!m.kopieren, menge: m.kopieren ? (m.menge || 'Klassensatz') : ''
+      });
+    });
+  }
+  if (dat.lernziel && !stunde.lernziel) stunde.lernziel = String(dat.lernziel);
+  const summe = stunde.phasen.reduce((s, p) => s + (p.minuten || 0), 0);
+  return { summe, rahmen };
+}
+
+// Fenster zum Einfügen des Chat-Ergebnisses: prüfen, ansehen, dann eintragen.
+function _pcErgebnisDialog(fp, stunde) {
+  document.querySelectorAll('.pc-uebernahme').forEach(x => x.remove());
+  const hg = mk('div', 'pc-uebernahme');
+  const box = mk('div', 'pc-ueb-box');
+
+  const kopf = tx('div', 'pc-ueb-kopf', '📥 Ergebnis eintragen — ' + (stunde.titel || 'Stunde'));
+  box.appendChild(kopf);
+
+  const hinweis = tx('div', 'pc-ueb-hint',
+    'Die ganze Antwort aus dem Claude-Chat hier einfügen. Gesucht wird der Block „stundenplan".');
+  box.appendChild(hinweis);
+
+  const ta = document.createElement('textarea');
+  ta.className = 'finp pc-ueb-ta';
+  ta.placeholder = 'Hier einfügen (Cmd+V)…';
+  box.appendChild(ta);
+
+  const status = tx('div', 'pc-ueb-status', '');
+  box.appendChild(status);
+
+  const leiste = mk('div', 'pc-ueb-leiste');
+  const abbr = btn('Abbrechen', 'btn btn-ghost btn-sm');
+  abbr.onclick = () => hg.remove();
+  const pruefen = btn('Prüfen', 'btn btn-sm');
+  const eintragen = btn('Eintragen', 'btn btn-primary btn-sm');
+  eintragen.disabled = true;
+  leiste.appendChild(abbr); leiste.appendChild(pruefen); leiste.appendChild(eintragen);
+  box.appendChild(leiste);
+
+  let gelesen = null;
+
+  async function lesen() {
+    status.className = 'pc-ueb-status';
+    try {
+      gelesen = _pcErgebnisLesen(ta.value);
+    } catch (e) {
+      // Notnagel: Format nicht eingehalten — dann übersetzt ein billiges
+      // Modell den Text einmalig. Kostet Token, deshalb nicht der Regelweg.
+      status.textContent = 'Kein sauberer Block gefunden (' + e.message + ') — frage die KI …';
+      try {
+        gelesen = await _pcErgebnisPerKI(ta.value);
+      } catch (e2) {
+        gelesen = null;
+        status.className = 'pc-ueb-status pc-ueb-fehler';
+        status.textContent = 'Konnte nicht gelesen werden: ' + e2.message;
+        eintragen.disabled = true;
+        return;
+      }
+    }
+    const zeilen = gelesen.phasen.map((p, i) =>
+      (i + 1) + '. ' + (p.typ ? p.typ + ' — ' : '') + (p.titel || '?') + ' · ' + (parseInt(p.minuten) || 0) + ' min');
+    const mat = (gelesen.material || []).map(m => '· ' + m.quelle + (m.kopieren ? ' 🖨' : ''));
+    status.textContent = gelesen.phasen.length + ' Phasen, zusammen '
+      + gelesen.phasen.reduce((s, p) => s + (parseInt(p.minuten) || 0), 0) + ' Minuten Unterricht'
+      + (mat.length ? ', ' + mat.length + ' Material' : '') + ':\n'
+      + zeilen.join('\n') + (mat.length ? '\n' + mat.join('\n') : '');
+    eintragen.disabled = false;
+  }
+
+  pruefen.onclick = lesen;
+  ta.onpaste = () => setTimeout(lesen, 0);
+
+  eintragen.onclick = () => {
+    if (!gelesen) return;
+    const r = _pcErgebnisSchreiben(fp, stunde, gelesen);
+    hg.remove();
+    scheduleSave(); render();
+    if (r.rahmen && r.rahmen.pauseVersetzt) {
+      alert('Eingetragen. Achtung: Keine Phase endet genau bei 45\' — die Pause steht jetzt bei '
+        + r.rahmen.pauseVersetzt + '\'. Schneide die Phase im Editor passend.');
+    }
+  };
+
+  hg.onclick = e => { if (e.target === hg) hg.remove(); };
+  document.body.appendChild(hg);
+  hg.appendChild(box);
+  setTimeout(() => ta.focus(), 0);
+}
+
+// Notnagel für unsauber formatierte Antworten
+async function _pcErgebnisPerKI(text) {
+  const prompt = 'Wandle die folgende Unterrichtsplanung in JSON um. Antworte NUR mit dem JSON, '
+    + 'ohne Erklärung:\n{"lernziel":"","phasen":[{"typ":"Einstieg|Erarbeitung|Sicherung","titel":"",'
+    + '"inhalt":"","methode":"","material":"","sozialform":"","minuten":0}],'
+    + '"material":[{"quelle":"","teile":"","anpassung":"","kopieren":false,"menge":""}]}\n'
+    + 'Lass Ankommen, Pause und Aufräumen weg.\n\n--- Text ---\n' + String(text || '').slice(0, 20000);
+  const antwort = await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 4000, label: 'stunde-uebernahme' });
+  return _pcErgebnisLesen(antwort);
+}
+
 // Notbehelf: Prompt und Plandaten als Text, ohne KI-Aufruf. Die Werkzeuge
 // gibt es im externen Chat nicht — deshalb liegen ihre Ergebnisse gleich bei.
 async function _pcKontextKopieren(fp, context) {
@@ -1329,9 +1518,8 @@ async function _pcKontextKopieren(fp, context) {
     'Wir planen gemeinsam eine Unterrichtsstunde. Unten stehen deine Rolle, die Planungsdaten, '
     + 'das vorhandene Material und die Methodendatenbank. Werkzeuge (readPlan, readDatenbank, '
     + 'setPhasen, materialZuordnen usw.) werden im Text erwähnt, stehen hier aber nicht zur '
-    + 'Verfügung — ihre Daten sind unten schon eingefügt. Statt setPhasen gibst du den Verlauf, '
-    + 'wenn wir uns einig sind, als Tabelle aus: Zeit (von–bis), Typ, Inhalt (stichwortartig), '
-    + 'Methode, Material, Sozialform, Minuten. Darunter die Materialliste mit Kopien ja/nein.',
+    + 'Verfügung — ihre Daten sind unten schon eingefügt.',
+    _PC_AUSGABEFORMAT,
     '=== ROLLE UND REGELN ===', system,
     '=== PLAN (Reihe und Stunden) ===', plan,
     '=== METHODEN ===', methoden,
@@ -2055,6 +2243,11 @@ function buildEinheitChat(fp, block, reihe, einheit, stunde) {
       }
     };
     hdr.appendChild(kopie);
+
+    const rein = btn('📥', 'btn btn-ghost btn-xs pc-kopie');
+    rein.title = 'Ergebnis aus dem externen Chat eintragen (ohne KI-Aufruf)';
+    rein.onclick = (e) => { e.stopPropagation(); _pcErgebnisDialog(fp, stunde); };
+    hdr.appendChild(rein);
   }
 
   setTimeout(_pcRender, 0);

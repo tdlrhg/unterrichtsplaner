@@ -1132,6 +1132,16 @@ textarea::placeholder { color: #c4cdd6; }
 .pc-klapp { color:var(--tx3); font-size:11px; margin-right:6px; }
 /* schiebt sich an den rechten Rand der Chat-Kopfzeile */
 .pc-neu { margin-left:auto; }
+.pc-uebernahme { position:fixed; inset:0; z-index:1200; background:rgba(0,0,0,.35);
+  display:flex; align-items:center; justify-content:center; padding:20px; }
+.pc-ueb-box { background:var(--surf); border:1px solid var(--bord); border-radius:10px;
+  width:min(680px,100%); max-height:100%; overflow:auto; padding:14px 16px; box-shadow:0 8px 30px rgba(0,0,0,.2); }
+.pc-ueb-kopf { font-weight:700; font-size:14px; margin-bottom:4px; }
+.pc-ueb-hint { font-size:12px; color:var(--tx2); margin-bottom:8px; }
+.pc-ueb-ta { width:100%; min-height:180px; font-size:12px; font-family:inherit; resize:vertical; }
+.pc-ueb-status { white-space:pre-wrap; font-size:12px; color:var(--tx2); margin-top:8px; line-height:1.45; }
+.pc-ueb-fehler { color:var(--red); }
+.pc-ueb-leiste { display:flex; gap:8px; justify-content:flex-end; margin-top:10px; }
 .pc-kopie { opacity:.35; padding:0 4px; }
 .pc-kopie:hover { opacity:1; }
 .pc-msg { max-width:90%; padding:8px 12px; border-radius:8px; font-size:13px; line-height:1.5; }

@@ -105,6 +105,16 @@ function dvBlockRoh(b, v) {
   if (b.t === 'tabelle') {
     var wrap = mk('div', 'dv-tabelle-wrap');
     var t = mk('table', 'dv-tabelle');
+    if (b.spalten) {
+      var colgroup = mk('colgroup', '');
+      var spaltenzahl = (b.kopf || b.zeilen[0] || []).length;
+      for (var ci = 0; ci < spaltenzahl; ci++) {
+        var col = document.createElement('col');
+        if (b.spalten[ci]) col.style.width = b.spalten[ci] + '%';
+        colgroup.appendChild(col);
+      }
+      t.appendChild(colgroup);
+    }
     if (b.kopf) {
       var th = mk('thead', ''); var trh = mk('tr', '');
       b.kopf.forEach(function (c) { var e = mk('th', ''); e.innerHTML = c; trh.appendChild(e); });

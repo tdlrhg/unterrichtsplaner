@@ -73,6 +73,7 @@ function docParse(src) {
   var aufgabeNr = 0;
   var teilNr = 0;
   var materialNr = 0;
+  var wartendeSpalten = null; // von "::: spalten …" gesetzt, wirkt auf die direkt folgende Tabelle
 
   // Aktuelle Quellzeile (1-indiziert), wird jede Schleifen-Iteration unten
   // aktualisiert – pushBlock() markiert damit jeden Block mit der Zeile
@@ -116,6 +117,15 @@ function docParse(src) {
       var name = fence[1].toLowerCase();
       var opt = docOpts(fence[2]);
 
+      if (name === 'spalten') {
+        // Setzt die Spaltenbreiten (Prozent, eine Zahl pro Spalte) der
+        // direkt folgenden Tabelle, z.B. "::: spalten 30 70". Kein
+        // eigener Block – wird beim nächsten Tabellenblock verbraucht.
+        wartendeSpalten = fence[2].trim().split(/\s+/).map(function (s) {
+          var n = parseInt(s, 10); return isNaN(n) ? null : n;
+        });
+        continue;
+      }
       if (name === 'linien' || name === 'zeilen') {
         pushBlock(ziel(), { t: 'linien', anzahl: parseInt(opt.n || opt.anzahl || fence[2].trim(), 10) || 5 });
         continue;
@@ -293,8 +303,10 @@ function docParse(src) {
         var tabelle = {
           t: 'tabelle',
           kopf: kopf ? kopf.map(docInline) : null,
-          zeilen: zellen.map(function (r) { return r.map(docInline); })
+          zeilen: zellen.map(function (r) { return r.map(docInline); }),
+          spalten: wartendeSpalten
         };
+        wartendeSpalten = null;
         // Tabellenbeschriftung: direkt (ohne Leerzeile) folgende Zeile,
         // die mit ":" beginnt, z.B. ": Tab. 1: Beschreibungstext".
         var nachTabelle = lines[i + 1];

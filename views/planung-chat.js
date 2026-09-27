@@ -1511,20 +1511,103 @@ async function _pcErgebnisPerKI(text) {
 // Notbehelf: Prompt und Plandaten als Text, ohne KI-Aufruf. Die Werkzeuge
 // gibt es im externen Chat nicht — deshalb liegen ihre Ergebnisse gleich bei.
 async function _pcKontextKopieren(fp, context) {
-  const { system } = await _pcBaueSystem(fp, context);
-  const plan = await _pcExecTool('readPlan', {}, fp);
-  const methoden = await _pcExecTool('readMethoden', {}, fp);
+  const { reihe, stunde } = context;
+  const fachName = PC_FACH[fp.fach] || fp.fach;
+  const istSII = _pcIstSII(fp);
+  const doppel = (parseInt(stunde.dauer) || 45) >= 90;
+
+  // Rolle knapp halten: Der Chat kann Didaktik. Hier steht nur, was er nicht
+  // wissen kann — Lerngruppe, Zeitmarken, Bestand, Haltung der Lehrerin.
+  const rolle = `Du bist erfahrene Fachleiterin für ${fachName} und planst mit mir, einer erfahrenen
+Kollegin am NRW-Gymnasium, eine einzelne Unterrichtsstunde. Wir arbeiten auf Augenhöhe:
+Du fragst nach, wenn dir etwas fehlt, widersprichst mit konkretem Grund und lässt
+Zustimmung weg, wenn du nichts beizutragen hast. Sprich mich mit Du an.
+Kurze Antworten sind die Regel. Plane nicht ungefragt die ganze Stunde durch, sondern
+frag mich zuerst, wie ich einsteigen will.
+
+Worauf du achtest: Was tun die Schülerinnen und Schüler in jeder Phase? Wechsel der
+Sozialform kostet real 2–3 Minuten. Am Ende soll etwas bleiben, in einer benannten Form.
+Differenzierung richtet sich an die Schnellen und steckt in der Aufgabe, nicht in einer
+eigenen Phase — sie kostet also keine Unterrichtszeit und wird nie aus Zeitmangel
+gestrichen.`;
+
+  const zeit = istSII
+    ? `Sekundarstufe II (Jahrgang ${fp.jahrgang}). Rechne mit ${doppel ? 'etwa 80' : 'etwa 40'} Minuten
+Unterricht; Ankommen und Aufräumen sind keine eigenen Phasen.`
+    : `Sekundarstufe I (Jahrgang ${fp.jahrgang}). ${doppel
+        ? 'Doppelstunde: 80 Minuten Unterricht, aufgeteilt in 2×40 — nach 40 Minuten liegt die Pause, dort muss eine Phase enden.'
+        : 'Einzelstunde: 35 Minuten Unterricht.'}
+Ankommen, Pause und Aufräumen setzt mein Tool selbst — plane sie nicht ein.`;
+
+  // Material: als Liste statt als Datensatz. Der volle Rückgabewert von
+  // readDatenbank war mit 33.000 Zeichen fast der ganze Text — eine Zeile je
+  // Material reicht, um daraus auszuwählen. Nachfragen kann ich selbst.
+  let material = '';
+  try {
+    const dat = JSON.parse(await _pcExecTool('readDatenbank',
+      { thema: stunde.titel || reihe.titel || '' }, fp));
+    const zeilen = [];
+    (dat.quellen || []).forEach(q => {
+      zeilen.push('· ' + q.quelle + (q.typ ? ' [' + q.typ + ']' : '') + ':');
+      (q.materialien || []).forEach(m => {
+        const kurzTxt = (m.abbildung ? '🖼 ' : '')
+          + String(m.beschreibung || m.abbildung || '').replace(/\s+/g, ' ').trim().slice(0, 110);
+        zeilen.push('   – ' + (m.thema || m.kapitel || 'ohne Titel')
+          + (m.seite ? ', S. ' + m.seite : '')
+          + (m.inhaltstyp ? ' (' + m.inhaltstyp + ')' : '')
+          + (kurzTxt ? ' — ' + kurzTxt : ''));
+      });
+    });
+    material = zeilen.length
+      ? 'Material aus meiner Datenbank (' + dat.gesamt + ' Treffer). Plane damit, nicht mit '
+        + 'gedachtem Material; passt nichts, sag es. Frag nach, wenn du zu einem Eintrag mehr '
+        + 'wissen musst — ich kann nachsehen.\n' + zeilen.join('\n')
+      : 'In meiner Materialdatenbank liegt zu diesem Thema nichts (bereits geprüft).';
+    if (dat.hinweis) material += '\n(' + dat.hinweis + ')';
+  } catch (e) {
+    material = '(Material konnte nicht geladen werden.)';
+  }
+
+  // Methoden nur als Liste: Namen, Phase, ob sie erst eingeführt werden muss.
+  // Die vollen Beschreibungen waren fast die Hälfte des Textes.
+  let methoden = '';
+  try {
+    const mm = JSON.parse(await _pcExecTool('readMethoden', {}, fp));
+    const liste = Array.isArray(mm) ? mm : (mm.methoden || []);
+    methoden = liste.map(m => '· ' + m.name
+      + (m.phasen && m.phasen.length ? ' [' + m.phasen.join('/') + ']' : '')
+      + (m.einfuehrung ? ' (muss erst eingeführt werden)' : '')).join('\n');
+  } catch (e) { methoden = ''; }
+
+  // Plan: diese Stunde im Detail, die Nachbarn nur mit Titel
+  const alle = reihe.stunden || [];
+  const pos = alle.findIndex(s => s.id === stunde.id);
+  const kurz = s => (s.titel || 'ohne Titel') + (stundeEinheiten(s) > 1 ? ' (Doppelstunde)' : '');
+  const plan = [
+    'Reihe: „' + (reihe.titel || '') + '"' + (reihe.stundenAnzahl ? ', ' + reihe.stundenAnzahl + ' Stunden' : ''),
+    'Diese Stunde: ' + (pos >= 0 ? (pos + 1) + '. ' : '') + kurz(stunde),
+    stunde.lernziel ? 'Lernziel: ' + stunde.lernziel : '',
+    stunde.notizen ? 'Meine Notizen: ' + stunde.notizen : '',
+    (stunde.material || []).length
+      ? 'Bereits zugeordnet: ' + (stunde.material || []).map(m => m.quelle + (m.teile ? ' (' + m.teile + ')' : '')).join('; ')
+      : '',
+    pos > 0 ? 'Davor: ' + alle.slice(Math.max(0, pos - 2), pos).map(kurz).join(' → ') : '',
+    pos >= 0 && pos < alle.length - 1 ? 'Danach: ' + alle.slice(pos + 1, pos + 3).map(kurz).join(' → ') : ''
+  ].filter(Boolean).join('\n');
+
+  const grundlagen = (fp.grundlagen || '').trim();
+
   const text = [
-    'Wir planen gemeinsam eine Unterrichtsstunde. Unten stehen deine Rolle, die Planungsdaten, '
-    + 'das vorhandene Material und die Methodendatenbank. Werkzeuge (readPlan, readDatenbank, '
-    + 'setPhasen, materialZuordnen usw.) werden im Text erwähnt, stehen hier aber nicht zur '
-    + 'Verfügung — ihre Daten sind unten schon eingefügt.',
+    rolle,
+    '=== ZEITRAHMEN ===\n' + zeit,
+    grundlagen ? '=== MEINE PLANUNGSGRUNDLAGEN (gelten durchgehend) ===\n' + grundlagen : '',
+    '=== DIE STUNDE ===\n' + plan,
+    '=== MATERIAL ===\n' + material,
+    methoden ? '=== METHODEN, DIE MEINE LERNGRUPPE KENNT ODER LERNEN SOLL ===\n' + methoden : '',
     _PC_AUSGABEFORMAT,
-    '=== ROLLE UND REGELN ===', system,
-    '=== PLAN (Reihe und Stunden) ===', plan,
-    '=== METHODEN ===', methoden,
-    '=== START ===', 'Stunde: „' + (context.stunde.titel || '') + '". Frag mich, womit ich einsteigen will.'
-  ].join('\n\n');
+    'Leg los: Frag mich, womit ich einsteigen will.'
+  ].filter(Boolean).join('\n\n');
+
   await navigator.clipboard.writeText(text);
   return text.length;
 }

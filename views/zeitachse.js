@@ -55,11 +55,22 @@ function viewZeitachse(kursId) {
     return count;
   }
 
+  // Gedehnte Stunden: „hat länger gedauert" gilt nur für diesen Kurs. Die
+  // Fachplanung bleibt unberührt — dieselbe Reihe kann in einer Parallelklasse
+  // zügiger laufen. Gespeichert wird je Kurs, wie viele zusätzliche Termine
+  // eine Stunde dort gebraucht hat.
+  if (!S.data.zeitdehnung) S.data.zeitdehnung = {};
+  if (!S.data.zeitdehnung[kursId]) S.data.zeitdehnung[kursId] = {};
+  const dehnung = S.data.zeitdehnung[kursId];
+  const dehnungVon = st => Math.max(0, parseInt(dehnung[st.id]) || 0);
+  const reiheDehnung = r => (r.stunden || []).reduce((s, st) => s + dehnungVon(st), 0);
+
   // Geplant/Ist pro Reihe eines Blocks (roh, ohne Max-Kombination)
   function reihenSegmente(block) {
     return (block.reihen || []).map(r => {
-      const geplant = parseInt(r.stundenAnzahl) || 0;
-      const echte = summeStundenEinheiten(r.stunden);
+      const extra = reiheDehnung(r);
+      const geplant = (parseInt(r.stundenAnzahl) || 0) + extra;
+      const echte = summeStundenEinheiten(r.stunden) + extra;
       return { reihe: r, geplant, echte };
     });
   }
@@ -450,8 +461,11 @@ function viewZeitachse(kursId) {
       if (einheit + e <= sg.skip) { einheit += e; return; }   // schon im Vorjahr gehalten
       einheit += e;
       if (pos >= slots.length) return;
-      belegung.push({ start: pos, span: Math.min(e, slots.length - pos), stunde: st });
-      pos += e;
+      // Gedehnte Stunden belegen zusätzliche Termine dieses Kurses
+      const braucht = e + dehnungVon(st);
+      belegung.push({ start: pos, span: Math.min(braucht, slots.length - pos), stunde: st,
+        extra: dehnungVon(st) });
+      pos += braucht;
     });
 
     const box = mk('div', '');
@@ -531,7 +545,16 @@ function viewZeitachse(kursId) {
           fz.style.cssText = 'font-size:10px;color:var(--tx2);';
           karte.appendChild(fz);
         }
-        karte.title = (b.stunde.titel || '') + (b.span > 1 ? ' (Doppelstunde)' : '') + ' — klicken für Optionen';
+        if (b.extra && ti === 0) {
+          const dz = tx('span', '', ' +' + b.extra);
+          dz.style.cssText = 'font-size:10px;color:var(--tx2);font-weight:700;';
+          dz.title = 'braucht in diesem Kurs ' + b.extra + ' Termin(e) mehr';
+          karte.appendChild(dz);
+        }
+        karte.title = (b.stunde.titel || '')
+          + (b.span - (b.extra || 0) > 1 ? ' (Doppelstunde)' : '')
+          + (b.extra ? ' · in diesem Kurs um ' + b.extra + ' Termin(e) verlängert' : '')
+          + ' — klicken für Optionen';
         karte.onclick = e => { e.stopPropagation(); zeigeStundenMenue(karte, sg, b.stunde); };
         grid.appendChild(karte);
       });
@@ -577,7 +600,10 @@ function viewZeitachse(kursId) {
     };
     menue.appendChild(oeffnen);
 
-    const lbl = tx('div', '', 'Mehr Zeit gebraucht:');
+    const schon = dehnungVon(stunde);
+    const lbl = tx('div', '', schon
+      ? 'Mehr Zeit gebraucht (nur dieser Kurs, bisher +' + schon + '):'
+      : 'Mehr Zeit gebraucht (nur dieser Kurs):');
     lbl.style.cssText = 'margin:6px 0 3px;color:var(--tx2);';
     menue.appendChild(lbl);
     const zeile = mk('div', '');
@@ -588,7 +614,8 @@ function viewZeitachse(kursId) {
     zahl.style.cssText = 'width:44px;padding:1px 4px;font-size:11px;height:22px;';
     const ok = btn('+ Stunden', 'btn btn-pri btn-xs');
     ok.style.cssText += 'padding:2px 8px;font-size:11px;height:22px;';
-    ok.title = 'Legt Fortsetzungsstunden direkt dahinter an; Soll und spätere Blöcke rücken mit.';
+    ok.title = 'Gibt der Stunde in diesem Kurs zusätzliche Termine; spätere Blöcke rücken nach. '
+      + 'Die Fachplanung bleibt unverändert.';
     const ausfuehren = () => {
       const n = parseInt(zahl.value, 10);
       if (!(n >= 1)) { zahl.focus(); return; }
@@ -600,6 +627,13 @@ function viewZeitachse(kursId) {
     zeile.appendChild(zahl); zeile.appendChild(ok);
     menue.appendChild(zeile);
 
+    if (schon) {
+      const weg = btn('↺ Verlängerung zurücknehmen', 'btn btn-ghost btn-xs');
+      weg.style.cssText += 'width:100%;padding:2px 6px;font-size:11px;margin-top:5px;';
+      weg.onclick = () => { schliessen(); mehrZeit(sg, stunde, -schon); };
+      menue.appendChild(weg);
+    }
+
 
     document.body.appendChild(menue);
     setTimeout(() => { zahl.focus(); zahl.select(); }, 0);
@@ -609,11 +643,13 @@ function viewZeitachse(kursId) {
     setTimeout(() => document.addEventListener('mousedown', aussen), 0);
   }
 
+  // „Mehr Zeit gebraucht" ist eine Kursangelegenheit: Die Stunde bekommt in
+  // DIESEM Kurs zusätzliche Termine. In der Fachplanung ändert sich nichts —
+  // keine neuen Stunden, kein größeres Soll —, damit eine Parallelklasse
+  // dieselbe Reihe unverändert vor sich hat.
+  // n < 0 nimmt Termine wieder weg.
   function mehrZeit(sg, stunde, n) {
-    const block = sg.block, reihe = sg.reihe;
-    const liste = reihe.stunden || (reihe.stunden = []);
-    const pos = liste.findIndex(x => x.id === stunde.id);
-    if (pos < 0) return;
+    const block = sg.block;
 
     // Startindizes der späteren Blöcke merken, bevor sich Längen ändern
     const eigenerStart = blockStartIdx(block);
@@ -622,34 +658,13 @@ function viewZeitachse(kursId) {
       .map(b => ({ b, si: blockStartIdx(b) }))
       .filter(x => x.si > eigenerStart);
 
-    // 1) Fortsetzungsstunden direkt hinter der Stunde — passend zum Stundenplan:
-    //    Fallen zwei neue Einheiten auf aufeinanderfolgende Stunden am selben Tag,
-    //    wird daraus eine Doppelstunde, sonst bleiben es Einzelstunden.
-    const einheitenBis = liste.slice(0, pos + 1).reduce((sum, x) => sum + stundeEinheiten(x), 0);
-    const ersterSlot = sg.startIdx + Math.max(0, einheitenBis - sg.skip);
-    const dauern = [];
-    let rest = n, k = 0;
-    while (rest > 0) {
-      const a = stundenGesamt[ersterSlot + k], b = stundenGesamt[ersterSlot + k + 1];
-      const doppel = rest >= 2 && a && b && a.datum === b.datum
-        && parseInt(b.stunde, 10) === parseInt(a.stunde, 10) + 1;
-      dauern.push(doppel ? 90 : 45);
-      rest -= doppel ? 2 : 1; k += doppel ? 2 : 1;
-    }
-    const basis = (stunde.titel || 'Stunde').replace(/\s*\(Fortsetzung[^)]*\)\s*$/, '');
-    const neu = dauern.map((d, i) => {
-      const st = { id: uid(), titel: basis + ' (Fortsetzung' + (dauern.length > 1 ? ' ' + (i + 1) + '/' + dauern.length : '') + ')',
-        dauer: d, material: [], phasen: [], lernziel: '' };
-      if (stunde.einheitId) st.einheitId = stunde.einheitId;
-      return st;
-    });
-    liste.splice(pos + 1, 0, ...neu);
+    const vorher = dehnungVon(stunde);
+    const nachher = Math.max(0, vorher + n);
+    if (nachher === vorher) return;
+    if (nachher) dehnung[stunde.id] = nachher; else delete dehnung[stunde.id];
+    n = nachher - vorher;   // tatsächliche Verschiebung, falls gekappt
 
-    // 2) Soll von Reihe und Block wachsen mit, sofern eingetragen
-    if (parseInt(reihe.stundenAnzahl) > 0) reihe.stundenAnzahl = parseInt(reihe.stundenAnzahl) + n;
-    if (parseInt(block.stundenGesamt) > 0) block.stundenGesamt = parseInt(block.stundenGesamt) + n;
-
-    // 3) Spätere Blöcke dieses Kurses um n Termine nach hinten
+    // Spätere Blöcke dieses Kurses um n Termine nach hinten (bzw. nach vorn)
     spaeter.forEach(({ b, si }) => {
       if (si < 0) return;
       const ziel = stundenGesamt[Math.min(si + n, stundenGesamt.length - 1)];

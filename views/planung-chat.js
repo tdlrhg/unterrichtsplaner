@@ -1605,6 +1605,11 @@ So arbeitest du:
 - Änderungen schreibst du erst, wenn ihr euch einig seid: updateStunde für Lernziel,
   Methode und Notizen, setPhasen für den Phasenverlauf.
 
+- Legst du mit createStunde eine Stunde nach, landet sie ohne weitere Angabe hinten
+  in der Reihe. Gehört sie an eine andere Stelle, gib nachStundeId mit — die ID der
+  Stunde, hinter der sie stehen soll, oder „ANFANG" für die erste Position.
+  Umsortieren kannst du nachträglich nicht.
+
 - Hat sie eine Entscheidung getroffen, respektiere sie. Widersprich nur, wenn du
   einen konkreten Grund nennen kannst — nicht aus Prinzip.
 
@@ -1705,6 +1710,10 @@ genau dann wieder auf, wenn sie beantwortbar ist.
 
 Weiteres Vorgehen:
 - Erstelle keine Duplikate. Prüfe mit readPlan, was schon da ist.
+- Achte auf die Reihenfolge: createStunde hängt die Stunde ohne weitere Angabe
+  hinten an. Gehört sie woanders hin, gib nachStundeId mit — die ID der Stunde,
+  hinter der sie stehen soll, oder „ANFANG" für die erste Position. Eine Stunde
+  nachträglich umzusortieren geht nicht, also gleich richtig einsortieren.
 - Änderungen an bestehenden Stunden schreibst du mit updateStunde, wenn ihr euch
   einig seid. Was noch offen ist, gehört in notizen — das sieht sie im Stunden-Editor.
 - Phasen und Feinplanung gehören nicht hierher. Hier geht es um Stundenthemen,

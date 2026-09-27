@@ -136,6 +136,14 @@ function viewKursDetail(kursId) {
     return Math.max(0, (p && parseInt(p.versatz)) || 0);
   }
 
+  // Verlängerungen aus der Zeitachse („hat länger gedauert"): Sie gelten nur
+  // für diesen Kurs, kosten hier aber echte Unterrichtszeit und zählen darum
+  // zum Geplant. Die Fachplanung selbst kennt sie nicht.
+  const kursDehnung = ((S.data.zeitdehnung || {})[kursId]) || {};
+  const dehnungVon = st => Math.max(0, parseInt(kursDehnung[st.id]) || 0);
+  const dehnungListe = liste => (liste || []).reduce((s, st) => s + dehnungVon(st), 0);
+  const dehnungBlock = block => (block.reihen || []).reduce((s, r) => s + dehnungListe(r.stunden), 0);
+
   // Soll-Stunden aus den Blöcken dieses Kurses
   let sollGesamt = 0;
   kursBloecke.forEach(b => {
@@ -236,7 +244,8 @@ function viewKursDetail(kursId) {
       // Bereits im Vorjahr gehaltene Stunden zählen hier weder als Soll noch als geplant
       const vs = blockVersatzKurs(block);
       const soll = Math.max(0, blockSoll(block) - vs);
-      const geplant = Math.max(0, (block.reihen || []).reduce((s,r) => s + summeStundenEinheiten(r.stunden), 0) - vs);
+      const geplant = Math.max(0, (block.reihen || []).reduce((s,r) => s + summeStundenEinheiten(r.stunden), 0)
+        + dehnungBlock(block) - vs);
       const offen = soll > 0 ? soll - geplant : null;
       sumSoll += soll; sumGeplant += geplant;
 
@@ -253,11 +262,12 @@ function viewKursDetail(kursId) {
       // Reihen-Zeilen (initial versteckt)
       const reiheRows = [];
       (block.reihen || []).forEach(reihe => {
-        const rgeplant = summeStundenEinheiten(reihe.stunden);
+        const rdehnung = dehnungListe(reihe.stunden);
+        const rgeplant = summeStundenEinheiten(reihe.stunden) + rdehnung;
         const rsoll = parseInt(reihe.stundenAnzahl) || 0;
         const roffen = rsoll > 0 ? rsoll - rgeplant : null;
         const reiheRow = tblRow([
-          { text: '▶ ' + reihe.titel, indent: 24 },
+          { text: '▶ ' + reihe.titel + (rdehnung ? ' · +' + rdehnung + ' verlängert' : ''), indent: 24 },
           { text: rsoll || '–', align: 'right', color: rsoll ? undefined : 'var(--tx3)' },
           { text: rgeplant, align: 'right' },
           { text: roffen !== null ? roffen : '–', align: 'right', color: offenColor(roffen), bold: roffen !== null && roffen !== 0 }
@@ -279,7 +289,7 @@ function viewKursDetail(kursId) {
         });
 
         function buildEinheitRow(titel, stundenListe) {
-          const egeplant = summeStundenEinheiten(stundenListe);
+          const egeplant = summeStundenEinheiten(stundenListe) + dehnungListe(stundenListe);
           const einheitRow = tblRow([
             { text: titel, indent: 48, color: 'var(--tx2)' },
             { text: '–', align: 'right', color: 'var(--tx3)' },
@@ -297,10 +307,12 @@ function viewKursDetail(kursId) {
             // Die Nummer sagt die Dauer bereits („2.–3."), ein zusätzliches
             // „(2x)" wäre doppelt gemoppelt.
             const nummer = stundenNummern[stunde.id] || (si2 + 1) + '.';
+            const sdehnung = dehnungVon(stunde);
             const stundeRow = tblRow([
-              { text: icon + ' ' + nummer + ' ' + (stunde.titel||'(ohne Titel)'), indent: 72, color: 'var(--tx3)' },
+              { text: icon + ' ' + nummer + ' ' + (stunde.titel||'(ohne Titel)')
+                  + (sdehnung ? ' · +' + sdehnung + ' verlängert' : ''), indent: 72, color: 'var(--tx3)' },
               { text: '–', align: 'right', color: 'var(--tx3)' },
-              { text: String(stundeEinheiten(stunde)), align: 'right', color: 'var(--tx3)' },
+              { text: String(stundeEinheiten(stunde) + sdehnung), align: 'right', color: 'var(--tx3)' },
               { text: '–', align: 'right', color: 'var(--tx3)' }
             ], { bg: '#f0f0f0' });
             stundeRow.style.display = 'none';

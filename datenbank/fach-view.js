@@ -1,3 +1,95 @@
+// ── Filter der aktuellen Ansicht als Abfrage-Parameter ────────────
+// Von der Tabelle und vom Chat-Export genutzt, damit beide dasselbe sehen.
+function dbAktuelleFilter(f) {
+  var filters = { fach: f.key };
+  if (DB.quelle_typ)    filters.quelle_typ    = DB.quelle_typ;
+  if (DB.quelle_name)   filters.quelle_name   = DB.quelle_name;
+  if (DB.operator)      filters.operator      = DB.operator;
+  if (DB.schwierigkeit) filters.schwierigkeit = DB.schwierigkeit;
+  if (DB.niveau)        filters.niveau        = DB.niveau;
+  if (DB.umfang)        filters.umfang        = DB.umfang;
+  var rawParams = [];
+  if (DB.jahrgang) {
+    var jg = DB.jahrgang, jgOr;
+    if (jg === 'SII') {
+      // SII-Einträge werden als 11, 12, 13 gespeichert
+      jgOr = '(jahrgang.eq.11,jahrgang.like.11/*,jahrgang.like.11-*'
+           + ',jahrgang.eq.12,jahrgang.like.12/*,jahrgang.like.*/12'
+           + ',jahrgang.eq.13,jahrgang.like.*/13'
+           + ',jahrgang.eq.SII,jahrgang.like.SII/*)';
+    } else {
+      jgOr = '(jahrgang.eq.' + jg
+           + ',jahrgang.like.' + jg + '/*'
+           + ',jahrgang.like.' + jg + '-*'
+           + ',jahrgang.like.*/' + jg
+           + ',jahrgang.like.*/' + jg + '/*)';
+    }
+    rawParams.push('or=' + encodeURIComponent(jgOr));
+  }
+  if (DB.kapitel)       filters.kapitel       = DB.kapitel;
+  if (DB.uk_titel)      filters.uk_titel      = DB.uk_titel;
+  if (DB.inhaltstyp)    filters.inhaltstyp    = DB.inhaltstyp;
+  if (DB.seite != null) filters.seite         = DB.seite;
+  return { filters: filters, rawParams: rawParams };
+}
+
+// Die gefilterten Materialien als Liste in die Zwischenablage — eine Zeile
+// je Material, nach Quelle gruppiert. Gedacht fürs Projektwissen im Chat:
+// dort steht dann der Bestand, ohne dass er pro Stunde mitgeschickt wird.
+async function dbChatExport(f) {
+  var fl = dbAktuelleFilter(f);
+  var rows = await sbSelect('inhalte', {
+    fts: DB.suchtext || null,
+    filters: fl.filters,
+    nullFilters: [],
+    rawParams: fl.rawParams,
+    limit: 3000,
+    offset: 0,
+    order: 'quelle_name,seite',
+  });
+  rows = (rows || []).filter(function(r) {
+    return r.inhaltstyp !== 'lehrerkommentar' && r.inhaltstyp !== 'loesung';
+  });
+  if (!rows.length) throw new Error('Keine Einträge im aktuellen Filter.');
+
+  var nachQuelle = {};
+  var reihenfolge = [];
+  rows.forEach(function(r) {
+    var q = r.quelle_name || 'ohne Quelle';
+    if (!nachQuelle[q]) { nachQuelle[q] = []; reihenfolge.push(q); }
+    nachQuelle[q].push(r);
+  });
+
+  var kopf = ['Mein vorhandenes Material' + (f.label ? ' in ' + f.label : '')];
+  var beschr = [];
+  if (DB.jahrgang)   beschr.push('Jahrgang ' + DB.jahrgang);
+  if (DB.kapitel)    beschr.push(DB.kapitel);
+  if (DB.uk_titel)   beschr.push(DB.uk_titel);
+  if (DB.inhaltstyp) beschr.push(TYP_LABELS[DB.inhaltstyp] || DB.inhaltstyp);
+  if (DB.suchtext)   beschr.push('Suche „' + DB.suchtext + '"');
+  if (beschr.length) kopf.push('(' + beschr.join(', ') + ')');
+  var zeilen = [kopf.join(' ') + ' — ' + rows.length + ' Einträge.',
+    'Plane mit diesen Materialien; erfinde keine anderen. Frag nach, wenn du zu einem',
+    'Eintrag mehr wissen musst — ich kann in der Datenbank nachsehen.', ''];
+
+  reihenfolge.forEach(function(q) {
+    zeilen.push('· ' + q + ':');
+    nachQuelle[q].forEach(function(r) {
+      var txt = (r.abbildung ? '🖼 ' : '')
+        + String(r.beschreibung || r.aufgabenstellung || r.inhalt || '')
+          .replace(/\s+/g, ' ').trim().slice(0, 110);
+      zeilen.push('   – ' + (r.thema || r.kapitel || 'ohne Titel')
+        + (r.seite != null ? ', S. ' + r.seite : '')
+        + (r.nr ? ' Nr. ' + r.nr : '')
+        + (r.inhaltstyp ? ' (' + (TYP_LABELS[r.inhaltstyp] || r.inhaltstyp) + ')' : '')
+        + (txt ? ' — ' + txt : ''));
+    });
+  });
+
+  await navigator.clipboard.writeText(zeilen.join('\n'));
+  return rows.length;
+}
+
 // ── Fach-Ansicht ──────────────────────────────────────────────────
 // fach-sel.js    — Multi-Select State + Fingerprint + Delete
 // fach-table.js  — buildTableHead + reorderRowCells
@@ -20,6 +112,25 @@ async function buildFachView(container) {
   const neuBtn = btn('+ Neu', 'btn btn-sm');
   neuBtn.style.cssText = 'flex-shrink:0;';
   hdr.appendChild(neuBtn);
+
+  // Was gerade gefiltert ist, als Liste in die Zwischenablage — gedacht für
+  // das Projektwissen eines Chats, damit dort der Materialbestand steht.
+  const chatBtn = btn('📎 Für Chat-Projekt', 'btn btn-ghost btn-sm');
+  chatBtn.style.cssText = 'flex-shrink:0;font-size:11px;';
+  chatBtn.title = 'Die gerade gefilterten Materialien als Liste kopieren';
+  chatBtn.onclick = async function() {
+    const alt = chatBtn.textContent;
+    chatBtn.textContent = '…';
+    try {
+      const anzahl = await dbChatExport(f, chatBtn);
+      chatBtn.textContent = '✓ ' + anzahl + ' kopiert';
+      setTimeout(function() { chatBtn.textContent = alt; }, 2500);
+    } catch (e) {
+      chatBtn.textContent = alt;
+      alert('Export fehlgeschlagen: ' + e.message);
+    }
+  };
+  hdr.appendChild(chatBtn);
   container.appendChild(hdr);
 
   // ── Suche (wird in Filterleiste eingebaut) ────────────────────
@@ -149,36 +260,9 @@ async function buildFachView(container) {
     try {
     var _savedScroll = (opts && opts.keepScroll) ? container.scrollTop : null;
     wrap.innerHTML = '<div style="padding:20px;color:var(--tx3);text-align:center">⏳ Lädt…</div>';
-    const filters = { fach: f.key };
-    if (DB.quelle_typ)    filters.quelle_typ    = DB.quelle_typ;
-    if (DB.quelle_name)   filters.quelle_name   = DB.quelle_name;
-    if (DB.operator)      filters.operator      = DB.operator;
-    if (DB.schwierigkeit) filters.schwierigkeit = DB.schwierigkeit;
-    if (DB.niveau)        filters.niveau        = DB.niveau;
-    if (DB.umfang)        filters.umfang        = DB.umfang;
-    var rawParams = [];
-    if (DB.jahrgang) {
-      var jg = DB.jahrgang;
-      var jgOr;
-      if (jg === 'SII') {
-        // SII-Einträge werden als 11, 12, 13 gespeichert
-        jgOr = '(jahrgang.eq.11,jahrgang.like.11/*,jahrgang.like.11-*'
-             + ',jahrgang.eq.12,jahrgang.like.12/*,jahrgang.like.*/12'
-             + ',jahrgang.eq.13,jahrgang.like.*/13'
-             + ',jahrgang.eq.SII,jahrgang.like.SII/*)';
-      } else {
-        jgOr = '(jahrgang.eq.' + jg
-             + ',jahrgang.like.' + jg + '/*'
-             + ',jahrgang.like.' + jg + '-*'
-             + ',jahrgang.like.*/' + jg
-             + ',jahrgang.like.*/' + jg + '/*)';
-      }
-      rawParams.push('or=' + encodeURIComponent(jgOr));
-    }
-    if (DB.kapitel) filters.kapitel = DB.kapitel;
-    if (DB.uk_titel)      filters.uk_titel      = DB.uk_titel;
-    if (DB.inhaltstyp)    filters.inhaltstyp    = DB.inhaltstyp;
-    if (DB.seite != null) filters.seite         = DB.seite;
+    const _fl = dbAktuelleFilter(f);
+    const filters = _fl.filters;
+    var rawParams = _fl.rawParams;
 
     // Sortier-Reihenfolge aufbauen
     var orderStr;

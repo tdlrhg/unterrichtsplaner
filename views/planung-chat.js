@@ -1510,15 +1510,81 @@ async function _pcErgebnisPerKI(text) {
 
 // Notbehelf: Prompt und Plandaten als Text, ohne KI-Aufruf. Die Werkzeuge
 // gibt es im externen Chat nicht — deshalb liegen ihre Ergebnisse gleich bei.
-async function _pcKontextKopieren(fp, context) {
-  const { reihe, stunde } = context;
+// Kleines Menü am 📋: einmalig das Projektwissen, danach pro Stunde nur noch
+// das Wechselnde. Wer kein Projekt angelegt hat, nimmt „alles zusammen".
+function _pcKopierMenue(anker, fp, context) {
+  document.querySelectorAll('.pc-kopiermenue').forEach(m => m.remove());
+  const r = anker.getBoundingClientRect();
+  const menue = mk('div', 'pc-kopiermenue');
+  menue.style.cssText = 'position:fixed;z-index:1000;width:232px;background:var(--surf);'
+    + 'border:1px solid var(--bord);border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.14);'
+    + 'padding:6px;font-size:11px;line-height:1.35;'
+    + 'left:' + Math.min(r.left - 150, window.innerWidth - 244) + 'px;top:' + (r.bottom + 4) + 'px;';
+
+  function eintrag(titel, erklaerung, bauen) {
+    const b = btn(titel, 'btn btn-ghost btn-xs');
+    b.style.cssText += 'width:100%;text-align:left;padding:4px 6px;font-size:11px;';
+    const sub = tx('div', '', erklaerung);
+    sub.style.cssText = 'color:var(--tx3);font-size:10px;padding:0 6px 5px;';
+    b.onclick = async () => {
+      b.textContent = '…';
+      try {
+        const text = await bauen();
+        await navigator.clipboard.writeText(text);
+        schliessen();
+        anker.textContent = '✓';
+        anker.title = 'Kopiert (' + Math.round(text.length / 1000) + 'k Zeichen)';
+        setTimeout(() => { anker.textContent = '📋'; }, 2500);
+      } catch (err) {
+        schliessen();
+        alert('Kopieren fehlgeschlagen: ' + err.message);
+      }
+    };
+    menue.appendChild(b);
+    menue.appendChild(sub);
+  }
+
+  eintrag('📎 Projektwissen', 'Einmalig ins Chat-Projekt: Rolle, Zeitmarken, Grundlagen, Methoden, Format.',
+    () => _pcProjektwissen(fp));
+  eintrag('📋 Nur diese Stunde', 'Für ein Projekt, in dem das Projektwissen schon hinterlegt ist.',
+    () => _pcKontextKopieren(fp, context, false));
+  eintrag('📋 Alles zusammen', 'Ohne Projekt: Regeln und Stunde in einem Text.',
+    () => _pcKontextKopieren(fp, context, true));
+
+  document.body.appendChild(menue);
+  function aussen(e) { if (!menue.contains(e.target)) schliessen(); }
+  function schliessen() { menue.remove(); document.removeEventListener('mousedown', aussen); }
+  setTimeout(() => document.addEventListener('mousedown', aussen), 0);
+}
+
+// Der Teil, der sich pro Fach fast nie ändert — gedacht als Projektwissen im
+// Chat. Muss dann nicht mit jeder Stunde erneut mitgeschickt werden.
+async function _pcProjektwissen(fp) {
   const fachName = PC_FACH[fp.fach] || fp.fach;
   const istSII = _pcIstSII(fp);
-  const doppel = (parseInt(stunde.dauer) || 45) >= 90;
+  const rolle = _pcRolle(fachName);
+  const zeit = istSII
+    ? `Sekundarstufe II (Jahrgang ${fp.jahrgang}): etwa 40 Minuten Unterricht in der Einzelstunde,
+etwa 80 in der Doppelstunde. Ankommen und Aufräumen sind keine eigenen Phasen.`
+    : `Sekundarstufe I (Jahrgang ${fp.jahrgang}): Einzelstunde 35 Minuten Unterricht,
+Doppelstunde 80 Minuten, aufgeteilt in 2×40 — nach 40 Minuten liegt die Pause, dort muss
+eine Phase enden. Ankommen, Pause und Aufräumen setzt mein Tool selbst; plane sie nicht ein.`;
+  const grundlagen = (fp.grundlagen || '').trim();
+  const methoden = await _pcMethodenListe(fp);
 
-  // Rolle knapp halten: Der Chat kann Didaktik. Hier steht nur, was er nicht
-  // wissen kann — Lerngruppe, Zeitmarken, Bestand, Haltung der Lehrerin.
-  const rolle = `Du bist erfahrene Fachleiterin für ${fachName} und planst mit mir, einer erfahrenen
+  return [
+    rolle,
+    '=== ZEITRAHMEN ===\n' + zeit,
+    grundlagen ? '=== MEINE PLANUNGSGRUNDLAGEN (gelten durchgehend) ===\n' + grundlagen : '',
+    methoden ? '=== METHODEN, DIE MEINE LERNGRUPPE KENNT ODER LERNEN SOLL ===\n' + methoden : '',
+    _PC_AUSGABEFORMAT
+  ].filter(Boolean).join('\n\n');
+}
+
+// Rolle knapp halten: Der Chat kann Didaktik. Hier steht nur, was er nicht
+// wissen kann — Lerngruppe, Zeitmarken, Bestand, Haltung der Lehrerin.
+function _pcRolle(fachName) {
+  return `Du bist erfahrene Fachleiterin für ${fachName} und planst mit mir, einer erfahrenen
 Kollegin am NRW-Gymnasium, eine einzelne Unterrichtsstunde. Wir arbeiten auf Augenhöhe:
 Du fragst nach, wenn dir etwas fehlt, widersprichst mit konkretem Grund und lässt
 Zustimmung weg, wenn du nichts beizutragen hast. Sprich mich mit Du an.
@@ -1530,6 +1596,28 @@ Sozialform kostet real 2–3 Minuten. Am Ende soll etwas bleiben, in einer benan
 Differenzierung richtet sich an die Schnellen und steckt in der Aufgabe, nicht in einer
 eigenen Phase — sie kostet also keine Unterrichtszeit und wird nie aus Zeitmangel
 gestrichen.`;
+}
+
+// Methoden nur als Liste: Namen, Phase, ob sie erst eingeführt werden muss.
+async function _pcMethodenListe(fp) {
+  try {
+    const mm = JSON.parse(await _pcExecTool('readMethoden', {}, fp));
+    const liste = Array.isArray(mm) ? mm : (mm.methoden || []);
+    return liste.map(m => '· ' + m.name
+      + (m.phasen && m.phasen.length ? ' [' + m.phasen.join('/') + ']' : '')
+      + (m.einfuehrung ? ' (muss erst eingeführt werden)' : '')).join('\n');
+  } catch (e) { return ''; }
+}
+
+// Der wechselnde Teil: diese eine Stunde samt Material.
+// mitProjektwissen = false, wenn Rolle und Regeln schon im Projekt stehen.
+async function _pcKontextKopieren(fp, context, mitProjektwissen) {
+  const { reihe, stunde } = context;
+  const fachName = PC_FACH[fp.fach] || fp.fach;
+  const istSII = _pcIstSII(fp);
+  const doppel = (parseInt(stunde.dauer) || 45) >= 90;
+
+  const rolle = _pcRolle(fachName);
 
   const zeit = istSII
     ? `Sekundarstufe II (Jahrgang ${fp.jahrgang}). Rechne mit ${doppel ? 'etwa 80' : 'etwa 40'} Minuten
@@ -1568,16 +1656,7 @@ Ankommen, Pause und Aufräumen setzt mein Tool selbst — plane sie nicht ein.`;
     material = '(Material konnte nicht geladen werden.)';
   }
 
-  // Methoden nur als Liste: Namen, Phase, ob sie erst eingeführt werden muss.
-  // Die vollen Beschreibungen waren fast die Hälfte des Textes.
-  let methoden = '';
-  try {
-    const mm = JSON.parse(await _pcExecTool('readMethoden', {}, fp));
-    const liste = Array.isArray(mm) ? mm : (mm.methoden || []);
-    methoden = liste.map(m => '· ' + m.name
-      + (m.phasen && m.phasen.length ? ' [' + m.phasen.join('/') + ']' : '')
-      + (m.einfuehrung ? ' (muss erst eingeführt werden)' : '')).join('\n');
-  } catch (e) { methoden = ''; }
+  const methoden = mitProjektwissen ? await _pcMethodenListe(fp) : '';
 
   // Plan: diese Stunde im Detail, die Nachbarn nur mit Titel
   const alle = reihe.stunden || [];
@@ -1597,19 +1676,22 @@ Ankommen, Pause und Aufräumen setzt mein Tool selbst — plane sie nicht ein.`;
 
   const grundlagen = (fp.grundlagen || '').trim();
 
-  const text = [
+  const text = (mitProjektwissen ? [
     rolle,
     '=== ZEITRAHMEN ===\n' + zeit,
     grundlagen ? '=== MEINE PLANUNGSGRUNDLAGEN (gelten durchgehend) ===\n' + grundlagen : '',
     '=== DIE STUNDE ===\n' + plan,
     '=== MATERIAL ===\n' + material,
     methoden ? '=== METHODEN, DIE MEINE LERNGRUPPE KENNT ODER LERNEN SOLL ===\n' + methoden : '',
-    _PC_AUSGABEFORMAT,
-    'Leg los: Frag mich, womit ich einsteigen will.'
-  ].filter(Boolean).join('\n\n');
+    _PC_AUSGABEFORMAT
+  ] : [
+    // Rolle, Regeln, Methoden und Ausgabeformat stehen im Projektwissen
+    '=== DIE STUNDE ===\n' + plan,
+    'Zeitrahmen dieser Stunde: ' + zeit,
+    '=== MATERIAL ===\n' + material
+  ]).concat('Leg los: Frag mich, womit ich einsteigen will.').filter(Boolean).join('\n\n');
 
-  await navigator.clipboard.writeText(text);
-  return text.length;
+  return text;
 }
 
 // Baut Werkzeuge und System-Prompt für den Chat. Auch vom Notbehelf
@@ -2312,18 +2394,10 @@ function buildEinheitChat(fp, block, reihe, einheit, stunde) {
   // Zwischenablage — zum Einfügen in einen normalen Claude-Chat.
   if (stunde) {
     const kopie = btn('📋', 'btn btn-ghost btn-xs pc-kopie');
-    kopie.title = 'Notbehelf: Kontext für einen externen Chat kopieren (kein KI-Aufruf)';
-    kopie.onclick = async (e) => {
+    kopie.title = 'Für einen externen Chat kopieren (kein KI-Aufruf)';
+    kopie.onclick = (e) => {
       e.stopPropagation();
-      kopie.textContent = '…';
-      try {
-        const n = await _pcKontextKopieren(fp, { block, reihe, einheit: einheit || { id: null, titel: reihe.titel }, stunde });
-        kopie.textContent = '✓';
-        kopie.title = 'Kopiert (' + Math.round(n / 1000) + 'k Zeichen) — in einen Claude-Chat einfügen';
-      } catch (err) {
-        kopie.textContent = '📋';
-        alert('Kopieren fehlgeschlagen: ' + err.message);
-      }
+      _pcKopierMenue(kopie, fp, { block, reihe, einheit: einheit || { id: null, titel: reihe.titel }, stunde });
     };
     hdr.appendChild(kopie);
 

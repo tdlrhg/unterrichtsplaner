@@ -1756,7 +1756,7 @@ async function _pcSend(fp, context, text) {
       // Block-Chat planen Struktur und bleiben, wo sie waren.
       const resp = await callKIAgent({ messages: _pcApi, tools, system,
         model:     einheit ? KI_MODEL_OPUS : KI_MODEL_SONNET,
-        maxTokens: einheit ? 16000 : 8192,
+        maxTokens: 16000,   // Sonnet 5 denkt adaptiv mit, das zaehlt in max_tokens
         label:     einheit ? 'planungs-agent-fein' : 'planungs-agent',
         signal: _pcAbort.signal });
       _pcAbort = null;

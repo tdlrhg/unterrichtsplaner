@@ -2,7 +2,10 @@
 // Alle KI-Aufrufe im Unterrichtsplaner laufen über diese Funktion,
 // damit Modellwahl, Header und Fehlerbehandlung einheitlich bleiben.
 
-const KI_MODEL_SONNET = 'claude-sonnet-4-6';
+// Sonnet 5 ist die aktuelle Generation und kostet weniger als Sonnet 4.6
+// ($2/$10 statt $3/$15 je Million Token). Ohne thinking-Parameter denkt es
+// adaptiv mit; die Denk-Token zaehlen in max_tokens hinein, darum dort Luft.
+const KI_MODEL_SONNET = 'claude-sonnet-5';
 const KI_MODEL_HAIKU  = 'claude-haiku-4-5';
 // Fuer die Feinplanung: aktuelle Generation. Wird kein thinking-Parameter
 // gesendet, denkt Opus 5 von sich aus adaptiv mit — anders als Sonnet 4.6,
@@ -89,7 +92,13 @@ async function callKI(prompt, { model = KI_MODEL_SONNET, maxTokens = 1024, label
       'anthropic-dangerous-direct-browser-access': 'true',
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ model, max_tokens: maxTokens, messages: [{ role: 'user', content }] }),
+    // Einzelaufrufe sind Extraktion und Formulierung, kein Abwaegen. Sonnet 5
+    // wuerde ohne diese Angabe adaptiv mitdenken, und die Denk-Token zaehlen
+    // in max_tokens — bei den knappen Budgets hier (800, 1400) waere die
+    // Antwort dann abgeschnitten. Andere Modelle kennen den Wert nicht.
+    body: JSON.stringify(Object.assign(
+      { model, max_tokens: maxTokens, messages: [{ role: 'user', content }] },
+      model === 'claude-sonnet-5' ? { thinking: { type: 'disabled' } } : {})),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

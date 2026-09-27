@@ -290,11 +290,17 @@ function docParse(src) {
         });
         var kopf = null;
         if (zellen[1] && zellen[1].every(function (c) { return /^:?-{2,}:?$/.test(c); })) { kopf = zellen[0]; zellen.splice(0, 2); }
-        pushBlock(ziel(), {
+        var tabelle = {
           t: 'tabelle',
           kopf: kopf ? kopf.map(docInline) : null,
           zeilen: zellen.map(function (r) { return r.map(docInline); })
-        });
+        };
+        // Tabellenbeschriftung: direkt (ohne Leerzeile) folgende Zeile,
+        // die mit ":" beginnt, z.B. ": Tab. 1: Beschreibungstext".
+        var nachTabelle = lines[i + 1];
+        var capM = nachTabelle && nachTabelle.trim().match(/^:\s*(.+)$/);
+        if (capM) { tabelle.unterschrift = docInline(capM[1].trim()); i++; }
+        pushBlock(ziel(), tabelle);
         continue;
       }
     }

@@ -408,6 +408,7 @@
 .dv-tabelle { width: 100%; border-collapse: collapse; font-size: .95em; }
 .dv-tabelle th, .dv-tabelle td { border: .5pt solid #a8a29e; padding: 1.4mm 2mm; text-align: left; vertical-align: top; }
 .dv-tabelle th { background: #f5f2ed; font-weight: 700; }
+.dv-tabelle-unterschrift { font-size: .82em; font-style: italic; color: var(--tx2); margin-top: 1.5mm; }
 
 /* Bilder */
 .dv-bild { margin-bottom: var(--dv-abs); }

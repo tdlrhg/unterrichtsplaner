@@ -118,6 +118,11 @@ function dvBlockRoh(b, v) {
       tb.appendChild(tr);
     });
     t.appendChild(tb); wrap.appendChild(t);
+    if (b.unterschrift) {
+      var tuc = mk('div', 'dv-tabelle-unterschrift');
+      tuc.innerHTML = b.unterschrift;
+      wrap.appendChild(tuc);
+    }
     return wrap;
   }
 

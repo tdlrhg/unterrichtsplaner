@@ -377,11 +377,48 @@ function dvZoomAnpassen() {
 }
 
 // ── Datei importieren ────────────────────────────────────────────
+
+// readAsText liefert fuer eine PDF keinen Fehler, sondern Zeichensalat.
+// Der landete bisher ungeprueft im Editor — und weil er im localStorage
+// liegen bleibt, war die Seite auch nach dem Neuladen blockiert: die
+// Vorschau arbeitet sich an hunderten Seiten Muell ab, bis nichts mehr
+// reagiert. Zwei billige Merkmale reichen zur Erkennung: der PDF-Kopf,
+// und der Anteil an Steuer- und Ersatzzeichen, den utf-8 beim Lesen von
+// Binaerdaten erzeugt.
+function dvIstUnlesbar(text) {
+  if (!text) return false;
+  if (text.lastIndexOf('%PDF-', 0) === 0) return true;
+  var probe = text.slice(0, 4000);
+  var seltsam = (probe.match(/[\u0000-\u0008\u000E-\u001F\uFFFD]/g) || []).length;
+  return seltsam > probe.length * 0.02;
+}
+
 function dvDateiLaden(file) {
   if (!file) return;
+
+  // Zuerst am Dateinamen pruefen, damit die Meldung das Format benennen
+  // kann. Das accept-Attribut der Dateiauswahl reicht nicht: iPadOS
+  // ignoriert es und laesst jede Datei zur Auswahl zu.
+  var name = (file.name || '').toLowerCase();
+  if (!/\.(md|markdown|txt|text)$/.test(name)) {
+    var endung = (name.match(/\.([a-z0-9]+)$/) || [])[1];
+    alert('Hier lassen sich nur Textdateien laden (.md, .markdown, .txt).'
+      + (endung ? '\n\n„' + file.name + '" ist eine ' + endung.toUpperCase() + '-Datei.' : '')
+      + (endung === 'pdf' ? '\n\nPDFs wertet die Datenbank-Seite aus, nicht diese hier.' : ''));
+    return;
+  }
+
+  // Wie bei "Neu" und "Beispiel laden": nicht ungefragt ueberschreiben.
+  if (DV.quelle.trim() && !confirm('Der aktuelle Inhalt wird durch „' + file.name + '" ersetzt.\n\nFortfahren?')) return;
+
   var r = new FileReader();
   r.onload = function () {
-    DV.quelle = dvBilderAusTextAuslagern(String(r.result || ''));
+    var text = String(r.result || '');
+    if (dvIstUnlesbar(text)) {
+      alert('„' + file.name + '" enthaelt keinen lesbaren Text und wurde nicht uebernommen.');
+      return;
+    }
+    DV.quelle = dvBilderAusTextAuslagern(text);
     var ta = document.getElementById('dv-ta');
     if (ta) ta.value = DV.quelle;
     localStorage.setItem('dv_quelle', DV.quelle);
@@ -1074,8 +1111,32 @@ async function dvCheckVersion() {
 
 // ── Init ─────────────────────────────────────────────────────────
 (async function () {
+  // Notausgang: dokument.html?reset leert nur das Textfeld und laesst alles
+  // andere stehen — Zugangsschluessel, Vorlagen, Einstellungen. Gedacht fuer
+  // den Fall, dass ein untauglicher Inhalt die Seite so ausbremst, dass das
+  // Datei-Menue nicht mehr erreichbar ist.
+  if (/[?&]reset(=|&|$)/.test(location.search)) {
+    localStorage.removeItem('dv_quelle');
+    localStorage.removeItem('dv_bilder');
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+  }
+
   DV.quelle = localStorage.getItem('dv_quelle');
   if (DV.quelle == null) DV.quelle = DV_DEMO;
+
+  // Zweite Sicherung, fuer Inhalte die vor dieser Pruefung hereinkamen:
+  // was kein Text ist, wird gar nicht erst dargestellt. Sonst ist die Seite
+  // bei jedem Oeffnen aufs Neue blockiert, ohne Weg zurueck.
+  if (dvIstUnlesbar(DV.quelle)) {
+    DV.quelle = '';
+    localStorage.setItem('dv_quelle', '');
+    localStorage.setItem('dv_bilder', '{}');
+    setTimeout(function () {
+      alert('Der zuletzt geladene Inhalt war keine Textdatei und liess sich nicht darstellen.\n\n'
+        + 'Das Textfeld wurde geleert. Gespeicherte Dokumente sind nicht betroffen — '
+        + 'sie stehen weiter unter 📁 Datei.');
+    }, 600);
+  }
   try { DV.bilder = JSON.parse(localStorage.getItem('dv_bilder')) || {}; } catch (e) { DV.bilder = {}; }
   // Bestehende Dokumente aus der Zeit vor der Bild-ID-Trennung migrieren:
   // eingebettete Data-URLs im Text nach DV.bilder auslagern.

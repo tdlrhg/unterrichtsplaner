@@ -74,6 +74,8 @@ function docParse(src) {
   var teilNr = 0;
   var materialNr = 0;
   var wartendeSpalten = null; // von "::: spalten …" gesetzt, wirkt auf die direkt folgende Tabelle
+  var wartendeBreite  = null; // Breite der Tabelle selbst, in Prozent der Textbreite
+  var wartendePos     = null; // links | mitte | rechts – nur sinnvoll bei schmaler Tabelle
 
   // Aktuelle Quellzeile (1-indiziert), wird jede Schleifen-Iteration unten
   // aktualisiert – pushBlock() markiert damit jeden Block mit der Zeile
@@ -118,12 +120,21 @@ function docParse(src) {
       var opt = docOpts(fence[2]);
 
       if (name === 'spalten') {
-        // Setzt die Spaltenbreiten (Prozent, eine Zahl pro Spalte) der
-        // direkt folgenden Tabelle, z.B. "::: spalten 30 70". Kein
-        // eigener Block – wird beim nächsten Tabellenblock verbraucht.
-        wartendeSpalten = fence[2].trim().split(/\s+/).map(function (s) {
+        // Zwei unabhaengige Angaben, beide optional:
+        //   blosse Zahlen  → Spaltenverteilung, eine je Spalte, in Prozent
+        //   breite=45      → Breite der TABELLE in Prozent der Textbreite
+        //   pos=mitte      → Ausrichtung einer schmaleren Tabelle
+        // Ohne breite= bleibt es bei voller Breite, wie bisher; die
+        // Spaltenprozente verteilen dann nur innerhalb dieser Breite.
+        // Kein eigener Block – wird von der naechsten Tabelle verbraucht.
+        var felder = fence[2].trim().split(/\s+/).filter(Boolean);
+        var zahlen = felder.filter(function (s) { return s.indexOf('=') === -1; });
+        wartendeSpalten = zahlen.length ? zahlen.map(function (s) {
           var n = parseInt(s, 10); return isNaN(n) ? null : n;
-        });
+        }) : null;
+        var bz = parseInt(opt.breite || opt.b, 10);
+        wartendeBreite = isNaN(bz) ? null : Math.max(5, Math.min(100, bz));
+        wartendePos = /^(links|mitte|rechts)$/.test(opt.pos || '') ? opt.pos : null;
         continue;
       }
       if (name === 'linien' || name === 'zeilen') {
@@ -304,9 +315,11 @@ function docParse(src) {
           t: 'tabelle',
           kopf: kopf ? kopf.map(docInline) : null,
           zeilen: zellen.map(function (r) { return r.map(docInline); }),
-          spalten: wartendeSpalten
+          spalten: wartendeSpalten,
+          breite: wartendeBreite,
+          pos: wartendePos
         };
-        wartendeSpalten = null;
+        wartendeSpalten = null; wartendeBreite = null; wartendePos = null;
         // Tabellenbeschriftung: direkt (ohne Leerzeile) folgende Zeile,
         // die mit ":" beginnt, z.B. ": Tab. 1: Beschreibungstext".
         var nachTabelle = lines[i + 1];

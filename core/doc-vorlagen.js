@@ -84,7 +84,9 @@ function dvApplyVorlage(el, v) {
   if (v.seite.rahmen) {
     var rahmenStaerkeMm = (v.seite.rahmenStaerke || 1.2) * 0.3528;
     randMinTitel = (v.seite.rahmenAbstand || 8) + rahmenStaerkeMm;
-    randMinInhalt = randMinTitel + (v.seite.rahmenInnenabstand || 0);
+    // Fehlt der Wert (ältere gespeicherte Vorlagen), gilt der Standard 3 mm –
+    // sonst klebt der Text direkt am Rahmen. Ein bewusst gesetztes 0 bleibt 0.
+    randMinInhalt = randMinTitel + (v.seite.rahmenInnenabstand != null ? v.seite.rahmenInnenabstand : 3);
   }
   s.setProperty('--dv-rand-o', Math.max(r.oben, randMinInhalt) + 'mm');
   s.setProperty('--dv-rand-u', Math.max(r.unten, randMinInhalt) + 'mm');

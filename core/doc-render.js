@@ -108,9 +108,18 @@ function dvBlockRoh(b, v) {
     if (b.spalten) {
       var colgroup = mk('colgroup', '');
       var spaltenzahl = (b.kopf || b.zeilen[0] || []).length;
+      // Zahlen = Prozent der Seitenbreite. Sind für alle Spalten Werte
+      // angegeben, wird die Tabelle nur so breit wie deren Summe (z.B.
+      // "15 35" → halbe Seitenbreite); <col>-Prozente beziehen sich auf die
+      // Tabelle selbst, daher auf die Summe umgerechnet.
+      var alleGesetzt = spaltenzahl > 0, summe = 0;
+      for (var si = 0; si < spaltenzahl; si++) {
+        if (b.spalten[si]) summe += b.spalten[si]; else alleGesetzt = false;
+      }
+      if (alleGesetzt) t.style.width = Math.min(summe, 100) + '%';
       for (var ci = 0; ci < spaltenzahl; ci++) {
         var col = document.createElement('col');
-        if (b.spalten[ci]) col.style.width = b.spalten[ci] + '%';
+        if (b.spalten[ci]) col.style.width = (alleGesetzt ? b.spalten[ci] / summe * 100 : b.spalten[ci]) + '%';
         colgroup.appendChild(col);
       }
       t.appendChild(colgroup);

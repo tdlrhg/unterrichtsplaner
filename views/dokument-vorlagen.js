@@ -89,6 +89,10 @@ var DV_FELDER = [
   { pfad: 'kasten.rahmen',   label: 'Rahmen', typ: 'check', halb: true },
   { pfad: 'kasten.fuellung', label: 'Füllfarbe', typ: 'farbe', halb: true },
 
+  { gruppe: 'Tabelle', hinweis: 'Füllung der Tabellenzellen (z.B. Weiß, damit das Kästchenpapier nicht durchscheint). Die Kopfzeile behält ihr Hellgrau.' },
+  { pfad: 'tabelle.fuellen',  label: 'Zellen füllen', typ: 'check', halb: true },
+  { pfad: 'tabelle.fuellung', label: 'Füllfarbe', typ: 'farbe', halb: true, von: 'tabelle.fuellen' },
+
   { gruppe: 'Punkte-Spalte', hinweis: 'Durchlaufende Spalte am rechten Rand statt Punkte im Text' },
   { pfad: 'punkteSpalte.zeigen',     label: 'Punkte-Spalte anzeigen', typ: 'check', halb: true },
   { pfad: 'punkteSpalte.breite',     label: 'Breite',                typ: 'zahl', min: 10, max: 40, schritt: 1, einheit: 'mm', halb: true, von: 'punkteSpalte.zeigen' },

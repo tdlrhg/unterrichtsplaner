@@ -141,6 +141,7 @@ function dvApplyVorlage(el, v) {
   s.setProperty('--dv-teil-einzug', v.teil.einzug + 'mm');
   s.setProperty('--dv-teil-aussenrand', (v.teil.aussenrand || 0) + 'mm');
   s.setProperty('--dv-kasten-bg', v.kasten.fuellung);
+  s.setProperty('--dv-tabelle-bg', (v.tabelle && v.tabelle.fuellen) ? (v.tabelle.fuellung || '#ffffff') : 'transparent');
   s.setProperty('--dv-kasten-rahmen', v.kasten.rahmen ? '1px solid #cfc8bd' : 'none');
 }
 

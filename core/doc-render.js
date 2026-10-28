@@ -105,6 +105,14 @@ function dvBlockRoh(b, v) {
   if (b.t === 'tabelle') {
     var wrap = mk('div', 'dv-tabelle-wrap');
     var t = mk('table', 'dv-tabelle');
+    // Ohne Angabe bleibt die Tabelle seitenbreit (Vorgabe aus dokument.css).
+    // Eine kleine Tabelle ueber die ganze Breite zu ziehen sieht verloren aus –
+    // daher laesst sich die Breite setzen und die schmalere Tabelle ausrichten.
+    if (b.breite) {
+      t.style.width = b.breite + '%';
+      if (b.pos === 'mitte')       { t.style.marginLeft = 'auto'; t.style.marginRight = 'auto'; }
+      else if (b.pos === 'rechts') { t.style.marginLeft = 'auto'; }
+    }
     if (b.spalten) {
       var colgroup = mk('colgroup', '');
       var spaltenzahl = (b.kopf || b.zeilen[0] || []).length;

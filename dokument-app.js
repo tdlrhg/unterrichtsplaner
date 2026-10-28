@@ -75,9 +75,23 @@ Ein Grundstück hat die unten skizzierte Form. Es soll neu eingezäunt und mit R
 // ── Vorschau neu aufbauen ────────────────────────────────────────
 // Ersetzt Bild-IDs im geparsten Baum durch die tatsächliche Data-URL aus
 // DV.bilder. Im Text steht nur die kurze ID (siehe dvBildEinfuegen).
+// Bilder in Tabellenzellen/Absätzen: docInline() setzt nur data-bild="id",
+// hier wird daraus das echte src (Data-URL aus DV.bilder).
+function dvZellbilderAufloesen(html) {
+  return String(html).replace(/data-bild="([^"]+)"/g, function (m, id) {
+    return DV.bilder[id] != null ? 'src="' + DV.bilder[id] + '"' : m;
+  });
+}
+
 function dvBilderInBlocksAufloesen(blocks) {
   (blocks || []).forEach(function (b) {
     if (b.t === 'bild' && DV.bilder[b.src] != null) b.src = DV.bilder[b.src];
+    if (b.t === 'tabelle') {
+      var ersetze = function (html) { return dvZellbilderAufloesen(html); };
+      if (b.kopf) b.kopf = b.kopf.map(ersetze);
+      b.zeilen = b.zeilen.map(function (r) { return r.map(ersetze); });
+    }
+    if (b.t === 'p') b.html = dvZellbilderAufloesen(b.html);
     if (b.kinder) dvBilderInBlocksAufloesen(b.kinder);
   });
 }
@@ -494,6 +508,8 @@ async function dvBildEinfuegen(file, cursorPos) {
 
 // ── Bilder-Panel: Breite/Ausrichtung per Auswahlfeld statt Text-Fummelei ──
 // Muss zum Bild-Muster in core/doc-parser.js passen (dort die Referenz).
+// Bild mitten in einer Tabellenzeile (Zelle): ![Alt](id) oder ![Alt](id 40%)
+var DV_INLINE_BILD = /!\[([^\]]*)\]\(([^)\s]+)((?:\s+\d+%)?)\)/g;
 var DV_BILD_MUSTER = /^!\[([^\]]*)\]\(([^)\s]+)(?:\s+(\d+)%)?(?:\s+(links|mitte|rechts))?(?:\s+"([^"]*)")?\)$/;
 
 function dvBildNeueId() {
@@ -511,6 +527,14 @@ function dvBildNeueId() {
 function dvBilderAusTextAuslagern(text) {
   return text.split('\n').map(function (zeile) {
     var m = zeile.match(DV_BILD_MUSTER);
+    if (!m && zeile.indexOf('|') !== -1) {
+      return zeile.replace(DV_INLINE_BILD, function (all, alt, src, breite) {
+        if (src.indexOf('data:') !== 0) return all;
+        var nid = dvBildNeueId();
+        DV.bilder[nid] = src;
+        return '![' + alt + '](' + nid + breite + ')';
+      });
+    }
     if (!m || m[2].indexOf('data:') !== 0) return zeile;
     var id = dvBildNeueId();
     DV.bilder[id] = m[2];
@@ -525,6 +549,11 @@ function dvBilderAusTextAuslagern(text) {
 function dvBilderInTextEinbetten(text) {
   return text.split('\n').map(function (zeile) {
     var m = zeile.match(DV_BILD_MUSTER);
+    if (!m && zeile.indexOf('|') !== -1) {
+      return zeile.replace(DV_INLINE_BILD, function (all, alt, src, breite) {
+        return DV.bilder[src] ? '![' + alt + '](' + DV.bilder[src] + breite + ')' : all;
+      });
+    }
     if (!m || !DV.bilder[m[2]]) return zeile;
     return dvBildZeileBauen(m[1], DV.bilder[m[2]], m[3] ? parseInt(m[3], 10) : null, m[4] || 'mitte', m[5] || null);
   }).join('\n');
@@ -821,9 +850,10 @@ function dvRenderApp() {
   bar.appendChild(buildAppNav('dok'));
   var right = mk('div', 'topbar-right');
   if (DV.version) {
-    var d = new Date(DV.version);
-    var vs = tx('span', 'topbar-version', d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-      + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' ✓');
+    var vs = tx('span', 'topbar-version', dvVersionText());
+    vs.title = DV.versionStatus === 'deploying'
+      ? 'Eine neuere Version wird gerade ausgerollt — die Seite lädt sich dann von selbst neu.'
+      : 'Aktueller Stand. Klicken zum Neu laden.';
     vs.style.cursor = 'pointer';
     vs.onclick = function () { location.reload(true); };
     right.appendChild(vs);
@@ -1096,17 +1126,55 @@ function dvRenderApp() {
 }
 
 // ── Version ──────────────────────────────────────────────────────
+// Wie im Planer: Das ✓ heißt „du hast den ausgelieferten Stand", ⏳ heißt
+// „es liegt eine neuere Version vor, die GitHub noch ausrollt". Ohne diese
+// Unterscheidung sieht ein veralteter Stand nach einem aktuellen aus, und
+// harte Reloads bringen in den ein bis zwei Minuten Rollout nichts.
+var _dvGhDate = null;
+var _dvStart = Date.now();
+
+function dvVersionText() {
+  if (!DV.version) return '';
+  var d = new Date(DV.version);
+  return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+    + (DV.versionStatus === 'deploying' ? ' ⏳' : (DV.versionStatus === 'current' ? ' ✓' : ''));
+}
+
 async function dvCheckVersion() {
-  var v = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).catch(function () { return null; });
-  if (v && v.built !== DV.version) {
-    DV.version = v.built;
-    var el = document.querySelector('.topbar-version');
-    if (el) {
-      var d = new Date(v.built);
-      el.textContent = d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-        + ' ' + d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) + ' ✓';
-    }
+  if (_dvGhDate === null) {
+    _dvGhDate = await fetch('https://api.github.com/repos/tdlrhg/unterrichtsplaner/commits/main',
+      { headers: { 'Accept': 'application/vnd.github.v3+json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (gh) { return (gh && gh.commit && gh.commit.committer && gh.commit.committer.date) || false; })
+      .catch(function () { return false; });
   }
+  var v = await fetch('version.json?_=' + Date.now(), { cache: 'no-store' })
+    .then(function (r) { return r.json(); }).catch(function () { return null; });
+  if (!v || !v.built) return;
+
+  var vorher = DV.versionStatus;
+  DV.version = v.built;
+  if (_dvGhDate) {
+    DV.versionStatus = (new Date(_dvGhDate) - new Date(v.built)) <= 10000 ? 'current' : 'deploying';
+  }
+
+  // Ist der Rollout durch, die Seite selbst neu laden. Der Text im Editor
+  // liegt im localStorage und übersteht das.
+  if (vorher === 'deploying' && DV.versionStatus === 'current' && Date.now() - _dvStart > 10000) {
+    location.reload(true);
+    return;
+  }
+
+  var el = document.querySelector('.topbar-version');
+  if (el) {
+    el.textContent = dvVersionText();
+    el.title = DV.versionStatus === 'deploying'
+      ? 'Eine neuere Version wird gerade ausgerollt — die Seite lädt sich dann von selbst neu.'
+      : 'Aktueller Stand. Klicken zum Neu laden.';
+  }
+
+  if (DV.versionStatus === 'deploying') setTimeout(dvCheckVersion, 30000);
 }
 
 // ── Init ─────────────────────────────────────────────────────────

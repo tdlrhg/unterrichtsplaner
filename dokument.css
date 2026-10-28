@@ -417,6 +417,7 @@
 .dv-bild-links { text-align: left; float: left; margin: 0 5mm 3mm 0; }
 .dv-bild-rechts { text-align: right; float: right; margin: 0 0 3mm 5mm; }
 .dv-bild img { max-width: 100%; }
+.dv-zellbild { max-width: 100%; vertical-align: middle; }
 .dv-bild-links img, .dv-bild-rechts img { width: 100%; }
 .dv-bild-unterschrift { font-size: .82em; font-style: italic; color: var(--tx2); text-align: left; margin-top: 1.5mm; }
 

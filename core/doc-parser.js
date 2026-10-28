@@ -11,6 +11,13 @@ function docEsc(s) {
 // ── Inline-Auszeichnung ──────────────────────────────────────────
 function docInline(s) {
   var h = docEsc(s);
+  // Bild im Fließtext/in Tabellenzellen: ![Alt](id) oder ![Alt](id 40%).
+  // Die Bild-ID wird erst in dokument-app.js (dvBilderInBlocksAufloesen)
+  // durch die echte Data-URL ersetzt, daher hier nur data-bild.
+  h = h.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+(\d+)%)?\)/g, function (m, alt, id, breite) {
+    return '<img class="dv-zellbild" alt="' + alt + '" data-bild="' + id + '"' +
+      (breite ? ' style="width:' + breite + '%"' : '') + '>';
+  });
   // Bruch: {Zähler/Nenner} → gestapelte Darstellung mit Bruchstrich (siehe
   // .dv-bruch in dokument.css). Vor den anderen Regeln, damit z.B. * in
   // Zähler/Nenner (kaum vorkommend) nicht versehentlich als Kursiv gilt.

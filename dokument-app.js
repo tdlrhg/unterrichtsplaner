@@ -12,6 +12,7 @@ var DV = {
   seiten: 0,
   warnungen: [],
   version: null,
+  versionStatus: null, // 'current' = ausgelieferter Stand, 'deploying' = Rollout läuft
   dokumentId: null // id des in "Meine Dokumente" gespeicherten Dokuments (null = noch nicht/neu)
 };
 
@@ -1141,6 +1142,27 @@ function dvVersionText() {
     + (DV.versionStatus === 'deploying' ? ' ⏳' : (DV.versionStatus === 'current' ? ' ✓' : ''));
 }
 
+function dvNeuLaden() { location.reload(true); }
+
+// Die Anzeige wird nachgetragen: Beim ersten Zeichnen ist die Version noch
+// nicht geladen, und bisher entstand das Feld deshalb gar nicht erst.
+function dvVersionAnzeigen() {
+  if (!DV.version) return;
+  var el = document.querySelector('.topbar-version');
+  if (!el) {
+    var rechts = document.querySelector('.topbar-right');
+    if (!rechts) return;
+    el = tx('span', 'topbar-version', '');
+    el.style.cursor = 'pointer';
+    el.onclick = function () { location.reload(true); };
+    rechts.appendChild(el);
+  }
+  el.textContent = dvVersionText();
+  el.title = DV.versionStatus === 'deploying'
+    ? 'Eine neuere Version wird gerade ausgerollt — die Seite lädt sich dann von selbst neu.'
+    : 'Aktueller Stand. Klicken zum Neu laden.';
+}
+
 async function dvCheckVersion() {
   if (_dvGhDate === null) {
     _dvGhDate = await fetch('https://api.github.com/repos/tdlrhg/unterrichtsplaner/commits/main',
@@ -1162,17 +1184,11 @@ async function dvCheckVersion() {
   // Ist der Rollout durch, die Seite selbst neu laden. Der Text im Editor
   // liegt im localStorage und übersteht das.
   if (vorher === 'deploying' && DV.versionStatus === 'current' && Date.now() - _dvStart > 10000) {
-    location.reload(true);
+    dvNeuLaden();
     return;
   }
 
-  var el = document.querySelector('.topbar-version');
-  if (el) {
-    el.textContent = dvVersionText();
-    el.title = DV.versionStatus === 'deploying'
-      ? 'Eine neuere Version wird gerade ausgerollt — die Seite lädt sich dann von selbst neu.'
-      : 'Aktueller Stand. Klicken zum Neu laden.';
-  }
+  dvVersionAnzeigen();
 
   if (DV.versionStatus === 'deploying') setTimeout(dvCheckVersion, 30000);
 }

@@ -304,6 +304,10 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
       reserve.style.height = reserveHoehe + 'px';
       reserve.style.margin = '0';
       abody.appendChild(reserve);
+      // Der Abstand zur nächsten Aufgabe (margin-bottom) kommt sonst obendrauf:
+      // Box + Abstand statt nur der größere von beiden. Deshalb um die schon
+      // vorhandene Reserve verkleinern (nie unter 0).
+      n.style.marginBottom = Math.max(0, (v.aufgabe.abstand || 0) * DV_PX_PRO_MM - reserveHoehe) + 'px';
     });
   }
 

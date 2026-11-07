@@ -33,7 +33,11 @@ function docInline(s) {
   // Zeilenumbruch: \ erzeugt an genau dieser Stelle einen <br> (auch mitten
   // im Text oder in Überschriften – nicht nur am Zeilenende).
   h = h.replace(/\s*\\\s*/g, '<br>');
-  h = h.replace(/_{3,}/g, '<span class="dv-luecke"></span>');
+  // Lücke: Länge folgt der Zahl der Unterstriche (3 = Grundbreite, jeder
+  // weitere Unterstrich macht sie 3,5 mm länger).
+  h = h.replace(/_{3,}/g, function (m) {
+    return '<span class="dv-luecke" style="min-width:' + (28 + (m.length - 3) * 3.5) + 'mm"></span>';
+  });
   return h;
 }
 

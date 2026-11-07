@@ -187,7 +187,8 @@ function dvPunkteSpalteFuellen(seiten, v, aufgabenSummen) {
     zellen.forEach(function (el) {
       var zelle = mk('div', 'dv-punkte-zelle');
       zelle.style.top = el.offsetTop + 'px';
-      zelle.style.height = Math.max(el.offsetHeight, 1) + 'px';
+      var res0 = el.querySelector('.dv-box-reserve');
+      zelle.style.height = Math.max(el.offsetHeight - (res0 ? res0.offsetHeight : 0), 1) + 'px';
       zelle.appendChild(tx('span', '', '/' + dvZahl(el.getAttribute('data-punkte'))));
       spalte.appendChild(zelle);
     });
@@ -211,26 +212,12 @@ function dvPunkteSpalteFuellen(seiten, v, aufgabenSummen) {
     var content = f.seite.querySelector('.dv-content');
     if (!spalte || !content) return;
     var box = mk('div', 'dv-punkte-gesamt');
-    var boxTop = f.el.offsetTop + f.el.offsetHeight;
+    var res1 = f.el.querySelector('.dv-box-reserve');
+    var boxTop = f.el.offsetTop + f.el.offsetHeight - (res1 ? res1.offsetHeight : 0);
     box.style.top = boxTop + 'px';
     box.appendChild(tx('div', 'dv-punkte-gesamt-label', 'Aufgabe ' + nr));
     box.appendChild(tx('div', 'dv-punkte-gesamt-wert', '/' + dvZahl(summe)));
     spalte.appendChild(box);
-
-    // Falls im Hauptinhalt direkt danach schon der nächste Block beginnt
-    // (z.B. die nächste Aufgabe), bevor die Gesamtbox in der Punkte-Spalte
-    // fertig ist, dessen Abstand nach oben vergrößern – sonst wirkt es so,
-    // als würde die nächste Aufgabe schon anfangen, während die Box der
-    // vorherigen noch nicht zu Ende ist. Direkt auf den gewünschten
-    // Gesamtabstand setzen (nicht addieren!): angrenzende vertikale Margins
-    // kollabieren in CSS zum GRÖSSEREN der beiden statt sich zu summieren,
-    // daher reicht max(bisheriger Abstand, Boxhöhe) als neuer marginTop.
-    var naechstes = f.el.nextElementSibling;
-    if (naechstes) {
-      var bisherigerAbstand = naechstes.offsetTop - boxTop;
-      var benoetigterAbstand = Math.max(bisherigerAbstand, box.offsetHeight + 4 * DV_PX_PRO_MM);
-      if (benoetigterAbstand > bisherigerAbstand) naechstes.style.marginTop = benoetigterAbstand + 'px';
-    }
   });
 }
 
@@ -289,6 +276,37 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
 
   neueSeite();
 
+  // Platz für die Gesamtbox ("AUFGABE 2 /5") in der Punkte-Spalte
+  // einplanen: Die Box hängt unter dem Ende der Aufgabe und braucht dort
+  // Höhe. Wird das erst nach der Seitenaufteilung geregelt, ragt sie am
+  // Seitenende aus der Seite oder schiebt die nächste Aufgabe samt Kopf aus
+  // dem sichtbaren Bereich. Deshalb hängt am Ende jeder Aufgabe ein
+  // unsichtbarer Leerraum in Boxhöhe, mit dem die Aufteilung rechnet.
+  if (punkteAn && v.punkteSpalte.gesamtbox) {
+    var messSeite = mk('div', 'dv-page');
+    container.appendChild(messSeite);
+    var messSpalte = mk('div', 'dv-punkte-spalte');
+    messSpalte.style.top = '0';
+    messSeite.appendChild(messSpalte);
+    var messBox = mk('div', 'dv-punkte-gesamt');
+    messBox.appendChild(tx('div', 'dv-punkte-gesamt-label', 'Aufgabe 1'));
+    messBox.appendChild(tx('div', 'dv-punkte-gesamt-wert', '/10'));
+    messSpalte.appendChild(messBox);
+    var reserveHoehe = messBox.offsetHeight + 4 * DV_PX_PRO_MM;
+    messSeite.remove();
+    nodes.forEach(function (n) {
+      if (!n.classList || !n.classList.contains('dv-aufgabe')) return;
+      var nr = n.getAttribute('data-aufgabe-nr');
+      if (!aufgabenSummen || aufgabenSummen[nr] == null) return;
+      var abody = n.querySelector(':scope > .dv-aufgabe-body');
+      if (!abody) return;
+      var reserve = mk('div', 'dv-raster dv-box-reserve');
+      reserve.style.height = reserveHoehe + 'px';
+      reserve.style.margin = '0';
+      abody.appendChild(reserve);
+    });
+  }
+
   var queue = nodes.slice();
   var schutz = 0;
 
@@ -338,6 +356,8 @@ function docPaginate(container, nodes, v, meta, aufgabenSummen, titelblock) {
     if (!autoBloecke.length) return;
     var letzterBlock = autoBloecke[autoBloecke.length - 1];
     var verfuegbar = content.clientHeight - letzterBlock.offsetTop;
+    var reserveDanach = content.querySelector('.dv-box-reserve');
+    if (reserveDanach && (letzterBlock.compareDocumentPosition(reserveDanach) & 4)) verfuegbar -= reserveDanach.offsetHeight;
     if (verfuegbar > letzterBlock.offsetHeight) letzterBlock.style.height = verfuegbar + 'px';
   });
 

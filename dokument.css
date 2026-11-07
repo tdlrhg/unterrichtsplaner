@@ -202,7 +202,7 @@
   text-align: center; padding: 1.8mm 0;
 }
 .dv-punkte-gesamt-label { font-size: 7.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: .3pt; }
-.dv-punkte-gesamt-wert { font-size: 1.35em; font-weight: 800; margin-top: .5mm; }
+.dv-punkte-gesamt-wert { font-size: 1.9em; font-weight: 800; margin-top: .5mm; }
 
 /* Große Seitenzahl */
 .dv-sz-gross {

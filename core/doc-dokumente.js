@@ -77,7 +77,7 @@ async function dvDokumentLaden(id) {
   DV.dokumentId = doc.id;
   DV.quelle = dvBilderAusTextAuslagern(doc.quelle || '');
   localStorage.setItem('dv_quelle', DV.quelle);
-  localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder));
+  dvBilderSpeichern();
   if (doc.vorlageId && DV_VORLAGEN.some(function (v) { return v.id === doc.vorlageId; })) {
     DV.vorlageId = doc.vorlageId;
     localStorage.setItem('dv_vorlage', DV.vorlageId);

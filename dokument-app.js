@@ -73,9 +73,19 @@ Ein Grundstück hat die unten skizzierte Form. Es soll neu eingezäunt und mit R
 ::: linien n=4
 `;
 
-// ── Vorschau neu aufbauen ────────────────────────────────────────
-// Ersetzt Bild-IDs im geparsten Baum durch die tatsächliche Data-URL aus
-// DV.bilder. Im Text steht nur die kurze ID (siehe dvBildEinfuegen).
+// Bilder im Browser-Speicher ablegen. localStorage hat nur ca. 5 MB – wird es
+// voll, schlug das Speichern still fehl und Bilder ließen sich nicht mehr
+// einfügen. Dann zuerst nicht (mehr) im Text verwendete Bilder entfernen und
+// erneut versuchen.
+function dvBilderSpeichern(behalte) {
+  try { localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder)); return; } catch (e) {}
+  Object.keys(DV.bilder).forEach(function (id) {
+    if (id !== behalte && DV.quelle.indexOf('](' + id + ')') < 0 && DV.quelle.indexOf('](' + id + ' ') < 0) delete DV.bilder[id];
+  });
+  try { localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder)); }
+  catch (e) { alert('Der Browser-Speicher ist voll – die Bilder konnten nicht zwischengespeichert werden. Bitte das Dokument über 📁 Datei speichern und ein paar große Bilder entfernen.'); }
+}
+
 // Bilder in Tabellenzellen/Absätzen: docInline() setzt nur data-bild="id",
 // hier wird daraus das echte src (Data-URL aus DV.bilder).
 function dvZellbilderAufloesen(html) {
@@ -84,6 +94,9 @@ function dvZellbilderAufloesen(html) {
   });
 }
 
+// ── Vorschau neu aufbauen ────────────────────────────────────────
+// Ersetzt Bild-IDs im geparsten Baum durch die tatsächliche Data-URL aus
+// DV.bilder. Im Text steht nur die kurze ID (siehe dvBildEinfuegen).
 function dvBilderInBlocksAufloesen(blocks) {
   (blocks || []).forEach(function (b) {
     if (b.t === 'bild' && DV.bilder[b.src] != null) b.src = DV.bilder[b.src];
@@ -437,7 +450,7 @@ function dvDateiLaden(file) {
     var ta = document.getElementById('dv-ta');
     if (ta) ta.value = DV.quelle;
     localStorage.setItem('dv_quelle', DV.quelle);
-    localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder));
+    dvBilderSpeichern();
     dvUpdate();
   };
   r.readAsText(file, 'utf-8');
@@ -489,7 +502,7 @@ async function dvBildEinfuegen(file, cursorPos) {
   var alt = file.name.replace(/\.[^.]+$/, '');
   var id = dvBildNeueId();
   DV.bilder[id] = dataUrl;
-  localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder));
+  dvBilderSpeichern(id);
   var markdown = '![' + alt + '](' + id + ')\n';
   var vorher = DV.quelle.slice(0, pos);
   var nachher = DV.quelle.slice(pos);
@@ -651,7 +664,7 @@ function dvBildAusDokumentEntfernen(src) {
   var ta = document.getElementById('dv-ta');
   if (ta) ta.value = DV.quelle;
   localStorage.setItem('dv_quelle', DV.quelle);
-  localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder));
+  dvBilderSpeichern();
   dvUpdate();
 }
 
@@ -813,7 +826,7 @@ function dvBilderPanelAktualisieren() {
         schneidenBtn.textContent = vorherText;
         if (fehler) { alert(fehler); return; }
         DV.bilder[b.src] = neuerSrc;
-        localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder));
+        dvBilderSpeichern();
         dvUpdate();
       });
     };
@@ -1228,7 +1241,7 @@ async function dvCheckVersion() {
   DV.quelle = dvBilderAusTextAuslagern(DV.quelle);
   if (DV.quelle !== quelleVorher) {
     localStorage.setItem('dv_quelle', DV.quelle);
-    localStorage.setItem('dv_bilder', JSON.stringify(DV.bilder));
+    dvBilderSpeichern();
   }
 
   dvVorlagenCacheLaden(); // sofort verfügbar, ohne auf das Netz zu warten

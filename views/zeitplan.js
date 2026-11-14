@@ -480,13 +480,14 @@ function viewZeitplan(kursId) {
     if (z.datum < heute) zeile.classList.add('zp-vorbei');
     if (z.datum === letzterTag) zeile.classList.add('zp-folge');
     letzterTag = z.datum;
-    if (z.stunden.length >= 2 && z.typ !== 'tagfrei') zeile.classList.add('zp-doppel');
+    // Auch entfallende Doppelstunden bleiben als Doppelstunde erkennbar
+    if (z.stunden.length >= 2) zeile.classList.add('zp-doppel');
 
     const strip = mk('div', 'zp-strip');
     if (farbe) strip.style.background = farbe;
     zeile.appendChild(strip);
     zeile.appendChild(tx('div', 'zp-datum', z.tag + ' ' + zpKurzDatum(z.datum)));
-    zeile.appendChild(tx('div', 'zp-std', z.typ === 'tagfrei' ? '' : z.stunden.join('./') + '.'));
+    zeile.appendChild(tx('div', 'zp-std', z.stunden.join('./') + '.'));
 
     const inhalt = mk('div', 'zp-inhalt');
     const akt = mk('div', 'zp-akt');

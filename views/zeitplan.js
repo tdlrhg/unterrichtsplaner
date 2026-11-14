@@ -75,7 +75,7 @@ function zeitplanDaten(kursId) {
       const basis = { datum: ds, tag, kw, year };
 
       if (heuteSlots.length && feiertage.includes(ds)) {
-        roh.push(Object.assign({ typ: 'tagfrei', grund: 'Feiertag', stunden: heuteSlots.map(x => x.stunde) }, basis));
+        roh.push(Object.assign({ typ: 'tagfrei', feiertag: true, grund: 'Feiertag', stunden: heuteSlots.map(x => x.stunde) }, basis));
       } else if (heuteSlots.length && ausfalltage.includes(ds)) {
         roh.push(Object.assign({ typ: 'tagfrei', grund: tagGruende[ds] || 'unterrichtsfrei', stunden: heuteSlots.map(x => x.stunde) }, basis));
       } else {
@@ -496,6 +496,18 @@ function viewZeitplan(kursId) {
 
     if (z.typ === 'tagfrei') {
       inhalt.appendChild(tx('div', 'zp-leise', 'entfällt · ' + z.grund));
+      // Ein schulweit freier Tag steht im Kalender und gilt für alle Kurse —
+      // zurücknehmen heißt deshalb: den Tag dort streichen. Feiertage bleiben.
+      if (!z.feiertag) {
+        akt.appendChild(aktKnopf('↺ findet statt', 'Freien Tag zurücknehmen (gilt für alle Kurse)', () => {
+          if (!confirm('Der ' + zpKurzDatum(z.datum) + ' ist als unterrichtsfreier Tag für ALLE Kurse eingetragen'
+            + (z.grund ? ' („' + z.grund + '")' : '') + '.\n\nEintrag streichen? Dann findet an dem Tag in allen Kursen wieder Unterricht statt.')) return;
+          const k = kal();
+          k.ausfalltage = (k.ausfalltage || []).filter(t => t !== z.datum);
+          if (k.ausfalltageGruende) delete k.ausfalltageGruende[z.datum];
+          fertig();
+        }));
+      }
     } else if (z.typ === 'ausfall') {
       inhalt.appendChild(tx('div', 'zp-titel zp-durch', 'Ausfall' + (z.grund ? ' · ' + z.grund : '')));
       akt.appendChild(aktKnopf('↺ findet statt', 'Ausfall zurücknehmen', () => ausfallZurueck(z)));

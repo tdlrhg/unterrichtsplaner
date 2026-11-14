@@ -250,29 +250,6 @@ function modalHandlerPlanung(type, data, m) {
     return true;
   }
 
-  if (type === 'blockOptionen') {
-    const { block, fpId, kursId } = data;
-    m.appendChild(tx('div', 'modal-title', block.titel));
-    const optGrid = mk('div', '');
-    optGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px;';
-    const optA = mk('div', '');
-    optA.style.cssText = 'padding:16px;border:2px solid var(--bord);border-radius:8px;cursor:pointer;text-align:center;transition:all .15s;';
-    optA.innerHTML = '<div style="font-size:24px">📘</div><div style="font-weight:700;margin-top:6px;">Zur Fachplanung</div>';
-    optA.onmouseenter = () => { optA.style.borderColor='var(--pri)'; optA.style.background='#eff6ff'; };
-    optA.onmouseleave = () => { optA.style.borderColor='var(--bord)'; optA.style.background=''; };
-    optA.onclick = () => { S.aktFpId=fpId; S.view='fachplanung'; S.sel={type:'block',ids:[fpId,block.id]}; S.modal=null; render(); };
-    const optB = mk('div', '');
-    optB.style.cssText = 'padding:16px;border:2px solid var(--bord);border-radius:8px;cursor:pointer;text-align:center;transition:all .15s;';
-    optB.innerHTML = '<div style="font-size:24px">✕</div><div style="font-weight:700;margin-top:6px;">Platzierung aufheben</div>';
-    optB.onmouseenter = () => { optB.style.borderColor='var(--red)'; optB.style.background='#fff5f5'; };
-    optB.onmouseleave = () => { optB.style.borderColor='var(--bord)'; optB.style.background=''; };
-    optB.onclick = () => { if(!S.data.zeitplanung[kursId])S.data.zeitplanung[kursId]={}; delete S.data.zeitplanung[kursId][block.id]; S.modal=null; scheduleSave(); render(); };
-    optGrid.appendChild(optA); optGrid.appendChild(optB);
-    m.appendChild(optGrid);
-    const footer = mk('div', 'modal-footer'); footer.appendChild(cancelBtn()); m.appendChild(footer);
-    return true;
-  }
-
   if (type === 'moveStunde') {
     const { fpId, blockId, reiheId, stundeId } = data;
     const fp = getFachplanung(fpId);

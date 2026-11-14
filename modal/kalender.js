@@ -224,49 +224,6 @@ function modalHandlerKalender(type, data, m) {
     return true;
   }
 
-  if (type === 'waehlStartstunde') {
-    const { kursId, blockId, woche } = data;
-    const kurs = (S.data.kurse||[]).find(k=>k.id===kursId);
-    const fp = getFachplanung(kurs&&kurs.fachplanungId);
-    const block = fp&&(fp.blocks||[]).find(b=>b.id===blockId);
-    const einzelAusfaelle = ((S.data.kalender||{}).einzelAusfaelle||[]).filter(a=>a.kursId===kursId);
-    m.appendChild(tx('div','modal-title','Startstunde wählen'));
-    const sub=tx('div','','KW '+woche.kw+' · '+(block?block.titel:''));
-    sub.style.cssText='font-size:13px;color:var(--tx2);margin-bottom:16px;'; m.appendChild(sub);
-    // Einstieg mitten im Block: Die ersten Stunden wurden woanders gehalten —
-    // im vorigen Schuljahr etwa. Sie bleiben in der Fachplanung stehen, sollen
-    // in DIESEM Kurs aber weder gezeichnet noch mitgezählt werden.
-    const bisher = ((S.data.zeitplanung||{})[kursId]||{})[blockId] || {};
-    const abFg = mk('div','fg');
-    abFg.appendChild(tx('label','fl','Beginnen mit Blockstunde'));
-    const abInp = document.createElement('input');
-    abInp.type='number'; abInp.min='1'; abInp.className='finp'; abInp.id='mab';
-    abInp.value = String((bisher.versatz || 0) + 1);
-    abInp.style.maxWidth='120px';
-    abFg.appendChild(abInp);
-    const abHint = tx('div','','1 = von vorn. Höhere Zahl, wenn die ersten Stunden des Blocks schon gehalten sind — sie werden dann nicht mehr eingeplant.');
-    abHint.style.cssText='font-size:11px;color:var(--tx3);margin-top:4px;';
-    abFg.appendChild(abHint);
-    m.appendChild(abFg);
-    const versatzLesen = () => Math.max(0, (parseInt(abInp.value) || 1) - 1);
-
-    const stundenDerWoche=(woche.stunden||[]).sort((a,b)=>['Mo','Di','Mi','Do','Fr'].indexOf(a.tag)-['Mo','Di','Mi','Do','Fr'].indexOf(b.tag)||parseInt(a.stunde)-parseInt(b.stunde));
-    if(stundenDerWoche.length===0){m.appendChild(gray('Keine Unterrichtsstunden in dieser Woche.'));}
-    else{
-      const list=mk('div',''); list.style.cssText='display:flex;flex-direction:column;gap:6px;';
-      stundenDerWoche.forEach(std=>{
-        const ausgefallen=einzelAusfaelle.some(a=>a.datum===std.datum&&a.stunde===std.stunde);
-        const btn2=mk('button','btn btn-ghost'); btn2.style.cssText='text-align:left;'+(ausgefallen?'opacity:.4;cursor:not-allowed;':'');
-        btn2.textContent=std.tag+', '+std.datum+' · '+std.stunde+'. Stunde'+(ausgefallen?' (ausgefallen)':'');
-        if(!ausgefallen){btn2.onclick=()=>{if(!S.data.zeitplanung)S.data.zeitplanung={};if(!S.data.zeitplanung[kursId])S.data.zeitplanung[kursId]={};S.data.zeitplanung[kursId][blockId]={datum:std.datum,stunde:std.stunde,versatz:versatzLesen()};S.modal=null;scheduleSave();render();};}
-        list.appendChild(btn2);
-      });
-      m.appendChild(list);
-    }
-    const footer=mk('div','modal-footer'); footer.appendChild(cancelBtn()); m.appendChild(footer);
-    return true;
-  }
-
   if (type === 'newKlassenarbeit') {
     const { kursId } = data;
     m.appendChild(tx('div', 'modal-title', 'Klassenarbeit eintragen'));

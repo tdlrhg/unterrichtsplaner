@@ -51,44 +51,9 @@ function viewKursDetail(kursId) {
   const kal2 = S.data.kalender || {};
   const klassenarbeiten = (kal2.klassenarbeiten || []).filter(k => k.kursId === kursId);
 
-  const kaCard = mk('div', 'card');
-  const kaHdr = cardHdr('Klassenarbeiten');
-  const addKaBtn = btn('+ Hinzufügen', 'btn btn-pri btn-xs');
-  addKaBtn.onclick = () => { S.modal = { type: 'newKlassenarbeit', data: { kursId } }; render(); };
-  kaHdr.appendChild(addKaBtn);
-  kaCard.appendChild(kaHdr);
-  const kab = mk('div', 'card-body');
+  // Eingetragen und gelöscht werden Klassenarbeiten im Zeitplan, direkt am Termin.
 
-  if (klassenarbeiten.length === 0) {
-    kab.appendChild(gray('Noch keine Klassenarbeiten eingetragen.'));
-  } else {
-    const list = mk('div', '');
-    list.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
-    [...klassenarbeiten].sort((a,b) => a.datum.localeCompare(b.datum)).forEach(ka => {
-      const row = mk('div', '');
-      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--bord);border-radius:6px;background:var(--surf2);';
-      const icon = tx('span', '', '📝');
-      const info = mk('div', '');
-      info.style.flex = '1';
-      const titel = tx('div', '', (ka.titel || 'Klassenarbeit') + (ka.doppelstunde ? ' (Doppelstunde)' : ''));
-      titel.style.fontWeight = '600';
-      const sub = tx('div', '', ka.datum + ' · ' + ka.stunde + '. Stunde' + (ka.doppelstunde ? ' + ' + (parseInt(ka.stunde)+1) + '. Stunde' : ''));
-      sub.style.cssText = 'font-size:12px;color:var(--tx3);';
-      info.appendChild(titel); info.appendChild(sub);
-      const del = btn('✕', 'col-action-btn danger');
-      del.onclick = () => {
-        S.data.kalender.klassenarbeiten = S.data.kalender.klassenarbeiten.filter(k => k.id !== ka.id);
-        scheduleSave(); render();
-      };
-      row.appendChild(icon); row.appendChild(info); row.appendChild(del);
-      list.appendChild(row);
-    });
-    kab.appendChild(list);
-  }
-  kaCard.appendChild(kab);
-  div.appendChild(kaCard);
-
-  // ── Zeitachse ─────────────────────────────────────────────────
+  // ── Zeitplan ──────────────────────────────────────────────────
   if (fp && (kurs.stundenplan || []).length > 0) {
     const zaCard = mk('div', 'card');
     zaCard.appendChild(cardHdr('Zeitplan'));

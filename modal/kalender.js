@@ -224,42 +224,5 @@ function modalHandlerKalender(type, data, m) {
     return true;
   }
 
-  if (type === 'newKlassenarbeit') {
-    const { kursId } = data;
-    m.appendChild(tx('div', 'modal-title', 'Klassenarbeit eintragen'));
-    m.appendChild(modalInput('mdat', 'Datum', '', '', 'date'));
-    m.appendChild(modalInput('mtit', 'Titel (optional)', 'z.B. KA 1: Elektrochemie'));
-    const stdFg = mk('div', 'fg');
-    stdFg.appendChild(tx('label', 'fl', 'Erste Stunde'));
-    const stdSel = document.createElement('select'); stdSel.id = 'mstd'; stdSel.className = 'finp';
-    ['1','2','3','4','5','6','7','8','9'].forEach(s => { const o = document.createElement('option'); o.value=s; o.textContent=s+'. Stunde'; stdSel.appendChild(o); });
-    stdFg.appendChild(stdSel); m.appendChild(stdFg);
-    const dsFg = mk('div', 'fg');
-    dsFg.appendChild(tx('label', 'fl', 'Umfang'));
-    const dsWrap = mk('div', ''); dsWrap.style.cssText = 'display:flex;gap:8px;';
-    ['Einzelstunde', 'Doppelstunde'].forEach((label, i) => {
-      const rb = document.createElement('input'); rb.type='radio'; rb.name='mds'; rb.id='mds'+i; rb.value=i===1?'1':'0'; if(i===0)rb.checked=true;
-      const lbl = document.createElement('label'); lbl.htmlFor='mds'+i; lbl.textContent=label;
-      lbl.style.cssText='display:flex;align-items:center;gap:4px;cursor:pointer;font-size:13px;padding:6px 12px;border:1px solid var(--bord);border-radius:6px;';
-      lbl.prepend(rb); dsWrap.appendChild(lbl);
-    });
-    dsFg.appendChild(dsWrap); m.appendChild(dsFg);
-    const footer = mk('div', 'modal-footer'); footer.appendChild(cancelBtn());
-    const sv = btn('Eintragen', 'btn btn-pri');
-    sv.onclick = () => {
-      const dat = document.getElementById('mdat').value;
-      if (!dat) return;
-      const stunde = document.getElementById('mstd').value;
-      const titel = document.getElementById('mtit').value.trim();
-      const doppel = document.querySelector('input[name="mds"]:checked').value === '1';
-      if (!S.data.kalender) S.data.kalender = {};
-      if (!S.data.kalender.klassenarbeiten) S.data.kalender.klassenarbeiten = [];
-      S.data.kalender.klassenarbeiten.push({ id: uid(), kursId, datum: dat, stunde, doppelstunde: doppel, titel: titel || 'Klassenarbeit' });
-      S.modal = null; scheduleSave(); render();
-    };
-    footer.appendChild(sv); m.appendChild(footer);
-    return true;
-  }
-
   return false;
 }

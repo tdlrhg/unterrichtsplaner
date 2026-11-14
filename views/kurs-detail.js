@@ -91,9 +91,9 @@ function viewKursDetail(kursId) {
   // ── Zeitachse ─────────────────────────────────────────────────
   if (fp && (kurs.stundenplan || []).length > 0) {
     const zaCard = mk('div', 'card');
-    zaCard.appendChild(cardHdr('Jahresplanung – Zeitachse'));
+    zaCard.appendChild(cardHdr('Zeitplan'));
     const zab = mk('div', 'card-body');
-    zab.appendChild(viewZeitachse(kursId));
+    zab.appendChild(viewZeitplan(kursId));
     zaCard.appendChild(zab);
     div.appendChild(zaCard);
   } else if (fp) {

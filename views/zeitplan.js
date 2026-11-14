@@ -393,12 +393,12 @@ function viewZeitplan(kursId) {
   let letzteWoche = null, letzterTag = null, letzteReihe = undefined, heuteGesetzt = false, heuteEl = null;
   const blockBegonnen = {};
 
-  function wochenkopf(z) {
+  // Die Kalenderwoche steht als eigene Spalte vor dem Datum, einmal je Woche
+  function neueWoche(z) {
     const key = z.kw + '-' + z.year;
-    if (key === letzteWoche) return;
+    if (key === letzteWoche) return false;
     letzteWoche = key;
-    const w = tx('div', 'zp-woche', 'KW ' + z.kw);
-    wrap.appendChild(w);
+    return true;
   }
 
   function aktKnopf(text, tipp, fn) {
@@ -421,7 +421,7 @@ function viewZeitplan(kursId) {
       wrap.appendChild(tx('div', 'zp-ferien', z.name + ' · ' + zpKurzDatum(z.von) + '–' + zpKurzDatum(z.bis)));
       return;
     }
-    wochenkopf(z);
+    const wochenstart = neueWoche(z);
 
     const teil = z.teile[0] || null;
     const farbe = teil ? ZP_FARBEN[teil.bi % ZP_FARBEN.length] : null;
@@ -486,6 +486,8 @@ function viewZeitplan(kursId) {
     const strip = mk('div', 'zp-strip');
     if (farbe) strip.style.background = farbe;
     zeile.appendChild(strip);
+    if (wochenstart) zeile.classList.add('zp-wochenstart');
+    zeile.appendChild(tx('div', 'zp-kw', wochenstart ? 'KW ' + z.kw : ''));
     zeile.appendChild(tx('div', 'zp-datum', z.tag + ' ' + zpKurzDatum(z.datum)));
     zeile.appendChild(tx('div', 'zp-std', z.stunden.join('./') + '.'));
 

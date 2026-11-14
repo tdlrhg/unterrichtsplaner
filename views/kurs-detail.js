@@ -386,41 +386,7 @@ function viewKursDetail(kursId) {
   stCard.appendChild(stb);
   div.appendChild(stCard);
 
-  // ── Einzelausfälle dieses Kurses ────────────────────────────
-  const kursAusfaelle = einzelAusfaelle.filter(a => a.kursId === kurs.id);
-  const ausCard = mk('div', 'card');
-  const ausHdr = cardHdr('Einzelausfälle');
-  const addAusBtn = btn('+ Hinzufügen', 'btn btn-pri btn-xs');
-  addAusBtn.onclick = () => { S.modal = { type: 'einzelStunden', data: { kursId: kurs.id } }; render(); };
-  ausHdr.appendChild(addAusBtn);
-  ausCard.appendChild(ausHdr);
-  const ausb = mk('div', 'card-body');
-
-  if (kursAusfaelle.length === 0) {
-    ausb.appendChild(gray('Keine Einzelausfälle eingetragen.'));
-  } else {
-    const list = mk('div', '');
-    list.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
-    [...kursAusfaelle].sort((a,b) => a.datum.localeCompare(b.datum)).forEach(a => {
-      const chip = mk('div', '');
-      chip.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 10px;background:#fee2e2;border:1px solid #fca5a5;border-radius:20px;font-size:12px;color:#dc2626;';
-      const grund = ((kal2.einzelAusfaelleGruende || {})[kursId + '_' + a.datum] || '');
-      chip.appendChild(tx('span', '', a.datum + ' · Std. ' + a.stunde + (grund ? ' · ' + grund : '')));
-      const del = mk('button', '');
-      del.textContent = '✕'; del.style.cssText = 'border:none;background:none;cursor:pointer;color:#dc2626;font-size:11px;padding:0;';
-      del.onclick = () => {
-        S.data.kalender.einzelAusfaelle = einzelAusfaelle.filter(x =>
-          !(x.kursId === a.kursId && x.datum === a.datum && x.stunde === a.stunde)
-        );
-        scheduleSave(); render();
-      };
-      chip.appendChild(del);
-      list.appendChild(chip);
-    });
-    ausb.appendChild(list);
-  }
-  ausCard.appendChild(ausb);
-  div.appendChild(ausCard);
+  // Ausfälle werden im Zeitplan direkt am Termin eingetragen und zurückgenommen.
 
   return div;
 }

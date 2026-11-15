@@ -303,138 +303,16 @@ Antworte NUR als JSON-Array von Strings:
   notTA.oninput = () => { stunde.notizen = notTA.value; scheduleSave(); };
   s2body.appendChild(notTA);
 
-  // ══════════════════════════════════════════════════════════════════
-  // SEKTION 3: Methode
-  // ══════════════════════════════════════════════════════════════════
-  // Migration: altes stunde.methode → stunde.methoden.Erarbeitung
-  if (!stunde.methoden) {
-    stunde.methoden = { Einstieg: null, Erarbeitung: null, Sicherung: null };
-    if (stunde.methode) stunde.methoden.Erarbeitung = { name: stunde.methode, id: null, begr: '' };
-    // Altfeld nach der Übernahme entfernen. Blieb es stehen, war es unsichtbar,
-    // aber für die Planungs-KI weiterhin lesbar — gelöschte Methoden kamen
-    // dadurch immer wieder zurück.
-    delete stunde.methode;
-    scheduleSave();
-  }
-  const methAnz = ['Einstieg','Erarbeitung','Sicherung'].filter(t => stunde.methoden[t]?.name).length;
-  const methFertigNeu = methAnz > 0;
-  const methStatusText = methFertigNeu ? '✓ ' + methAnz + '/3' : 'offen';
-  const { body: s3body } = mkSec(3, 'Methoden', 'methoden', methStatusText, methFertigNeu);
-
-  const METH_FARBE = { Einstieg: '#3b82f6', Erarbeitung: '#10b981', Sicherung: '#f59e0b' };
-
-  function renderMethodeBody() {
-    s3body.innerHTML = '';
-
-    // ── KI: alle drei auf einmal ────────────────────────────────────
-    const kiAlleBtn = btn('✨ KI schlägt alle drei vor', 'btn btn-ki btn-sm');
-    kiAlleBtn.style.marginBottom = '14px';
-    kiAlleBtn.onclick = async () => {
-      const antKey = localStorage.getItem('ant_key');
-      if (!antKey) { alert('Bitte API-Key hinterlegen.'); return; }
-      kiAlleBtn.textContent = '⏳ KI denkt…'; kiAlleBtn.disabled = true;
-      const methPool = typ => (METHDB.length
-        ? METHDB.filter(m => !m.phasen?.length || m.phasen.includes(typ))
-        : METHDB
-      ).map(m => `ID:${m.id}|${m.name}${m.beschreibung?' – '+m.beschreibung.slice(0,80):''}`).join('\n') || '(keine)';
-      const _lgT = getLGThemen((getAktKurs(fp.id)||{}).id||'');
-      const prompt = `Du bist Didaktik-Experte. Schlage für diese Unterrichtsstunde je eine Methode für Einstieg, Erarbeitung und Sicherung vor.
-Fach: ${fp.fach}, Jahrgang: ${fp.jahrgang}
-Lernziel: ${stunde.lernziel||'–'}, Intention: ${stunde.intention||'–'}
-${getDIDContext(['stunde'], _lgT, true)}
-Methoden für Einstieg:\n${methPool('Einstieg')}
-Methoden für Erarbeitung:\n${methPool('Erarbeitung')}
-Methoden für Sicherung:\n${methPool('Sicherung')}
-
-Antworte NUR mit JSON:
-{"Einstieg":{"id":"ID-oder-null","name":"Name","begr":"1 Satz"},"Erarbeitung":{"id":"ID-oder-null","name":"Name","begr":"1 Satz"},"Sicherung":{"id":"ID-oder-null","name":"Name","begr":"1 Satz"}}`;
-      try {
-        const parsed = JSON.parse((await callKI(prompt, { model: KI_MODEL_HAIKU, maxTokens: 500 })).match(/\{[\s\S]*\}/)?.[0] || '{}');
-        ['Einstieg','Erarbeitung','Sicherung'].forEach(t => { if (parsed[t]?.name) stunde.methoden[t] = parsed[t]; });
-        scheduleSave(); renderMethodeBody();
-      } catch(e) { alert('Fehler: ' + e.message); kiAlleBtn.textContent = '✨ KI schlägt alle drei vor'; kiAlleBtn.disabled = false; }
-    };
-    s3body.appendChild(kiAlleBtn);
-
-    // ── Drei Slots ──────────────────────────────────────────────────
-    ['Einstieg','Erarbeitung','Sicherung'].forEach(typ => {
-      const farbe = METH_FARBE[typ];
-      const slot = mk('div', 'meth-slot');
-      slot.style.borderLeft = '3px solid ' + farbe;
-
-      const badge = tx('span', 'meth-slot-badge', typ);
-      badge.style.color = farbe;
-      slot.appendChild(badge);
-
-      const gesetzt = stunde.methoden[typ];
-      if (gesetzt?.name) {
-        const nameRow = mk('div', 'meth-slot-set');
-        nameRow.appendChild(tx('span', 'meth-slot-name', gesetzt.name));
-        const clrBtn = mk('button', 'meth-slot-clr'); clrBtn.textContent = '✕';
-        clrBtn.onclick = () => { stunde.methoden[typ] = null; scheduleSave(); renderMethodeBody(); };
-        nameRow.appendChild(clrBtn);
-        slot.appendChild(nameRow);
-        if (gesetzt.begr) slot.appendChild(tx('div', 'meth-slot-begr', '✨ ' + gesetzt.begr));
-        const info = METHDB.find(m => m.id === gesetzt.id || m.name === gesetzt.name);
-        if (info?.beschreibung) slot.appendChild(tx('div', 'meth-slot-info', info.beschreibung));
-      } else {
-        const row = mk('div', 'meth-slot-pick');
-        const pool = METHDB.filter(m => !m.phasen?.length || m.phasen.includes(typ));
-        const si = document.createElement('input');
-        si.type = 'text'; si.placeholder = 'Methode suchen…'; si.className = 'mat-search-inp'; si.style.flex = '1';
-        const dd = mk('div', 'mat-dd');
-        si.oninput = () => {
-          const q = si.value.toLowerCase().trim();
-          dd.innerHTML = ''; dd.style.display = 'none';
-          if (!q) return;
-          const hits = (pool.length ? pool : METHDB).filter(m => m.name.toLowerCase().includes(q) || (m.beschreibung||'').toLowerCase().includes(q)).slice(0,8);
-          if (!hits.length) return;
-          hits.forEach(m => {
-            const it = mk('div', 'mat-dd-item');
-            it.appendChild(tx('strong', '', m.name));
-            if (m.beschreibung) it.appendChild(tx('div', 'mat-dd-sub', m.beschreibung.slice(0,70)));
-            it.onmousedown = () => { stunde.methoden[typ] = { id: m.id, name: m.name, begr: '' }; scheduleSave(); renderMethodeBody(); };
-            dd.appendChild(it);
-          });
-          dd.style.display = 'block';
-        };
-        si.onblur = () => setTimeout(() => { dd.style.display = 'none'; }, 150);
-        const sw = mk('div', 'mat-search-wrap'); sw.style.flex = '1';
-        sw.appendChild(si); sw.appendChild(dd);
-        row.appendChild(sw);
-        const kiBtn = mk('button', 'ph-meth-ki'); kiBtn.textContent = '✨'; kiBtn.title = 'KI wählt';
-        kiBtn.onclick = async () => {
-          const antKey = localStorage.getItem('ant_key');
-          if (!antKey) { alert('Bitte API-Key hinterlegen.'); return; }
-          kiBtn.textContent = '⏳'; kiBtn.disabled = true;
-          const mp = (pool.length ? pool : METHDB).map(m => `ID:${m.id}|${m.name}${m.beschreibung?' – '+m.beschreibung.slice(0,80):''}`).join('\n');
-          const p = `Wähle die passendste Methode für die ${typ}-Phase. Fach: ${fp.fach}, Jg: ${fp.jahrgang}, Lernziel: ${stunde.lernziel||'–'}\nMethoden:\n${mp}\nJSON: {"id":"ID","name":"Name","begr":"1 Satz"}`;
-          try {
-            const parsed = JSON.parse((await callKI(p, { model: KI_MODEL_HAIKU, maxTokens: 200 })).match(/\{[\s\S]*\}/)?.[0] || '{}');
-            if (parsed.name) { stunde.methoden[typ] = parsed; scheduleSave(); renderMethodeBody(); }
-          } catch(e) { alert('Fehler: ' + e.message); kiBtn.textContent = '✨'; kiBtn.disabled = false; }
-        };
-        row.appendChild(kiBtn);
-        slot.appendChild(row);
-      }
-      s3body.appendChild(slot);
-    });
-  }
-  renderMethodeBody();
-
-  // Auto-KI: wenn alle Slots noch leer sind, direkt loslegen
-  const alleSlotLeer = ['Einstieg','Erarbeitung','Sicherung'].every(t => !stunde.methoden[t]?.name);
-  if (alleSlotLeer && !stunde._methKiTriggered && localStorage.getItem('ant_key')) {
-    stunde._methKiTriggered = true;
-    setTimeout(() => s3body.querySelector('.btn-ki')?.click(), 200);
-  }
+  // Der Abschnitt „Methoden" (Einstieg/Erarbeitung/Sicherung mit KI-Vorschlag)
+  // ist entfernt. Die Methoden stehen in der Phasentabelle; stunde.methoden
+  // bleibt in den Daten, wird hier aber nicht mehr angezeigt.
 
   // ══════════════════════════════════════════════════════════════════
   // SEKTION 4: Planungsrahmen
   // ══════════════════════════════════════════════════════════════════
   const prStatusText = prFertig ? '✓ fertig' : 'offen';
   const prKiBtn = btn('✨ KI wählt', 'btn btn-ki btn-xs');
-  const { body: s4body, acts: s4acts } = mkSec(4, 'Planungsrahmen', 'planungsrahmen', prStatusText, prFertig);
+  const { body: s4body, acts: s4acts } = mkSec(3, 'Planungsrahmen', 'planungsrahmen', prStatusText, prFertig);
   s4acts.appendChild(prKiBtn);
 
   prKiBtn.onclick = async () => {
@@ -563,7 +441,7 @@ Antworte NUR als JSON mit den offenen Feldern (Vorgaben weglassen):
   const phStatusText = phFertig ? `✓ ${stunde.phasen.length} Phasen` : 'offen';
   const kiVorlageBtn = btn('✨ KI entscheidet', 'btn btn-ki btn-xs');
   const apb = btn('+ Phase', 'btn btn-pri btn-xs');
-  const { body: s5body, acts: s5acts } = mkSec(5, 'Phasen', 'phasen', phStatusText, phFertig);
+  const { body: s5body, acts: s5acts } = mkSec(4, 'Phasen', 'phasen', phStatusText, phFertig);
   s5acts.appendChild(kiVorlageBtn);
   s5acts.appendChild(apb);
 

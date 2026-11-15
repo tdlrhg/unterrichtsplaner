@@ -120,9 +120,17 @@ const KLP = {
 
 const FAECHER = ['M', 'Ch', 'Bio', 'Ch_GK', 'Ch_LK', 'Bio_GK', 'Bio_LK'];
 const JAHRGAENGE = ['5', '6', '7', '8', '9', '10', 'EF', 'Q1', 'Q2', 'Q1/Q2'];
-// „UGe" (Unterrichtsgespräch) hieß früher „Plenum"; alte Einträge zeigt die
-// Phasentabelle als UGe an und speichert sie beim nächsten Ändern neu.
-const SOZIALFORMEN = ['Einzelarbeit', 'Partnerarbeit', 'Gruppenarbeit', 'UGe', 'Lehrervortrag'];
+// Sozialformen in der üblichen Kurzform. Ältere Einträge heißen noch
+// „Plenum", „Einzelarbeit", „Partnerarbeit"; sozKurz() zeigt sie in der neuen
+// Form an, gespeichert wird die neue Form beim nächsten Ändern.
+const SOZIALFORMEN = ['EA', 'PA', 'Gruppenarbeit', 'UGe', 'Lehrervortrag'];
+const SOZ_LANG = { EA: 'Einzelarbeit', PA: 'Partnerarbeit', UGe: 'Unterrichtsgespräch' };
+function sozKurz(s) {
+  return String(s || '')
+    .replace(/\bPlenum\b/g, 'UGe')
+    .replace(/\bEinzelarbeit\b/g, 'EA')
+    .replace(/\bPartnerarbeit\b/g, 'PA');
+}
 const METHODEN = ['Einführung', 'Erarbeitung', 'Übung', 'Sicherung', 'Wiederholung', 'Diskussion', 'Experiment', 'Lernzirkel', 'Präsentation'];
 const MATTYPEN = ['Arbeitsblatt', 'Lösung', 'Präsentation', 'Link', 'Buch', 'Video', 'Software', 'Kontext', 'Sonstiges'];
 

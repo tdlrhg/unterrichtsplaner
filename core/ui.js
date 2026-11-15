@@ -406,7 +406,7 @@ function phasenTable(stunde) {
     const sSel = document.createElement('select');
     sSel.style.cssText = 'border:none;background:transparent;font-size:12.5px;width:100%;';
     sSel.appendChild(Object.assign(document.createElement('option'), { value: '', textContent: '–' }));
-    const sozAktuell = (phase.sozialform || '').replace(/\bPlenum\b/g, 'UGe');
+    const sozAktuell = sozKurz(phase.sozialform);
     // Freie Werte aus Importen (z.B. „Plenum / Einzelarbeit") nicht verstecken
     if (sozAktuell && !SOZIALFORMEN.includes(sozAktuell)) {
       sSel.appendChild(Object.assign(document.createElement('option'), { value: sozAktuell, textContent: sozAktuell, selected: true }));
@@ -414,7 +414,7 @@ function phasenTable(stunde) {
     SOZIALFORMEN.forEach(s => {
       const o = document.createElement('option');
       o.value = s; o.textContent = s;
-      if (s === 'UGe') o.title = 'Unterrichtsgespräch';
+      if (SOZ_LANG[s]) o.title = SOZ_LANG[s];
       if (sozAktuell === s) o.selected = true;
       sSel.appendChild(o);
     });

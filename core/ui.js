@@ -272,6 +272,17 @@ function phasenTable(stunde) {
     typSel.style.color = farbe;
     typSel.addEventListener('change', () => { typSel.style.color = PHASEN_TYP_FARBE[phase.typ] || 'var(--tx3)'; });
     ttyp.appendChild(typSel);
+    // Feinere Angabe zum Typ, z.B. Erarbeitung → „Expertenphase" oder „Einzelphase"
+    const zusI = document.createElement('input');
+    zusI.type = 'text'; zusI.value = phase.typZusatz || ''; zusI.placeholder = 'genauer …';
+    zusI.title = 'z.B. Expertenphase, Einzelphase, Stammgruppe';
+    zusI.className = 'ph-typ-zusatz';
+    zusI.oninput = () => {
+      const v = zusI.value.trim();
+      if (v) phase.typZusatz = v; else delete phase.typZusatz;
+      scheduleSave();
+    };
+    ttyp.appendChild(zusI);
     tr.appendChild(ttyp);
 
     // Titel + Inhalt
@@ -395,10 +406,16 @@ function phasenTable(stunde) {
     const sSel = document.createElement('select');
     sSel.style.cssText = 'border:none;background:transparent;font-size:12.5px;width:100%;';
     sSel.appendChild(Object.assign(document.createElement('option'), { value: '', textContent: '–' }));
+    const sozAktuell = (phase.sozialform || '').replace(/\bPlenum\b/g, 'UGe');
+    // Freie Werte aus Importen (z.B. „Plenum / Einzelarbeit") nicht verstecken
+    if (sozAktuell && !SOZIALFORMEN.includes(sozAktuell)) {
+      sSel.appendChild(Object.assign(document.createElement('option'), { value: sozAktuell, textContent: sozAktuell, selected: true }));
+    }
     SOZIALFORMEN.forEach(s => {
       const o = document.createElement('option');
       o.value = s; o.textContent = s;
-      if (phase.sozialform === s) o.selected = true;
+      if (s === 'UGe') o.title = 'Unterrichtsgespräch';
+      if (sozAktuell === s) o.selected = true;
       sSel.appendChild(o);
     });
     sSel.onchange = e => { phase.sozialform = e.target.value; scheduleSave(); };

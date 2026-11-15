@@ -386,7 +386,8 @@ Antworte NUR als JSON mit den offenen Feldern (Vorgaben weglassen):
     options.forEach(opt => {
       const isActive = multi ? (pr[key] || []).includes(opt) : pr[key] === opt;
       const b = mk('button', 'btn btn-xs pr-chip' + (isActive ? ' active' : '') + (isActive && kiSet ? ' ki' : ''));
-      b.textContent = isActive && kiSet ? '✨ ' + opt : opt;
+      const label = opt === 'Plenum' ? 'UGe' : opt;   // gespeichert bleibt „Plenum"
+      b.textContent = isActive && kiSet ? '✨ ' + label : label;
       b.onclick = () => {
         if (multi) {
           if (!pr[key]) pr[key] = [];

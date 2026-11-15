@@ -180,23 +180,51 @@ function modalHandlerKalender(type, data, m) {
     const dw3 = ['','Mo','Di','Mi','Do','Fr'][d3.getDay()] || '';
     const vorher = einzelAusfaelle.filter(a => a.datum === data.datum);
     const tmpAusfaelle = new Set(vorher.map(a => a.kursId + '_' + a.stunde));
-    const kurseHeute = (S.data.kurse || []).flatMap(kurs => (kurs.stundenplan||[]).filter(slot=>slot.tag===dw3).map(slot=>({kurs,slot})));
+    const gruendeAlt = (S.data.kalender || {}).einzelAusfaelleGruende || {};
+    // Nur Stunden, die an diesem Tag laut Stundenplan stattfinden (A/B-Wochen beachten)
+    const gerade3 = isGeradeKW(strToDate(data.datum));
+    const slotGilt = slot => slot.tag === dw3
+      && !(slot.kwTyp === 'gerade' && !gerade3) && !(slot.kwTyp === 'ungerade' && gerade3);
+    // Eine Zeile je Kurs: die Stunden als Knöpfe, daneben der Grund (gilt für den
+    // ganzen Tag des Kurses, so wie ihn auch der Zeitplan speichert)
+    const kurseHeute = (S.data.kurse || []).map(kurs => ({
+      kurs, slots: (kurs.stundenplan || []).filter(slotGilt).sort((x, y) => parseInt(x.stunde) - parseInt(y.stunde))
+    })).filter(e => e.slots.length);
+    const grundFelder = {};
     const list = mk('div', ''); list.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin-bottom:16px;';
     if (kurseHeute.length === 0) { list.appendChild(gray('Keine Kurse an diesem Tag laut Stundenplan.')); }
     else {
-      kurseHeute.forEach(({kurs,slot}) => {
+      kurseHeute.forEach(({ kurs, slots }) => {
         const fp = getFachplanung(kurs.fachplanungId);
-        const label = kurs.klasse+' · '+(fp?fachLabel(fp.fach):'?')+' · '+slot.stunde+'. Std';
-        const key = kurs.id+'_'+slot.stunde;
-        const row = mk('div',''); row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--bord);border-radius:6px;background:'+(tmpAusfaelle.has(key)?'#fff5f5':'var(--surf2)')+';';
-        const lbl=tx('span','',label); lbl.style.flex='1'; row.appendChild(lbl);
-        const toggleBtn=mk('button','btn btn-xs '+(tmpAusfaelle.has(key)?'btn-danger':'btn-ghost'));
-        toggleBtn.textContent=tmpAusfaelle.has(key)?'✓ Fällt aus':'Fällt aus';
-        toggleBtn.onclick=()=>{
-          if(tmpAusfaelle.has(key)){tmpAusfaelle.delete(key);toggleBtn.textContent='Fällt aus';toggleBtn.className='btn btn-xs btn-ghost';row.style.background='var(--surf2)';}
-          else{tmpAusfaelle.add(key);toggleBtn.textContent='✓ Fällt aus';toggleBtn.className='btn btn-xs btn-danger';row.style.background='#fff5f5';}
+        const row = mk('div', ''); row.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--bord);border-radius:6px;';
+        const lbl = tx('span', '', kurs.klasse + ' · ' + (fp ? fachLabel(fp.fach) : '?')); lbl.style.cssText = 'flex:1;min-width:110px;font-weight:600;';
+        row.appendChild(lbl);
+        const grund = document.createElement('input');
+        grund.type = 'text'; grund.className = 'finp'; grund.placeholder = 'Grund (optional)';
+        grund.style.cssText = 'flex:2;min-width:150px;padding:4px 8px;';
+        grund.value = gruendeAlt[kurs.id + '_' + data.datum] || '';
+        grundFelder[kurs.id] = grund;
+        const aktualisieren = () => {
+          const irgendwas = slots.some(sl => tmpAusfaelle.has(kurs.id + '_' + sl.stunde));
+          row.style.background = irgendwas ? '#fff5f5' : 'var(--surf2)';
+          grund.style.visibility = irgendwas ? 'visible' : 'hidden';
         };
-        row.appendChild(toggleBtn); list.appendChild(row);
+        slots.forEach(slot => {
+          const key = kurs.id + '_' + slot.stunde;
+          const b = mk('button', '');
+          const zeichnen = () => {
+            const aus = tmpAusfaelle.has(key);
+            b.className = 'btn btn-xs ' + (aus ? 'btn-danger' : 'btn-ghost');
+            b.textContent = (aus ? '✓ ' : '') + slot.stunde + '. Std' + (aus ? ' fällt aus' : '');
+          };
+          b.title = 'Klick: fällt aus / findet statt';
+          b.onclick = () => { if (tmpAusfaelle.has(key)) tmpAusfaelle.delete(key); else tmpAusfaelle.add(key); zeichnen(); aktualisieren(); };
+          zeichnen();
+          row.appendChild(b);
+        });
+        row.appendChild(grund);
+        aktualisieren();
+        list.appendChild(row);
       });
     }
     m.appendChild(list);
@@ -206,9 +234,18 @@ function modalHandlerKalender(type, data, m) {
     const saveEA=btn('Speichern','btn btn-pri');
     saveEA.onclick=()=>{
       if(!S.data.kalender)S.data.kalender={};
-      if(!S.data.kalender.einzelAusfaelle)S.data.kalender.einzelAusfaelle=[];
-      S.data.kalender.einzelAusfaelle=S.data.kalender.einzelAusfaelle.filter(a=>a.datum!==data.datum);
-      tmpAusfaelle.forEach(key=>{const[kursId,stunde]=key.split('_');S.data.kalender.einzelAusfaelle.push({datum:data.datum,kursId,stunde});});
+      const k=S.data.kalender;
+      if(!k.einzelAusfaelle)k.einzelAusfaelle=[];
+      if(!k.einzelAusfaelleGruende)k.einzelAusfaelleGruende={};
+      k.einzelAusfaelle=k.einzelAusfaelle.filter(a=>a.datum!==data.datum);
+      tmpAusfaelle.forEach(key=>{const i=key.lastIndexOf('_');k.einzelAusfaelle.push({datum:data.datum,kursId:key.slice(0,i),stunde:key.slice(i+1)});});
+      // Gründe: gesetzt, solange der Kurs an dem Tag etwas ausfallen lässt
+      kurseHeute.forEach(({kurs})=>{
+        const gk=kurs.id+'_'+data.datum;
+        const g=grundFelder[kurs.id].value.trim();
+        const aus=k.einzelAusfaelle.some(a=>a.kursId===kurs.id&&a.datum===data.datum);
+        if(aus&&g)k.einzelAusfaelleGruende[gk]=g; else delete k.einzelAusfaelleGruende[gk];
+      });
       S.modal=null; scheduleSave(); render();
     };
     footerEA.appendChild(saveEA); m.appendChild(footerEA);

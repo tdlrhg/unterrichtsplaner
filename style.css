@@ -1224,6 +1224,7 @@ textarea::placeholder { color: #c4cdd6; }
 .zp-m-trenner { height:1px; background:var(--bord); margin:4px 2px; }
 .zp-m-zeile { display:flex; gap:6px; align-items:center; padding:3px 7px; }
 .zp-m-zeile .finp { font-size:12px; padding:2px 6px; height:26px; flex:1; min-width:0; }
+.zp-start-sel { max-width:320px; }
 /* Einzelstunden bleiben einzeilig: Material steht hinter dem Titel statt darunter */
 .zp-row:not(.zp-doppel) .zp-inhalt { display:flex; align-items:baseline; gap:10px; }
 .zp-row:not(.zp-doppel) .zp-titel { flex:0 1 auto; min-width:0; }

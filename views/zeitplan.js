@@ -374,6 +374,40 @@ function viewZeitplan(kursId) {
     });
   }
 
+  // Auswahl „Beginnen mit …": jede Reihe und jede Stunde des Blocks.
+  // Der Wert ist die Zahl der Stunden davor (= versatz), genauso gezählt
+  // wie in blockFolge, damit die gewählte Stunde wirklich am Starttermin liegt.
+  function startAuswahl(block, versatz) {
+    const sel = document.createElement('select');
+    sel.className = 'finp zp-start-sel';
+    const opt = (eltern, wert, text) => {
+      const o = document.createElement('option');
+      o.value = String(wert); o.textContent = text;
+      eltern.appendChild(o);
+      return o;
+    };
+    opt(sel, 0, 'von vorn');
+    let n = 0, gefunden = versatz === 0;
+    (block.reihen || []).filter(r =>
+      Math.max(parseInt(r.stundenAnzahl) || 0, summeStundenEinheiten(r.stunden)) > 0)
+      .forEach(r => {
+        const g = document.createElement('optgroup');
+        g.label = r.titel || 'Reihe';
+        if (opt(g, n, '▸ Anfang der Reihe „' + (r.titel || 'Reihe') + '"') && n === versatz) gefunden = true;
+        (r.stunden || []).forEach((st, i) => {
+          if (i > 0) { opt(g, n, '   ' + (i + 1) + '. ' + (st.titel || 'Stunde')); if (n === versatz) gefunden = true; }
+          n += stundeEinheiten(st);
+        });
+        const offen = Math.max(0, (parseInt(r.stundenAnzahl) || 0) - summeStundenEinheiten(r.stunden));
+        if (offen && (r.stunden || []).length) { opt(g, n, '   … noch nicht angelegte Stunden (' + offen + ')'); if (n === versatz) gefunden = true; }
+        n += offen;
+        sel.appendChild(g);
+      });
+    if (!gefunden) opt(sel, versatz, 'ab Blockstunde ' + (versatz + 1));
+    sel.value = String(versatz);
+    return sel;
+  }
+
   // ── Kopf: noch nicht eingeplante Blöcke, Blöcke dazuholen ────
   function zusatzListe() {
     if (!Array.isArray(kurs.zusatzBloecke)) kurs.zusatzBloecke = [];
@@ -408,11 +442,10 @@ function viewZeitplan(kursId) {
       if (naechster) dat.value = naechster.datum;
       zeile.appendChild(dat);
       m.element(zeile);
+      m.titel('… und zwar mit');
       const z2 = mk('div', 'zp-m-zeile');
-      z2.appendChild(tx('span', '', 'ab Blockstunde'));
-      const ab = document.createElement('input');
-      ab.type = 'number'; ab.min = '1'; ab.value = '1'; ab.className = 'finp'; ab.style.width = '56px';
-      ab.title = '1 = von vorn. Höher, wenn die ersten Stunden schon gehalten sind.';
+      const ab = startAuswahl(block, 0);
+      ab.title = 'Was davor liegt, gilt als erledigt und wird nicht eingeplant.';
       z2.appendChild(ab);
       m.element(z2);
       m.eintrag('Einplanen', () => {}).onclick = () => {
@@ -420,7 +453,7 @@ function viewZeitplan(kursId) {
         const ziel = slots.find(s => s.datum >= dat.value);
         if (!ziel) { alert('Nach diesem Datum liegt kein Unterrichtstermin mehr im Schuljahr.'); return; }
         m.schliessen();
-        blockBeginnt(block, ziel.datum, ziel.stunde, Math.max(0, (parseInt(ab.value) || 1) - 1));
+        blockBeginnt(block, ziel.datum, ziel.stunde, parseInt(ab.value) || 0);
       };
       if (eb.fremd) {
         m.trenner();
@@ -511,14 +544,19 @@ function viewZeitplan(kursId) {
         const bm = aktKnopf('⋯', 'Block: Optionen', b => zpMenue(b, m => {
           m.titel(teil.block.titel);
           m.eintrag('Zur Fachplanung', () => oeffnen({ block: teil.block }));
-          m.eintrag('Ab Blockstunde … beginnen', () => {
-            const alt = (d.planung[teil.block.id] || {}).versatz || 0;
-            const ein = prompt('Mit welcher Blockstunde beginnt der Block in diesem Kurs?\n(1 = von vorn; höher, wenn die ersten Stunden schon gehalten sind)', String(alt + 1));
-            if (ein === null) return;
+          m.trenner();
+          m.titel('Am Starttermin beginnen mit');
+          const sz = mk('div', 'zp-m-zeile');
+          const sel = startAuswahl(teil.block, parseInt((d.planung[teil.block.id] || {}).versatz) || 0);
+          sel.title = 'Was davor liegt, gilt als erledigt und wird nicht eingeplant.';
+          sel.onchange = () => {
             const p = planungSchreibbar();
-            p[teil.block.id] = Object.assign({}, p[teil.block.id], { versatz: Math.max(0, (parseInt(ein) || 1) - 1) });
+            p[teil.block.id] = Object.assign({}, p[teil.block.id], { versatz: parseInt(sel.value) || 0 });
+            m.schliessen();
             fertig();
-          });
+          };
+          sz.appendChild(sel);
+          m.element(sz);
           m.trenner();
           m.eintrag('Aus dem Zeitplan nehmen', () => {
             delete planungSchreibbar()[teil.block.id];

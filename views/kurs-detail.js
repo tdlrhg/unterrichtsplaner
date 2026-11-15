@@ -104,6 +104,38 @@ function viewKursDetail(kursId) {
     const p = kursPlanung[block.id];
     return Math.max(0, (p && parseInt(p.versatz)) || 0);
   }
+  // „endet nach Reihe …" im Zeitplan: spätere Reihen gehören nicht zu diesem Kurs
+  function kursReihen(block) {
+    const reihen = block.reihen || [];
+    const bis = (kursPlanung[block.id] || {}).bisReihe;
+    const i = bis ? reihen.findIndex(r => r.id === bis) : -1;
+    return i >= 0 ? reihen.slice(0, i + 1) : reihen;
+  }
+  function blockSollKurs(block) {
+    const weg = (block.reihen || []).slice(kursReihen(block).length);
+    return Math.max(0, blockSoll(block) - weg.reduce((s, r) => s + (parseInt(r.stundenAnzahl) || 0), 0));
+  }
+  // Angelegte Stunden, die in diesem Kurs noch drankommen. Übersprungen wird
+  // genau wie im Zeitplan (blockFolge): erst die angelegten Stunden einer
+  // Reihe, dann ihre noch nicht angelegten.
+  function geplantKurs(block, vs) {
+    let weg = vs, summe = 0;
+    kursReihen(block).forEach(r => {
+      (r.stunden || []).forEach(st => {
+        const e = stundeEinheiten(st);
+        if (weg >= e) { weg -= e; return; }
+        weg = 0;
+        summe += e + dehnungVon(st);
+      });
+      const offen = Math.max(0, (parseInt(r.stundenAnzahl) || 0) - summeStundenEinheiten(r.stunden));
+      weg -= Math.min(weg, offen);
+    });
+    return summe;
+  }
+  function blockEndeText(block) {
+    const r = kursReihen(block);
+    return r.length < (block.reihen || []).length ? ' (bis „' + (r[r.length - 1].titel || 'Reihe') + '")' : '';
+  }
 
   // Verlängerungen aus der Zeitachse („hat länger gedauert"): Sie gelten nur
   // für diesen Kurs, kosten hier aber echte Unterrichtszeit und zählen darum
@@ -111,12 +143,11 @@ function viewKursDetail(kursId) {
   const kursDehnung = ((S.data.zeitdehnung || {})[kursId]) || {};
   const dehnungVon = st => Math.max(0, parseInt(kursDehnung[st.id]) || 0);
   const dehnungListe = liste => (liste || []).reduce((s, st) => s + dehnungVon(st), 0);
-  const dehnungBlock = block => (block.reihen || []).reduce((s, r) => s + dehnungListe(r.stunden), 0);
 
   // Soll-Stunden aus den Blöcken dieses Kurses
   let sollGesamt = 0;
   kursBloecke.forEach(b => {
-    const g = Math.max(0, blockSoll(b) - blockVersatzKurs(b));
+    const g = Math.max(0, blockSollKurs(b) - blockVersatzKurs(b));
     if (g > 0) sollGesamt += g;
   });
 
@@ -212,14 +243,13 @@ function viewKursDetail(kursId) {
 
       // Bereits im Vorjahr gehaltene Stunden zählen hier weder als Soll noch als geplant
       const vs = blockVersatzKurs(block);
-      const soll = Math.max(0, blockSoll(block) - vs);
-      const geplant = Math.max(0, (block.reihen || []).reduce((s,r) => s + summeStundenEinheiten(r.stunden), 0)
-        + dehnungBlock(block) - vs);
+      const soll = Math.max(0, blockSollKurs(block) - vs);
+      const geplant = geplantKurs(block, vs);
       const offen = soll > 0 ? soll - geplant : null;
       sumSoll += soll; sumGeplant += geplant;
 
       // Block-Zeile
-      const blockPfeilCell = { text: '▶ ' + block.titel + (fremdAus[block.id] ? ' · aus ' + fremdAus[block.id] : '') + (vs ? ' (ab Blockstunde ' + (vs + 1) + ')' : ''), bold: true };
+      const blockPfeilCell = { text: '▶ ' + block.titel + (fremdAus[block.id] ? ' · aus ' + fremdAus[block.id] : '') + (vs ? ' (ab Blockstunde ' + (vs + 1) + ')' : '') + blockEndeText(block), bold: true };
       const blockRow = tblRow([
         blockPfeilCell,
         { text: soll || '–', align: 'right' },
@@ -230,7 +260,7 @@ function viewKursDetail(kursId) {
 
       // Reihen-Zeilen (initial versteckt)
       const reiheRows = [];
-      (block.reihen || []).forEach(reihe => {
+      kursReihen(block).forEach(reihe => {
         const rdehnung = dehnungListe(reihe.stunden);
         const rgeplant = summeStundenEinheiten(reihe.stunden) + rdehnung;
         const rsoll = parseInt(reihe.stundenAnzahl) || 0;
@@ -335,7 +365,7 @@ function viewKursDetail(kursId) {
             stundenRows.forEach(r => r.style.display = 'none');
           });
         });
-        blockRow.cells[0].textContent = (open ? '▶ ' : '▼ ') + block.titel + (fremdAus[block.id] ? ' · aus ' + fremdAus[block.id] : '') + (vs ? ' (ab Blockstunde ' + (vs + 1) + ')' : '');
+        blockRow.cells[0].textContent = (open ? '▶ ' : '▼ ') + block.titel + (fremdAus[block.id] ? ' · aus ' + fremdAus[block.id] : '') + (vs ? ' (ab Blockstunde ' + (vs + 1) + ')' : '') + blockEndeText(block);
         blockRow.cells[0].style.fontWeight = '700';
       };
     });

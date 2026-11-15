@@ -149,6 +149,10 @@ function zeitplanDaten(kursId) {
       for (let i = 0; i < n; i++) folge.push({ art: 'offen', reihe: null });
       return folge;
     }
+    // „endet nach Reihe …": was danach kommt, gehört in diesem Kurs nicht dazu
+    const bisId = (planung[block.id] || {}).bisReihe;
+    const bisIdx = bisId ? reihen.findIndex(r => r.id === bisId) : -1;
+    if (bisIdx >= 0) reihen.splice(bisIdx + 1);
     reihen.forEach(r => {
       (r.stunden || []).forEach(st => {
         const e = stundeEinheiten(st);
@@ -279,7 +283,7 @@ function viewZeitplan(kursId) {
   function blockBeginnt(block, datum, stunde, versatz) {
     const p = planungSchreibbar();
     const alt = p[block.id] || {};
-    p[block.id] = { datum, stunde, versatz: versatz != null ? versatz : (alt.versatz || 0) };
+    p[block.id] = Object.assign({}, alt, { datum, stunde, versatz: versatz != null ? versatz : (alt.versatz || 0) });
     fertig();
   }
   function ausfallSetzen(z, stunden, grund) {
@@ -408,6 +412,29 @@ function viewZeitplan(kursId) {
     return sel;
   }
 
+  // Auswahl „endet nach …": Ende des Blocks oder eine bestimmte Reihe
+  function endAuswahl(block, bisReihe) {
+    const sel = document.createElement('select');
+    sel.className = 'finp zp-start-sel';
+    const o0 = document.createElement('option');
+    o0.value = ''; o0.textContent = 'Ende des Blocks';
+    sel.appendChild(o0);
+    (block.reihen || []).forEach(r => {
+      const o = document.createElement('option');
+      o.value = r.id; o.textContent = 'Reihe „' + (r.titel || 'Reihe') + '"';
+      sel.appendChild(o);
+    });
+    sel.value = bisReihe && (block.reihen || []).some(r => r.id === bisReihe) ? bisReihe : '';
+    return sel;
+  }
+  function blockEndetNach(block, reiheId) {
+    const p = planungSchreibbar();
+    const neu = Object.assign({}, p[block.id]);
+    if (reiheId) neu.bisReihe = reiheId; else delete neu.bisReihe;
+    p[block.id] = neu;
+    fertig();
+  }
+
   // ── Kopf: noch nicht eingeplante Blöcke, Blöcke dazuholen ────
   function zusatzListe() {
     if (!Array.isArray(kurs.zusatzBloecke)) kurs.zusatzBloecke = [];
@@ -448,12 +475,21 @@ function viewZeitplan(kursId) {
       ab.title = 'Was davor liegt, gilt als erledigt und wird nicht eingeplant.';
       z2.appendChild(ab);
       m.element(z2);
+      m.titel('… und endet nach');
+      const z3 = mk('div', 'zp-m-zeile');
+      const bis = endAuswahl(block, '');
+      bis.title = 'Was danach im Block steht, wird in diesem Kurs nicht eingeplant.';
+      z3.appendChild(bis);
+      m.element(z3);
       m.eintrag('Einplanen', () => {}).onclick = () => {
         if (!dat.value) return;
         const ziel = slots.find(s => s.datum >= dat.value);
         if (!ziel) { alert('Nach diesem Datum liegt kein Unterrichtstermin mehr im Schuljahr.'); return; }
         m.schliessen();
-        blockBeginnt(block, ziel.datum, ziel.stunde, parseInt(ab.value) || 0);
+        const p = planungSchreibbar();
+        p[block.id] = Object.assign({ datum: ziel.datum, stunde: ziel.stunde, versatz: parseInt(ab.value) || 0 },
+          bis.value ? { bisReihe: bis.value } : {});
+        fertig();
       };
       if (eb.fremd) {
         m.trenner();
@@ -537,6 +573,8 @@ function viewZeitplan(kursId) {
         const bt = tx('span', 'zp-block-titel', teil.block.titel + (eb && eb.fremd ? ' · aus ' + zpFpKurz(eb.fp) : ''));
         bk.appendChild(bt);
         const zusatz = [info.laenge + ' Std.'];
+        const bisR = (teil.block.reihen || []).find(r => r.id === (d.planung[teil.block.id] || {}).bisReihe);
+        if (bisR) zusatz.push('endet nach „' + (bisR.titel || 'Reihe') + '"');
         if (info.endeDatum) zusatz.push('bis ' + zpKurzDatum(info.endeDatum));
         if (info.geschoben && info.sollDatum) zusatz.push('geplant ab ' + zpKurzDatum(info.sollDatum) + ', rückt nach');
         if (info.ueberhang) zusatz.push('⚠ ' + info.ueberhang + ' Std. passen nicht mehr ins Schuljahr');
@@ -557,6 +595,13 @@ function viewZeitplan(kursId) {
           };
           sz.appendChild(sel);
           m.element(sz);
+          m.titel('Endet nach');
+          const ez = mk('div', 'zp-m-zeile');
+          const esel = endAuswahl(teil.block, (d.planung[teil.block.id] || {}).bisReihe);
+          esel.title = 'Was danach im Block steht, wird in diesem Kurs nicht eingeplant.';
+          esel.onchange = () => { m.schliessen(); blockEndetNach(teil.block, esel.value); };
+          ez.appendChild(esel);
+          m.element(ez);
           m.trenner();
           m.eintrag('Aus dem Zeitplan nehmen', () => {
             delete planungSchreibbar()[teil.block.id];

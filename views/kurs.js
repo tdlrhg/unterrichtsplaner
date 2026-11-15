@@ -234,7 +234,6 @@ function buildFpTree(lp, sel) {
         scheduleSave(); render();
       },
       onEdit: () => { S.modal = { type: 'editBlock', data: { block } }; render(); },
-      onChat: () => { S.open['blockChat_' + block.id] = !S.open['blockChat_' + block.id]; render(); },
       onUp: () => { swap(lp.blocks, bi, bi-1); scheduleSave(); render(); },
       onDown: () => { swap(lp.blocks, bi, bi+1); scheduleSave(); render(); },
       isFirst: bi === 0, isLast: bi === lp.blocks.length-1,
@@ -526,10 +525,7 @@ function viewFachplanung() {
 
   if (!chatOffenKey) _chatGescrolltKey = null;   // zu: beim nächsten Öffnen wieder springen
 
-  // ── Block-Chat (unterhalb des Baums, wenn ✨ aktiv) ──────────
-  if (selBlock && !selReihe && S.open['blockChat_' + selBlock.id]) {
-    div.appendChild(buildBlockChat(lp, selBlock));
-  }
+  // Der Block-Chat „Reihen planen“ ist entfernt: Geplant wird in einer eigenen Claude-Sitzung.
 
   return div;
 }

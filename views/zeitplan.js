@@ -28,6 +28,28 @@ function zpHeute() {
 
 function zpKurzDatum(ds) { return ds.slice(8, 10) + '.' + ds.slice(5, 7) + '.'; }
 
+// Alle Blöcke, die ein Kurs einplanen kann: die eigene Fachplanung plus
+// Blöcke, die er aus anderen Fachplanungen dazugeholt hat — etwa ein Thema
+// aus Jahrgang 7, das in der 8 noch nicht abgeschlossen ist. Die geholten
+// Blöcke bleiben in ihrer Fachplanung; der Kurs merkt sich nur den Verweis
+// (kurs.zusatzBloecke), damit eine Parallelklasse davon nichts sieht.
+// Geholte Blöcke stehen vorn: Sie sind der ältere Stoff.
+function kursBlockliste(kurs) {
+  const eigen = getFachplanung(kurs.fachplanungId);
+  const liste = [];
+  (kurs.zusatzBloecke || []).forEach(z => {
+    const fpZ = getFachplanung(z.fpId);
+    const b = fpZ && (fpZ.blocks || []).find(x => x.id === z.blockId);
+    if (b) liste.push({ block: b, fp: fpZ, fremd: true });
+  });
+  if (eigen) (eigen.blocks || []).forEach(b => liste.push({ block: b, fp: eigen, fremd: false }));
+  return liste;
+}
+
+function zpFpKurz(fp) {
+  return (typeof fachLabel === 'function' ? fachLabel(fp.fach) : fp.fach) + ' ' + (fp.jahrgang || '');
+}
+
 // ── Daten ────────────────────────────────────────────────────────
 function zeitplanDaten(kursId) {
   const kurs = (S.data.kurse || []).find(k => k.id === kursId);
@@ -146,7 +168,8 @@ function zeitplanDaten(kursId) {
   const belegung = new Array(slots.length).fill(null);
   const blockInfo = {};
   let zeiger = 0;
-  (fp.blocks || []).map((block, bi) => ({ block, bi, p: planung[block.id] }))
+  const blockliste = kursBlockliste(kurs);
+  blockliste.map((e, bi) => ({ block: e.block, fpB: e.fp, bi, p: planung[e.block.id] }))
     .filter(x => x.p)
     .map(x => Object.assign(x, { soll: startIdx(x.p) }))
     .sort((a, b) => a.soll - b.soll || a.bi - b.bi)
@@ -155,7 +178,7 @@ function zeitplanDaten(kursId) {
       const si = Math.max(x.soll, zeiger);
       let ueberhang = 0;
       folge.forEach((item, i) => {
-        if (si + i < slots.length) belegung[si + i] = Object.assign({ block: x.block, bi: x.bi }, item);
+        if (si + i < slots.length) belegung[si + i] = Object.assign({ block: x.block, bi: x.bi, fpB: x.fpB }, item);
         else ueberhang++;
       });
       blockInfo[x.block.id] = {
@@ -194,8 +217,8 @@ function zeitplanDaten(kursId) {
   });
 
   return {
-    kurs, fp, schuljahr, zeilen, slots, belegung, blockInfo, planung, dehnung,
-    ungeplant: (fp.blocks || []).filter(b => !planung[b.id])
+    kurs, fp, schuljahr, zeilen, slots, belegung, blockInfo, planung, dehnung, blockliste,
+    ungeplant: blockliste.filter(e => !planung[e.block.id])
   };
 }
 
@@ -307,10 +330,11 @@ function viewZeitplan(kursId) {
     fertig();
   }
   function oeffnen(teil) {
-    S.aktFpId = fp.id; S.view = 'fachplanung';
+    const f = teil.fpB || fp;
+    S.aktFpId = f.id; S.view = 'fachplanung';
     S.sel = teil.stunde
-      ? { type: 'stunde', ids: [fp.id, teil.block.id, teil.reihe.id, teil.stunde.id] }
-      : (teil.reihe ? { type: 'reihe', ids: [fp.id, teil.block.id, teil.reihe.id] } : { type: 'block', ids: [fp.id, teil.block.id] });
+      ? { type: 'stunde', ids: [f.id, teil.block.id, teil.reihe.id, teil.stunde.id] }
+      : (teil.reihe ? { type: 'reihe', ids: [f.id, teil.block.id, teil.reihe.id] } : { type: 'block', ids: [f.id, teil.block.id] });
     render();
   }
   function stundeAnlegen(reihe) {
@@ -337,56 +361,98 @@ function viewZeitplan(kursId) {
     }
   }
   function menueBlockStart(m, z) {
-    const bloecke = fp.blocks || [];
+    const bloecke = d.blockliste;
     if (!bloecke.length) return;
     m.trenner();
     m.titel('Block hier beginnen lassen');
-    bloecke.forEach((b, bi) => {
+    bloecke.forEach((eb, bi) => {
+      const b = eb.block;
       const platziert = !!d.planung[b.id];
-      const e = m.eintrag((platziert ? '↦ ' : '＋ ') + b.titel, () => blockBeginnt(b, z.datum, z.stunden[0]),
+      const e = m.eintrag((platziert ? '↦ ' : '＋ ') + b.titel + (eb.fremd ? ' (' + zpFpKurz(eb.fp) + ')' : ''), () => blockBeginnt(b, z.datum, z.stunden[0]),
         { tipp: platziert ? 'Ist schon eingeplant — der Start wird hierher verlegt.' : 'Noch nicht eingeplant.' });
       e.style.borderLeft = '4px solid ' + ZP_FARBEN[bi % ZP_FARBEN.length];
     });
   }
 
-  // ── Kopf: noch nicht eingeplante Blöcke ──────────────────────
-  if (d.ungeplant.length) {
-    const kopf = mk('div', 'zp-kopf');
-    kopf.appendChild(tx('span', 'zp-kopf-lbl', 'Noch nicht eingeplant:'));
-    d.ungeplant.forEach(block => {
-      const bi = (fp.blocks || []).indexOf(block);
-      const chip = mk('button', 'zp-chip');
-      chip.style.background = ZP_FARBEN[bi % ZP_FARBEN.length];
-      chip.textContent = block.titel;
-      chip.title = 'Starttermin festlegen';
-      chip.onclick = () => zpMenue(chip, m => {
-        m.titel('„' + block.titel + '" beginnt am');
-        const zeile = mk('div', 'zp-m-zeile');
-        const dat = document.createElement('input');
-        dat.type = 'date'; dat.className = 'finp';
-        const naechster = slots.find(s => s.datum >= heute) || slots[0];
-        if (naechster) dat.value = naechster.datum;
-        zeile.appendChild(dat);
-        m.element(zeile);
-        const z2 = mk('div', 'zp-m-zeile');
-        z2.appendChild(tx('span', '', 'ab Blockstunde'));
-        const ab = document.createElement('input');
-        ab.type = 'number'; ab.min = '1'; ab.value = '1'; ab.className = 'finp'; ab.style.width = '56px';
-        ab.title = '1 = von vorn. Höher, wenn die ersten Stunden schon gehalten sind.';
-        z2.appendChild(ab);
-        m.element(z2);
-        m.eintrag('Einplanen', () => {}).onclick = () => {
-          if (!dat.value) return;
-          const ziel = slots.find(s => s.datum >= dat.value);
-          if (!ziel) { alert('Nach diesem Datum liegt kein Unterrichtstermin mehr im Schuljahr.'); return; }
-          m.schliessen();
-          blockBeginnt(block, ziel.datum, ziel.stunde, Math.max(0, (parseInt(ab.value) || 1) - 1));
-        };
-      });
-      kopf.appendChild(chip);
-    });
-    div.appendChild(kopf);
+  // ── Kopf: noch nicht eingeplante Blöcke, Blöcke dazuholen ────
+  function zusatzListe() {
+    if (!Array.isArray(kurs.zusatzBloecke)) kurs.zusatzBloecke = [];
+    return kurs.zusatzBloecke;
   }
+  function blockDazuholen(fpZ, block) {
+    const zl = zusatzListe();
+    if (!zl.some(z => z.blockId === block.id)) zl.push({ fpId: fpZ.id, blockId: block.id });
+    fertig();
+  }
+  function blockAusKursEntfernen(block) {
+    kurs.zusatzBloecke = zusatzListe().filter(z => z.blockId !== block.id);
+    delete planungSchreibbar()[block.id];
+    fertig();
+  }
+
+  const kopf = mk('div', 'zp-kopf');
+  if (d.ungeplant.length) kopf.appendChild(tx('span', 'zp-kopf-lbl', 'Noch nicht eingeplant:'));
+  d.ungeplant.forEach(eb => {
+    const block = eb.block;
+    const bi = d.blockliste.indexOf(eb);
+    const chip = mk('button', 'zp-chip');
+    chip.style.background = ZP_FARBEN[bi % ZP_FARBEN.length];
+    chip.textContent = block.titel + (eb.fremd ? ' · ' + zpFpKurz(eb.fp) : '');
+    chip.title = 'Starttermin festlegen';
+    chip.onclick = () => zpMenue(chip, m => {
+      m.titel('„' + block.titel + '" beginnt am');
+      const zeile = mk('div', 'zp-m-zeile');
+      const dat = document.createElement('input');
+      dat.type = 'date'; dat.className = 'finp';
+      const naechster = slots.find(s => s.datum >= heute) || slots[0];
+      if (naechster) dat.value = naechster.datum;
+      zeile.appendChild(dat);
+      m.element(zeile);
+      const z2 = mk('div', 'zp-m-zeile');
+      z2.appendChild(tx('span', '', 'ab Blockstunde'));
+      const ab = document.createElement('input');
+      ab.type = 'number'; ab.min = '1'; ab.value = '1'; ab.className = 'finp'; ab.style.width = '56px';
+      ab.title = '1 = von vorn. Höher, wenn die ersten Stunden schon gehalten sind.';
+      z2.appendChild(ab);
+      m.element(z2);
+      m.eintrag('Einplanen', () => {}).onclick = () => {
+        if (!dat.value) return;
+        const ziel = slots.find(s => s.datum >= dat.value);
+        if (!ziel) { alert('Nach diesem Datum liegt kein Unterrichtstermin mehr im Schuljahr.'); return; }
+        m.schliessen();
+        blockBeginnt(block, ziel.datum, ziel.stunde, Math.max(0, (parseInt(ab.value) || 1) - 1));
+      };
+      if (eb.fremd) {
+        m.trenner();
+        m.eintrag('Wieder aus diesem Kurs entfernen', () => blockAusKursEntfernen(block), { gefahr: true,
+          tipp: 'Der Block bleibt in „' + zpFpKurz(eb.fp) + '" erhalten.' });
+      }
+    });
+    kopf.appendChild(chip);
+  });
+
+  // Blöcke aus anderen Fachplanungen desselben Fachs
+  const basisFach = String(fp.fach || '').replace(/_(GK|LK)$/, '');
+  const andere = (S.data.fachplanungen || []).filter(f => f.id !== fp.id
+    && String(f.fach || '').replace(/_(GK|LK)$/, '') === basisFach && (f.blocks || []).length);
+  if (andere.length) {
+    const holen = mk('button', 'zp-akt-btn zp-holen');
+    holen.textContent = '+ Block aus anderer Fachplanung';
+    holen.title = 'Ein Thema aus einem anderen Jahrgang in diesen Kurs holen — z.B. was aus dem Vorjahr noch offen ist';
+    holen.onclick = () => zpMenue(holen, m => {
+      const schon = new Set(zusatzListe().map(z => z.blockId));
+      andere.slice().sort((a, b) => String(a.jahrgang).localeCompare(String(b.jahrgang), 'de', { numeric: true }))
+        .forEach(fpZ => {
+          m.titel(zpFpKurz(fpZ));
+          (fpZ.blocks || []).forEach(b => {
+            m.eintrag((schon.has(b.id) ? '✓ ' : '＋ ') + b.titel, () => blockDazuholen(fpZ, b),
+              { aus: schon.has(b.id), tipp: schon.has(b.id) ? 'Schon in diesem Kurs' : 'In diesen Kurs holen' });
+          });
+        });
+    });
+    kopf.appendChild(holen);
+  }
+  if (kopf.children.length) div.appendChild(kopf);
 
   // ── Liste ────────────────────────────────────────────────────
   const wrap = mk('div', 'zp-wrap');
@@ -434,7 +500,8 @@ function viewZeitplan(kursId) {
         const info = blockInfo[teil.block.id];
         const bk = mk('div', 'zp-block');
         bk.style.background = farbe;
-        const bt = tx('span', 'zp-block-titel', teil.block.titel);
+        const eb = d.blockliste.find(x => x.block.id === teil.block.id);
+        const bt = tx('span', 'zp-block-titel', teil.block.titel + (eb && eb.fremd ? ' · aus ' + zpFpKurz(eb.fp) : ''));
         bk.appendChild(bt);
         const zusatz = [info.laenge + ' Std.'];
         if (info.endeDatum) zusatz.push('bis ' + zpKurzDatum(info.endeDatum));
@@ -457,6 +524,10 @@ function viewZeitplan(kursId) {
             delete planungSchreibbar()[teil.block.id];
             fertig();
           }, { gefahr: true, tipp: 'Der Block bleibt in der Fachplanung, hat aber keinen Termin mehr.' });
+          if (eb && eb.fremd) {
+            m.eintrag('Ganz aus diesem Kurs entfernen', () => blockAusKursEntfernen(teil.block), { gefahr: true,
+              tipp: 'Der Block bleibt in „' + zpFpKurz(eb.fp) + '" erhalten.' });
+          }
         }));
         bk.appendChild(bm);
         wrap.appendChild(bk);

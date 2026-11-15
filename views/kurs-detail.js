@@ -92,7 +92,11 @@ function viewKursDetail(kursId) {
   // (Versatz). Liegt noch gar nichts auf der Zeitachse, zählen alle Blöcke wie
   // bisher, damit einjährige Kurse ohne Zeitplanung nicht plötzlich leer sind.
   const kursPlanung = ((S.data.zeitplanung || {})[kursId]) || {};
-  const alleBloecke = fp ? (fp.blocks || []) : [];
+  // Eigene Blöcke plus die, die der Kurs aus anderen Fachplanungen geholt hat
+  const _kbl = kursBlockliste(kurs);
+  const alleBloecke = _kbl.map(e => e.block);
+  const fremdAus = {};
+  _kbl.filter(e => e.fremd).forEach(e => { fremdAus[e.block.id] = zpFpKurz(e.fp); });
   const irgendwasPlatziert = alleBloecke.some(b => kursPlanung[b.id]);
   const kursBloecke = irgendwasPlatziert ? alleBloecke.filter(b => kursPlanung[b.id]) : alleBloecke;
   const nichtEingeplant = irgendwasPlatziert ? alleBloecke.filter(b => !kursPlanung[b.id]) : [];
@@ -182,7 +186,7 @@ function viewKursDetail(kursId) {
     return tr;
   }
 
-  if (fp && (fp.blocks || []).length > 0) {
+  if (fp && alleBloecke.length > 0) {
     const tbl = document.createElement('table');
     tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:13px;';
 
@@ -215,7 +219,7 @@ function viewKursDetail(kursId) {
       sumSoll += soll; sumGeplant += geplant;
 
       // Block-Zeile
-      const blockPfeilCell = { text: '▶ ' + block.titel + (vs ? ' (ab Blockstunde ' + (vs + 1) + ')' : ''), bold: true };
+      const blockPfeilCell = { text: '▶ ' + block.titel + (fremdAus[block.id] ? ' · aus ' + fremdAus[block.id] : '') + (vs ? ' (ab Blockstunde ' + (vs + 1) + ')' : ''), bold: true };
       const blockRow = tblRow([
         blockPfeilCell,
         { text: soll || '–', align: 'right' },
@@ -331,7 +335,7 @@ function viewKursDetail(kursId) {
             stundenRows.forEach(r => r.style.display = 'none');
           });
         });
-        blockRow.cells[0].textContent = (open ? '▶ ' : '▼ ') + block.titel + (vs ? ' (ab Blockstunde ' + (vs + 1) + ')' : '');
+        blockRow.cells[0].textContent = (open ? '▶ ' : '▼ ') + block.titel + (fremdAus[block.id] ? ' · aus ' + fremdAus[block.id] : '') + (vs ? ' (ab Blockstunde ' + (vs + 1) + ')' : '');
         blockRow.cells[0].style.fontWeight = '700';
       };
     });
@@ -347,7 +351,7 @@ function viewKursDetail(kursId) {
         const soll = blockSoll(block);
         const geplant = (block.reihen || []).reduce((s,r) => s + summeStundenEinheiten(r.stunden), 0);
         tbody.appendChild(tblRow([
-          { text: block.titel, color: 'var(--tx3)', indent: 24 },
+          { text: block.titel + (fremdAus[block.id] ? ' · aus ' + fremdAus[block.id] : ''), color: 'var(--tx3)', indent: 24 },
           { text: soll || '–', align: 'right', color: 'var(--tx3)' },
           { text: geplant, align: 'right', color: 'var(--tx3)' },
           { text: '', align: 'right' }

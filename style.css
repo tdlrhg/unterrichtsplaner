@@ -1231,3 +1231,4 @@ textarea::placeholder { color: #c4cdd6; }
 .zp-kw { padding-left:8px; font-size:9.5px; font-weight:700; color:var(--tx3); letter-spacing:.3px; white-space:nowrap; }
 .zp-row.zp-wochenstart { border-top:2px solid var(--bord); }
 .zp-row.zp-wochenstart.zp-folge { border-top:2px solid var(--bord); }
+.zp-holen { margin-left:auto; }

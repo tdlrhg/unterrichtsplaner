@@ -543,13 +543,14 @@ function viewZeitplan(kursId) {
     return b;
   }
 
+  // Statt einer eigenen „Heute"-Zeile wird der Termin selbst hinterlegt:
+  // heute kräftig, sonst der nächste Termin, wenn er morgen oder übermorgen ist.
+  const istTermin = z => z.typ === 'slot' || z.typ === 'ka' || z.typ === 'ausfall';
+  const tageBis = datum => Math.round((strToDate(datum) - strToDate(heute)) / 86400000);
+  const naechster = zeilen.find(z => istTermin(z) && z.datum > heute);
+  const baldDatum = naechster && tageBis(naechster.datum) <= 2 ? naechster.datum : null;
+
   zeilen.forEach(z => {
-    // Heute-Marke vor dem ersten Termin, der heute oder später liegt
-    if (!heuteGesetzt && z.datum >= heute) {
-      heuteGesetzt = true;
-      heuteEl = tx('div', 'zp-heute', 'Heute · ' + zpKurzDatum(heute));
-      wrap.appendChild(heuteEl);
-    }
 
     if (z.typ === 'ferien') {
       letzteWoche = null; letzterTag = null;
@@ -632,6 +633,10 @@ function viewZeitplan(kursId) {
 
     const zeile = mk('div', 'zp-row zp-' + z.typ);
     if (z.datum < heute) zeile.classList.add('zp-vorbei');
+    if (istTermin(z) && z.datum === heute) zeile.classList.add('zp-ist-heute');
+    else if (istTermin(z) && z.datum === baldDatum) zeile.classList.add('zp-ist-bald');
+    // Anker zum Hinscrollen: die erste Zeile ab heute
+    if (!heuteGesetzt && z.datum >= heute) { heuteGesetzt = true; heuteEl = zeile; }
     if (z.datum === letzterTag) zeile.classList.add('zp-folge');
     letzterTag = z.datum;
     // Auch entfallende Doppelstunden bleiben als Doppelstunde erkennbar

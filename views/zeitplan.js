@@ -692,7 +692,6 @@ function viewZeitplan(kursId) {
       if (basisTeile && fortsTeile) t.appendChild(tx('span', 'zp-marke', '+' + fortsTeile + ' länger'));
       inhalt.appendChild(t);
       const subTxt = [];
-      if (teil.e >= 2 && basisTeile === teil.e) subTxt.push('Doppelstunde');
       const mat = typeof stundenMaterialKurz === 'function' ? stundenMaterialKurz(st) : null;
       if (mat) subTxt.push(mat);
       if (subTxt.length) inhalt.appendChild(tx('div', 'zp-sub', subTxt.join(' · ')));

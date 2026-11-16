@@ -525,8 +525,7 @@ function viewZeitplan(kursId) {
 
   // ── Liste ────────────────────────────────────────────────────
   const wrap = mk('div', 'zp-wrap');
-  let letzteWoche = null, letzterTag = null, letzteReihe = undefined, heuteGesetzt = false, heuteEl = null;
-  const blockBegonnen = {};
+  let letzteWoche = null, letzterTag = null, heuteGesetzt = false, heuteEl = null;
 
   // Die Kalenderwoche steht als eigene Spalte vor dem Datum, einmal je Woche
   function neueWoche(z) {
@@ -543,6 +542,66 @@ function viewZeitplan(kursId) {
     return b;
   }
 
+  // Blockmenü — öffnet sich per Klick auf das senkrechte Blockband
+  function blockMenue(anker, block) {
+    const eb = d.blockliste.find(x => x.block.id === block.id);
+    zpMenue(anker, m => {
+      m.titel(block.titel);
+      m.eintrag('Zur Fachplanung', () => oeffnen({ block }));
+      m.trenner();
+      m.titel('Am Starttermin beginnen mit');
+      const sz = mk('div', 'zp-m-zeile');
+      const sel = startAuswahl(block, parseInt((d.planung[block.id] || {}).versatz) || 0);
+      sel.title = 'Was davor liegt, gilt als erledigt und wird nicht eingeplant.';
+      sel.onchange = () => {
+        const p = planungSchreibbar();
+        p[block.id] = Object.assign({}, p[block.id], { versatz: parseInt(sel.value) || 0 });
+        m.schliessen();
+        fertig();
+      };
+      sz.appendChild(sel);
+      m.element(sz);
+      m.titel('Endet nach');
+      const ez = mk('div', 'zp-m-zeile');
+      const esel = endAuswahl(block, (d.planung[block.id] || {}).bisReihe);
+      esel.title = 'Was danach im Block steht, wird in diesem Kurs nicht eingeplant.';
+      esel.onchange = () => { m.schliessen(); blockEndetNach(block, esel.value); };
+      ez.appendChild(esel);
+      m.element(ez);
+      m.trenner();
+      m.eintrag('Aus dem Zeitplan nehmen', () => {
+        delete planungSchreibbar()[block.id];
+        fertig();
+      }, { gefahr: true, tipp: 'Der Block bleibt in der Fachplanung, hat aber keinen Termin mehr.' });
+      if (eb && eb.fremd) {
+        m.eintrag('Ganz aus diesem Kurs entfernen', () => blockAusKursEntfernen(block), { gefahr: true,
+          tipp: 'Der Block bleibt in „' + zpFpKurz(eb.fp) + '" erhalten.' });
+      }
+    });
+  }
+  function blockInfoText(block) {
+    const info = blockInfo[block.id] || {};
+    const eb = d.blockliste.find(x => x.block.id === block.id);
+    const zusatz = [info.laenge + ' Std.'];
+    const bisR = (block.reihen || []).find(r => r.id === (d.planung[block.id] || {}).bisReihe);
+    if (eb && eb.fremd) zusatz.push('aus ' + zpFpKurz(eb.fp));
+    if (bisR) zusatz.push('endet nach „' + (bisR.titel || 'Reihe') + '"');
+    if (info.endeDatum) zusatz.push('bis ' + zpKurzDatum(info.endeDatum));
+    if (info.geschoben && info.sollDatum) zusatz.push('geplant ab ' + zpKurzDatum(info.sollDatum) + ', rückt nach');
+    if (info.ueberhang) zusatz.push('⚠ ' + info.ueberhang + ' Std. passen nicht mehr ins Schuljahr');
+    return zusatz.join(' · ');
+  }
+
+  // Block und Reihe stehen als senkrechte Bänder links neben den Zeilen.
+  // Je Zeile merken, zu welchem Block / welcher Reihe sie gehört; die Bänder
+  // spannen dann von der ersten bis zur letzten Zeile (Ausfälle, Ferien inklusive).
+  const zeilenEls = [];
+  const spannen = { block: {}, reihe: {} };
+  function merke(art, id, i, daten) {
+    const sp = spannen[art][id] || (spannen[art][id] = Object.assign({ von: i, bis: i }, daten));
+    sp.bis = i;
+  }
+
   // Statt einer eigenen „Heute"-Zeile wird der Termin selbst hinterlegt:
   // heute kräftig, sonst der nächste Termin, wenn er morgen oder übermorgen ist.
   const istTermin = z => z.typ === 'slot' || z.typ === 'ka' || z.typ === 'ausfall';
@@ -554,82 +613,15 @@ function viewZeitplan(kursId) {
 
     if (z.typ === 'ferien') {
       letzteWoche = null; letzterTag = null;
-      wrap.appendChild(tx('div', 'zp-ferien', z.name + ' · ' + zpKurzDatum(z.von) + '–' + zpKurzDatum(z.bis)));
+      const fe = tx('div', 'zp-ferien', z.name + ' · ' + zpKurzDatum(z.von) + '–' + zpKurzDatum(z.bis));
+      zeilenEls.push(fe);
+      wrap.appendChild(fe);
       return;
     }
     const wochenstart = neueWoche(z);
 
     const teil = z.teile[0] || null;
     const farbe = teil ? ZP_FARBEN[teil.bi % ZP_FARBEN.length] : null;
-
-    // Block- und Reihenkopf, sobald etwas Neues beginnt
-    if (z.typ === 'slot' && teil) {
-      if (!blockBegonnen[teil.block.id]) {
-        blockBegonnen[teil.block.id] = true;
-        letzteReihe = undefined;
-        const info = blockInfo[teil.block.id];
-        const bk = mk('div', 'zp-block');
-        bk.style.background = farbe;
-        const eb = d.blockliste.find(x => x.block.id === teil.block.id);
-        const bt = tx('span', 'zp-block-titel', teil.block.titel + (eb && eb.fremd ? ' · aus ' + zpFpKurz(eb.fp) : ''));
-        bk.appendChild(bt);
-        const zusatz = [info.laenge + ' Std.'];
-        const bisR = (teil.block.reihen || []).find(r => r.id === (d.planung[teil.block.id] || {}).bisReihe);
-        if (bisR) zusatz.push('endet nach „' + (bisR.titel || 'Reihe') + '"');
-        if (info.endeDatum) zusatz.push('bis ' + zpKurzDatum(info.endeDatum));
-        if (info.geschoben && info.sollDatum) zusatz.push('geplant ab ' + zpKurzDatum(info.sollDatum) + ', rückt nach');
-        if (info.ueberhang) zusatz.push('⚠ ' + info.ueberhang + ' Std. passen nicht mehr ins Schuljahr');
-        bk.appendChild(tx('span', 'zp-block-info', zusatz.join(' · ')));
-        const bm = aktKnopf('⋯', 'Block: Optionen', b => zpMenue(b, m => {
-          m.titel(teil.block.titel);
-          m.eintrag('Zur Fachplanung', () => oeffnen({ block: teil.block }));
-          m.trenner();
-          m.titel('Am Starttermin beginnen mit');
-          const sz = mk('div', 'zp-m-zeile');
-          const sel = startAuswahl(teil.block, parseInt((d.planung[teil.block.id] || {}).versatz) || 0);
-          sel.title = 'Was davor liegt, gilt als erledigt und wird nicht eingeplant.';
-          sel.onchange = () => {
-            const p = planungSchreibbar();
-            p[teil.block.id] = Object.assign({}, p[teil.block.id], { versatz: parseInt(sel.value) || 0 });
-            m.schliessen();
-            fertig();
-          };
-          sz.appendChild(sel);
-          m.element(sz);
-          m.titel('Endet nach');
-          const ez = mk('div', 'zp-m-zeile');
-          const esel = endAuswahl(teil.block, (d.planung[teil.block.id] || {}).bisReihe);
-          esel.title = 'Was danach im Block steht, wird in diesem Kurs nicht eingeplant.';
-          esel.onchange = () => { m.schliessen(); blockEndetNach(teil.block, esel.value); };
-          ez.appendChild(esel);
-          m.element(ez);
-          m.trenner();
-          m.eintrag('Aus dem Zeitplan nehmen', () => {
-            delete planungSchreibbar()[teil.block.id];
-            fertig();
-          }, { gefahr: true, tipp: 'Der Block bleibt in der Fachplanung, hat aber keinen Termin mehr.' });
-          if (eb && eb.fremd) {
-            m.eintrag('Ganz aus diesem Kurs entfernen', () => blockAusKursEntfernen(teil.block), { gefahr: true,
-              tipp: 'Der Block bleibt in „' + zpFpKurz(eb.fp) + '" erhalten.' });
-          }
-        }));
-        bk.appendChild(bm);
-        wrap.appendChild(bk);
-      }
-      const reiheId = teil.reihe ? teil.reihe.id : null;
-      if (reiheId !== letzteReihe) {
-        letzteReihe = reiheId;
-        if (teil.reihe) {
-          const soll = parseInt(teil.reihe.stundenAnzahl) || 0;
-          const ist = summeStundenEinheiten(teil.reihe.stunden);
-          const rk = tx('div', 'zp-reihe', teil.reihe.titel || 'Reihe');
-          rk.style.background = zpPastell(farbe);
-          rk.style.borderLeft = '6px solid ' + farbe;
-          rk.appendChild(tx('span', 'zp-reihe-info', (soll ? soll + ' Std. geplant · ' : '') + ist + ' angelegt'));
-          wrap.appendChild(rk);
-        }
-      }
-    }
 
     const zeile = mk('div', 'zp-row zp-' + z.typ);
     if (z.datum < heute) zeile.classList.add('zp-vorbei');
@@ -642,9 +634,12 @@ function viewZeitplan(kursId) {
     // Auch entfallende Doppelstunden bleiben als Doppelstunde erkennbar
     if (z.stunden.length >= 2) zeile.classList.add('zp-doppel');
 
-    const strip = mk('div', 'zp-strip');
-    if (farbe) strip.style.background = farbe;
-    zeile.appendChild(strip);
+    zeile.appendChild(mk('div', 'zp-baender-platz'));
+    if (teil) {
+      merke('block', teil.block.id, zeilenEls.length, { block: teil.block, farbe });
+      if (teil.reihe) merke('reihe', teil.block.id + '|' + teil.reihe.id, zeilenEls.length, { block: teil.block, reihe: teil.reihe, farbe, teil });
+    }
+    zeilenEls.push(zeile);
     if (wochenstart) zeile.classList.add('zp-wochenstart');
     zeile.appendChild(tx('div', 'zp-kw', wochenstart ? 'KW ' + z.kw : ''));
     zeile.appendChild(tx('div', 'zp-datum', z.tag + ' ' + zpKurzDatum(z.datum)));
@@ -755,6 +750,40 @@ function viewZeitplan(kursId) {
 
   if (!zeilen.length) wrap.appendChild(gray('Keine Unterrichtstermine im Schuljahr.'));
   div.appendChild(wrap);
+
+  // Bänder anlegen; Lage und Höhe setzt baenderLegen(), sobald die Zeilen stehen
+  const baender = [];
+  Object.values(spannen.block).forEach(sp => {
+    const b = mk('div', 'zp-band zp-band-block');
+    b.style.background = sp.farbe;
+    const txt = tx('span', 'zp-band-txt', sp.block.titel);
+    b.appendChild(txt);
+    b.title = sp.block.titel + ' · ' + blockInfoText(sp.block) + '\nKlick: Optionen';
+    b.onclick = e => { e.stopPropagation(); blockMenue(b, sp.block); };
+    wrap.appendChild(b); baender.push({ el: b, sp });
+  });
+  Object.values(spannen.reihe).forEach(sp => {
+    const b = mk('div', 'zp-band zp-band-reihe');
+    b.style.background = zpPastell(sp.farbe);
+    b.style.borderColor = sp.farbe;
+    const soll = parseInt(sp.reihe.stundenAnzahl) || 0;
+    const ist = summeStundenEinheiten(sp.reihe.stunden);
+    b.appendChild(tx('span', 'zp-band-txt', sp.reihe.titel || 'Reihe'));
+    b.title = (sp.reihe.titel || 'Reihe') + ' · ' + (soll ? soll + ' Std. geplant · ' : '') + ist + ' angelegt\nKlick: Reihe öffnen';
+    b.onclick = e => { e.stopPropagation(); oeffnen({ block: sp.block, reihe: sp.reihe, fpB: sp.teil.fpB }); };
+    wrap.appendChild(b); baender.push({ el: b, sp });
+  });
+  function baenderLegen() {
+    baender.forEach(({ el, sp }) => {
+      const a = zeilenEls[sp.von], z = zeilenEls[sp.bis];
+      if (!a || !z) return;
+      const top = a.offsetTop, h = z.offsetTop + z.offsetHeight - top;
+      el.style.top = (top + 1) + 'px';
+      el.style.height = Math.max(4, h - 2) + 'px';
+    });
+  }
+  setTimeout(baenderLegen, 0);
+  if (typeof ResizeObserver === 'function') new ResizeObserver(baenderLegen).observe(wrap);
 
   const fuss = tx('div', 'zp-fuss', 'Klick auf eine Stunde öffnet sie · „+1" gibt ihr in diesem Kurs einen Termin mehr · ⋯ zeigt alles Weitere (Ausfall, Klassenarbeit, Reihenfolge, Blockstart)');
   div.appendChild(fuss);

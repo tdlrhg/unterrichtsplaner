@@ -730,7 +730,10 @@ function viewZeitplan(kursId) {
     } else {
       // Termin ohne Stunde: offen in einer Reihe, oder gar nicht verplant
       if (teil) {
-        inhalt.appendChild(tx('div', 'zp-leise', 'offen' + (teil.reihe ? ' · ' + (teil.reihe.titel || 'Reihe') : ' · ' + teil.block.titel)));
+        // Reihe und Block stehen schon im Band links — hier nur der Hinweis
+        const offen = tx('div', 'zp-leise', 'nicht verplant');
+        offen.title = teil.reihe ? (teil.reihe.titel || 'Reihe') : teil.block.titel;
+        inhalt.appendChild(offen);
         if (teil.reihe) akt.appendChild(aktKnopf('+ Stunde', 'Stunde in dieser Reihe anlegen', () => stundeAnlegen(teil.reihe)));
       } else {
         inhalt.appendChild(tx('div', 'zp-leise', 'nicht verplant'));

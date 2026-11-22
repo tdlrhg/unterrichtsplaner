@@ -1224,10 +1224,10 @@ textarea::placeholder { color: #c4cdd6; }
 .zp-m-zeile { display:flex; gap:6px; align-items:center; padding:3px 7px; }
 .zp-m-zeile .finp { font-size:12px; padding:2px 6px; height:26px; flex:1; min-width:0; }
 .zp-start-sel { max-width:320px; }
-/* Einzelstunden bleiben einzeilig: Material steht hinter dem Titel statt darunter */
-.zp-row:not(.zp-doppel) .zp-inhalt { display:flex; align-items:baseline; gap:10px; }
-.zp-row:not(.zp-doppel) .zp-titel { flex:0 1 auto; min-width:0; }
-.zp-row:not(.zp-doppel) .zp-sub { flex:1 1 0; min-width:0; margin-top:0; }
+/* Jede Zeile einzeilig und mittig: Material steht immer hinter dem Titel */
+.zp-row .zp-inhalt { display:flex; align-items:baseline; gap:10px; }
+.zp-row .zp-titel { flex:0 1 auto; min-width:0; }
+.zp-row .zp-sub { flex:1 1 0; min-width:0; margin-top:0; }
 .zp-kw { padding-left:8px; font-size:9.5px; font-weight:700; color:var(--tx3); letter-spacing:.3px; white-space:nowrap; }
 .zp-row.zp-wochenstart { border-top:2px solid var(--bord); }
 .zp-row.zp-wochenstart.zp-folge { border-top:2px solid var(--bord); }

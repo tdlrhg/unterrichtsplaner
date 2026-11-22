@@ -633,6 +633,8 @@ function viewZeitplan(kursId) {
     letzterTag = z.datum;
     // Auch entfallende Doppelstunden bleiben als Doppelstunde erkennbar
     if (z.stunden.length >= 2) zeile.classList.add('zp-doppel');
+    // Feste Höhe je Unterrichtsstunde, damit der Takt nie springt
+    if (z.stunden.length > 2) zeile.style.height = (22 * z.stunden.length) + 'px';
 
     zeile.appendChild(mk('div', 'zp-baender-platz'));
     if (teil) {

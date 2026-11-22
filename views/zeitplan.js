@@ -654,19 +654,24 @@ function viewZeitplan(kursId) {
       inhalt.appendChild(tx('div', 'zp-leise', 'entfällt · ' + z.grund));
       // Ein schulweit freier Tag steht im Kalender und gilt für alle Kurse —
       // zurücknehmen heißt deshalb: den Tag dort streichen. Feiertage bleiben.
-      if (!z.feiertag) {
-        akt.appendChild(aktKnopf('↺ findet statt', 'Freien Tag zurücknehmen (gilt für alle Kurse)', () => {
+      akt.appendChild(aktKnopf('⋯', 'Alle Optionen', b => zpMenue(b, m => {
+        m.titel(z.tag + ' ' + zpKurzDatum(z.datum) + ' · ' + z.grund);
+        if (z.feiertag) { m.eintrag('Feiertag — gilt fest', () => {}, { aus: true }); return; }
+        m.eintrag('↺ Findet doch statt', () => {
           if (!confirm('Der ' + zpKurzDatum(z.datum) + ' ist als unterrichtsfreier Tag für ALLE Kurse eingetragen'
             + (z.grund ? ' („' + z.grund + '")' : '') + '.\n\nEintrag streichen? Dann findet an dem Tag in allen Kursen wieder Unterricht statt.')) return;
           const k = kal();
           k.ausfalltage = (k.ausfalltage || []).filter(t => t !== z.datum);
           if (k.ausfalltageGruende) delete k.ausfalltageGruende[z.datum];
           fertig();
-        }));
-      }
+        }, { tipp: 'Freien Tag zurücknehmen (gilt für alle Kurse)' });
+      })));
     } else if (z.typ === 'ausfall') {
       inhalt.appendChild(tx('div', 'zp-titel zp-durch', 'Ausfall' + (z.grund ? ' · ' + z.grund : '')));
-      akt.appendChild(aktKnopf('↺ findet statt', 'Ausfall zurücknehmen', () => ausfallZurueck(z)));
+      akt.appendChild(aktKnopf('⋯', 'Alle Optionen', b => zpMenue(b, m => {
+        m.titel(z.tag + ' ' + zpKurzDatum(z.datum) + ' · Ausfall');
+        m.eintrag('↺ Findet doch statt', () => ausfallZurueck(z));
+      })));
     } else if (z.typ === 'ka') {
       inhalt.appendChild(tx('div', 'zp-titel', '📝 ' + (z.ka.titel || 'Klassenarbeit')
         + (z.ohneTermin ? ' (liegt außerhalb des Stundenplans)' : '')));
@@ -701,11 +706,11 @@ function viewZeitplan(kursId) {
       inhalt.title = 'Stunde öffnen';
       inhalt.onclick = () => oeffnen(teil);
 
-      akt.appendChild(aktKnopf('+1', 'Hat länger gedauert: ein Termin mehr (nur dieser Kurs)', () => laenger(st, 1)));
       akt.appendChild(aktKnopf('⋯', 'Alle Optionen', b => zpMenue(b, m => {
         m.titel(st.titel || 'Stunde');
         m.eintrag('Stunde öffnen', () => oeffnen(teil));
         m.trenner();
+        m.eintrag('+1 Termin (hat länger gedauert)', () => laenger(st, 1), { tipp: 'Nur in diesem Kurs' });
         const zl = mk('div', 'zp-m-zeile');
         zl.appendChild(tx('span', '', 'Länger gebraucht:'));
         const zahl = document.createElement('input');
@@ -734,7 +739,6 @@ function viewZeitplan(kursId) {
         const offen = tx('div', 'zp-leise', 'nicht verplant');
         offen.title = teil.reihe ? (teil.reihe.titel || 'Reihe') : teil.block.titel;
         inhalt.appendChild(offen);
-        if (teil.reihe) akt.appendChild(aktKnopf('+ Stunde', 'Stunde in dieser Reihe anlegen', () => stundeAnlegen(teil.reihe)));
       } else {
         inhalt.appendChild(tx('div', 'zp-leise', 'nicht verplant'));
       }
@@ -792,7 +796,7 @@ function viewZeitplan(kursId) {
   setTimeout(baenderLegen, 0);
   if (typeof ResizeObserver === 'function') new ResizeObserver(baenderLegen).observe(wrap);
 
-  const fuss = tx('div', 'zp-fuss', 'Klick auf eine Stunde öffnet sie · „+1" gibt ihr in diesem Kurs einen Termin mehr · ⋯ zeigt alles Weitere (Ausfall, Klassenarbeit, Reihenfolge, Blockstart)');
+  const fuss = tx('div', 'zp-fuss', 'Klick auf eine Stunde öffnet sie · ⋯ zeigt alles Weitere (Stunde anlegen, +1 Termin, Ausfall, Klassenarbeit, Reihenfolge, Blockstart)');
   div.appendChild(fuss);
 
   // Rollposition halten; beim ersten Öffnen zur Heute-Marke

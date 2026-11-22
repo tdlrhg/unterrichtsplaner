@@ -1208,7 +1208,7 @@ textarea::placeholder { color: #c4cdd6; }
 .zp-leise { color:var(--tx3); font-size:12px; }
 .zp-marke { margin-left:8px; font-size:10px; font-weight:700; color:var(--tx2); background:var(--surf2); border:1px solid var(--bord); border-radius:8px; padding:0 6px; }
 .zp-row.zp-ka { background:#f5f3ff; }
-.zp-row.zp-ausfall, .zp-row.zp-tagfrei { background:repeating-linear-gradient(135deg, transparent, transparent 6px, rgba(0,0,0,.025) 6px, rgba(0,0,0,.025) 12px); }
+.zp-row.zp-ausfall, .zp-row.zp-tagfrei { background:#f5f5f4; }
 .zp-akt { display:flex; gap:4px; padding:0 8px; opacity:.4; transition:opacity .12s; }
 .zp-row:hover .zp-akt, .zp-block .zp-akt-btn { opacity:1; }
 .zp-akt-btn { border:1px solid var(--bord); background:var(--surf); color:var(--tx2); border-radius:5px; font-size:10.5px; font-weight:600; padding:0 6px; line-height:17px; cursor:pointer; font-family:inherit; white-space:nowrap; }

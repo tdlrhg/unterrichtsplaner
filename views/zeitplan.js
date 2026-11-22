@@ -767,7 +767,9 @@ function viewZeitplan(kursId) {
     b.style.borderColor = sp.farbe;
     const soll = parseInt(sp.reihe.stundenAnzahl) || 0;
     const ist = summeStundenEinheiten(sp.reihe.stunden);
-    b.appendChild(tx('span', 'zp-band-txt', sp.reihe.titel || 'Reihe'));
+    const rTxt = tx('span', 'zp-band-txt', sp.reihe.titel || 'Reihe');
+    if (soll) rTxt.appendChild(tx('span', 'zp-band-std', soll + ' Std.'));
+    b.appendChild(rTxt);
     b.title = (sp.reihe.titel || 'Reihe') + ' · ' + (soll ? soll + ' Std. geplant · ' : '') + ist + ' angelegt\nKlick: Reihe öffnen';
     b.onclick = e => { e.stopPropagation(); oeffnen({ block: sp.block, reihe: sp.reihe, fpB: sp.teil.fpB }); };
     wrap.appendChild(b); baender.push({ el: b, sp });

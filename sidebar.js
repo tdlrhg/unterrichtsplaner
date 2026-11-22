@@ -34,7 +34,24 @@ function buildSidebar() {
     return row;
   }
 
+  // ── Kurse (oben: der Kurs ist der Kern der Arbeit) ─────────────
+  sb.appendChild(sbSection('Kurse', () => { S.modal = { type: 'newKurs' }; render(); }));
+  (S.data.kurse || []).forEach(kurs => {
+    const fp = getFachplanung(kurs.fachplanungId);
+    sb.appendChild(sbRow(
+      kurs.klasse + ' · ' + (fp ? fachLabel(fp.fach) : '–'),
+      kurs.schuljahr,
+      S.view === 'kursDetail' && S.aktKursDetailId === kurs.id,
+      () => { S.view = 'kursDetail'; S.aktKursDetailId = kurs.id; S.sel = null; render(); },
+      () => { if (confirm('Kurs löschen?')) {
+        S.data.kurse = S.data.kurse.filter(k => k.id !== kurs.id);
+        scheduleSave(); render();
+      }}
+    ));
+  });
+
   // ── Fachplanungen (gruppiert nach Fach) ───────────────────────
+  sb.appendChild(mk('div', 'sb-sep'));
   sb.appendChild(sbSection('Fachplanungen', () => { S.modal = { type: 'newFachplanung' }; render(); }));
 
   const FACH_BASIS = { 'Ch_GK': 'Ch', 'Ch_LK': 'Ch', 'Bio_GK': 'Bio', 'Bio_LK': 'Bio' };
@@ -108,23 +125,6 @@ function buildSidebar() {
 
       });
     }
-  });
-
-  // ── Kurse ─────────────────────────────────────────────────────
-  sb.appendChild(mk('div', 'sb-sep'));
-  sb.appendChild(sbSection('Kurse', () => { S.modal = { type: 'newKurs' }; render(); }));
-  (S.data.kurse || []).forEach(kurs => {
-    const fp = getFachplanung(kurs.fachplanungId);
-    sb.appendChild(sbRow(
-      kurs.klasse + ' · ' + (fp ? fachLabel(fp.fach) : '–'),
-      kurs.schuljahr,
-      S.view === 'kursDetail' && S.aktKursDetailId === kurs.id,
-      () => { S.view = 'kursDetail'; S.aktKursDetailId = kurs.id; S.sel = null; render(); },
-      () => { if (confirm('Kurs löschen?')) {
-        S.data.kurse = S.data.kurse.filter(k => k.id !== kurs.id);
-        scheduleSave(); render();
-      }}
-    ));
   });
 
   // ── Datenbanken ───────────────────────────────────────────────

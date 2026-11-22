@@ -691,14 +691,16 @@ function viewZeitplan(kursId) {
       const st = teil.stunde;
       const basisTeile = z.teile.filter(t => t.k < t.e).length;
       const fortsTeile = z.teile.length - basisTeile;
-      const prio = { optional: '🟡 ', puffer: '🔵 ' }[st.prioritaet] || '';
-      let titel = prio + (st.titel || '(ohne Titel)');
-      if (!basisTeile) titel = '↳ Fortsetzung: ' + (st.titel || '(ohne Titel)');
-      else if (basisTeile < teil.e) titel += ' · Teil ' + (z.teile[0].k + 1) + '/' + teil.e;
+      // Der Titel beginnt immer bündig; Hinweise stehen leise dahinter
+      let titel = st.titel || '(ohne Titel)';
+      if (basisTeile && basisTeile < teil.e) titel += ' · Teil ' + (z.teile[0].k + 1) + '/' + teil.e;
       const t = tx('div', 'zp-titel', titel);
       if (basisTeile && fortsTeile) t.appendChild(tx('span', 'zp-marke', '+' + fortsTeile + ' länger'));
       inhalt.appendChild(t);
       const subTxt = [];
+      if (!basisTeile) subTxt.push('Fortsetzung');
+      const prio = { optional: 'optional', puffer: 'Puffer' }[st.prioritaet];
+      if (prio) subTxt.push(prio);
       const mat = typeof stundenMaterialKurz === 'function' ? stundenMaterialKurz(st) : null;
       if (mat) subTxt.push(mat);
       if (subTxt.length) inhalt.appendChild(tx('div', 'zp-sub', subTxt.join(' · ')));

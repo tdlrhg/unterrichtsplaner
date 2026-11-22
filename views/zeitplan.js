@@ -198,9 +198,9 @@ function zeitplanDaten(kursId) {
   const schluessel = z => {
     if (z.typ === 'slot') {
       const b = belegung[z.idx];
-      if (!b) return 'frei';
-      if (b.art === 'stunde') return 'st:' + b.stunde.id;
-      return 'of:' + b.block.id + ':' + (b.reihe ? b.reihe.id : '');
+      if (b && b.art === 'stunde') return 'st:' + b.stunde.id;
+      // Offene Termine bleiben eine Zeile, auch wenn mittendrin Reihe oder Block wechselt
+      return 'offen';
     }
     if (z.typ === 'ausfall') return 'aus';
     if (z.typ === 'ka') return 'ka:' + z.ka.id;
@@ -597,9 +597,10 @@ function viewZeitplan(kursId) {
   // spannen dann von der ersten bis zur letzten Zeile (Ausfälle, Ferien inklusive).
   const zeilenEls = [];
   const spannen = { block: {}, reihe: {} };
-  function merke(art, id, i, daten) {
-    const sp = spannen[art][id] || (spannen[art][id] = Object.assign({ von: i, bis: i }, daten));
-    sp.bis = i;
+  // fVon/fBis: Anteil innerhalb der Zeile (0…1) — eine Reihe kann mitten in der Doppelstunde wechseln
+  function merke(art, id, i, daten, fVon, fBis) {
+    const sp = spannen[art][id] || (spannen[art][id] = Object.assign({ von: i, vonF: fVon, bis: i }, daten));
+    sp.bis = i; sp.bisF = fBis;
   }
 
   // Statt einer eigenen „Heute"-Zeile wird der Termin selbst hinterlegt:
@@ -638,8 +639,14 @@ function viewZeitplan(kursId) {
 
     zeile.appendChild(mk('div', 'zp-baender-platz'));
     if (teil) {
-      merke('block', teil.block.id, zeilenEls.length, { block: teil.block, farbe });
-      if (teil.reihe) merke('reihe', teil.block.id + '|' + teil.reihe.id, zeilenEls.length, { block: teil.block, reihe: teil.reihe, farbe, teil });
+      const n = z.idxs.length;
+      z.idxs.forEach((idx, j) => {
+        const tl = d.belegung[idx];
+        if (!tl) return;
+        const f = ZP_FARBEN[tl.bi % ZP_FARBEN.length];
+        merke('block', tl.block.id, zeilenEls.length, { block: tl.block, farbe: f }, j / n, (j + 1) / n);
+        if (tl.reihe) merke('reihe', tl.block.id + '|' + tl.reihe.id, zeilenEls.length, { block: tl.block, reihe: tl.reihe, farbe: f, teil: tl }, j / n, (j + 1) / n);
+      });
     }
     zeilenEls.push(zeile);
     if (wochenstart) zeile.classList.add('zp-wochenstart');
@@ -739,7 +746,7 @@ function viewZeitplan(kursId) {
       if (teil) {
         // Reihe und Block stehen schon im Band links — hier nur der Hinweis
         const offen = tx('div', 'zp-leise', 'nicht verplant');
-        offen.title = teil.reihe ? (teil.reihe.titel || 'Reihe') : teil.block.titel;
+        offen.title = [...new Set(z.teile.map(tl => tl.reihe ? (tl.reihe.titel || 'Reihe') : tl.block.titel))].join(' / ');
         inhalt.appendChild(offen);
       } else {
         inhalt.appendChild(tx('div', 'zp-leise', 'nicht verplant'));
@@ -789,7 +796,8 @@ function viewZeitplan(kursId) {
     baender.forEach(({ el, sp }) => {
       const a = zeilenEls[sp.von], z = zeilenEls[sp.bis];
       if (!a || !z) return;
-      const top = a.offsetTop, h = z.offsetTop + z.offsetHeight - top;
+      const top = a.offsetTop + (sp.vonF || 0) * a.offsetHeight;
+      const h = z.offsetTop + (sp.bisF == null ? 1 : sp.bisF) * z.offsetHeight - top;
       const luft = el.classList.contains('zp-band-reihe') ? 3 : 1;
       el.style.top = (top + luft) + 'px';
       el.style.height = Math.max(4, h - 2 * luft) + 'px';

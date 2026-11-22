@@ -5,8 +5,11 @@ let VERSION_STATUS = null; // 'current' | 'deploying' | null
 const NAV_KEY = 'up_nav';
 function saveNav() {
   try {
+    // Der zuletzt geöffnete Kurs: Mit ihm startet das Tool beim nächsten Mal
+    const alt = JSON.parse(localStorage.getItem(NAV_KEY) || 'null') || {};
+    const letzterKurs = S.view === 'kursDetail' && S.aktKursDetailId ? S.aktKursDetailId : alt.letzterKurs;
     localStorage.setItem(NAV_KEY, JSON.stringify({
-      view: S.view, aktFpId: S.aktFpId, sel: S.sel, open: S.open
+      view: S.view, aktFpId: S.aktFpId, sel: S.sel, open: S.open, letzterKurs
     }));
   } catch(e) {}
 }
@@ -18,6 +21,7 @@ function restoreNav() {
     if (saved.aktFpId) S.aktFpId = saved.aktFpId;
     if (saved.sel)     S.sel     = saved.sel;
     if (saved.open)    S.open    = saved.open;
+    if (saved.letzterKurs) S.aktKursDetailId = saved.letzterKurs;
   } catch(e) {}
 }
 
@@ -173,5 +177,8 @@ function buildSetup() {
     S.view = 'fachplanung';
     S.sel = null;
   }
+  // Start immer im zuletzt geöffneten Kurs (sonst im ersten Kurs)
+  const startKurs = S.data.kurse.find(k => k.id === S.aktKursDetailId) || S.data.kurse[0];
+  if (startKurs) { S.view = 'kursDetail'; S.aktKursDetailId = startKurs.id; S.sel = null; }
   render();
 })();

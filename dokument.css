@@ -342,7 +342,7 @@
 .dv-abschluss-formfehler .dv-liste { margin: 0 0 0 5mm; }
 .dv-abschluss-formfehler .dv-liste li { margin-bottom: .5mm; }
 .dv-abschluss-tabelle {
-  display: grid; grid-template-columns: 1.3fr .8fr 1.6fr .9fr .9fr;
+  display: grid; grid-template-columns: 1fr 1.35fr 1.5fr .85fr .85fr;
   border: .8pt solid #1c1917; border-top: none;
 }
 .dv-abschluss-zelle { border-top: .8pt solid #1c1917; border-right: .8pt solid #1c1917; padding: 2mm 3mm; font-size: .85em; }

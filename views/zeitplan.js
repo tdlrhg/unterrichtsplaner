@@ -761,9 +761,9 @@ function viewZeitplan(kursId) {
     b.onclick = e => { e.stopPropagation(); blockMenue(b, sp.block); };
     wrap.appendChild(b); baender.push({ el: b, sp });
   });
-  Object.values(spannen.reihe).forEach(sp => {
+  Object.values(spannen.reihe).sort((x, y) => x.von - y.von).forEach((sp, ri) => {
     const b = mk('div', 'zp-band zp-band-reihe');
-    b.style.background = zpPastell(sp.farbe);
+    b.style.background = zpPastell(sp.farbe, ri % 2 ? 0.9 : 0.7);
     b.style.borderColor = sp.farbe;
     const soll = parseInt(sp.reihe.stundenAnzahl) || 0;
     const ist = summeStundenEinheiten(sp.reihe.stunden);
@@ -777,8 +777,9 @@ function viewZeitplan(kursId) {
       const a = zeilenEls[sp.von], z = zeilenEls[sp.bis];
       if (!a || !z) return;
       const top = a.offsetTop, h = z.offsetTop + z.offsetHeight - top;
-      el.style.top = (top + 1) + 'px';
-      el.style.height = Math.max(4, h - 2) + 'px';
+      const luft = el.classList.contains('zp-band-reihe') ? 3 : 1;
+      el.style.top = (top + luft) + 'px';
+      el.style.height = Math.max(4, h - 2 * luft) + 'px';
     });
   }
   setTimeout(baenderLegen, 0);
